@@ -1,0 +1,25 @@
+---
+import '../styles/global.css';
+interface Props {
+  title: string;
+  description?: string;
+}
+const { title, description } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+  </head>
+  <body>
+    <main class="page">
+      <slot />
+      <footer class="site">
+        <a href="/">amberns.com</a> · <a href="https://github.com/A-M-Berns">github</a>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,23 @@
+---
+import Base from './Base.astro';
+interface Props {
+  title: string;
+  description?: string;
+  date: Date;
+  lesswrongUrl?: string;
+}
+const { title, description, date, lesswrongUrl } = Astro.props;
+const fmt = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+<Base title={title} description={description}>
+  <article class="note">
+    <header>
+      <h1>{title}</h1>
+      <p style="color: var(--muted); font-family: var(--sans); font-size: 0.9rem; margin-top: 0;">
+        <time datetime={date.toISOString()}>{fmt.format(date)}</time>
+        {lesswrongUrl && <> · <a href={lesswrongUrl}>on LessWrong</a></>}
+      </p>
+    </header>
+    <slot />
+  </article>
+</Base>

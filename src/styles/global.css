@@ -1,0 +1,95 @@
+:root {
+  --serif: et-book, Palatino, "Palatino Linotype", "Palatino LT STD", "Book Antiqua", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ink: #111;
+  --muted: #555;
+  --paper: #fffff8;
+  --rule: #e4e4dc;
+  --accent: #c93c20;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  line-height: 1.55;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 4rem 5vw 6rem;
+}
+
+/* Tufte-style two-column flow: narrow main column, wide right margin for sidenotes. */
+.note {
+  display: grid;
+  grid-template-columns: minmax(0, 55ch) minmax(0, 22ch);
+  column-gap: 3rem;
+}
+
+.note > * {
+  grid-column: 1;
+}
+
+.note h1 { font-size: 2.4rem; line-height: 1.1; font-weight: 400; margin: 0 0 0.5rem; }
+.note h2 { font-size: 1.6rem; font-weight: 400; margin-top: 2.5rem; }
+.note h3 { font-size: 1.25rem; font-weight: 600; margin-top: 2rem; }
+.note p { margin: 0 0 1rem; }
+.note a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.note blockquote { border-left: 2px solid var(--rule); margin: 1rem 0; padding: 0.1rem 1rem; color: var(--muted); }
+.note hr { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
+.note code { font-size: 0.95rem; background: #f1f1e8; padding: 0.1em 0.3em; border-radius: 3px; }
+.note pre { background: #f1f1e8; padding: 1rem; overflow-x: auto; }
+.note pre code { background: transparent; padding: 0; }
+
+/* Sidenotes — Tufte-CSS-compatible classes produced by @tufte-markdown/remark-sidenotes. */
+.sidenote,
+.marginnote {
+  grid-column: 2;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--muted);
+  position: relative;
+  margin-top: 0.2rem;
+}
+
+.sidenote-number { counter-increment: sidenote-counter; }
+.sidenote-number::after,
+.sidenote::before {
+  content: counter(sidenote-counter) " ";
+  font-size: 0.8rem;
+  vertical-align: super;
+  color: var(--accent);
+  font-family: var(--sans);
+}
+
+.margin-toggle { display: none; }
+input.margin-toggle { display: none; }
+
+@media (max-width: 900px) {
+  .note { grid-template-columns: 1fr; }
+  .sidenote, .marginnote { display: none; grid-column: 1; background: #f7f7ef; padding: 0.5rem 0.8rem; margin: 0.5rem 0; }
+  label.margin-toggle { display: inline; cursor: pointer; color: var(--accent); }
+  input.margin-toggle:checked + .sidenote,
+  input.margin-toggle:checked + .marginnote { display: block; }
+}
+
+/* Homepage / list typography */
+.hero h1 { font-size: 3rem; font-weight: 400; margin: 0 0 0.5rem; line-height: 1.05; }
+.hero p.lede { font-size: 1.25rem; color: var(--muted); margin-top: 0; max-width: 50ch; }
+
+.note-list { list-style: none; padding: 0; margin: 2rem 0 0; max-width: 60ch; }
+.note-list li { margin: 0.9rem 0; display: flex; gap: 1rem; align-items: baseline; }
+.note-list time { font-family: var(--sans); font-size: 0.85rem; color: var(--muted); flex-shrink: 0; width: 6rem; }
+.note-list a { color: var(--ink); }
+
+footer.site { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--rule); font-size: 0.9rem; color: var(--muted); font-family: var(--sans); }

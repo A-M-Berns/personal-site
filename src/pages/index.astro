@@ -1,0 +1,28 @@
+---
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+
+const notes = (await getCollection('notes', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const fmt = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'short', day: 'numeric' });
+---
+<Base title="Anson Berns" description="Independent research, notes, and writings.">
+  <section class="hero">
+    <h1>Anson Berns</h1>
+    <p class="lede">
+      Independent research and notes. Longer essays and cross-posts from LessWrong below.
+    </p>
+  </section>
+  {notes.length > 0 && (
+    <section>
+      <ul class="note-list">
+        {notes.map((n) => (
+          <li>
+            <time datetime={n.data.date.toISOString()}>{fmt.format(n.data.date)}</time>
+            <a href={`/notes/${n.id}/`}>{n.data.title}</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+</Base>
