@@ -82,15 +82,24 @@ a:hover { color: var(--accent); }
   margin: 0;
 }
 
-.hero-art {
-  display: block;
-  width: 240px;
-  height: 240px;
-  margin: 0 0 2rem;
+.bg-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  opacity: 0.45;
+  transition: opacity 700ms ease-in-out;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  background: var(--paper);
-  border: 1px solid var(--rule);
+  pointer-events: none;
+}
+
+/* Content sits above the background canvas. */
+.hero,
+.home-nav {
+  position: relative;
+  z-index: 1;
 }
 
 .home-nav {

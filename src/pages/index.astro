@@ -2,8 +2,9 @@
 import Base from '../layouts/Base.astro';
 ---
 <Base title="A. M. Berns" description="Independent research, personal writing, Lean, and other." showNav={false}>
+  <canvas id="bg-canvas" class="bg-canvas" aria-hidden="true"></canvas>
+
   <section class="hero">
-    <canvas id="cyclic-ca" class="hero-art" width="120" height="120" aria-hidden="true"></canvas>
     <h1>A<span class="dot">.</span> M<span class="dot">.</span> Berns</h1>
     <p class="lede">
       Independent research, personal writing, Lean, and other.
@@ -22,18 +23,17 @@ import Base from '../layouts/Base.astro';
   // Cyclic cellular automaton (Belousov-Zhabotinsky-style):
   // a cell at state s advances to (s+1) mod N if any 4-neighbor is at (s+1) mod N.
   // From random noise the field self-organizes into rotating spirals.
-  const canvas = document.getElementById('cyclic-ca') as HTMLCanvasElement | null;
+  const canvas = document.getElementById('bg-canvas') as HTMLCanvasElement | null;
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
-    const W = canvas.width;
-    const H = canvas.height;
     const N = 14;
+    const CELL_PX = 10; // CSS-pixel size of one cell after pixelated upscale
+    let W = 0;
+    let H = 0;
+    let grid = new Uint8Array(0);
+    let next = new Uint8Array(0);
+    let img: ImageData | null = null;
 
-    let grid = new Uint8Array(W * H);
-    let next = new Uint8Array(W * H);
-    for (let i = 0; i < grid.length; i++) grid[i] = (Math.random() * N) | 0;
-
-    // Palette: linear ramp from paper to accent, in RGB.
     const styles = getComputedStyle(document.documentElement);
     const parseHex = (h: string): [number, number, number] => {
       const s = h.trim().replace('#', '');
@@ -45,7 +45,6 @@ import Base from '../layouts/Base.astro';
     const palette: [number, number, number][] = [];
     for (let i = 0; i < N; i++) {
       const t = i / (N - 1);
-      // Slight gamma so mid-states aren't muddy.
       const e = Math.pow(t, 0.85);
       palette.push([
         Math.round(c0[0] + (c1[0] - c0[0]) * e),
@@ -54,8 +53,20 @@ import Base from '../layouts/Base.astro';
       ]);
     }
 
-    const img = ctx.createImageData(W, H);
-    const data = img.data;
+    function reseed() {
+      for (let i = 0; i < grid.length; i++) grid[i] = (Math.random() * N) | 0;
+    }
+
+    function resize() {
+      W = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
+      H = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
+      canvas.width = W;
+      canvas.height = H;
+      grid = new Uint8Array(W * H);
+      next = new Uint8Array(W * H);
+      img = ctx.createImageData(W, H);
+      reseed();
+    }
 
     function step() {
       for (let y = 0; y < H; y++) {
@@ -67,16 +78,12 @@ import Base from '../layouts/Base.astro';
           const xR = (x + 1) % W;
           const s = grid[yC + x];
           const target = (s + 1) % N;
-          if (
+          next[yC + x] = (
             grid[yU + x] === target ||
             grid[yD + x] === target ||
             grid[yC + xL] === target ||
             grid[yC + xR] === target
-          ) {
-            next[yC + x] = target;
-          } else {
-            next[yC + x] = s;
-          }
+          ) ? target : s;
         }
       }
       const tmp = grid;
@@ -85,6 +92,8 @@ import Base from '../layouts/Base.astro';
     }
 
     function draw() {
+      if (!img) return;
+      const data = img.data;
       for (let i = 0; i < grid.length; i++) {
         const c = palette[grid[i]];
         const j = i * 4;
@@ -96,8 +105,19 @@ import Base from '../layouts/Base.astro';
       ctx.putImageData(img, 0, 0);
     }
 
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    resize();
     draw();
+
+    let resizeTimer: number | undefined;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => {
+        resize();
+        draw();
+      }, 200);
+    });
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!reduce) {
       let last = 0;
       const targetMs = 80;
@@ -110,6 +130,18 @@ import Base from '../layouts/Base.astro';
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
+
+      // Periodically fade out, reseed, and fade back in so the field never
+      // sits in a converged state for long.
+      const RESEED_MS = 75000;
+      const FADE_MS = 800;
+      setInterval(() => {
+        canvas.style.opacity = '0';
+        window.setTimeout(() => {
+          reseed();
+          canvas.style.opacity = '';
+        }, FADE_MS);
+      }, RESEED_MS);
     }
   }
 </script>
