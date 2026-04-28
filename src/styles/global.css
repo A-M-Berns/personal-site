@@ -308,11 +308,12 @@ a:focus-visible {
   padding: 0.1rem 1rem;
   color: var(--muted);
 }
-.note figure { margin: 2rem 0; }
+.note figure { margin: 2rem 0; text-align: center; }
 .note img {
   display: block;
   max-width: 100%;
   height: auto;
+  margin-inline: auto;
 }
 .note figcaption {
   color: var(--muted);
@@ -320,6 +321,7 @@ a:focus-visible {
   font-size: 0.875rem;
   line-height: 1.45;
   margin-top: 0.6rem;
+  text-align: center;
 }
 .note figcaption p { margin: 0; }
 .note hr { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
