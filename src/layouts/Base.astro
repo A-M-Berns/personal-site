@@ -26,7 +26,7 @@ const navItems = [
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
   </head>
-  <body>
+  <body class:list={[{ 'is-home': path === '/' }]}>
     {showNav && (
       <header class="site-header">
         <nav class="site-nav">

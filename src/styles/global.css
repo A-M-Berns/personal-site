@@ -1,7 +1,7 @@
 :root {
   --sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --serif: et-book, Palatino, 'Palatino Linotype', 'Palatino LT STD', 'Book Antiqua', Georgia, serif;
-  --ink: #ececec;
+  --ink: #d8d2c4;
   --muted: #8e8e88;
   --paper: #0e0e10;
   --rule: #26262a;
@@ -9,6 +9,8 @@
 }
 
 html { font-size: 16px; color-scheme: dark; background: var(--paper); }
+
+body.is-home { --ink: #ececec; }
 
 body {
   background: var(--paper);
@@ -229,6 +231,7 @@ a:focus-visible {
   max-width: 60ch;
   margin-top: 1.5rem;
   margin-bottom: 2.5rem;
+  text-align: left;
 }
 .section-head h1 {
   font-family: var(--sans);
@@ -298,6 +301,7 @@ a:focus-visible {
   margin: 0 0 1rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--rule);
+  text-align: left;
 }
 .writing-pane .empty {
   color: var(--muted);
@@ -344,7 +348,6 @@ a:focus-visible {
   --note-side-offset: -38ch;
   max-width: calc(var(--note-text-width) + var(--note-margin-gap) + var(--note-side-width));
   position: relative;
-  color: #d8d2c4;
   font-family: var(--sans);
   font-size: 1.2rem;
   line-height: 1.55;
