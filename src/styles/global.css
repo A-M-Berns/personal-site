@@ -1,7 +1,7 @@
 :root {
   --sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --serif: et-book, Palatino, 'Palatino Linotype', 'Palatino LT STD', 'Book Antiqua', Georgia, serif;
-  --ink: #d8d2c4;
+  --ink: #ececec;
   --muted: #8e8e88;
   --paper: #0e0e10;
   --rule: #26262a;
@@ -9,8 +9,6 @@
 }
 
 html { font-size: 16px; color-scheme: dark; background: var(--paper); }
-
-body.is-home { --ink: #ececec; }
 
 body {
   background: var(--paper);
