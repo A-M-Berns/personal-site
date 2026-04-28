@@ -23,6 +23,9 @@ import Base from '../layouts/Base.astro';
     <button id="bg-restart" type="button" aria-label="Reset background">Reset</button>
   </div>
 
+  <!-- TEMP: seed name label, remove once seed library is tuned -->
+  <div id="bg-seed-label" aria-hidden="true"></div>
+
   <dialog id="bg-about" aria-labelledby="bg-about-title">
     <button class="bg-about-close" type="button" aria-label="Close">×</button>
     <h2 id="bg-about-title">About this animation</h2>
@@ -116,14 +119,19 @@ import Base from '../layouts/Base.astro';
       return out;
     }
 
-    type Seeder = { name: string; fn: (g: Uint8Array) => void };
+    type Seeder = { name: string; weight: number; fn: (g: Uint8Array) => void };
+    // weight 1.0 = dynamic seeders that produce strong phase gradients or
+    // nucleation sites; weight 0.6 = more static/tiled patterns that often
+    // dissolve into noise but still contribute variety.
     const seeders: Seeder[] = [
       {
         name: 'noise',
+        weight: 1.0,
         fn: (g) => { for (let i = 0; i < g.length; i++) g[i] = (Math.random() * N) | 0; },
       },
       {
         name: 'sparse',
+        weight: 1.0,
         fn: (g) => {
           g.fill(0);
           const k = Math.floor(g.length * 0.02);
@@ -132,6 +140,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'bands',
+        weight: 0.6,
         fn: (g) => {
           const bands = 6 + ((Math.random() * 6) | 0);
           for (let y = 0; y < H; y++) {
@@ -144,6 +153,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'blobs',
+        weight: 1.0,
         fn: (g) => {
           g.fill(0);
           const blobs = 3 + ((Math.random() * 4) | 0);
@@ -165,6 +175,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'diagonal',
+        weight: 0.6,
         fn: (g) => {
           for (let y = 0; y < H; y++) {
             for (let x = 0; x < W; x++) {
@@ -177,6 +188,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'dense',
+        weight: 0.6,
         fn: (g) => {
           for (let i = 0; i < g.length; i++) {
             g[i] = Math.random() < 0.5 ? (N - 1) : ((Math.random() * N) | 0);
@@ -185,6 +197,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'stripes-h',
+        weight: 0.6,
         fn: (g) => {
           const stripes = 5 + ((Math.random() * 6) | 0);
           for (let y = 0; y < H; y++) {
@@ -197,6 +210,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'checker',
+        weight: 1.0,
         fn: (g) => {
           const a = (Math.random() * N) | 0;
           let b = a;
@@ -213,6 +227,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'spiral',
+        weight: 1.0,
         fn: (g) => {
           // Low-amplitude noise background so the spiral isn't drawn on a
           // dead field — spiral cells are reinforced after this fill.
@@ -235,6 +250,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'rings',
+        weight: 0.6,
         fn: (g) => {
           const cx = W / 2;
           const cy = H / 2;
@@ -252,6 +268,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'quadrants',
+        weight: 0.6,
         fn: (g) => {
           const a = (Math.random() * N) | 0;
           const b = (a + 2) % N;
@@ -269,6 +286,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'walks',
+        weight: 1.0,
         fn: (g) => {
           g.fill(0);
           const walks = 8 + ((Math.random() * 8) | 0);
@@ -290,6 +308,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'lines-h',
+        weight: 0.6,
         fn: (g) => {
           for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
           const lines = 12 + ((Math.random() * 12) | 0);
@@ -307,6 +326,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'lines-v',
+        weight: 0.6,
         fn: (g) => {
           for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
           const lines = 12 + ((Math.random() * 12) | 0);
@@ -324,6 +344,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'bullseye',
+        weight: 0.6,
         fn: (g) => {
           const cx = W / 2;
           const cy = H / 2;
@@ -343,6 +364,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'dots',
+        weight: 0.6,
         fn: (g) => {
           for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
           const spacing = 8 + ((Math.random() * 12) | 0);
@@ -355,6 +377,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'clusters',
+        weight: 1.0,
         fn: (g) => {
           for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
           const groups = 12 + ((Math.random() * 12) | 0);
@@ -377,6 +400,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'waves',
+        weight: 1.0,
         fn: (g) => {
           const freq = 0.05 + Math.random() * 0.1;
           const amp = 6 + Math.random() * 12;
@@ -393,6 +417,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'voronoi',
+        weight: 1.0,
         fn: (g) => {
           const k = 6 + ((Math.random() * 8) | 0);
           const sx = new Int32Array(k);
@@ -420,6 +445,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'anti-diagonal',
+        weight: 0.6,
         fn: (g) => {
           for (let y = 0; y < H; y++) {
             for (let x = 0; x < W; x++) {
@@ -432,6 +458,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'spokes',
+        weight: 1.0,
         fn: (g) => {
           const cx = W / 2;
           const cy = H / 2;
@@ -448,6 +475,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'nested-boxes',
+        weight: 0.6,
         fn: (g) => {
           const cx = W / 2;
           const cy = H / 2;
@@ -463,6 +491,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'crosshatch',
+        weight: 0.6,
         fn: (g) => {
           const stepA = 5 + ((Math.random() * 7) | 0);
           const stepB = 5 + ((Math.random() * 7) | 0);
@@ -477,6 +506,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'chevrons',
+        weight: 0.6,
         fn: (g) => {
           const step = 6 + ((Math.random() * 8) | 0);
           for (let y = 0; y < H; y++) {
@@ -490,6 +520,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'patchwork',
+        weight: 0.6,
         fn: (g) => {
           const block = 6 + ((Math.random() * 10) | 0);
           const bw = Math.ceil(W / block);
@@ -508,6 +539,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'starbursts',
+        weight: 1.0,
         fn: (g) => {
           for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 2) | 0;
           const bursts = 4 + ((Math.random() * 5) | 0);
@@ -531,6 +563,7 @@ import Base from '../layouts/Base.astro';
       },
       {
         name: 'gradient-noise',
+        weight: 0.6,
         fn: (g) => {
           // Coarse-cell noise: 4×4 block of pixels share a state, so the seed
           // looks chunky/painterly compared to the per-cell uniform noise.
@@ -548,9 +581,252 @@ import Base from '../layouts/Base.astro';
           }
         },
       },
+      {
+        name: 'phase-gradient',
+        weight: 1.0,
+        fn: (g) => {
+          // Smooth phase ramp aligned with the rule: along the gradient
+          // direction, neighbors differ by exactly one state per period, so
+          // the rule immediately propagates traveling waves across the field.
+          const angle = Math.random() * Math.PI * 2;
+          const fx = Math.cos(angle);
+          const fy = Math.sin(angle);
+          const period = 4 + Math.random() * 6;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const v = (x * fx + y * fy) / period;
+              const base = ((Math.floor(v) % N) + N) % N;
+              g[y * W + x] = (base + ((Math.random() * 2) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'defect-pairs',
+        weight: 1.0,
+        fn: (g) => {
+          // Phase singularities: state cycles 0..N-1 around each center.
+          // Canonical spiral-core seed for cyclic CA — every center spawns
+          // a stable rotating wavefront immediately.
+          const k = 3 + ((Math.random() * 4) | 0);
+          const cxs = new Int32Array(k);
+          const cys = new Int32Array(k);
+          const sign = new Int8Array(k);
+          const offset = new Uint8Array(k);
+          for (let i = 0; i < k; i++) {
+            cxs[i] = (Math.random() * W) | 0;
+            cys[i] = (Math.random() * H) | 0;
+            sign[i] = Math.random() < 0.5 ? 1 : -1;
+            offset[i] = (Math.random() * N) | 0;
+          }
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              let bestD = Infinity;
+              let bestI = 0;
+              for (let i = 0; i < k; i++) {
+                const dx = x - cxs[i];
+                const dy = y - cys[i];
+                const d = dx * dx + dy * dy;
+                if (d < bestD) { bestD = d; bestI = i; }
+              }
+              const dx = x - cxs[bestI];
+              const dy = y - cys[bestI];
+              const a = Math.atan2(dy, dx) * sign[bestI];
+              const phase = (a / (Math.PI * 2) + 1) * N;
+              g[y * W + x] = ((Math.floor(phase) + offset[bestI]) % N + N) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'reaction',
+        weight: 1.0,
+        fn: (g) => {
+          // Two interpenetrating fields: a "hot" region drawing from high
+          // states and a "cool" region drawing from low states, separated
+          // by a coarse mask. Their boundary spawns colliding wavefronts.
+          const block = 18 + ((Math.random() * 18) | 0);
+          const cw = Math.ceil(W / block);
+          const ch = Math.ceil(H / block);
+          const mask = new Uint8Array(cw * ch);
+          for (let i = 0; i < mask.length; i++) mask[i] = Math.random() < 0.5 ? 1 : 0;
+          const hi = (N >> 1) + 1;
+          for (let y = 0; y < H; y++) {
+            const by = (y / block) | 0;
+            for (let x = 0; x < W; x++) {
+              const bx = (x / block) | 0;
+              const m = mask[by * cw + bx];
+              g[y * W + x] = m
+                ? hi + ((Math.random() * (N - hi)) | 0)
+                : ((Math.random() * hi) | 0);
+            }
+          }
+        },
+      },
+      {
+        name: 'value-noise',
+        weight: 1.0,
+        fn: (g) => {
+          // Multi-octave bilinear value noise — smooth, organic gradients
+          // in state space (vs. gradient-noise's blocky 4×4 cells).
+          const octaves = 3;
+          type Layer = { vals: Float32Array; cw: number; block: number };
+          const layers: Layer[] = [];
+          for (let o = 0; o < octaves; o++) {
+            const block = 32 >> o;
+            const lcw = Math.ceil(W / block) + 1;
+            const lch = Math.ceil(H / block) + 1;
+            const vals = new Float32Array(lcw * lch);
+            for (let i = 0; i < vals.length; i++) vals[i] = Math.random();
+            layers.push({ vals, cw: lcw, block });
+          }
+          let totalAmp = 0;
+          for (let o = 0; o < octaves; o++) totalAmp += 1 / (1 << o);
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              let v = 0;
+              for (let o = 0; o < octaves; o++) {
+                const { vals, cw: lcw, block } = layers[o];
+                const fx = x / block;
+                const fy = y / block;
+                const ix = fx | 0;
+                const iy = fy | 0;
+                const tx = fx - ix;
+                const ty = fy - iy;
+                const a = vals[iy * lcw + ix];
+                const b = vals[iy * lcw + ix + 1];
+                const c = vals[(iy + 1) * lcw + ix];
+                const d = vals[(iy + 1) * lcw + ix + 1];
+                const ab = a + (b - a) * tx;
+                const cd = c + (d - c) * tx;
+                v += (ab + (cd - ab) * ty) / (1 << o);
+              }
+              v /= totalAmp;
+              g[y * W + x] = ((v * N) | 0) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'swirl',
+        weight: 1.0,
+        fn: (g) => {
+          // Log-spiral phase: combines angular and radial phase so that
+          // following any spiral arm advances state monotonically — already
+          // most of the way to the rule's natural attractor.
+          const cx = W / 2 + (Math.random() - 0.5) * W * 0.3;
+          const cy = H / 2 + (Math.random() - 0.5) * H * 0.3;
+          const k = 0.4 + Math.random() * 0.6;
+          const arms = 1 + ((Math.random() * 4) | 0);
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const dx = x - cx;
+              const dy = y - cy;
+              const r = Math.sqrt(dx * dx + dy * dy) + 1;
+              const a = Math.atan2(dy, dx);
+              const phase = a * arms + Math.log(r) * k;
+              const base = Math.floor(phase * N / (Math.PI * 2));
+              g[y * W + x] = (((base % N) + N) % N + ((Math.random() * 2) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'fractures',
+        weight: 1.0,
+        fn: (g) => {
+          // Voronoi cell *boundaries* get high states; interiors stay low.
+          // Reads as a network of cracks that the rule pushes inward.
+          const k = 10 + ((Math.random() * 12) | 0);
+          const sx = new Int32Array(k);
+          const sy = new Int32Array(k);
+          for (let i = 0; i < k; i++) {
+            sx[i] = (Math.random() * W) | 0;
+            sy[i] = (Math.random() * H) | 0;
+          }
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              let d1 = Infinity;
+              let d2 = Infinity;
+              for (let i = 0; i < k; i++) {
+                const dx = x - sx[i];
+                const dy = y - sy[i];
+                const d = dx * dx + dy * dy;
+                if (d < d1) { d2 = d1; d1 = d; }
+                else if (d < d2) { d2 = d; }
+              }
+              const edge = Math.sqrt(d2) - Math.sqrt(d1);
+              g[y * W + x] = edge < 2
+                ? (N - 1 - ((Math.random() * 2) | 0) + N) % N
+                : (Math.random() * 2) | 0;
+            }
+          }
+        },
+      },
+      {
+        name: 'meander',
+        weight: 1.0,
+        fn: (g) => {
+          // A few sinuous ribbons painted across a quiet background, each
+          // with a drifting state along its length so the wavefront kicks
+          // off pre-aligned with the rule.
+          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 2) | 0;
+          const ribbons = 3 + ((Math.random() * 4) | 0);
+          for (let r = 0; r < ribbons; r++) {
+            const horiz = Math.random() < 0.5;
+            const along = horiz ? W : H;
+            const across = horiz ? H : W;
+            const phase = Math.random() * Math.PI * 2;
+            const freq = (1 + Math.random() * 2) * Math.PI * 2 / along;
+            const amp = across * (0.1 + Math.random() * 0.2);
+            const center = across * (0.2 + Math.random() * 0.6);
+            const thickness = 2 + ((Math.random() * 4) | 0);
+            const s = (Math.random() * N) | 0;
+            const drift = Math.random() < 0.5 ? 1 : -1;
+            for (let t = 0; t < along; t++) {
+              const off = center + Math.sin(t * freq + phase) * amp;
+              const baseS = (s + ((t / 20) | 0) * drift + N * 8) % N;
+              for (let w = -thickness; w <= thickness; w++) {
+                const main = (off + w) | 0;
+                if (main < 0 || main >= across) continue;
+                const idx = horiz ? main * W + t : t * W + main;
+                g[idx] = baseS;
+              }
+            }
+          }
+        },
+      },
     ];
 
-    let seedIdx = (Math.random() * seeders.length) | 0;
+    // Cumulative weights for weighted random selection. Static-ish seeders
+    // are weighted ~0.6 vs ~1.0 for dynamic ones.
+    const cumWeights = new Float32Array(seeders.length);
+    {
+      let acc = 0;
+      for (let i = 0; i < seeders.length; i++) {
+        acc += seeders[i].weight;
+        cumWeights[i] = acc;
+      }
+    }
+    const totalWeight = cumWeights[cumWeights.length - 1];
+
+    function pickSeederIdx(exclude: number): number {
+      // Weighted reservoir of one with rejection of the current index.
+      for (let tries = 0; tries < 16; tries++) {
+        const r = Math.random() * totalWeight;
+        let lo = 0;
+        let hi = cumWeights.length - 1;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if (cumWeights[mid] < r) lo = mid + 1;
+          else hi = mid;
+        }
+        if (lo !== exclude) return lo;
+      }
+      return (exclude + 1) % seeders.length;
+    }
+
+    let seedIdx = pickSeederIdx(-1);
     let currentStops: RGB[] = pickStops();
     let palette: RGB[] = buildPalette([paper, ...currentStops]);
 
@@ -577,20 +853,22 @@ import Base from '../layouts/Base.astro';
     }
     syncAccent();
 
+    // TEMP: seed name label, remove once seed library is tuned.
+    const seedLabel = document.getElementById('bg-seed-label');
+    function syncSeedLabel() {
+      if (seedLabel) seedLabel.textContent = seeders[seedIdx].name;
+    }
+
     function applyCycle() {
       currentStops = pickStops();
       palette = buildPalette([paper, ...currentStops]);
       seeders[seedIdx].fn(grid);
       syncAccent();
+      syncSeedLabel();
     }
 
     function advanceCycle() {
-      // Pick a different seeder than the current one.
-      if (seeders.length > 1) {
-        let next = seedIdx;
-        while (next === seedIdx) next = (Math.random() * seeders.length) | 0;
-        seedIdx = next;
-      }
+      seedIdx = pickSeederIdx(seedIdx);
       applyCycle();
     }
 
