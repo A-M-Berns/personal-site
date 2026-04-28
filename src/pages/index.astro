@@ -20,11 +20,13 @@ import Base from '../layouts/Base.astro';
 </Base>
 
 <script>
-  // Background cellular-automaton stage. Cycles through several algorithms
-  // on a periodic reseed; clicking sets the clicked cell to max state.
+  // Cyclic CA (Moore neighborhood, 8 states). Each cycle pairs one of several
+  // multi-stop palettes with a different seeding pattern, so the field looks
+  // qualitatively different on every reseed instead of just re-rolling noise.
   const canvas = document.getElementById('bg-canvas') as HTMLCanvasElement | null;
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
+    const N = 8;
     const CELL_PX = 5;
     let W = 0;
     let H = 0;
@@ -33,13 +35,6 @@ import Base from '../layouts/Base.astro';
     let img: ImageData | null = null;
 
     type RGB = [number, number, number];
-    type Algo = {
-      name: string;
-      N: number;
-      hot: string;
-      seed: (g: Uint8Array) => void;
-      step: (g: Uint8Array, n: Uint8Array) => void;
-    };
 
     const styles = getComputedStyle(document.documentElement);
     const paperHex = (styles.getPropertyValue('--paper').trim() || '#0e0e10');
@@ -51,154 +46,118 @@ import Base from '../layouts/Base.astro';
       return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
     }
 
-    const c0 = parseHex(paperHex);
+    const paper = parseHex(paperHex);
 
-    function buildPalette(hotHex: string, N: number): RGB[] {
-      const c1 = parseHex(hotHex);
+    // Each scheme is paper + 4 hot stops (5 colors total). All visit cyan but
+    // diverge through different secondary harmonies.
+    const schemes: string[][] = [
+      // ice: deep navy → cobalt → cyan → pale ice
+      ['#142a6e', '#2a6fd6', '#4ad6ff', '#d6f5ff'],
+      // tropic: deep teal → cyan → mint → pale yellow
+      ['#0e5a5a', '#4ad6ff', '#9af7c8', '#fff5b3'],
+      // dusk: indigo → magenta → cyan → pale sky
+      ['#3b1a8a', '#e54adc', '#4ad6ff', '#cfe9ff'],
+      // neon: violet → cyan → emerald → lime
+      ['#5b2bd6', '#4ad6ff', '#3ad48a', '#d6ff5a'],
+      // coral: deep blue → cyan → coral → amber
+      ['#0a3a6e', '#4ad6ff', '#ff7a85', '#ffc14a'],
+    ];
+
+    function buildPalette(stops: RGB[]): RGB[] {
+      // stops[0] is paper; the rest are hot stops. Returns N entries.
+      const segments = stops.length - 1;
       const out: RGB[] = [];
       for (let i = 0; i < N; i++) {
-        const t = N === 1 ? 1 : i / (N - 1);
-        // Lower gamma -> brighter midpoints, more vibrant overall.
-        const e = Math.pow(t, 0.65);
+        const t = i / (N - 1);
+        const segF = t * segments;
+        const seg = Math.min(Math.floor(segF), segments - 1);
+        const lt = segF - seg;
+        const a = stops[seg];
+        const b = stops[seg + 1];
         out.push([
-          Math.round(c0[0] + (c1[0] - c0[0]) * e),
-          Math.round(c0[1] + (c1[1] - c0[1]) * e),
-          Math.round(c0[2] + (c1[2] - c0[2]) * e),
+          Math.round(a[0] + (b[0] - a[0]) * lt),
+          Math.round(a[1] + (b[1] - a[1]) * lt),
+          Math.round(a[2] + (b[2] - a[2]) * lt),
         ]);
       }
       return out;
     }
 
-    const algos: Algo[] = [
+    type Seeder = { name: string; fn: (g: Uint8Array) => void };
+    const seeders: Seeder[] = [
       {
-        name: 'cyclic-vn',
-        N: 14,
-        hot: '#ff6648',
-        seed: (g) => { for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 14) | 0; },
-        step: (g, n) => {
-          const N = 14;
+        name: 'noise',
+        fn: (g) => { for (let i = 0; i < g.length; i++) g[i] = (Math.random() * N) | 0; },
+      },
+      {
+        name: 'sparse',
+        fn: (g) => {
+          g.fill(0);
+          const k = Math.floor(g.length * 0.02);
+          for (let i = 0; i < k; i++) g[(Math.random() * g.length) | 0] = (Math.random() * N) | 0;
+        },
+      },
+      {
+        name: 'bands',
+        fn: (g) => {
+          const bands = 6 + ((Math.random() * 6) | 0);
           for (let y = 0; y < H; y++) {
-            const yU = ((y - 1 + H) % H) * W;
-            const yD = ((y + 1) % H) * W;
-            const yC = y * W;
             for (let x = 0; x < W; x++) {
-              const xL = (x - 1 + W) % W;
-              const xR = (x + 1) % W;
-              const s = g[yC + x];
-              const t = (s + 1) % N;
-              n[yC + x] = (
-                g[yU + x] === t ||
-                g[yD + x] === t ||
-                g[yC + xL] === t ||
-                g[yC + xR] === t
-              ) ? t : s;
+              const b = ((x / W) * bands) | 0;
+              g[y * W + x] = (b + ((Math.random() * 2) | 0)) % N;
             }
           }
         },
       },
       {
-        name: 'cyclic-moore',
-        N: 8,
-        hot: '#4ad6ff',
-        seed: (g) => { for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 8) | 0; },
-        step: (g, n) => {
-          const N = 8;
-          for (let y = 0; y < H; y++) {
-            const yU = ((y - 1 + H) % H) * W;
-            const yD = ((y + 1) % H) * W;
-            const yC = y * W;
-            for (let x = 0; x < W; x++) {
-              const xL = (x - 1 + W) % W;
-              const xR = (x + 1) % W;
-              const s = g[yC + x];
-              const t = (s + 1) % N;
-              const found =
-                g[yU + xL] === t || g[yU + x] === t || g[yU + xR] === t ||
-                g[yC + xL] === t ||                       g[yC + xR] === t ||
-                g[yD + xL] === t || g[yD + x] === t || g[yD + xR] === t;
-              n[yC + x] = found ? t : s;
+        name: 'blobs',
+        fn: (g) => {
+          g.fill(0);
+          const blobs = 3 + ((Math.random() * 4) | 0);
+          for (let k = 0; k < blobs; k++) {
+            const cx = (Math.random() * W) | 0;
+            const cy = (Math.random() * H) | 0;
+            const r = 8 + ((Math.random() * 18) | 0);
+            const r2 = r * r;
+            for (let dy = -r; dy <= r; dy++) {
+              for (let dx = -r; dx <= r; dx++) {
+                if (dx * dx + dy * dy > r2) continue;
+                const x = ((cx + dx) % W + W) % W;
+                const y = ((cy + dy) % H + H) % H;
+                g[y * W + x] = (Math.random() * N) | 0;
+              }
             }
           }
         },
       },
       {
-        name: 'brians-brain',
-        // 0 = off, 1 = refractory, 2 = firing
-        N: 3,
-        hot: '#ff4adc',
-        seed: (g) => { for (let i = 0; i < g.length; i++) g[i] = Math.random() < 0.3 ? 2 : 0; },
-        step: (g, n) => {
+        name: 'diagonal',
+        fn: (g) => {
           for (let y = 0; y < H; y++) {
-            const yU = ((y - 1 + H) % H) * W;
-            const yD = ((y + 1) % H) * W;
-            const yC = y * W;
             for (let x = 0; x < W; x++) {
-              const xL = (x - 1 + W) % W;
-              const xR = (x + 1) % W;
-              const i = yC + x;
-              const s = g[i];
-              if (s === 2) { n[i] = 1; continue; }
-              if (s === 1) { n[i] = 0; continue; }
-              let count = 0;
-              if (g[yU + xL] === 2) count++;
-              if (g[yU + x] === 2) count++;
-              if (g[yU + xR] === 2) count++;
-              if (g[yC + xL] === 2) count++;
-              if (g[yC + xR] === 2) count++;
-              if (g[yD + xL] === 2) count++;
-              if (g[yD + x] === 2) count++;
-              if (g[yD + xR] === 2) count++;
-              n[i] = count === 2 ? 2 : 0;
-            }
-          }
-        },
-      },
-      {
-        name: 'life-trails',
-        // 0..N-2 = decay levels, N-1 = alive
-        N: 10,
-        hot: '#a6ff4a',
-        seed: (g) => {
-          const ALIVE = 9;
-          for (let i = 0; i < g.length; i++) g[i] = Math.random() < 0.32 ? ALIVE : 0;
-        },
-        step: (g, n) => {
-          const ALIVE = 9;
-          for (let y = 0; y < H; y++) {
-            const yU = ((y - 1 + H) % H) * W;
-            const yD = ((y + 1) % H) * W;
-            const yC = y * W;
-            for (let x = 0; x < W; x++) {
-              const xL = (x - 1 + W) % W;
-              const xR = (x + 1) % W;
-              const i = yC + x;
-              let count = 0;
-              if (g[yU + xL] === ALIVE) count++;
-              if (g[yU + x] === ALIVE) count++;
-              if (g[yU + xR] === ALIVE) count++;
-              if (g[yC + xL] === ALIVE) count++;
-              if (g[yC + xR] === ALIVE) count++;
-              if (g[yD + xL] === ALIVE) count++;
-              if (g[yD + x] === ALIVE) count++;
-              if (g[yD + xR] === ALIVE) count++;
-              const cur = g[i];
-              const isAlive = cur === ALIVE;
-              if (isAlive && (count === 2 || count === 3)) n[i] = ALIVE;
-              else if (!isAlive && count === 3) n[i] = ALIVE;
-              else n[i] = cur > 0 ? cur - 1 : 0;
+              const t = (x + y) / (W + H);
+              const base = (t * N) | 0;
+              g[y * W + x] = (base + ((Math.random() * 3) | 0)) % N;
             }
           }
         },
       },
     ];
 
-    let algoIdx = (Math.random() * algos.length) | 0;
-    let palette: RGB[] = buildPalette(algos[algoIdx].hot, algos[algoIdx].N);
+    let schemeIdx = (Math.random() * schemes.length) | 0;
+    let seedIdx = (Math.random() * seeders.length) | 0;
+    let palette: RGB[] = buildPalette([paper, ...schemes[schemeIdx].map(parseHex)]);
 
-    function applyAlgoSeed() {
-      const a = algos[algoIdx];
-      palette = buildPalette(a.hot, a.N);
-      a.seed(grid);
+    function applyCycle() {
+      palette = buildPalette([paper, ...schemes[schemeIdx].map(parseHex)]);
+      seeders[seedIdx].fn(grid);
+    }
+
+    function advanceCycle() {
+      schemeIdx = (schemeIdx + 1) % schemes.length;
+      // step seed by 2 so the (scheme, seed) pairing isn't locked.
+      seedIdx = (seedIdx + 2) % seeders.length;
+      applyCycle();
     }
 
     function resize() {
@@ -209,11 +168,26 @@ import Base from '../layouts/Base.astro';
       grid = new Uint8Array(W * H);
       next = new Uint8Array(W * H);
       img = ctx.createImageData(W, H);
-      applyAlgoSeed();
+      applyCycle();
     }
 
     function step() {
-      algos[algoIdx].step(grid, next);
+      for (let y = 0; y < H; y++) {
+        const yU = ((y - 1 + H) % H) * W;
+        const yD = ((y + 1) % H) * W;
+        const yC = y * W;
+        for (let x = 0; x < W; x++) {
+          const xL = (x - 1 + W) % W;
+          const xR = (x + 1) % W;
+          const s = grid[yC + x];
+          const t = (s + 1) % N;
+          const found =
+            grid[yU + xL] === t || grid[yU + x] === t || grid[yU + xR] === t ||
+            grid[yC + xL] === t ||                       grid[yC + xR] === t ||
+            grid[yD + xL] === t || grid[yD + x] === t || grid[yD + xR] === t;
+          next[yC + x] = found ? t : s;
+        }
+      }
       const tmp = grid;
       grid = next;
       next = tmp;
@@ -242,15 +216,19 @@ import Base from '../layouts/Base.astro';
       resizeTimer = window.setTimeout(() => { resize(); draw(); }, 200);
     });
 
-    // Click to drop a max-brightness cell — pattern evolves outward from it.
-    canvas.addEventListener('click', (e) => {
+    // Hover paints a trail of max-state cells; the simulation step picks
+    // them up on the next tick. No draw() call here — the animation loop
+    // handles redraw within ~80ms.
+    let lastPaintTs = 0;
+    canvas.addEventListener('pointermove', (e) => {
+      const now = performance.now();
+      if (now - lastPaintTs < 16) return;
+      lastPaintTs = now;
       const rect = canvas.getBoundingClientRect();
       const gx = Math.floor(((e.clientX - rect.left) / rect.width) * W);
       const gy = Math.floor(((e.clientY - rect.top) / rect.height) * H);
       if (gx < 0 || gx >= W || gy < 0 || gy >= H) return;
-      const maxState = algos[algoIdx].N - 1;
-      grid[gy * W + gx] = maxState;
-      draw();
+      grid[gy * W + gx] = N - 1;
     });
 
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -267,14 +245,12 @@ import Base from '../layouts/Base.astro';
       };
       requestAnimationFrame(loop);
 
-      // Periodically fade out, advance to the next algorithm, reseed, fade in.
-      const RESEED_MS = 15000;
+      const RESEED_MS = 75000;
       const FADE_MS = 1500;
       setInterval(() => {
         canvas.style.opacity = '0';
         window.setTimeout(() => {
-          algoIdx = (algoIdx + 1) % algos.length;
-          applyAlgoSeed();
+          advanceCycle();
           canvas.style.opacity = '';
         }, FADE_MS);
       }, RESEED_MS);
