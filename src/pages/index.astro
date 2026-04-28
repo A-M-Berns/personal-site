@@ -6,23 +6,34 @@ const notes = (await getCollection('notes', ({ data }) => !data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 const fmt = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'short', day: 'numeric' });
 ---
-<Base title="Anson Berns" description="Independent research, notes, and writings.">
+<Base title="A. M. Berns" description="Independent research, personal writing, and music.">
   <section class="hero">
-    <h1>Anson Berns</h1>
-    <p class="lede">
-      Independent research and notes. Longer essays and cross-posts from LessWrong below.
-    </p>
+    <h1>A. M. Berns</h1>
   </section>
-  {notes.length > 0 && (
-    <section>
+
+  <section class="home-section" id="about">
+    <h2>About</h2>
+    <p>A short bio goes here.</p>
+  </section>
+
+  <section class="home-section" id="writing">
+    <h2>Personal Writing</h2>
+    {notes.length > 0 ? (
       <ul class="note-list">
         {notes.map((n) => (
           <li>
             <time datetime={n.data.date.toISOString()}>{fmt.format(n.data.date)}</time>
-            <a href={`/notes/${n.id}/`}>{n.data.title}</a>
+            <span>{n.data.title}</span>
           </li>
         ))}
       </ul>
-    </section>
-  )}
+    ) : (
+      <p>Nothing posted yet.</p>
+    )}
+  </section>
+
+  <section class="home-section" id="music">
+    <h2>Music</h2>
+    <p>Music section — to be filled in.</p>
+  </section>
 </Base>
