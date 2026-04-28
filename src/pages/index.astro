@@ -7,17 +7,25 @@ const notes = (await getCollection('notes', ({ data }) => !data.draft))
 const fmt = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'short', day: 'numeric' });
 const latest = notes.slice(0, 3);
 ---
-<Base title="A. M. Berns" description="Independent research, personal writing, and music.">
+<Base title="A. M. Berns" description="Independent research, personal writing, Lean, and other.">
   <section class="hero">
     <h1>A<span class="dot">.</span> M<span class="dot">.</span> Berns</h1>
     <p class="lede">
-      Independent research, personal writing, and music.
+      Independent research, personal writing, Lean, and other.
     </p>
   </section>
 
   <section class="home-section">
     <header>
-      <h2>Recent writing</h2>
+      <h2>About</h2>
+      <a class="more" href="/about">More →</a>
+    </header>
+    <p>A short bio goes here.</p>
+  </section>
+
+  <section class="home-section">
+    <header>
+      <h2>Writing</h2>
       <a class="more" href="/writing">All writing →</a>
     </header>
     {latest.length > 0 ? (
@@ -32,5 +40,21 @@ const latest = notes.slice(0, 3);
     ) : (
       <p class="empty">Nothing posted yet.</p>
     )}
+  </section>
+
+  <section class="home-section">
+    <header>
+      <h2>Lean</h2>
+      <a class="more" href="/lean">More →</a>
+    </header>
+    <p>Mathlib contributions and Lean 4 work.</p>
+  </section>
+
+  <section class="home-section">
+    <header>
+      <h2>Other</h2>
+      <a class="more" href="/other">More →</a>
+    </header>
+    <p>Music, side projects, and miscellany.</p>
   </section>
 </Base>

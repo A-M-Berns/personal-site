@@ -13,7 +13,8 @@ const isActive = (href: string) =>
 const navItems = [
   { href: '/about', label: 'About' },
   { href: '/writing', label: 'Writing' },
-  { href: '/music', label: 'Music' },
+  { href: '/lean', label: 'Lean' },
+  { href: '/other', label: 'Other' },
 ];
 ---
 <!doctype html>
@@ -27,9 +28,6 @@ const navItems = [
   <body>
     {showNav && (
       <header class="site-header">
-        <a class="wordmark" href="/" aria-label="A. M. Berns — home">
-          <span>A</span><span class="dot">.</span> <span>M</span><span class="dot">.</span> <span>Berns</span>
-        </a>
         <nav class="site-nav">
           {navItems.map((item) => (
             <a href={item.href} class:list={[{ active: isActive(item.href) }]}>{item.label}</a>
