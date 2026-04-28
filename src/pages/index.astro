@@ -320,19 +320,6 @@ import Base from '../layouts/Base.astro';
         },
       },
       {
-        name: 'anti-diagonal',
-        weight: 0.6,
-        fn: (g) => {
-          for (let y = 0; y < H; y++) {
-            for (let x = 0; x < W; x++) {
-              const t = (x + (H - y)) / (W + H);
-              const base = (t * N) | 0;
-              g[y * W + x] = (base + ((Math.random() * 3) | 0)) % N;
-            }
-          }
-        },
-      },
-      {
         name: 'spokes',
         weight: 1.0,
         fn: (g) => {
@@ -584,38 +571,6 @@ import Base from '../layouts/Base.astro';
         },
       },
       {
-        name: 'fractures',
-        weight: 1.0,
-        fn: (g) => {
-          // Voronoi cell *boundaries* get high states; interiors stay low.
-          // Reads as a network of cracks that the rule pushes inward.
-          const k = 10 + ((Math.random() * 12) | 0);
-          const sx = new Int32Array(k);
-          const sy = new Int32Array(k);
-          for (let i = 0; i < k; i++) {
-            sx[i] = (Math.random() * W) | 0;
-            sy[i] = (Math.random() * H) | 0;
-          }
-          for (let y = 0; y < H; y++) {
-            for (let x = 0; x < W; x++) {
-              let d1 = Infinity;
-              let d2 = Infinity;
-              for (let i = 0; i < k; i++) {
-                const dx = x - sx[i];
-                const dy = y - sy[i];
-                const d = dx * dx + dy * dy;
-                if (d < d1) { d2 = d1; d1 = d; }
-                else if (d < d2) { d2 = d; }
-              }
-              const edge = Math.sqrt(d2) - Math.sqrt(d1);
-              g[y * W + x] = edge < 2
-                ? (N - 1 - ((Math.random() * 2) | 0) + N) % N
-                : (Math.random() * 2) | 0;
-            }
-          }
-        },
-      },
-      {
         name: 'interference',
         weight: 1.0,
         fn: (g) => {
@@ -712,52 +667,6 @@ import Base from '../layouts/Base.astro';
         },
       },
       {
-        name: 'drift-field',
-        weight: 1.0,
-        fn: (g) => {
-          // Particles released across the canvas trace a coherent flow
-          // field (smoothed angle noise), painting an advancing state as
-          // they drift. The shared field gives every trail a related shape.
-          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 2) | 0;
-          const block = 24;
-          const cw = Math.ceil(W / block) + 1;
-          const ch = Math.ceil(H / block) + 1;
-          const angles = new Float32Array(cw * ch);
-          for (let i = 0; i < angles.length; i++) angles[i] = Math.random() * Math.PI * 2;
-          function fieldAt(x: number, y: number): number {
-            const fx = x / block;
-            const fy = y / block;
-            const ix = fx | 0;
-            const iy = fy | 0;
-            const tx = fx - ix;
-            const ty = fy - iy;
-            const a = angles[iy * cw + ix];
-            const b = angles[iy * cw + ix + 1];
-            const c = angles[(iy + 1) * cw + ix];
-            const d = angles[(iy + 1) * cw + ix + 1];
-            // Average via vectors so wraparound at 2π doesn't break.
-            const sx = Math.cos(a) * (1 - tx) * (1 - ty) + Math.cos(b) * tx * (1 - ty)
-                     + Math.cos(c) * (1 - tx) * ty + Math.cos(d) * tx * ty;
-            const sy = Math.sin(a) * (1 - tx) * (1 - ty) + Math.sin(b) * tx * (1 - ty)
-                     + Math.sin(c) * (1 - tx) * ty + Math.sin(d) * tx * ty;
-            return Math.atan2(sy, sx);
-          }
-          const particles = 40 + ((Math.random() * 40) | 0);
-          const startState = (Math.random() * N) | 0;
-          for (let p = 0; p < particles; p++) {
-            let x = Math.random() * W;
-            let y = Math.random() * H;
-            const len = 200 + ((Math.random() * 300) | 0);
-            for (let i = 0; i < len; i++) {
-              const a = fieldAt(x, y);
-              x = (x + Math.cos(a) + W) % W;
-              y = (y + Math.sin(a) + H) % H;
-              g[(y | 0) * W + (x | 0)] = (startState + ((i / 18) | 0)) % N;
-            }
-          }
-        },
-      },
-      {
         name: 'plasma',
         weight: 1.0,
         fn: (g) => {
@@ -815,6 +724,119 @@ import Base from '../layouts/Base.astro';
             for (let x = 0; x < W; x++) {
               const t = (buf[y * stride + x] - lo) / range;
               g[y * W + x] = (((t * N) | 0) % N + N) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'vortex-pair',
+        weight: 1.0,
+        fn: (g) => {
+          // Two counter-rotating phase singularities placed close together.
+          // The dipole phase (a1 - a2) gives a coherent wavefront emitted
+          // perpendicular to the axis between them.
+          const dist = 30 + Math.random() * 60;
+          const angle = Math.random() * Math.PI * 2;
+          const cx = W / 2 + (Math.random() - 0.5) * W * 0.3;
+          const cy = H / 2 + (Math.random() - 0.5) * H * 0.3;
+          const ax = cx + Math.cos(angle) * dist / 2;
+          const ay = cy + Math.sin(angle) * dist / 2;
+          const bx = cx - Math.cos(angle) * dist / 2;
+          const by = cy - Math.sin(angle) * dist / 2;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const a1 = Math.atan2(y - ay, x - ax);
+              const a2 = Math.atan2(y - by, x - bx);
+              const phase = (a1 - a2) / (Math.PI * 2);
+              const v = Math.floor(phase * N) % N;
+              g[y * W + x] = ((v + N) % N + ((Math.random() * 2) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'moire',
+        weight: 1.0,
+        fn: (g) => {
+          // Two plane sine waves with close frequencies — their sum has a
+          // beat envelope, so quantizing produces wide bands of fringes
+          // separated by quieter intervals.
+          const a1 = Math.random() * Math.PI * 2;
+          const a2 = a1 + (Math.random() - 0.5) * 0.4;
+          const p1 = 6 + Math.random() * 6;
+          const p2 = p1 * (0.92 + Math.random() * 0.06);
+          const fx1 = Math.cos(a1), fy1 = Math.sin(a1);
+          const fx2 = Math.cos(a2), fy2 = Math.sin(a2);
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const v = Math.sin((x * fx1 + y * fy1) / p1 * Math.PI * 2)
+                      + Math.sin((x * fx2 + y * fy2) / p2 * Math.PI * 2);
+              const t = (v + 2) / 4;
+              g[y * W + x] = (((t * N) | 0) + ((Math.random() * 2) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'basins',
+        weight: 1.0,
+        fn: (g) => {
+          // Voronoi cells, but state inside each cell forms concentric
+          // rings around its seed — every cell becomes a small target,
+          // already most of the way to a stable wave source.
+          const k = 8 + ((Math.random() * 10) | 0);
+          const sx = new Int32Array(k);
+          const sy = new Int32Array(k);
+          const ringW = new Float32Array(k);
+          const offset = new Uint8Array(k);
+          for (let i = 0; i < k; i++) {
+            sx[i] = (Math.random() * W) | 0;
+            sy[i] = (Math.random() * H) | 0;
+            ringW[i] = 3 + Math.random() * 4;
+            offset[i] = (Math.random() * N) | 0;
+          }
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              let bestD = Infinity;
+              let bestI = 0;
+              for (let i = 0; i < k; i++) {
+                const dx = x - sx[i];
+                const dy = y - sy[i];
+                const d = dx * dx + dy * dy;
+                if (d < bestD) { bestD = d; bestI = i; }
+              }
+              const r = Math.sqrt(bestD);
+              g[y * W + x] = (((r / ringW[bestI]) | 0) + offset[bestI]) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'stratified',
+        weight: 1.0,
+        fn: (g) => {
+          // Horizontal strata, each with its own phase-gradient direction
+          // and period. Strata boundaries become high-contrast interfaces
+          // that nucleate fronts.
+          const layers = 4 + ((Math.random() * 4) | 0);
+          type Dir = { fx: number; fy: number; period: number; offset: number };
+          const dirs: Dir[] = [];
+          for (let i = 0; i < layers; i++) {
+            const a = Math.random() * Math.PI * 2;
+            dirs.push({
+              fx: Math.cos(a),
+              fy: Math.sin(a),
+              period: 5 + Math.random() * 6,
+              offset: Math.random() * N,
+            });
+          }
+          for (let y = 0; y < H; y++) {
+            const layer = Math.min(layers - 1, ((y / H) * layers) | 0);
+            const d = dirs[layer];
+            for (let x = 0; x < W; x++) {
+              const v = (x * d.fx + y * d.fy) / d.period + d.offset;
+              const base = ((Math.floor(v) % N) + N) % N;
+              g[y * W + x] = (base + ((Math.random() * 2) | 0)) % N;
             }
           }
         },
