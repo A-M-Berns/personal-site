@@ -18,7 +18,24 @@ import Base from '../layouts/Base.astro';
     <a href="/other">Other</a>
   </nav>
 
-  <button id="bg-restart" class="bg-restart" type="button" aria-label="Reset background">Reset</button>
+  <div class="bg-controls">
+    <button id="bg-info" type="button" aria-label="About this animation">About this animation</button>
+    <button id="bg-restart" type="button" aria-label="Reset background">Reset</button>
+  </div>
+
+  <dialog id="bg-about" aria-labelledby="bg-about-title">
+    <button class="bg-about-close" type="button" aria-label="Close">×</button>
+    <h2 id="bg-about-title">About this animation</h2>
+    <p>
+      This is a cyclic cellular automaton on the Moore neighborhood. Each cell holds a state from 0 to 7; on every tick, a cell at state s advances to (s + 1) mod 8 if any of its eight neighbors is already at that next state. From a noisy or structured seed the field self-organizes into rotating spirals.
+    </p>
+    <p>
+      Every 75 seconds (or whenever you press Reset) the field fades out, picks a new seeding pattern from one of 21 — random noise, bands, blobs, walks, voronoi, and others — and a new four-color palette sampled from a 24-hue jewel-tone pool, one stop per luma quartile so the gradient always ramps smoothly.
+    </p>
+    <p>
+      Hover anywhere to paint a trail of cells at the brightest state. The trail color matches the current palette's hot color, and the dots in the title pick up the same hue.
+    </p>
+  </dialog>
 </Base>
 
 <script>
@@ -430,9 +447,19 @@ import Base from '../layouts/Base.astro';
     let seedIdx = (Math.random() * seeders.length) | 0;
     let palette: RGB[] = buildPalette([paper, ...pickStops()]);
 
+    function syncAccent() {
+      const hot = palette[N - 1];
+      document.documentElement.style.setProperty(
+        '--accent',
+        `rgb(${hot[0]}, ${hot[1]}, ${hot[2]})`,
+      );
+    }
+    syncAccent();
+
     function applyCycle() {
       palette = buildPalette([paper, ...pickStops()]);
       seeders[seedIdx].fn(grid);
+      syncAccent();
     }
 
     function advanceCycle() {
@@ -568,6 +595,15 @@ import Base from '../layouts/Base.astro';
     restartBtn?.addEventListener('click', () => {
       triggerCycle();
       scheduleAutoCycle();
+    });
+
+    const aboutDlg = document.getElementById('bg-about') as HTMLDialogElement | null;
+    const infoBtn = document.getElementById('bg-info');
+    infoBtn?.addEventListener('click', () => aboutDlg?.showModal());
+    aboutDlg?.querySelector('.bg-about-close')?.addEventListener('click', () => aboutDlg.close());
+    aboutDlg?.addEventListener('click', (e) => {
+      // Click on the backdrop (outside the dialog box) closes it.
+      if (e.target === aboutDlg) aboutDlg.close();
     });
 
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
