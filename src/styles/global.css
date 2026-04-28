@@ -342,6 +342,16 @@ a:focus-visible {
   color: var(--muted);
   position: relative;
   max-width: var(--note-side-width);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 0.15rem 0.25rem;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+.sidenote:hover,
+.marginnote:hover {
+  color: var(--ink);
+  background: #1a1a1d;
+  border-color: var(--rule);
 }
 .sidenote-quote {
   display: block;
@@ -381,12 +391,16 @@ a:focus-visible {
   left: 0.1rem;
   color: var(--accent);
   font-family: var(--sans);
-  transition: color 120ms ease, text-shadow 120ms ease;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.12rem;
+  transition: color 120ms ease, text-decoration-color 120ms ease;
 }
 .sidenote-number:hover::after,
 .sidenote-number:focus-visible::after {
   color: var(--ink);
-  text-shadow: 0 0 0.45rem rgba(200, 196, 186, 0.45);
+  text-decoration-color: currentColor;
 }
 .sidenote::before {
   content: counter(sidenote-counter);
