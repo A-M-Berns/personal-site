@@ -219,6 +219,20 @@ a:hover { color: var(--accent); }
 .home-nav a:nth-child(4):hover { color: var(--c8, var(--accent)); }
 
 /* --- Section page header --- */
+.home-link {
+  display: inline-block;
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-decoration: none;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.25rem 0.65rem;
+}
+.home-link:hover {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+
 .section-head {
   max-width: 60ch;
   margin-top: 1.5rem;
