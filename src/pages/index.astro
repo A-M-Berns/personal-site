@@ -226,29 +226,6 @@ import Base from '../layouts/Base.astro';
         },
       },
       {
-        name: 'spiral',
-        weight: 1.0,
-        fn: (g) => {
-          // Low-amplitude noise background so the spiral isn't drawn on a
-          // dead field — spiral cells are reinforced after this fill.
-          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
-          const cx = W / 2;
-          const cy = H / 2;
-          const turns = 6 + Math.random() * 4;
-          const maxR = Math.min(W, H) / 2;
-          const samples = Math.floor(maxR * turns * 6);
-          for (let i = 0; i < samples; i++) {
-            const t = i / samples;
-            const r = t * maxR;
-            const a = t * turns * Math.PI * 2;
-            const x = Math.round(cx + Math.cos(a) * r);
-            const y = Math.round(cy + Math.sin(a) * r);
-            if (x < 0 || x >= W || y < 0 || y >= H) continue;
-            g[y * W + x] = ((t * N) | 0) % N;
-          }
-        },
-      },
-      {
         name: 'rings',
         weight: 0.6,
         fn: (g) => {
@@ -285,84 +262,6 @@ import Base from '../layouts/Base.astro';
         },
       },
       {
-        name: 'walks',
-        weight: 1.0,
-        fn: (g) => {
-          g.fill(0);
-          const walks = 8 + ((Math.random() * 8) | 0);
-          for (let k = 0; k < walks; k++) {
-            let x = (Math.random() * W) | 0;
-            let y = (Math.random() * H) | 0;
-            const s = (Math.random() * N) | 0;
-            const len = 200 + ((Math.random() * 600) | 0);
-            for (let i = 0; i < len; i++) {
-              g[y * W + x] = s;
-              const d = (Math.random() * 4) | 0;
-              if (d === 0) x = (x + 1) % W;
-              else if (d === 1) x = (x - 1 + W) % W;
-              else if (d === 2) y = (y + 1) % H;
-              else y = (y - 1 + H) % H;
-            }
-          }
-        },
-      },
-      {
-        name: 'lines-h',
-        weight: 0.6,
-        fn: (g) => {
-          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
-          const lines = 12 + ((Math.random() * 12) | 0);
-          for (let i = 0; i < lines; i++) {
-            const y = (Math.random() * H) | 0;
-            const x0 = (Math.random() * W) | 0;
-            const len = 20 + ((Math.random() * (W * 0.6)) | 0);
-            const s = (Math.random() * N) | 0;
-            for (let j = 0; j < len; j++) {
-              const x = (x0 + j) % W;
-              g[y * W + x] = s;
-            }
-          }
-        },
-      },
-      {
-        name: 'lines-v',
-        weight: 0.6,
-        fn: (g) => {
-          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
-          const lines = 12 + ((Math.random() * 12) | 0);
-          for (let i = 0; i < lines; i++) {
-            const x = (Math.random() * W) | 0;
-            const y0 = (Math.random() * H) | 0;
-            const len = 20 + ((Math.random() * (H * 0.6)) | 0);
-            const s = (Math.random() * N) | 0;
-            for (let j = 0; j < len; j++) {
-              const y = (y0 + j) % H;
-              g[y * W + x] = s;
-            }
-          }
-        },
-      },
-      {
-        name: 'bullseye',
-        weight: 0.6,
-        fn: (g) => {
-          const cx = W / 2;
-          const cy = H / 2;
-          const ringW = 6 + ((Math.random() * 8) | 0);
-          for (let y = 0; y < H; y++) {
-            for (let x = 0; x < W; x++) {
-              const dx = x - cx;
-              const dy = y - cy;
-              const r = Math.sqrt(dx * dx + dy * dy);
-              const idx = (r / ringW) | 0;
-              const base = (idx & 1) === 0 ? (N - 1) : 0;
-              // Sprinkle random states to break the rigid binary rings.
-              g[y * W + x] = Math.random() < 0.15 ? ((Math.random() * N) | 0) : base;
-            }
-          }
-        },
-      },
-      {
         name: 'dots',
         weight: 0.6,
         fn: (g) => {
@@ -371,29 +270,6 @@ import Base from '../layouts/Base.astro';
           for (let y = spacing >> 1; y < H; y += spacing) {
             for (let x = spacing >> 1; x < W; x += spacing) {
               g[y * W + x] = (Math.random() * N) | 0;
-            }
-          }
-        },
-      },
-      {
-        name: 'clusters',
-        weight: 1.0,
-        fn: (g) => {
-          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
-          const groups = 12 + ((Math.random() * 12) | 0);
-          for (let k = 0; k < groups; k++) {
-            const cx = (Math.random() * W) | 0;
-            const cy = (Math.random() * H) | 0;
-            const r = 2 + ((Math.random() * 5) | 0);
-            const r2 = r * r;
-            const s = (Math.random() * N) | 0;
-            for (let dy = -r; dy <= r; dy++) {
-              for (let dx = -r; dx <= r; dx++) {
-                if (dx * dx + dy * dy > r2) continue;
-                const x = ((cx + dx) % W + W) % W;
-                const y = ((cy + dy) % H + H) % H;
-                g[y * W + x] = s;
-              }
             }
           }
         },
@@ -533,30 +409,6 @@ import Base from '../layouts/Base.astro';
               const bx = (x / block) | 0;
               const cell = states[by * bw + bx];
               g[y * W + x] = (cell + (Math.random() < 0.08 ? ((Math.random() * N) | 0) : 0)) % N;
-            }
-          }
-        },
-      },
-      {
-        name: 'starbursts',
-        weight: 1.0,
-        fn: (g) => {
-          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 2) | 0;
-          const bursts = 4 + ((Math.random() * 5) | 0);
-          for (let k = 0; k < bursts; k++) {
-            const cx = (Math.random() * W) | 0;
-            const cy = (Math.random() * H) | 0;
-            const rays = 5 + ((Math.random() * 6) | 0);
-            const len = 14 + ((Math.random() * 28) | 0);
-            const s = (Math.random() * N) | 0;
-            for (let r = 0; r < rays; r++) {
-              const a = (r / rays) * Math.PI * 2;
-              for (let i = 0; i < len; i++) {
-                const x = Math.round(cx + Math.cos(a) * i);
-                const y = Math.round(cy + Math.sin(a) * i);
-                if (x < 0 || x >= W || y < 0 || y >= H) continue;
-                g[y * W + x] = (s + r) % N;
-              }
             }
           }
         },
@@ -764,34 +616,205 @@ import Base from '../layouts/Base.astro';
         },
       },
       {
-        name: 'meander',
+        name: 'interference',
         weight: 1.0,
         fn: (g) => {
-          // A few sinuous ribbons painted across a quiet background, each
-          // with a drifting state along its length so the wavefront kicks
-          // off pre-aligned with the rule.
-          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 2) | 0;
-          const ribbons = 3 + ((Math.random() * 4) | 0);
-          for (let r = 0; r < ribbons; r++) {
-            const horiz = Math.random() < 0.5;
-            const along = horiz ? W : H;
-            const across = horiz ? H : W;
-            const phase = Math.random() * Math.PI * 2;
-            const freq = (1 + Math.random() * 2) * Math.PI * 2 / along;
-            const amp = across * (0.1 + Math.random() * 0.2);
-            const center = across * (0.2 + Math.random() * 0.6);
-            const thickness = 2 + ((Math.random() * 4) | 0);
-            const s = (Math.random() * N) | 0;
-            const drift = Math.random() < 0.5 ? 1 : -1;
-            for (let t = 0; t < along; t++) {
-              const off = center + Math.sin(t * freq + phase) * amp;
-              const baseS = (s + ((t / 20) | 0) * drift + N * 8) % N;
-              for (let w = -thickness; w <= thickness; w++) {
-                const main = (off + w) | 0;
-                if (main < 0 || main >= across) continue;
-                const idx = horiz ? main * W + t : t * W + main;
-                g[idx] = baseS;
+          // Sum of 3 plane waves at random angles, quantized into states.
+          // Produces hex-like phase landscapes with nucleation sites where
+          // the sum has its sharpest gradient.
+          const waves = 3;
+          const dirs: { fx: number; fy: number; period: number }[] = [];
+          for (let i = 0; i < waves; i++) {
+            const a = Math.random() * Math.PI * 2;
+            dirs.push({
+              fx: Math.cos(a),
+              fy: Math.sin(a),
+              period: 6 + Math.random() * 10,
+            });
+          }
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              let v = 0;
+              for (let i = 0; i < waves; i++) {
+                const d = dirs[i];
+                v += Math.sin((x * d.fx + y * d.fy) / d.period * Math.PI * 2);
               }
+              const t = (v / waves + 1) / 2;
+              g[y * W + x] = (((t * N) | 0) + ((Math.random() * 2) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'wavefronts',
+        weight: 1.0,
+        fn: (g) => {
+          // 2-4 emitter points, each surrounded by concentric arcs whose
+          // state advances outward — so each emitter is already a fully
+          // formed expanding wave train.
+          const k = 2 + ((Math.random() * 3) | 0);
+          const ex = new Float32Array(k);
+          const ey = new Float32Array(k);
+          const ringW = new Float32Array(k);
+          for (let i = 0; i < k; i++) {
+            ex[i] = Math.random() * W;
+            ey[i] = Math.random() * H;
+            ringW[i] = 4 + Math.random() * 6;
+          }
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              let bestD = Infinity;
+              let bestI = 0;
+              for (let i = 0; i < k; i++) {
+                const dx = x - ex[i];
+                const dy = y - ey[i];
+                const d = dx * dx + dy * dy;
+                if (d < bestD) { bestD = d; bestI = i; }
+              }
+              const r = Math.sqrt(bestD);
+              const idx = (r / ringW[bestI]) | 0;
+              g[y * W + x] = (idx % N + ((Math.random() * 2) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'filaments',
+        weight: 1.0,
+        fn: (g) => {
+          // Smooth random walks with momentum: rather than 90° jumps each
+          // step, the heading drifts slowly, drawing long curving filaments.
+          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 2) | 0;
+          const strands = 6 + ((Math.random() * 6) | 0);
+          for (let k = 0; k < strands; k++) {
+            let x = Math.random() * W;
+            let y = Math.random() * H;
+            let heading = Math.random() * Math.PI * 2;
+            const len = 600 + ((Math.random() * 1200) | 0);
+            const s = (Math.random() * N) | 0;
+            const turn = 0.06 + Math.random() * 0.08;
+            const thick = 1 + ((Math.random() * 2) | 0);
+            for (let i = 0; i < len; i++) {
+              heading += (Math.random() - 0.5) * turn;
+              x = (x + Math.cos(heading) + W) % W;
+              y = (y + Math.sin(heading) + H) % H;
+              const baseS = (s + ((i / 30) | 0)) % N;
+              for (let dy = -thick; dy <= thick; dy++) {
+                for (let dx = -thick; dx <= thick; dx++) {
+                  if (dx * dx + dy * dy > thick * thick) continue;
+                  const xi = ((x + dx) | 0) % W;
+                  const yi = ((y + dy) | 0) % H;
+                  g[yi * W + xi] = baseS;
+                }
+              }
+            }
+          }
+        },
+      },
+      {
+        name: 'drift-field',
+        weight: 1.0,
+        fn: (g) => {
+          // Particles released across the canvas trace a coherent flow
+          // field (smoothed angle noise), painting an advancing state as
+          // they drift. The shared field gives every trail a related shape.
+          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 2) | 0;
+          const block = 24;
+          const cw = Math.ceil(W / block) + 1;
+          const ch = Math.ceil(H / block) + 1;
+          const angles = new Float32Array(cw * ch);
+          for (let i = 0; i < angles.length; i++) angles[i] = Math.random() * Math.PI * 2;
+          function fieldAt(x: number, y: number): number {
+            const fx = x / block;
+            const fy = y / block;
+            const ix = fx | 0;
+            const iy = fy | 0;
+            const tx = fx - ix;
+            const ty = fy - iy;
+            const a = angles[iy * cw + ix];
+            const b = angles[iy * cw + ix + 1];
+            const c = angles[(iy + 1) * cw + ix];
+            const d = angles[(iy + 1) * cw + ix + 1];
+            // Average via vectors so wraparound at 2π doesn't break.
+            const sx = Math.cos(a) * (1 - tx) * (1 - ty) + Math.cos(b) * tx * (1 - ty)
+                     + Math.cos(c) * (1 - tx) * ty + Math.cos(d) * tx * ty;
+            const sy = Math.sin(a) * (1 - tx) * (1 - ty) + Math.sin(b) * tx * (1 - ty)
+                     + Math.sin(c) * (1 - tx) * ty + Math.sin(d) * tx * ty;
+            return Math.atan2(sy, sx);
+          }
+          const particles = 40 + ((Math.random() * 40) | 0);
+          const startState = (Math.random() * N) | 0;
+          for (let p = 0; p < particles; p++) {
+            let x = Math.random() * W;
+            let y = Math.random() * H;
+            const len = 200 + ((Math.random() * 300) | 0);
+            for (let i = 0; i < len; i++) {
+              const a = fieldAt(x, y);
+              x = (x + Math.cos(a) + W) % W;
+              y = (y + Math.sin(a) + H) % H;
+              g[(y | 0) * W + (x | 0)] = (startState + ((i / 18) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'plasma',
+        weight: 1.0,
+        fn: (g) => {
+          // Diamond-square / midpoint displacement — produces a smoother,
+          // more cloud-like noise than value-noise's bilinear octaves.
+          // Power-of-two grid sized to cover the canvas.
+          let size = 1;
+          const need = Math.max(W, H) + 1;
+          while (size + 1 < need) size *= 2;
+          const stride = size + 1;
+          const buf = new Float32Array(stride * stride);
+          buf[0] = Math.random();
+          buf[size] = Math.random();
+          buf[size * stride] = Math.random();
+          buf[size * stride + size] = Math.random();
+          let step = size;
+          let scale = 0.5;
+          while (step > 1) {
+            const half = step >> 1;
+            for (let y = half; y < size; y += step) {
+              for (let x = half; x < size; x += step) {
+                const a = buf[(y - half) * stride + (x - half)];
+                const b = buf[(y - half) * stride + (x + half)];
+                const c = buf[(y + half) * stride + (x - half)];
+                const d = buf[(y + half) * stride + (x + half)];
+                buf[y * stride + x] = (a + b + c + d) / 4 + (Math.random() - 0.5) * scale;
+              }
+            }
+            for (let y = 0; y <= size; y += half) {
+              const xStart = ((y / half) & 1) === 0 ? half : 0;
+              for (let x = xStart; x <= size; x += step) {
+                let s = 0, n = 0;
+                if (y >= half) { s += buf[(y - half) * stride + x]; n++; }
+                if (y + half <= size) { s += buf[(y + half) * stride + x]; n++; }
+                if (x >= half) { s += buf[y * stride + (x - half)]; n++; }
+                if (x + half <= size) { s += buf[y * stride + (x + half)]; n++; }
+                buf[y * stride + x] = s / n + (Math.random() - 0.5) * scale;
+              }
+            }
+            step = half;
+            scale *= 0.55;
+          }
+          // Normalize and quantize.
+          let lo = Infinity;
+          let hi = -Infinity;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const v = buf[y * stride + x];
+              if (v < lo) lo = v;
+              if (v > hi) hi = v;
+            }
+          }
+          const range = hi - lo || 1;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const t = (buf[y * stride + x] - lo) / range;
+              g[y * W + x] = (((t * N) | 0) % N + N) % N;
             }
           }
         },
@@ -984,22 +1007,30 @@ import Base from '../layouts/Base.astro';
     const FADE_MS = 150;
     let cycleTimer: number | undefined;
 
-    function triggerCycle() {
+    function triggerCycle(stepFn: () => void = advanceCycle) {
       canvas.style.opacity = '0';
       window.setTimeout(() => {
-        advanceCycle();
+        stepFn();
         canvas.style.opacity = '';
       }, FADE_MS);
     }
 
     function scheduleAutoCycle() {
       window.clearInterval(cycleTimer);
-      cycleTimer = window.setInterval(triggerCycle, RESEED_MS);
+      cycleTimer = window.setInterval(() => triggerCycle(), RESEED_MS);
+    }
+
+    // TEMP: while the seed-name label is visible, the Reset button walks
+    // the seeders in declaration order so they can be reviewed by name.
+    // Auto-cycle still uses weighted random. Remove with the label.
+    function stepCycleDeterministic() {
+      seedIdx = (seedIdx + 1) % seeders.length;
+      applyCycle();
     }
 
     const restartBtn = document.getElementById('bg-restart');
     restartBtn?.addEventListener('click', () => {
-      triggerCycle();
+      triggerCycle(stepCycleDeterministic);
       scheduleAutoCycle();
     });
 
