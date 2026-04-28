@@ -1,10 +1,10 @@
 :root {
-  --serif: et-book, Palatino, "Palatino Linotype", "Palatino LT STD", "Book Antiqua", Georgia, serif;
-  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --ink: #111;
-  --muted: #555;
-  --paper: #fffff8;
-  --rule: #e4e4dc;
+  --sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --serif: et-book, Palatino, 'Palatino Linotype', 'Palatino LT STD', 'Book Antiqua', Georgia, serif;
+  --ink: #161616;
+  --muted: #6b6b66;
+  --paper: #fbfaf3;
+  --rule: #e6e4d8;
   --accent: #c93c20;
 }
 
@@ -13,57 +13,162 @@ html { font-size: 16px; }
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--serif);
-  font-size: 1.2rem;
+  font-family: var(--sans);
+  font-size: 1.0625rem;
   line-height: 1.55;
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'ss01', 'cv11';
 }
 
+a { color: var(--ink); }
+a:hover { color: var(--accent); }
+
+/* --- Site header --- */
+.site-header {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.75rem 5vw 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.wordmark {
+  font-family: var(--sans);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  color: var(--ink);
+}
+.wordmark .dot { color: var(--accent); }
+.wordmark:hover { color: var(--ink); }
+
+.site-nav {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.9375rem;
+}
+.site-nav a {
+  color: var(--muted);
+  text-decoration: none;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid transparent;
+}
+.site-nav a:hover { color: var(--ink); }
+.site-nav a.active {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .site-header { flex-direction: column; gap: 0.75rem; align-items: flex-start; }
+  .site-nav { gap: 1.1rem; }
+}
+
+/* --- Page shell --- */
 .page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 4rem 5vw 6rem;
+  padding: 3.5rem 5vw 6rem;
 }
 
 /* --- Homepage --- */
 .hero {
-  max-width: 55ch;
+  max-width: 60ch;
+  margin-top: 1.5rem;
 }
 .hero h1 {
-  font-size: 3rem;
-  font-weight: 400;
-  margin: 0 0 0.5rem;
-  line-height: 1.05;
+  font-family: var(--sans);
+  font-size: clamp(2.75rem, 7vw, 4.25rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  margin: 0 0 1.25rem;
+}
+.hero h1 .dot { color: var(--accent); }
+.hero .lede {
+  font-size: 1.25rem;
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 50ch;
+  margin: 0;
 }
 
 .home-section {
-  max-width: 55ch;
-  margin-top: 3rem;
+  max-width: 60ch;
+  margin-top: 3.5rem;
 }
-.home-section h2 {
-  font-size: 1.6rem;
-  font-weight: 400;
-  margin: 0 0 1rem;
-  padding-bottom: 0.3rem;
+.home-section header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.4rem;
   border-bottom: 1px solid var(--rule);
 }
+.home-section h2 {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0;
+}
+.home-section .more {
+  font-size: 0.875rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+.home-section .more:hover { color: var(--accent); }
 
+/* --- Section page header --- */
+.section-head {
+  max-width: 60ch;
+  margin-top: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+.section-head h1 {
+  font-family: var(--sans);
+  font-size: clamp(2rem, 4.5vw, 2.75rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin: 0 0 0.75rem;
+}
+.section-head p {
+  font-size: 1.125rem;
+  color: var(--muted);
+  margin: 0;
+  max-width: 55ch;
+}
+
+/* --- Note list --- */
 .note-list { list-style: none; padding: 0; margin: 0; }
 .note-list li {
   margin: 0.7rem 0;
   display: flex;
-  gap: 1rem;
+  gap: 1.25rem;
   align-items: baseline;
 }
 .note-list time {
-  font-family: var(--sans);
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
   color: var(--muted);
   flex-shrink: 0;
-  width: 6rem;
+  width: 7rem;
 }
+.note-list a {
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 1px;
+}
+.note-list a:hover { border-bottom-color: var(--accent); color: var(--ink); }
+.note-list .empty { color: var(--muted); font-style: italic; }
 
 /* --- Note layout (Tufte-style float sidenotes) ---
    .note is the wide container (main column + right gutter).
@@ -72,13 +177,23 @@ body {
 .note {
   max-width: 80ch;
   position: relative;
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  line-height: 1.55;
 }
 
 .note > * {
   max-width: 55ch;
 }
 
-.note h1 { font-size: 2.4rem; line-height: 1.1; font-weight: 400; margin: 0 0 0.5rem; }
+.note h1 {
+  font-family: var(--sans);
+  font-size: 2.4rem;
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem;
+}
 .note h2 { font-size: 1.6rem; font-weight: 400; margin: 2.5rem 0 0.5rem; }
 .note h3 { font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.5rem; }
 .note p  { margin: 0 0 1rem; }
@@ -90,8 +205,8 @@ body {
   color: var(--muted);
 }
 .note hr { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
-.note code { font-size: 0.95rem; background: #f1f1e8; padding: 0.1em 0.3em; border-radius: 3px; }
-.note pre { background: #f1f1e8; padding: 1rem; overflow-x: auto; }
+.note code { font-size: 0.95rem; background: #f1f0e3; padding: 0.1em 0.3em; border-radius: 3px; }
+.note pre { background: #f1f0e3; padding: 1rem; overflow-x: auto; }
 .note pre code { background: transparent; padding: 0; }
 
 /* Sidenotes — Tufte-CSS-compatible classes produced by the sidenotes remark plugin. */
@@ -103,15 +218,15 @@ body {
   margin-right: -24ch;
   margin-top: 0.3rem;
   margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  line-height: 1.45;
   color: var(--muted);
   position: relative;
   /* Override inherited max-width from `.note > *` descendant chain. */
   max-width: 20ch;
 }
 
-/* Numbered ref in-line with the text */
 .sidenote-number {
   counter-increment: sidenote-counter;
 }
@@ -129,7 +244,7 @@ body {
   font-family: var(--sans);
 }
 .sidenote::before {
-  content: counter(sidenote-counter) " ";
+  content: counter(sidenote-counter) ' ';
   font-size: 0.75rem;
   top: -0.5rem;
   color: var(--accent);
@@ -138,7 +253,6 @@ body {
 
 .note { counter-reset: sidenote-counter; }
 
-/* Hide the toggle machinery on desktop; show only on narrow viewports. */
 label.margin-toggle:not(.sidenote-number) { display: none; }
 input.margin-toggle { display: none; }
 
@@ -162,7 +276,7 @@ input.margin-toggle { display: none; }
     max-width: 100%;
     margin: 0.5rem 0;
     padding: 0.6rem 0.9rem;
-    background: #f7f7ef;
+    background: #f3f1e3;
     position: relative;
   }
 
