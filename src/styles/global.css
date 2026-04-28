@@ -348,7 +348,11 @@ a:focus-visible {
   transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 .sidenote:hover,
-.marginnote:hover {
+.marginnote:hover,
+.sidenote-number:hover + input.margin-toggle + .sidenote,
+.sidenote-number:focus-visible + input.margin-toggle + .sidenote,
+label.margin-toggle:not(.sidenote-number):hover + input.margin-toggle + .marginnote,
+label.margin-toggle:not(.sidenote-number):focus-visible + input.margin-toggle + .marginnote {
   color: var(--ink);
   background: #1a1a1d;
   border-color: var(--rule);
@@ -398,7 +402,9 @@ a:focus-visible {
   transition: color 120ms ease, text-decoration-color 120ms ease;
 }
 .sidenote-number:hover::after,
-.sidenote-number:focus-visible::after {
+.sidenote-number:focus-visible::after,
+.note:has(.sidenote:hover) .sidenote-number:has(+ input.margin-toggle + .sidenote:hover)::after,
+.note:has(.sidenote:focus-within) .sidenote-number:has(+ input.margin-toggle + .sidenote:focus-within)::after {
   color: var(--ink);
   text-decoration-color: currentColor;
 }
