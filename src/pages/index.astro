@@ -452,25 +452,35 @@ import Base from '../layouts/Base.astro';
     ];
 
     let seedIdx = (Math.random() * seeders.length) | 0;
-    let palette: RGB[] = buildPalette([paper, ...pickStops()]);
+    let currentStops: RGB[] = pickStops();
+    let palette: RGB[] = buildPalette([paper, ...currentStops]);
 
-    // The canvas is rendered at opacity 0.5, so the on-screen trail color is
-    // the hot palette stop blended 50/50 with paper. Mirror that blend in
-    // --accent so the dots and tagline match what the trail actually looks
-    // like on the page rather than the raw palette color.
+    // The canvas is rendered at opacity 0.5, so the on-screen color of any
+    // cell is the palette color blended 50/50 with paper. Mirror that blend
+    // when exposing the current palette stops as CSS variables.
     const canvasOpacity = parseFloat(getComputedStyle(canvas).opacity) || 1;
-    function syncAccent() {
-      const hot = palette[N - 1];
+    function blendOnPaper(c: RGB): string {
       const a = canvasOpacity;
-      const r = Math.round(a * hot[0] + (1 - a) * paper[0]);
-      const g = Math.round(a * hot[1] + (1 - a) * paper[1]);
-      const b = Math.round(a * hot[2] + (1 - a) * paper[2]);
-      document.documentElement.style.setProperty('--accent', `rgb(${r}, ${g}, ${b})`);
+      const r = Math.round(a * c[0] + (1 - a) * paper[0]);
+      const g = Math.round(a * c[1] + (1 - a) * paper[1]);
+      const b = Math.round(a * c[2] + (1 - a) * paper[2]);
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+    function syncAccent() {
+      // Expose each of the 4 picked stops as --c1..--c4 so the homepage can
+      // colorize dots, tagline, and per-link nav hovers with distinct palette
+      // entries. --accent stays at the brightest stop for the rest of the site.
+      const root = document.documentElement.style;
+      for (let i = 0; i < 4; i++) {
+        root.setProperty(`--c${i + 1}`, blendOnPaper(currentStops[i]));
+      }
+      root.setProperty('--accent', blendOnPaper(currentStops[3]));
     }
     syncAccent();
 
     function applyCycle() {
-      palette = buildPalette([paper, ...pickStops()]);
+      currentStops = pickStops();
+      palette = buildPalette([paper, ...currentStops]);
       seeders[seedIdx].fn(grid);
       syncAccent();
     }
