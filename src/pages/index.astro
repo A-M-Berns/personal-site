@@ -442,12 +442,18 @@ import Base from '../layouts/Base.astro';
     let seedIdx = (Math.random() * seeders.length) | 0;
     let palette: RGB[] = buildPalette([paper, ...pickStops()]);
 
+    // The canvas is rendered at opacity 0.5, so the on-screen trail color is
+    // the hot palette stop blended 50/50 with paper. Mirror that blend in
+    // --accent so the dots and tagline match what the trail actually looks
+    // like on the page rather than the raw palette color.
+    const canvasOpacity = parseFloat(getComputedStyle(canvas).opacity) || 1;
     function syncAccent() {
       const hot = palette[N - 1];
-      document.documentElement.style.setProperty(
-        '--accent',
-        `rgb(${hot[0]}, ${hot[1]}, ${hot[2]})`,
-      );
+      const a = canvasOpacity;
+      const r = Math.round(a * hot[0] + (1 - a) * paper[0]);
+      const g = Math.round(a * hot[1] + (1 - a) * paper[1]);
+      const b = Math.round(a * hot[2] + (1 - a) * paper[2]);
+      document.documentElement.style.setProperty('--accent', `rgb(${r}, ${g}, ${b})`);
     }
     syncAccent();
 
