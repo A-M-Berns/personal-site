@@ -30,7 +30,16 @@ function stripWrappingParagraphs(html) {
   return html
     .replace(/^\s*<p>/, '')
     .replace(/<\/p>\s*$/, '')
-    .replace(/<\/p>\s*<p>/g, '<br><br>');
+    .replace(/<\/p>\s*<p>/g, '<br><br>')
+    .replace(/<\/p>/g, '<br><br>')
+    .replace(/<p>/g, '')
+    .replace(/(<br><br>\s*)+$/g, '');
+}
+
+function inlineSidenoteBlocks(html) {
+  return html
+    .replace(/<blockquote>\s*<p>([\s\S]*?)<\/p>\s*<\/blockquote>/g, '<span class="sidenote-quote">$1</span>')
+    .replace(/<blockquote>([\s\S]*?)<\/blockquote>/g, '<span class="sidenote-quote">$1</span>');
 }
 
 function makeReplacement(id, html, isMargin) {
@@ -58,7 +67,7 @@ export default function remarkSidenotes() {
       const def = defs.get(node.identifier);
       if (!def) return;
 
-      let html = stripWrappingParagraphs(renderMdastToHtml(getNoteChildren(def)));
+      let html = stripWrappingParagraphs(inlineSidenoteBlocks(renderMdastToHtml(getNoteChildren(def))));
 
       const trimmed = html.trimStart();
       const isMargin = trimmed.startsWith(MARGINNOTE_SYMBOL);

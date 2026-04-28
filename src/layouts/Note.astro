@@ -7,7 +7,12 @@ interface Props {
   lesswrongUrl?: string;
 }
 const { title, description, date, lesswrongUrl } = Astro.props;
-const fmt = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'long', day: 'numeric' });
+const fmt = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
 ---
 <Base title={title} description={description}>
   <article class="note">

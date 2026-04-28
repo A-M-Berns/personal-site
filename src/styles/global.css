@@ -264,13 +264,14 @@ a:hover { color: var(--accent); }
 
 /* --- Note layout (Tufte-style float sidenotes) --- */
 .note {
-  --note-text-width: 68ch;
+  --note-text-width: 74ch;
   --note-margin-gap: 10ch;
   --note-side-width: 28ch;
   --note-side-offset: -38ch;
   max-width: calc(var(--note-text-width) + var(--note-margin-gap) + var(--note-side-width));
   position: relative;
-  font-family: var(--serif);
+  color: #d8d2c4;
+  font-family: var(--sans);
   font-size: 1.2rem;
   line-height: 1.55;
 }
@@ -332,17 +333,35 @@ a:hover { color: var(--accent); }
   position: relative;
   max-width: var(--note-side-width);
 }
+.sidenote-quote {
+  display: block;
+  border-left: 2px solid var(--rule);
+  margin-top: 0.55rem;
+  padding-left: 0.75rem;
+  color: var(--ink);
+}
+.note > .sidenote-quote {
+  float: right;
+  clear: right;
+  width: var(--note-side-width);
+  margin-right: var(--note-side-offset);
+  margin-bottom: 0.5rem;
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  max-width: var(--note-side-width);
+}
 
 .sidenote-number {
   counter-increment: sidenote-counter;
 }
 .sidenote-number::after,
 .sidenote::before {
-  position: relative;
   vertical-align: baseline;
 }
 .sidenote-number::after {
   content: counter(sidenote-counter);
+  position: relative;
   font-size: 0.75rem;
   top: -0.5rem;
   left: 0.1rem;
@@ -350,9 +369,13 @@ a:hover { color: var(--accent); }
   font-family: var(--sans);
 }
 .sidenote::before {
-  content: counter(sidenote-counter) ' ';
+  content: counter(sidenote-counter);
+  position: absolute;
+  right: calc(100% + 0.45rem);
+  width: 1.2rem;
+  text-align: right;
   font-size: 0.75rem;
-  top: -0.5rem;
+  top: 0;
   color: var(--accent);
   font-family: var(--sans);
 }
@@ -384,6 +407,20 @@ input.margin-toggle { display: none; }
     padding: 0.6rem 0.9rem;
     background: #1a1a1d;
     position: relative;
+  }
+  .note > .sidenote-quote {
+    float: none;
+    clear: both;
+    width: auto;
+    max-width: 100%;
+    margin: 0.5rem 0 1rem;
+  }
+  .sidenote::before {
+    position: relative;
+    right: auto;
+    width: auto;
+    margin-right: 0.35rem;
+    top: -0.5rem;
   }
 
   input.margin-toggle:checked + .sidenote,
