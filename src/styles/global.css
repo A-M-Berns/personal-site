@@ -354,6 +354,7 @@ a:hover { color: var(--accent); }
 
 .sidenote-number {
   counter-increment: sidenote-counter;
+  cursor: default;
 }
 .sidenote-number::after,
 .sidenote::before {
@@ -362,11 +363,23 @@ a:hover { color: var(--accent); }
 .sidenote-number::after {
   content: counter(sidenote-counter);
   position: relative;
+  display: inline-block;
   font-size: 0.75rem;
+  line-height: 1;
   top: -0.5rem;
   left: 0.1rem;
   color: var(--accent);
   font-family: var(--sans);
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 0.05rem 0.18rem;
+  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+}
+.sidenote-number:hover::after,
+.sidenote-number:focus-visible::after {
+  color: var(--ink);
+  background: #1a1a1d;
+  border-color: var(--accent);
 }
 .sidenote::before {
   content: counter(sidenote-counter);
