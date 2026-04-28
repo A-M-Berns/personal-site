@@ -431,6 +431,105 @@ import Base from '../layouts/Base.astro';
         },
       },
       {
+        name: 'spokes',
+        fn: (g) => {
+          const cx = W / 2;
+          const cy = H / 2;
+          const spokes = 7 + ((Math.random() * 10) | 0);
+          const jitter = Math.random() * Math.PI;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const a = Math.atan2(y - cy, x - cx) + Math.PI + jitter;
+              const band = ((a / (Math.PI * 2)) * spokes) | 0;
+              g[y * W + x] = (band + ((Math.random() * 2) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'nested-boxes',
+        fn: (g) => {
+          const cx = W / 2;
+          const cy = H / 2;
+          const step = 5 + ((Math.random() * 8) | 0);
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const box = Math.max(Math.abs(x - cx), Math.abs(y - cy));
+              const base = ((box / step) | 0) % N;
+              g[y * W + x] = (base + ((Math.random() * 2) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'crosshatch',
+        fn: (g) => {
+          const stepA = 5 + ((Math.random() * 7) | 0);
+          const stepB = 5 + ((Math.random() * 7) | 0);
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const a = (((x + y) / stepA) | 0) % N;
+              const b = (((x - y + H) / stepB) | 0) % N;
+              g[y * W + x] = (a + b + ((Math.random() * 2) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'chevrons',
+        fn: (g) => {
+          const step = 6 + ((Math.random() * 8) | 0);
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const folded = Math.abs((x % (step * 2)) - step);
+              const base = (((folded + y) / step) | 0) % N;
+              g[y * W + x] = (base + ((Math.random() * 2) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'patchwork',
+        fn: (g) => {
+          const block = 6 + ((Math.random() * 10) | 0);
+          const bw = Math.ceil(W / block);
+          const bh = Math.ceil(H / block);
+          const states = new Uint8Array(bw * bh);
+          for (let i = 0; i < states.length; i++) states[i] = (Math.random() * N) | 0;
+          for (let y = 0; y < H; y++) {
+            const by = (y / block) | 0;
+            for (let x = 0; x < W; x++) {
+              const bx = (x / block) | 0;
+              const cell = states[by * bw + bx];
+              g[y * W + x] = (cell + (Math.random() < 0.08 ? ((Math.random() * N) | 0) : 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'starbursts',
+        fn: (g) => {
+          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 2) | 0;
+          const bursts = 4 + ((Math.random() * 5) | 0);
+          for (let k = 0; k < bursts; k++) {
+            const cx = (Math.random() * W) | 0;
+            const cy = (Math.random() * H) | 0;
+            const rays = 5 + ((Math.random() * 6) | 0);
+            const len = 14 + ((Math.random() * 28) | 0);
+            const s = (Math.random() * N) | 0;
+            for (let r = 0; r < rays; r++) {
+              const a = (r / rays) * Math.PI * 2;
+              for (let i = 0; i < len; i++) {
+                const x = Math.round(cx + Math.cos(a) * i);
+                const y = Math.round(cy + Math.sin(a) * i);
+                if (x < 0 || x >= W || y < 0 || y >= H) continue;
+                g[y * W + x] = (s + r) % N;
+              }
+            }
+          }
+        },
+      },
+      {
         name: 'gradient-noise',
         fn: (g) => {
           // Coarse-cell noise: 4×4 block of pixels share a state, so the seed
