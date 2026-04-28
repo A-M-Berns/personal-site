@@ -88,11 +88,11 @@ a:hover { color: var(--accent); }
   width: 100vw;
   height: 100vh;
   z-index: 0;
-  opacity: 0.45;
-  transition: opacity 700ms ease-in-out;
+  opacity: 0.5;
+  transition: opacity 1500ms ease-in-out;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  pointer-events: none;
+  cursor: crosshair;
 }
 
 /* Content sits above the background canvas. */

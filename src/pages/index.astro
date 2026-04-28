@@ -20,41 +20,185 @@ import Base from '../layouts/Base.astro';
 </Base>
 
 <script>
-  // Cyclic cellular automaton (Belousov-Zhabotinsky-style):
-  // a cell at state s advances to (s+1) mod N if any 4-neighbor is at (s+1) mod N.
-  // From random noise the field self-organizes into rotating spirals.
+  // Background cellular-automaton stage. Cycles through several algorithms
+  // on a periodic reseed; clicking sets the clicked cell to max state.
   const canvas = document.getElementById('bg-canvas') as HTMLCanvasElement | null;
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
-    const N = 14;
-    const CELL_PX = 10; // CSS-pixel size of one cell after pixelated upscale
+    const CELL_PX = 5;
     let W = 0;
     let H = 0;
     let grid = new Uint8Array(0);
     let next = new Uint8Array(0);
     let img: ImageData | null = null;
 
-    const styles = getComputedStyle(document.documentElement);
-    const parseHex = (h: string): [number, number, number] => {
-      const s = h.trim().replace('#', '');
-      const n = parseInt(s.length === 3 ? s.split('').map((c) => c + c).join('') : s, 16);
-      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    type RGB = [number, number, number];
+    type Algo = {
+      name: string;
+      N: number;
+      hot: string;
+      seed: (g: Uint8Array) => void;
+      step: (g: Uint8Array, n: Uint8Array) => void;
     };
-    const c0 = parseHex(styles.getPropertyValue('--paper') || '#0e0e10');
-    const c1 = parseHex(styles.getPropertyValue('--accent') || '#ff6648');
-    const palette: [number, number, number][] = [];
-    for (let i = 0; i < N; i++) {
-      const t = i / (N - 1);
-      const e = Math.pow(t, 0.85);
-      palette.push([
-        Math.round(c0[0] + (c1[0] - c0[0]) * e),
-        Math.round(c0[1] + (c1[1] - c0[1]) * e),
-        Math.round(c0[2] + (c1[2] - c0[2]) * e),
-      ]);
+
+    const styles = getComputedStyle(document.documentElement);
+    const paperHex = (styles.getPropertyValue('--paper').trim() || '#0e0e10');
+
+    function parseHex(h: string): RGB {
+      const s = h.trim().replace('#', '');
+      const full = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
+      const n = parseInt(full, 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
     }
 
-    function reseed() {
-      for (let i = 0; i < grid.length; i++) grid[i] = (Math.random() * N) | 0;
+    const c0 = parseHex(paperHex);
+
+    function buildPalette(hotHex: string, N: number): RGB[] {
+      const c1 = parseHex(hotHex);
+      const out: RGB[] = [];
+      for (let i = 0; i < N; i++) {
+        const t = N === 1 ? 1 : i / (N - 1);
+        // Lower gamma -> brighter midpoints, more vibrant overall.
+        const e = Math.pow(t, 0.65);
+        out.push([
+          Math.round(c0[0] + (c1[0] - c0[0]) * e),
+          Math.round(c0[1] + (c1[1] - c0[1]) * e),
+          Math.round(c0[2] + (c1[2] - c0[2]) * e),
+        ]);
+      }
+      return out;
+    }
+
+    const algos: Algo[] = [
+      {
+        name: 'cyclic-vn',
+        N: 14,
+        hot: '#ff6648',
+        seed: (g) => { for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 14) | 0; },
+        step: (g, n) => {
+          const N = 14;
+          for (let y = 0; y < H; y++) {
+            const yU = ((y - 1 + H) % H) * W;
+            const yD = ((y + 1) % H) * W;
+            const yC = y * W;
+            for (let x = 0; x < W; x++) {
+              const xL = (x - 1 + W) % W;
+              const xR = (x + 1) % W;
+              const s = g[yC + x];
+              const t = (s + 1) % N;
+              n[yC + x] = (
+                g[yU + x] === t ||
+                g[yD + x] === t ||
+                g[yC + xL] === t ||
+                g[yC + xR] === t
+              ) ? t : s;
+            }
+          }
+        },
+      },
+      {
+        name: 'cyclic-moore',
+        N: 8,
+        hot: '#4ad6ff',
+        seed: (g) => { for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 8) | 0; },
+        step: (g, n) => {
+          const N = 8;
+          for (let y = 0; y < H; y++) {
+            const yU = ((y - 1 + H) % H) * W;
+            const yD = ((y + 1) % H) * W;
+            const yC = y * W;
+            for (let x = 0; x < W; x++) {
+              const xL = (x - 1 + W) % W;
+              const xR = (x + 1) % W;
+              const s = g[yC + x];
+              const t = (s + 1) % N;
+              const found =
+                g[yU + xL] === t || g[yU + x] === t || g[yU + xR] === t ||
+                g[yC + xL] === t ||                       g[yC + xR] === t ||
+                g[yD + xL] === t || g[yD + x] === t || g[yD + xR] === t;
+              n[yC + x] = found ? t : s;
+            }
+          }
+        },
+      },
+      {
+        name: 'brians-brain',
+        // 0 = off, 1 = refractory, 2 = firing
+        N: 3,
+        hot: '#ff4adc',
+        seed: (g) => { for (let i = 0; i < g.length; i++) g[i] = Math.random() < 0.3 ? 2 : 0; },
+        step: (g, n) => {
+          for (let y = 0; y < H; y++) {
+            const yU = ((y - 1 + H) % H) * W;
+            const yD = ((y + 1) % H) * W;
+            const yC = y * W;
+            for (let x = 0; x < W; x++) {
+              const xL = (x - 1 + W) % W;
+              const xR = (x + 1) % W;
+              const i = yC + x;
+              const s = g[i];
+              if (s === 2) { n[i] = 1; continue; }
+              if (s === 1) { n[i] = 0; continue; }
+              let count = 0;
+              if (g[yU + xL] === 2) count++;
+              if (g[yU + x] === 2) count++;
+              if (g[yU + xR] === 2) count++;
+              if (g[yC + xL] === 2) count++;
+              if (g[yC + xR] === 2) count++;
+              if (g[yD + xL] === 2) count++;
+              if (g[yD + x] === 2) count++;
+              if (g[yD + xR] === 2) count++;
+              n[i] = count === 2 ? 2 : 0;
+            }
+          }
+        },
+      },
+      {
+        name: 'life-trails',
+        // 0..N-2 = decay levels, N-1 = alive
+        N: 10,
+        hot: '#a6ff4a',
+        seed: (g) => {
+          const ALIVE = 9;
+          for (let i = 0; i < g.length; i++) g[i] = Math.random() < 0.32 ? ALIVE : 0;
+        },
+        step: (g, n) => {
+          const ALIVE = 9;
+          for (let y = 0; y < H; y++) {
+            const yU = ((y - 1 + H) % H) * W;
+            const yD = ((y + 1) % H) * W;
+            const yC = y * W;
+            for (let x = 0; x < W; x++) {
+              const xL = (x - 1 + W) % W;
+              const xR = (x + 1) % W;
+              const i = yC + x;
+              let count = 0;
+              if (g[yU + xL] === ALIVE) count++;
+              if (g[yU + x] === ALIVE) count++;
+              if (g[yU + xR] === ALIVE) count++;
+              if (g[yC + xL] === ALIVE) count++;
+              if (g[yC + xR] === ALIVE) count++;
+              if (g[yD + xL] === ALIVE) count++;
+              if (g[yD + x] === ALIVE) count++;
+              if (g[yD + xR] === ALIVE) count++;
+              const cur = g[i];
+              const isAlive = cur === ALIVE;
+              if (isAlive && (count === 2 || count === 3)) n[i] = ALIVE;
+              else if (!isAlive && count === 3) n[i] = ALIVE;
+              else n[i] = cur > 0 ? cur - 1 : 0;
+            }
+          }
+        },
+      },
+    ];
+
+    let algoIdx = (Math.random() * algos.length) | 0;
+    let palette: RGB[] = buildPalette(algos[algoIdx].hot, algos[algoIdx].N);
+
+    function applyAlgoSeed() {
+      const a = algos[algoIdx];
+      palette = buildPalette(a.hot, a.N);
+      a.seed(grid);
     }
 
     function resize() {
@@ -65,27 +209,11 @@ import Base from '../layouts/Base.astro';
       grid = new Uint8Array(W * H);
       next = new Uint8Array(W * H);
       img = ctx.createImageData(W, H);
-      reseed();
+      applyAlgoSeed();
     }
 
     function step() {
-      for (let y = 0; y < H; y++) {
-        const yU = ((y - 1 + H) % H) * W;
-        const yD = ((y + 1) % H) * W;
-        const yC = y * W;
-        for (let x = 0; x < W; x++) {
-          const xL = (x - 1 + W) % W;
-          const xR = (x + 1) % W;
-          const s = grid[yC + x];
-          const target = (s + 1) % N;
-          next[yC + x] = (
-            grid[yU + x] === target ||
-            grid[yD + x] === target ||
-            grid[yC + xL] === target ||
-            grid[yC + xR] === target
-          ) ? target : s;
-        }
-      }
+      algos[algoIdx].step(grid, next);
       const tmp = grid;
       grid = next;
       next = tmp;
@@ -111,10 +239,18 @@ import Base from '../layouts/Base.astro';
     let resizeTimer: number | undefined;
     window.addEventListener('resize', () => {
       window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => {
-        resize();
-        draw();
-      }, 200);
+      resizeTimer = window.setTimeout(() => { resize(); draw(); }, 200);
+    });
+
+    // Click to drop a max-brightness cell — pattern evolves outward from it.
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const gx = Math.floor(((e.clientX - rect.left) / rect.width) * W);
+      const gy = Math.floor(((e.clientY - rect.top) / rect.height) * H);
+      if (gx < 0 || gx >= W || gy < 0 || gy >= H) return;
+      const maxState = algos[algoIdx].N - 1;
+      grid[gy * W + gx] = maxState;
+      draw();
     });
 
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -131,14 +267,14 @@ import Base from '../layouts/Base.astro';
       };
       requestAnimationFrame(loop);
 
-      // Periodically fade out, reseed, and fade back in so the field never
-      // sits in a converged state for long.
-      const RESEED_MS = 75000;
-      const FADE_MS = 800;
+      // Periodically fade out, advance to the next algorithm, reseed, fade in.
+      const RESEED_MS = 15000;
+      const FADE_MS = 1500;
       setInterval(() => {
         canvas.style.opacity = '0';
         window.setTimeout(() => {
-          reseed();
+          algoIdx = (algoIdx + 1) % algos.length;
+          applyAlgoSeed();
           canvas.style.opacity = '';
         }, FADE_MS);
       }, RESEED_MS);
