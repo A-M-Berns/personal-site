@@ -838,7 +838,14 @@ import Base from '../layouts/Base.astro';
       return (exclude + 1) % seeders.length;
     }
 
-    let seedIdx = pickSeederIdx(-1);
+    // TEMP: deterministic start seeder for tuning. Set to a seeder name
+    // to always begin there on reload, or null for weighted random.
+    // Remove with the seed-name label.
+    const START_SEEDER: string | null = 'noise';
+    const startIdx = START_SEEDER == null
+      ? -1
+      : seeders.findIndex((s) => s.name === START_SEEDER);
+    let seedIdx = startIdx >= 0 ? startIdx : pickSeederIdx(-1);
     let currentStops: RGB[] = pickStops();
     let palette: RGB[] = buildPalette([paper, ...currentStops]);
 
