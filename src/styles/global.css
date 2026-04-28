@@ -89,7 +89,7 @@ a:hover { color: var(--accent); }
   height: 100vh;
   z-index: 0;
   opacity: 0.5;
-  transition: opacity 1500ms ease-in-out;
+  transition: opacity 150ms ease-in-out;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
