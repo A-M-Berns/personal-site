@@ -1,60 +1,115 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getCollection } from 'astro:content';
-
-const notes = (await getCollection('notes', ({ data }) => !data.draft))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
-const fmt = new Intl.DateTimeFormat('en', { year: 'numeric', month: 'short', day: 'numeric' });
-const latest = notes.slice(0, 3);
 ---
-<Base title="A. M. Berns" description="Independent research, personal writing, Lean, and other.">
+<Base title="A. M. Berns" description="Independent research, personal writing, Lean, and other." showNav={false}>
   <section class="hero">
+    <canvas id="cyclic-ca" class="hero-art" width="120" height="120" aria-hidden="true"></canvas>
     <h1>A<span class="dot">.</span> M<span class="dot">.</span> Berns</h1>
     <p class="lede">
       Independent research, personal writing, Lean, and other.
     </p>
   </section>
 
-  <section class="home-section">
-    <header>
-      <h2>About</h2>
-      <a class="more" href="/about">More →</a>
-    </header>
-    <p>A short bio goes here.</p>
-  </section>
-
-  <section class="home-section">
-    <header>
-      <h2>Writing</h2>
-      <a class="more" href="/writing">All writing →</a>
-    </header>
-    {latest.length > 0 ? (
-      <ul class="note-list">
-        {latest.map((n) => (
-          <li>
-            <time datetime={n.data.date.toISOString()}>{fmt.format(n.data.date)}</time>
-            <a href={`/notes/${n.id}/`}>{n.data.title}</a>
-          </li>
-        ))}
-      </ul>
-    ) : (
-      <p class="empty">Nothing posted yet.</p>
-    )}
-  </section>
-
-  <section class="home-section">
-    <header>
-      <h2>Lean</h2>
-      <a class="more" href="/lean">More →</a>
-    </header>
-    <p>Mathlib contributions and Lean 4 work.</p>
-  </section>
-
-  <section class="home-section">
-    <header>
-      <h2>Other</h2>
-      <a class="more" href="/other">More →</a>
-    </header>
-    <p>Music, side projects, and miscellany.</p>
-  </section>
+  <nav class="home-nav" aria-label="Sections">
+    <a href="/about">About</a>
+    <a href="/writing">Writing</a>
+    <a href="/lean">Lean</a>
+    <a href="/other">Other</a>
+  </nav>
 </Base>
+
+<script>
+  // Cyclic cellular automaton (Belousov-Zhabotinsky-style):
+  // a cell at state s advances to (s+1) mod N if any 4-neighbor is at (s+1) mod N.
+  // From random noise the field self-organizes into rotating spirals.
+  const canvas = document.getElementById('cyclic-ca') as HTMLCanvasElement | null;
+  if (canvas) {
+    const ctx = canvas.getContext('2d')!;
+    const W = canvas.width;
+    const H = canvas.height;
+    const N = 14;
+
+    let grid = new Uint8Array(W * H);
+    let next = new Uint8Array(W * H);
+    for (let i = 0; i < grid.length; i++) grid[i] = (Math.random() * N) | 0;
+
+    // Palette: linear ramp from paper to accent, in RGB.
+    const styles = getComputedStyle(document.documentElement);
+    const parseHex = (h: string): [number, number, number] => {
+      const s = h.trim().replace('#', '');
+      const n = parseInt(s.length === 3 ? s.split('').map((c) => c + c).join('') : s, 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    };
+    const c0 = parseHex(styles.getPropertyValue('--paper') || '#0e0e10');
+    const c1 = parseHex(styles.getPropertyValue('--accent') || '#ff6648');
+    const palette: [number, number, number][] = [];
+    for (let i = 0; i < N; i++) {
+      const t = i / (N - 1);
+      // Slight gamma so mid-states aren't muddy.
+      const e = Math.pow(t, 0.85);
+      palette.push([
+        Math.round(c0[0] + (c1[0] - c0[0]) * e),
+        Math.round(c0[1] + (c1[1] - c0[1]) * e),
+        Math.round(c0[2] + (c1[2] - c0[2]) * e),
+      ]);
+    }
+
+    const img = ctx.createImageData(W, H);
+    const data = img.data;
+
+    function step() {
+      for (let y = 0; y < H; y++) {
+        const yU = ((y - 1 + H) % H) * W;
+        const yD = ((y + 1) % H) * W;
+        const yC = y * W;
+        for (let x = 0; x < W; x++) {
+          const xL = (x - 1 + W) % W;
+          const xR = (x + 1) % W;
+          const s = grid[yC + x];
+          const target = (s + 1) % N;
+          if (
+            grid[yU + x] === target ||
+            grid[yD + x] === target ||
+            grid[yC + xL] === target ||
+            grid[yC + xR] === target
+          ) {
+            next[yC + x] = target;
+          } else {
+            next[yC + x] = s;
+          }
+        }
+      }
+      const tmp = grid;
+      grid = next;
+      next = tmp;
+    }
+
+    function draw() {
+      for (let i = 0; i < grid.length; i++) {
+        const c = palette[grid[i]];
+        const j = i * 4;
+        data[j] = c[0];
+        data[j + 1] = c[1];
+        data[j + 2] = c[2];
+        data[j + 3] = 255;
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    draw();
+    if (!reduce) {
+      let last = 0;
+      const targetMs = 80;
+      const loop = (t: number) => {
+        if (t - last >= targetMs) {
+          step();
+          draw();
+          last = t;
+        }
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    }
+  }
+</script>

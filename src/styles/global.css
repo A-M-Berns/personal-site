@@ -82,33 +82,39 @@ a:hover { color: var(--accent); }
   margin: 0;
 }
 
-.home-section {
-  max-width: 60ch;
-  margin-top: 3.5rem;
+.hero-art {
+  display: block;
+  width: 240px;
+  height: 240px;
+  margin: 0 0 2rem;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: var(--paper);
+  border: 1px solid var(--rule);
 }
-.home-section header {
+
+.home-nav {
+  margin-top: 3rem;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--rule);
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 60ch;
 }
-.home-section h2 {
-  font-size: 0.8125rem;
+.home-nav a {
+  font-family: var(--sans);
+  font-size: clamp(1.75rem, 4.5vw, 2.5rem);
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin: 0;
-}
-.home-section .more {
-  font-size: 0.875rem;
-  color: var(--muted);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
   text-decoration: none;
+  color: var(--ink);
+  width: fit-content;
+  transition: color 120ms ease, transform 120ms ease;
 }
-.home-section .more:hover { color: var(--accent); }
+.home-nav a:hover {
+  color: var(--accent);
+  transform: translateX(4px);
+}
 
 /* --- Section page header --- */
 .section-head {
