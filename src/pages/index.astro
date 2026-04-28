@@ -541,9 +541,12 @@ import Base from '../layouts/Base.astro';
       resizeTimer = window.setTimeout(() => { resize(); draw(); }, 200);
     });
 
+    // Bumps each covered cell forward by one cyclic state. A per-event
+    // dedup set keeps fast moves with brush overlap from bumping the same
+    // cell multiple times within one pointermove.
+    const paintedThisEvent = new Set<number>();
     function paintBrush(gx: number, gy: number) {
       const r2 = BRUSH * BRUSH;
-      const hot = N - 1;
       for (let dy = -BRUSH; dy <= BRUSH; dy++) {
         const y = gy + dy;
         if (y < 0 || y >= H) continue;
@@ -552,18 +555,21 @@ import Base from '../layouts/Base.astro';
           if (dx * dx + dy * dy > r2) continue;
           const x = gx + dx;
           if (x < 0 || x >= W) continue;
-          grid[row + x] = hot;
+          const idx = row + x;
+          if (paintedThisEvent.has(idx)) continue;
+          paintedThisEvent.add(idx);
+          grid[idx] = (grid[idx] + 1) % N;
         }
       }
     }
 
     // Continuous hover trail: interpolate cells between successive pointer
-    // events so fast moves stay solid. Each painted cell is set to the
-    // current palette's hottest state, so the trail color shifts whenever
-    // the cycle picks a new palette.
+    // events so fast moves stay solid. Each visited cell is advanced to its
+    // next cyclic state, so the trail color depends on what was underneath.
     let lastGx = -1;
     let lastGy = -1;
     function trailFromPointer(e: PointerEvent) {
+      paintedThisEvent.clear();
       const rect = canvas.getBoundingClientRect();
       const gx = Math.floor(((e.clientX - rect.left) / rect.width) * W);
       const gy = Math.floor(((e.clientY - rect.top) / rect.height) * H);
