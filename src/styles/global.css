@@ -150,6 +150,12 @@ a:hover { color: var(--accent); }
   color: var(--muted);
 }
 #bg-about p:last-child { margin-bottom: 0; }
+#bg-about .bg-about-credit {
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  color: var(--muted);
+  font-style: italic;
+}
 .bg-about-close {
   position: absolute;
   top: 0.4rem;
