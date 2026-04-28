@@ -128,26 +128,6 @@ a:focus-visible {
   border-color: var(--muted);
 }
 
-/* TEMP: seed name label, remove once seed library is tuned */
-#bg-seed-label {
-  position: fixed;
-  bottom: 1rem;
-  left: 1rem;
-  z-index: 2;
-  font-family: var(--sans);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: rgba(14, 14, 16, 0.55);
-  border: 1px solid var(--rule);
-  border-radius: 3px;
-  padding: 0.35rem 0.7rem;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  pointer-events: none;
-}
-
 #bg-about {
   background: rgba(14, 14, 16, 0.94);
   color: var(--ink);
