@@ -11,6 +11,7 @@ const path = Astro.url.pathname.replace(/\/$/, '') || '/';
 const isActive = (href: string) =>
   href === '/' ? path === '/' : path === href || path.startsWith(href + '/');
 const navItems = [
+  { href: '/', label: 'Home' },
   { href: '/about', label: 'About' },
   { href: '/writing', label: 'Writing' },
   { href: '/lean', label: 'Lean' },
