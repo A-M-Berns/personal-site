@@ -634,39 +634,6 @@ import Base from '../layouts/Base.astro';
         },
       },
       {
-        name: 'filaments',
-        weight: 1.0,
-        fn: (g) => {
-          // Smooth random walks with momentum: rather than 90° jumps each
-          // step, the heading drifts slowly, drawing long curving filaments.
-          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 2) | 0;
-          const strands = 6 + ((Math.random() * 6) | 0);
-          for (let k = 0; k < strands; k++) {
-            let x = Math.random() * W;
-            let y = Math.random() * H;
-            let heading = Math.random() * Math.PI * 2;
-            const len = 600 + ((Math.random() * 1200) | 0);
-            const s = (Math.random() * N) | 0;
-            const turn = 0.06 + Math.random() * 0.08;
-            const thick = 1 + ((Math.random() * 2) | 0);
-            for (let i = 0; i < len; i++) {
-              heading += (Math.random() - 0.5) * turn;
-              x = (x + Math.cos(heading) + W) % W;
-              y = (y + Math.sin(heading) + H) % H;
-              const baseS = (s + ((i / 30) | 0)) % N;
-              for (let dy = -thick; dy <= thick; dy++) {
-                for (let dx = -thick; dx <= thick; dx++) {
-                  if (dx * dx + dy * dy > thick * thick) continue;
-                  const xi = ((x + dx) | 0) % W;
-                  const yi = ((y + dy) | 0) % H;
-                  g[yi * W + xi] = baseS;
-                }
-              }
-            }
-          }
-        },
-      },
-      {
         name: 'plasma',
         weight: 1.0,
         fn: (g) => {
