@@ -239,7 +239,9 @@ a:focus-visible {
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.05;
-  margin: 0 0 0.75rem;
+  /* Nudge left so the larger glyph's side bearing optically aligns
+     with the smaller pane headings below. */
+  margin: 0 0 0.75rem -0.04em;
 }
 .section-head p {
   font-size: 1.125rem;
