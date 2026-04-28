@@ -5,9 +5,9 @@ import Base from '../layouts/Base.astro';
   <canvas id="bg-canvas" class="bg-canvas" aria-hidden="true"></canvas>
 
   <section class="hero">
-    <h1>A<span class="dot">.</span> M<span class="dot">.</span> Berns</h1>
+    <h1><span class="hl">A<span class="dot">.</span> M<span class="dot">.</span> Berns</span></h1>
     <p class="lede">
-      Independent research, personal writing, Lean, and other.
+      <span class="hl">Independent research, personal writing, Lean, and other.</span>
     </p>
   </section>
 
@@ -17,6 +17,8 @@ import Base from '../layouts/Base.astro';
     <a href="/lean">Lean</a>
     <a href="/other">Other</a>
   </nav>
+
+  <button id="bg-restart" class="bg-restart" type="button" aria-label="Reset background">Reset</button>
 </Base>
 
 <script>
@@ -48,20 +50,36 @@ import Base from '../layouts/Base.astro';
 
     const paper = parseHex(paperHex);
 
-    // Each scheme is paper + 4 hot stops (5 colors total). All visit cyan but
-    // diverge through different secondary harmonies.
-    const schemes: string[][] = [
-      // ice: deep navy → cobalt → cyan → pale ice
-      ['#142a6e', '#2a6fd6', '#4ad6ff', '#d6f5ff'],
-      // tropic: deep teal → cyan → mint → pale yellow
-      ['#0e5a5a', '#4ad6ff', '#9af7c8', '#fff5b3'],
-      // dusk: indigo → magenta → cyan → pale sky
-      ['#3b1a8a', '#e54adc', '#4ad6ff', '#cfe9ff'],
-      // neon: violet → cyan → emerald → lime
-      ['#5b2bd6', '#4ad6ff', '#3ad48a', '#d6ff5a'],
-      // coral: deep blue → cyan → coral → amber
-      ['#0a3a6e', '#4ad6ff', '#ff7a85', '#ffc14a'],
+    // One large but cohesive cool/cyan-leaning palette. Each cycle samples 4
+    // colors — one per luma quartile — so the ramp paper → ... → light is
+    // always smooth, but the actual hues vary every reseed.
+    const colorPool: string[] = [
+      '#0a1f4d', '#142a6e', '#1d3a8a', '#2a4ec0', '#2a6fd6', '#3b8ce8',
+      '#4ad6ff', '#2cc7e0', '#98e8ee', '#cfe9ff', '#d6f5ff', '#ffffff',
+      '#0e5a5a', '#0e6b6b', '#0fbfa8', '#3ad48a', '#9af7c8', '#b8f0ff',
+      '#fff5b3', '#d6ff5a',
     ];
+
+    function luma(c: RGB): number {
+      return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+    }
+
+    const sortedPool: RGB[] = colorPool
+      .map(parseHex)
+      .sort((a, b) => luma(a) - luma(b));
+
+    function pickStops(): RGB[] {
+      const stops: RGB[] = [];
+      const len = sortedPool.length;
+      const buckets = 4;
+      for (let i = 0; i < buckets; i++) {
+        const lo = Math.floor((i * len) / buckets);
+        const hi = Math.floor(((i + 1) * len) / buckets);
+        const idx = lo + ((Math.random() * Math.max(1, hi - lo)) | 0);
+        stops.push(sortedPool[idx]);
+      }
+      return stops;
+    }
 
     function buildPalette(stops: RGB[]): RGB[] {
       // stops[0] is paper; the rest are hot stops. Returns N entries.
@@ -142,21 +160,285 @@ import Base from '../layouts/Base.astro';
           }
         },
       },
+      {
+        name: 'dense',
+        fn: (g) => {
+          for (let i = 0; i < g.length; i++) {
+            g[i] = Math.random() < 0.5 ? (N - 1) : ((Math.random() * N) | 0);
+          }
+        },
+      },
+      {
+        name: 'stripes-h',
+        fn: (g) => {
+          const stripes = 5 + ((Math.random() * 6) | 0);
+          for (let y = 0; y < H; y++) {
+            const s = (((y / H) * stripes) | 0) % N;
+            for (let x = 0; x < W; x++) g[y * W + x] = s;
+          }
+        },
+      },
+      {
+        name: 'checker',
+        fn: (g) => {
+          const a = (Math.random() * N) | 0;
+          let b = a;
+          while (b === a) b = (Math.random() * N) | 0;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              g[y * W + x] = ((x + y) & 1) ? a : b;
+            }
+          }
+        },
+      },
+      {
+        name: 'spiral',
+        fn: (g) => {
+          g.fill(0);
+          const cx = W / 2;
+          const cy = H / 2;
+          const turns = 6 + Math.random() * 4;
+          const maxR = Math.min(W, H) / 2;
+          const samples = Math.floor(maxR * turns * 6);
+          for (let i = 0; i < samples; i++) {
+            const t = i / samples;
+            const r = t * maxR;
+            const a = t * turns * Math.PI * 2;
+            const x = Math.round(cx + Math.cos(a) * r);
+            const y = Math.round(cy + Math.sin(a) * r);
+            if (x < 0 || x >= W || y < 0 || y >= H) continue;
+            g[y * W + x] = ((t * N) | 0) % N;
+          }
+        },
+      },
+      {
+        name: 'rings',
+        fn: (g) => {
+          const cx = W / 2;
+          const cy = H / 2;
+          const ringW = Math.max(2, Math.min(W, H) / (8 + Math.random() * 6));
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const dx = x - cx;
+              const dy = y - cy;
+              const r = Math.sqrt(dx * dx + dy * dy);
+              g[y * W + x] = ((r / ringW) | 0) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'quadrants',
+        fn: (g) => {
+          const a = (Math.random() * N) | 0;
+          const b = (a + 2) % N;
+          const c = (a + 4) % N;
+          const d = (a + 6) % N;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const top = y < H / 2;
+              const left = x < W / 2;
+              g[y * W + x] = top ? (left ? a : b) : (left ? c : d);
+            }
+          }
+        },
+      },
+      {
+        name: 'walks',
+        fn: (g) => {
+          g.fill(0);
+          const walks = 8 + ((Math.random() * 8) | 0);
+          for (let k = 0; k < walks; k++) {
+            let x = (Math.random() * W) | 0;
+            let y = (Math.random() * H) | 0;
+            const s = (Math.random() * N) | 0;
+            const len = 200 + ((Math.random() * 600) | 0);
+            for (let i = 0; i < len; i++) {
+              g[y * W + x] = s;
+              const d = (Math.random() * 4) | 0;
+              if (d === 0) x = (x + 1) % W;
+              else if (d === 1) x = (x - 1 + W) % W;
+              else if (d === 2) y = (y + 1) % H;
+              else y = (y - 1 + H) % H;
+            }
+          }
+        },
+      },
+      {
+        name: 'lines-h',
+        fn: (g) => {
+          g.fill(0);
+          const lines = 12 + ((Math.random() * 12) | 0);
+          for (let i = 0; i < lines; i++) {
+            const y = (Math.random() * H) | 0;
+            const x0 = (Math.random() * W) | 0;
+            const len = 20 + ((Math.random() * (W * 0.6)) | 0);
+            const s = (Math.random() * N) | 0;
+            for (let j = 0; j < len; j++) {
+              const x = (x0 + j) % W;
+              g[y * W + x] = s;
+            }
+          }
+        },
+      },
+      {
+        name: 'lines-v',
+        fn: (g) => {
+          g.fill(0);
+          const lines = 12 + ((Math.random() * 12) | 0);
+          for (let i = 0; i < lines; i++) {
+            const x = (Math.random() * W) | 0;
+            const y0 = (Math.random() * H) | 0;
+            const len = 20 + ((Math.random() * (H * 0.6)) | 0);
+            const s = (Math.random() * N) | 0;
+            for (let j = 0; j < len; j++) {
+              const y = (y0 + j) % H;
+              g[y * W + x] = s;
+            }
+          }
+        },
+      },
+      {
+        name: 'bullseye',
+        fn: (g) => {
+          const cx = W / 2;
+          const cy = H / 2;
+          const ringW = 6 + ((Math.random() * 8) | 0);
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const dx = x - cx;
+              const dy = y - cy;
+              const r = Math.sqrt(dx * dx + dy * dy);
+              const idx = (r / ringW) | 0;
+              g[y * W + x] = (idx & 1) === 0 ? (N - 1) : 0;
+            }
+          }
+        },
+      },
+      {
+        name: 'dots',
+        fn: (g) => {
+          g.fill(0);
+          const spacing = 8 + ((Math.random() * 12) | 0);
+          for (let y = spacing >> 1; y < H; y += spacing) {
+            for (let x = spacing >> 1; x < W; x += spacing) {
+              g[y * W + x] = (Math.random() * N) | 0;
+            }
+          }
+        },
+      },
+      {
+        name: 'clusters',
+        fn: (g) => {
+          g.fill(0);
+          const groups = 12 + ((Math.random() * 12) | 0);
+          for (let k = 0; k < groups; k++) {
+            const cx = (Math.random() * W) | 0;
+            const cy = (Math.random() * H) | 0;
+            const r = 2 + ((Math.random() * 5) | 0);
+            const r2 = r * r;
+            const s = (Math.random() * N) | 0;
+            for (let dy = -r; dy <= r; dy++) {
+              for (let dx = -r; dx <= r; dx++) {
+                if (dx * dx + dy * dy > r2) continue;
+                const x = ((cx + dx) % W + W) % W;
+                const y = ((cy + dy) % H + H) % H;
+                g[y * W + x] = s;
+              }
+            }
+          }
+        },
+      },
+      {
+        name: 'waves',
+        fn: (g) => {
+          const freq = 0.05 + Math.random() * 0.1;
+          const amp = 6 + Math.random() * 12;
+          const scale = 6;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const v = x + Math.sin(y * freq) * amp;
+              const idx = Math.floor(v / scale);
+              g[y * W + x] = ((idx % N) + N) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'voronoi',
+        fn: (g) => {
+          const k = 6 + ((Math.random() * 8) | 0);
+          const sx = new Int32Array(k);
+          const sy = new Int32Array(k);
+          const ss = new Uint8Array(k);
+          for (let i = 0; i < k; i++) {
+            sx[i] = (Math.random() * W) | 0;
+            sy[i] = (Math.random() * H) | 0;
+            ss[i] = (Math.random() * N) | 0;
+          }
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              let bestD = Infinity;
+              let best = 0;
+              for (let i = 0; i < k; i++) {
+                const dx = x - sx[i];
+                const dy = y - sy[i];
+                const d = dx * dx + dy * dy;
+                if (d < bestD) { bestD = d; best = ss[i]; }
+              }
+              g[y * W + x] = best;
+            }
+          }
+        },
+      },
+      {
+        name: 'anti-diagonal',
+        fn: (g) => {
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const t = (x + (H - y)) / (W + H);
+              const base = (t * N) | 0;
+              g[y * W + x] = (base + ((Math.random() * 3) | 0)) % N;
+            }
+          }
+        },
+      },
+      {
+        name: 'gradient-noise',
+        fn: (g) => {
+          // Coarse-cell noise: 4×4 block of pixels share a state, so the seed
+          // looks chunky/painterly compared to the per-cell uniform noise.
+          const block = 4;
+          const cw = Math.ceil(W / block);
+          const ch = Math.ceil(H / block);
+          const coarse = new Uint8Array(cw * ch);
+          for (let i = 0; i < coarse.length; i++) coarse[i] = (Math.random() * N) | 0;
+          for (let y = 0; y < H; y++) {
+            const cy = (y / block) | 0;
+            for (let x = 0; x < W; x++) {
+              const cx = (x / block) | 0;
+              g[y * W + x] = coarse[cy * cw + cx];
+            }
+          }
+        },
+      },
     ];
 
-    let schemeIdx = (Math.random() * schemes.length) | 0;
     let seedIdx = (Math.random() * seeders.length) | 0;
-    let palette: RGB[] = buildPalette([paper, ...schemes[schemeIdx].map(parseHex)]);
+    let palette: RGB[] = buildPalette([paper, ...pickStops()]);
 
     function applyCycle() {
-      palette = buildPalette([paper, ...schemes[schemeIdx].map(parseHex)]);
+      palette = buildPalette([paper, ...pickStops()]);
       seeders[seedIdx].fn(grid);
     }
 
     function advanceCycle() {
-      schemeIdx = (schemeIdx + 1) % schemes.length;
-      // step seed by 2 so the (scheme, seed) pairing isn't locked.
-      seedIdx = (seedIdx + 2) % seeders.length;
+      // Pick a different seeder than the current one.
+      if (seeders.length > 1) {
+        let next = seedIdx;
+        while (next === seedIdx) next = (Math.random() * seeders.length) | 0;
+        seedIdx = next;
+      }
       applyCycle();
     }
 
@@ -216,19 +498,27 @@ import Base from '../layouts/Base.astro';
       resizeTimer = window.setTimeout(() => { resize(); draw(); }, 200);
     });
 
-    // Hover paints a trail of max-state cells; the simulation step picks
-    // them up on the next tick. No draw() call here — the animation loop
-    // handles redraw within ~80ms.
-    let lastPaintTs = 0;
-    canvas.addEventListener('pointermove', (e) => {
-      const now = performance.now();
-      if (now - lastPaintTs < 16) return;
-      lastPaintTs = now;
-      const rect = canvas.getBoundingClientRect();
-      const gx = Math.floor(((e.clientX - rect.left) / rect.width) * W);
-      const gy = Math.floor(((e.clientY - rect.top) / rect.height) * H);
-      if (gx < 0 || gx >= W || gy < 0 || gy >= H) return;
-      grid[gy * W + gx] = N - 1;
+    const RESEED_MS = 75000;
+    const FADE_MS = 1500;
+    let cycleTimer: number | undefined;
+
+    function triggerCycle() {
+      canvas.style.opacity = '0';
+      window.setTimeout(() => {
+        advanceCycle();
+        canvas.style.opacity = '';
+      }, FADE_MS);
+    }
+
+    function scheduleAutoCycle() {
+      window.clearInterval(cycleTimer);
+      cycleTimer = window.setInterval(triggerCycle, RESEED_MS);
+    }
+
+    const restartBtn = document.getElementById('bg-restart');
+    restartBtn?.addEventListener('click', () => {
+      triggerCycle();
+      scheduleAutoCycle();
     });
 
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -245,15 +535,7 @@ import Base from '../layouts/Base.astro';
       };
       requestAnimationFrame(loop);
 
-      const RESEED_MS = 75000;
-      const FADE_MS = 1500;
-      setInterval(() => {
-        canvas.style.opacity = '0';
-        window.setTimeout(() => {
-          advanceCycle();
-          canvas.style.opacity = '';
-        }, FADE_MS);
-      }, RESEED_MS);
+      scheduleAutoCycle();
     }
   }
 </script>

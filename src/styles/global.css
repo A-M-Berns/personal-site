@@ -5,7 +5,7 @@
   --muted: #8e8e88;
   --paper: #0e0e10;
   --rule: #26262a;
-  --accent: #ff6648;
+  --accent: #c8c4ba;
 }
 
 html { font-size: 16px; color-scheme: dark; background: var(--paper); }
@@ -92,7 +92,31 @@ a:hover { color: var(--accent); }
   transition: opacity 1500ms ease-in-out;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  cursor: crosshair;
+  pointer-events: none;
+}
+
+.bg-restart {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 2;
+  font-family: var(--sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(14, 14, 16, 0.55);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: color 120ms ease, border-color 120ms ease;
+}
+.bg-restart:hover {
+  color: var(--ink);
+  border-color: var(--muted);
 }
 
 /* Content sits above the background canvas. */
@@ -100,6 +124,17 @@ a:hover { color: var(--accent); }
 .home-nav {
   position: relative;
   z-index: 1;
+}
+
+/* Highlighter-style backdrop so foreground text stays readable against the
+   moving background. box-decoration-break: clone makes multi-line text
+   render a separate rectangle per line, mimicking a marker pen. */
+.hl {
+  background-color: rgba(14, 14, 16, 0.62);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding: 0.05em 0.3em;
+  border-radius: 2px;
 }
 
 .home-nav {
@@ -118,6 +153,9 @@ a:hover { color: var(--accent); }
   text-decoration: none;
   color: var(--ink);
   width: fit-content;
+  background-color: rgba(14, 14, 16, 0.62);
+  padding: 0.05em 0.35em;
+  border-radius: 2px;
   transition: color 120ms ease, transform 120ms ease;
 }
 .home-nav a:hover {
