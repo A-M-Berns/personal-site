@@ -1,31 +1,98 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
+import { published } from '../../data/published';
+
+const sequences: Record<string, { title: string; description?: string }> = {
+  cooperation: {
+    title: 'Cooperation',
+    description: 'On precommitments, trust, and verification.',
+  },
+};
 
 const notes = (await getCollection('notes', ({ data }) => !data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const sequenceGroups = Object.entries(sequences)
+  .map(([id, meta]) => ({
+    id,
+    meta,
+    items: notes
+      .filter((n) => n.data.sequence === id)
+      .sort((a, b) => (a.data.sequenceOrder ?? 0) - (b.data.sequenceOrder ?? 0)),
+  }))
+  .filter((g) => g.items.length > 0);
+
+const otherNotes = notes.filter((n) => !n.data.sequence);
+
 const fmt = new Intl.DateTimeFormat('en', {
   year: 'numeric',
   month: 'short',
   day: 'numeric',
   timeZone: 'UTC',
 });
+
+const publishedSorted = [...published].sort((a, b) => b.date.valueOf() - a.date.valueOf());
 ---
 <Base title="Writing — A. M. Berns" description="Notes, essays, and cross-posts.">
   <header class="section-head">
     <h1>Writing</h1>
-    <p>Notes, essays, and cross-posts from LessWrong.</p>
   </header>
-  {notes.length > 0 ? (
-    <ul class="note-list">
-      {notes.map((n) => (
-        <li>
-          <time datetime={n.data.date.toISOString()}>{fmt.format(n.data.date)}</time>
-          <a href={`/notes/${n.id}/`}>{n.data.title}</a>
-        </li>
-      ))}
-    </ul>
-  ) : (
-    <p class="empty">Nothing posted yet.</p>
-  )}
+  <div class="writing-panes">
+    <section class="writing-pane">
+      <h2>Published</h2>
+      {publishedSorted.length > 0 ? (
+        <ul class="note-list">
+          {publishedSorted.map((p) => (
+            <li>
+              <time datetime={p.date.toISOString()}>{fmt.format(p.date)}</time>
+              <a href={p.url}>{p.title}</a>
+              {p.venue && <span class="venue">{p.venue}</span>}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="empty">Nothing here yet.</p>
+      )}
+    </section>
+
+    <section class="writing-pane">
+      <h2>Sequences</h2>
+      {sequenceGroups.length > 0 ? (
+        <div class="sequence-groups">
+          {sequenceGroups.map((g) => (
+            <div class="sequence-group">
+              <h3>{g.meta.title}</h3>
+              {g.meta.description && <p class="sequence-desc">{g.meta.description}</p>}
+              <ol class="note-list note-list--ordered">
+                {g.items.map((n) => (
+                  <li>
+                    <a href={`/notes/${n.id}/`}>{n.data.title}</a>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p class="empty">Nothing here yet.</p>
+      )}
+    </section>
+
+    <section class="writing-pane">
+      <h2>Other essays</h2>
+      {otherNotes.length > 0 ? (
+        <ul class="note-list">
+          {otherNotes.map((n) => (
+            <li>
+              <time datetime={n.data.date.toISOString()}>{fmt.format(n.data.date)}</time>
+              <a href={`/notes/${n.id}/`}>{n.data.title}</a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="empty">Nothing here yet.</p>
+      )}
+    </section>
+  </div>
 </Base>

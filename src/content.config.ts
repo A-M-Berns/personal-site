@@ -11,6 +11,8 @@ const notes = defineCollection({
     draft: z.boolean().default(false),
     lesswrongUrl: z.string().url().optional(),
     tags: z.array(z.string()).default([]),
+    sequence: z.string().optional(),
+    sequenceOrder: z.number().optional(),
   }),
 });
 

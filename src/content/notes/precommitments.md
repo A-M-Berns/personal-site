@@ -4,6 +4,8 @@ description: "A treatment of precommitments and how they enable cooperation, inc
 date: 2026-04-06T22:54:22.756Z
 lesswrongUrl: https://www.lesswrong.com/posts/BJC77yMctzeDjuqkB/precommitments
 tags: ["coordination-cooperation","philosophy-1"]
+sequence: cooperation
+sequenceOrder: 1
 ---
 
 Before she sends Odysseus on the rest of his journey home, Circe gives him a dire warning about one obstacle he will face: the Sirens.[^1] Most men who sail past the island of the Sirens are lured to their deaths there, as the creatures’ singing is so beautiful it entices them to abandon whatever destinations they had previously been set for. The only immunity is wax in the ears, blocking out the gorgeous voices. But Circe also suggests to Odysseus a way to hear the song and live to tell about it. Odysseus will instruct his men to bind him to the mast of his ship with rope and not release him until after the ship has passed the island. The crew will wax their ears and row, but the bound Odysseus will hear the Siren song with no ability to fall into their trap. Circe’s plan works because Odysseus cannot reverse his decision to be bound when he is near the island; the ropes allow him to resist the temptation by removing his ability to change course in the future. Binding himself to the mast lets him stick to the plan of sailing by the island, which lets him both hear the song and continue homeward. He receives two otherwise incompatible rewards because he can **precommit**[^2] to his restraint.

@@ -267,6 +267,74 @@ a:focus-visible {
 }
 .note-list a:hover { border-bottom-color: var(--accent); color: var(--ink); }
 .note-list .empty { color: var(--muted); font-style: italic; }
+.note-list .venue {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  font-style: italic;
+}
+.note-list--ordered {
+  list-style: decimal inside;
+  color: var(--muted);
+}
+.note-list--ordered li {
+  display: list-item;
+  padding-left: 0.25rem;
+}
+
+/* --- Writing panes --- */
+.writing-panes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2.5rem 3rem;
+  align-items: start;
+}
+.writing-pane h2 {
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--rule);
+}
+.writing-pane .empty {
+  color: var(--muted);
+  font-style: italic;
+  margin: 0;
+}
+.writing-pane .note-list li {
+  flex-direction: column;
+  gap: 0.15rem;
+  align-items: stretch;
+}
+.writing-pane .note-list time {
+  width: auto;
+}
+.sequence-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.sequence-group h3 {
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.01em;
+}
+.sequence-desc {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0 0 0.6rem;
+}
+@media (max-width: 900px) {
+  .writing-panes {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+}
 
 /* --- Note layout (Tufte-style float sidenotes) --- */
 .note {

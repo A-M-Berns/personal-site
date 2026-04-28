@@ -4,6 +4,8 @@ description: "A follow-up on credible precommitments, trust, verification, and c
 date: 2026-04-17T03:25:14.734Z
 lesswrongUrl: https://www.lesswrong.com/posts/2RQHoZrCoqXiLg4TM/verify-but-trust-1
 tags: ["coordination-cooperation","cryptocurrency-and-blockchain","dealmaking-ai","formal-proof","honesty","trust-and-reputation","ai"]
+sequence: cooperation
+sequenceOrder: 2
 ---
 
 [In the last essay](https://www.lesswrong.com/posts/BJC77yMctzeDjuqkB/precommitments), we established that the ability to make **credible precommitments** is a key ingredient for **cooperation**. The coming generations of AI may enable opportunities for new kinds of precommitments and new dynamics of cooperation. A growing field called [dealmaking](https://www.lesswrong.com/w/dealmaking-ai) studies how agreements between humans and near-future AI might be achieved if each party has something valuable to offer the other.[^1] In the longer term, we want superintelligent AIs that are more disposed to collaborate with each other than they are towards AI-AI war. But we know that any precommitment is only as useful as it is trustworthy, and that agents in the real world are at best translucent.[^2] What would be the effects of AIs with transparent intentions, and how might we make the intentions of humanity more transparent? What benefits would credible commitments from humanity create for deals with AIs? We can take a step toward answering these questions with a careful examination of the concept of **verifying** a precommitment.
