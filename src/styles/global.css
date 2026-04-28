@@ -22,8 +22,14 @@ body {
   font-feature-settings: 'ss01', 'cv11';
 }
 
-a { color: var(--ink); }
-a:hover { color: var(--accent); }
+a {
+  color: var(--ink);
+  transition: color 120ms ease;
+}
+a:hover,
+a:focus-visible {
+  color: var(--accent);
+}
 
 /* --- Site header --- */
 .site-header {
@@ -292,6 +298,10 @@ a:hover { color: var(--accent); }
 .note h3 { font-size: 1.25rem; font-weight: 600; margin: 2rem 0 0.5rem; }
 .note p  { margin: 0 0 1rem; }
 .note a  { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.note a:hover,
+.note a:focus-visible {
+  color: var(--ink);
+}
 .note blockquote {
   border-left: 2px solid var(--rule);
   margin: 1rem 0;
@@ -355,6 +365,7 @@ a:hover { color: var(--accent); }
 .sidenote-number {
   counter-increment: sidenote-counter;
   cursor: default;
+  transition: color 120ms ease;
 }
 .sidenote-number::after,
 .sidenote::before {
@@ -370,16 +381,12 @@ a:hover { color: var(--accent); }
   left: 0.1rem;
   color: var(--accent);
   font-family: var(--sans);
-  border: 1px solid transparent;
-  border-radius: 3px;
-  padding: 0.05rem 0.18rem;
-  transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
+  transition: color 120ms ease, text-shadow 120ms ease;
 }
 .sidenote-number:hover::after,
 .sidenote-number:focus-visible::after {
   color: var(--ink);
-  background: #1a1a1d;
-  border-color: var(--accent);
+  text-shadow: 0 0 0.45rem rgba(200, 196, 186, 0.45);
 }
 .sidenote::before {
   content: counter(sidenote-counter);
