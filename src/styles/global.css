@@ -265,9 +265,9 @@ a:hover { color: var(--accent); }
 /* --- Note layout (Tufte-style float sidenotes) --- */
 .note {
   --note-text-width: 68ch;
-  --note-margin-gap: 9ch;
-  --note-side-width: 24ch;
-  --note-side-offset: -33ch;
+  --note-margin-gap: 10ch;
+  --note-side-width: 28ch;
+  --note-side-offset: -38ch;
   max-width: calc(var(--note-text-width) + var(--note-margin-gap) + var(--note-side-width));
   position: relative;
   font-family: var(--serif);
@@ -297,6 +297,20 @@ a:hover { color: var(--accent); }
   padding: 0.1rem 1rem;
   color: var(--muted);
 }
+.note figure { margin: 2rem 0; }
+.note img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.note figcaption {
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  margin-top: 0.6rem;
+}
+.note figcaption p { margin: 0; }
 .note hr { border: none; border-top: 1px solid var(--rule); margin: 2rem 0; }
 .note code { font-size: 0.95rem; background: #1a1a1d; padding: 0.1em 0.3em; border-radius: 3px; }
 .note pre { background: #1a1a1d; padding: 1rem; overflow-x: auto; }
@@ -348,7 +362,7 @@ a:hover { color: var(--accent); }
 label.margin-toggle:not(.sidenote-number) { display: none; }
 input.margin-toggle { display: none; }
 
-@media (max-width: 1100px) {
+@media (max-width: 1180px) {
   .note { max-width: 100%; }
   .note > * { max-width: 100%; }
 
