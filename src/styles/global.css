@@ -74,12 +74,10 @@ a:hover { color: var(--accent); }
   margin: 0 0 1.25rem;
 }
 .hero h1 .dot { color: var(--accent); }
-.hero h1 .dot:first-of-type { color: var(--c3, var(--accent)); }
-.hero h1 .dot:last-of-type { color: var(--c4, var(--accent)); }
 .hero .lede {
   font-size: 1.25rem;
   line-height: 1.45;
-  color: var(--c2, var(--accent));
+  color: var(--c4, var(--accent));
   max-width: 50ch;
   margin: 0;
 }
@@ -215,10 +213,10 @@ a:hover { color: var(--accent); }
   color: var(--accent);
   transform: translateX(4px);
 }
-.home-nav a:nth-child(1):hover { color: var(--c1, var(--accent)); }
-.home-nav a:nth-child(2):hover { color: var(--c2, var(--accent)); }
-.home-nav a:nth-child(3):hover { color: var(--c3, var(--accent)); }
-.home-nav a:nth-child(4):hover { color: var(--c4, var(--accent)); }
+.home-nav a:nth-child(1):hover { color: var(--c2, var(--accent)); }
+.home-nav a:nth-child(2):hover { color: var(--c4, var(--accent)); }
+.home-nav a:nth-child(3):hover { color: var(--c6, var(--accent)); }
+.home-nav a:nth-child(4):hover { color: var(--c8, var(--accent)); }
 
 /* --- Section page header --- */
 .section-head {

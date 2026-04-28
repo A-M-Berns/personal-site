@@ -86,7 +86,7 @@ import Base from '../layouts/Base.astro';
     function pickStops(): RGB[] {
       const stops: RGB[] = [];
       const len = sortedPool.length;
-      const buckets = 4;
+      const buckets = 8;
       for (let i = 0; i < buckets; i++) {
         const lo = Math.floor((i * len) / buckets);
         const hi = Math.floor(((i + 1) * len) / buckets);
@@ -467,14 +467,14 @@ import Base from '../layouts/Base.astro';
       return `rgb(${r}, ${g}, ${b})`;
     }
     function syncAccent() {
-      // Expose each of the 4 picked stops as --c1..--c4 so the homepage can
-      // colorize dots, tagline, and per-link nav hovers with distinct palette
-      // entries. --accent stays at the brightest stop for the rest of the site.
+      // Expose each picked stop as --c1..--cN so the homepage can colorize
+      // dots, tagline, and per-link nav hovers with distinct palette entries.
+      // --accent tracks the brightest stop for the rest of the site.
       const root = document.documentElement.style;
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < currentStops.length; i++) {
         root.setProperty(`--c${i + 1}`, blendOnPaper(currentStops[i]));
       }
-      root.setProperty('--accent', blendOnPaper(currentStops[3]));
+      root.setProperty('--accent', blendOnPaper(currentStops[currentStops.length - 1]));
     }
     syncAccent();
 
