@@ -20,6 +20,19 @@ function renderMdastToHtml(nodes) {
   return toHtml(hast, { allowDangerousHtml: true });
 }
 
+function getNoteChildren(def) {
+  return def.children.length === 1 && def.children[0].type === 'paragraph'
+    ? def.children[0].children
+    : def.children;
+}
+
+function stripWrappingParagraphs(html) {
+  return html
+    .replace(/^\s*<p>/, '')
+    .replace(/<\/p>\s*$/, '')
+    .replace(/<\/p>\s*<p>/g, '<br><br>');
+}
+
 function makeReplacement(id, html, isMargin) {
   const cls = isMargin ? 'marginnote' : 'sidenote';
   const labelCls = isMargin ? 'margin-toggle' : 'margin-toggle sidenote-number';
@@ -38,31 +51,28 @@ export default function remarkSidenotes() {
       defs.set(node.identifier, node);
     });
 
+    const usedIds = new Map();
+
     visit(tree, 'footnoteReference', (node, index, parent) => {
       if (!parent || index == null) return;
       const def = defs.get(node.identifier);
       if (!def) return;
 
-      const children =
-        def.children.length === 1 && def.children[0].type === 'paragraph'
-          ? def.children[0].children
-          : def.children;
-      let html = renderMdastToHtml(children);
+      let html = stripWrappingParagraphs(renderMdastToHtml(getNoteChildren(def)));
 
       const trimmed = html.trimStart();
       const isMargin = trimmed.startsWith(MARGINNOTE_SYMBOL);
       if (isMargin) html = trimmed.slice(MARGINNOTE_SYMBOL.length).trimStart();
 
-      const id = `sn-${slugify(node.identifier)}`;
+      const baseId = `sn-${slugify(node.identifier)}`;
+      const count = usedIds.get(baseId) ?? 0;
+      usedIds.set(baseId, count + 1);
+      const id = count === 0 ? baseId : `${baseId}-${count + 1}`;
       const replacement = makeReplacement(id, html, isMargin);
       parent.children.splice(index, 1, ...replacement);
       return [SKIP, index + replacement.length];
     });
 
-    visit(tree, 'footnoteDefinition', (_node, index, parent) => {
-      if (!parent || index == null) return;
-      parent.children.splice(index, 1);
-      return [SKIP, index];
-    });
+    tree.children = tree.children.filter((node) => node.type !== 'footnoteDefinition');
   };
 }
