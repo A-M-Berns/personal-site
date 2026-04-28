@@ -29,7 +29,9 @@ import Base from '../layouts/Base.astro';
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
     const N = 8;
-    const CELL_PX = 5;
+    const CELL_PX = 2;
+    // Brush radius in cells, sized so the trail reads as ~18 screen px.
+    const BRUSH = Math.max(2, Math.round(18 / CELL_PX));
     let W = 0;
     let H = 0;
     let grid = new Uint8Array(0);
@@ -50,14 +52,15 @@ import Base from '../layouts/Base.astro';
 
     const paper = parseHex(paperHex);
 
-    // One large but cohesive cool/cyan-leaning palette. Each cycle samples 4
-    // colors — one per luma quartile — so the ramp paper → ... → light is
-    // always smooth, but the actual hues vary every reseed.
+    // Full-wheel jewel-tone pool, warm-skewed but spanning every hue so
+    // successive cycles vary widely. Each cycle samples one color per luma
+    // quartile to keep the dark→light ramp smooth.
     const colorPool: string[] = [
-      '#0a1f4d', '#142a6e', '#1d3a8a', '#2a4ec0', '#2a6fd6', '#3b8ce8',
-      '#4ad6ff', '#2cc7e0', '#98e8ee', '#cfe9ff', '#d6f5ff', '#ffffff',
-      '#0e5a5a', '#0e6b6b', '#0fbfa8', '#3ad48a', '#9af7c8', '#b8f0ff',
-      '#fff5b3', '#d6ff5a',
+      '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
+      '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
+      '#fff0b8', '#d6ff5a', '#6ad84a', '#3ad48a', '#0fbfa8',
+      '#2cc7e0', '#4ad6ff', '#2a6fd6', '#1d3a8a', '#6a1a9a',
+      '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
     ];
 
     function luma(c: RGB): number {
@@ -496,6 +499,52 @@ import Base from '../layouts/Base.astro';
     window.addEventListener('resize', () => {
       window.clearTimeout(resizeTimer);
       resizeTimer = window.setTimeout(() => { resize(); draw(); }, 200);
+    });
+
+    function paintBrush(gx: number, gy: number) {
+      const r2 = BRUSH * BRUSH;
+      const hot = N - 1;
+      for (let dy = -BRUSH; dy <= BRUSH; dy++) {
+        const y = gy + dy;
+        if (y < 0 || y >= H) continue;
+        const row = y * W;
+        for (let dx = -BRUSH; dx <= BRUSH; dx++) {
+          if (dx * dx + dy * dy > r2) continue;
+          const x = gx + dx;
+          if (x < 0 || x >= W) continue;
+          grid[row + x] = hot;
+        }
+      }
+    }
+
+    // Continuous hover trail: interpolate cells between successive pointer
+    // events so fast moves stay solid. Each painted cell is set to the
+    // current palette's hottest state, so the trail color shifts whenever
+    // the cycle picks a new palette.
+    let lastGx = -1;
+    let lastGy = -1;
+    function trailFromPointer(e: PointerEvent) {
+      const rect = canvas.getBoundingClientRect();
+      const gx = Math.floor(((e.clientX - rect.left) / rect.width) * W);
+      const gy = Math.floor(((e.clientY - rect.top) / rect.height) * H);
+      if (lastGx >= 0) {
+        const dx = gx - lastGx;
+        const dy = gy - lastGy;
+        const steps = Math.max(Math.abs(dx), Math.abs(dy));
+        for (let i = 0; i <= steps; i++) {
+          const t = steps === 0 ? 0 : i / steps;
+          paintBrush(Math.round(lastGx + dx * t), Math.round(lastGy + dy * t));
+        }
+      } else {
+        paintBrush(gx, gy);
+      }
+      lastGx = gx;
+      lastGy = gy;
+    }
+    window.addEventListener('pointermove', trailFromPointer);
+    window.addEventListener('pointerleave', () => { lastGx = -1; lastGy = -1; });
+    window.addEventListener('pointerout', (e) => {
+      if (!e.relatedTarget) { lastGx = -1; lastGy = -1; }
     });
 
     const RESEED_MS = 75000;

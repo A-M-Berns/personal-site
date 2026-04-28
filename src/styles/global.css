@@ -92,7 +92,7 @@ a:hover { color: var(--accent); }
   transition: opacity 1500ms ease-in-out;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  pointer-events: none;
+  cursor: crosshair;
 }
 
 .bg-restart {
