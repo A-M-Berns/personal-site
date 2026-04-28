@@ -77,7 +77,7 @@ a:hover { color: var(--accent); }
 .hero .lede {
   font-size: 1.25rem;
   line-height: 1.45;
-  color: var(--muted);
+  color: var(--accent);
   max-width: 50ch;
   margin: 0;
 }
@@ -175,7 +175,7 @@ a:hover { color: var(--accent); }
    moving background. box-decoration-break: clone makes multi-line text
    render a separate rectangle per line, mimicking a marker pen. */
 .hl {
-  background-color: rgba(14, 14, 16, 0.62);
+  background-color: #000;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
   padding: 0.05em 0.3em;
@@ -198,7 +198,7 @@ a:hover { color: var(--accent); }
   text-decoration: none;
   color: var(--ink);
   width: fit-content;
-  background-color: rgba(14, 14, 16, 0.62);
+  background-color: #000;
   padding: 0.05em 0.35em;
   border-radius: 2px;
   transition: color 120ms ease, transform 120ms ease;
