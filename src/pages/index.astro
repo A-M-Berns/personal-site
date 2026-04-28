@@ -189,7 +189,9 @@ import Base from '../layouts/Base.astro';
           const stripes = 5 + ((Math.random() * 6) | 0);
           for (let y = 0; y < H; y++) {
             const s = (((y / H) * stripes) | 0) % N;
-            for (let x = 0; x < W; x++) g[y * W + x] = s;
+            for (let x = 0; x < W; x++) {
+              g[y * W + x] = (s + ((Math.random() * 2) | 0)) % N;
+            }
           }
         },
       },
@@ -201,7 +203,10 @@ import Base from '../layouts/Base.astro';
           while (b === a) b = (Math.random() * N) | 0;
           for (let y = 0; y < H; y++) {
             for (let x = 0; x < W; x++) {
-              g[y * W + x] = ((x + y) & 1) ? a : b;
+              const cell = ((x + y) & 1) ? a : b;
+              // Replace ~12% of cells with random states so the checker has
+              // nucleation sites everywhere instead of stalling after a step.
+              g[y * W + x] = Math.random() < 0.12 ? ((Math.random() * N) | 0) : cell;
             }
           }
         },
@@ -209,7 +214,9 @@ import Base from '../layouts/Base.astro';
       {
         name: 'spiral',
         fn: (g) => {
-          g.fill(0);
+          // Low-amplitude noise background so the spiral isn't drawn on a
+          // dead field — spiral cells are reinforced after this fill.
+          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
           const cx = W / 2;
           const cy = H / 2;
           const turns = 6 + Math.random() * 4;
@@ -237,7 +244,8 @@ import Base from '../layouts/Base.astro';
               const dx = x - cx;
               const dy = y - cy;
               const r = Math.sqrt(dx * dx + dy * dy);
-              g[y * W + x] = ((r / ringW) | 0) % N;
+              const base = ((r / ringW) | 0) % N;
+              g[y * W + x] = (base + ((Math.random() * 2) | 0)) % N;
             }
           }
         },
@@ -253,7 +261,8 @@ import Base from '../layouts/Base.astro';
             for (let x = 0; x < W; x++) {
               const top = y < H / 2;
               const left = x < W / 2;
-              g[y * W + x] = top ? (left ? a : b) : (left ? c : d);
+              const cell = top ? (left ? a : b) : (left ? c : d);
+              g[y * W + x] = (cell + ((Math.random() * 2) | 0)) % N;
             }
           }
         },
@@ -282,7 +291,7 @@ import Base from '../layouts/Base.astro';
       {
         name: 'lines-h',
         fn: (g) => {
-          g.fill(0);
+          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
           const lines = 12 + ((Math.random() * 12) | 0);
           for (let i = 0; i < lines; i++) {
             const y = (Math.random() * H) | 0;
@@ -299,7 +308,7 @@ import Base from '../layouts/Base.astro';
       {
         name: 'lines-v',
         fn: (g) => {
-          g.fill(0);
+          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
           const lines = 12 + ((Math.random() * 12) | 0);
           for (let i = 0; i < lines; i++) {
             const x = (Math.random() * W) | 0;
@@ -325,7 +334,9 @@ import Base from '../layouts/Base.astro';
               const dy = y - cy;
               const r = Math.sqrt(dx * dx + dy * dy);
               const idx = (r / ringW) | 0;
-              g[y * W + x] = (idx & 1) === 0 ? (N - 1) : 0;
+              const base = (idx & 1) === 0 ? (N - 1) : 0;
+              // Sprinkle random states to break the rigid binary rings.
+              g[y * W + x] = Math.random() < 0.15 ? ((Math.random() * N) | 0) : base;
             }
           }
         },
@@ -333,7 +344,7 @@ import Base from '../layouts/Base.astro';
       {
         name: 'dots',
         fn: (g) => {
-          g.fill(0);
+          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
           const spacing = 8 + ((Math.random() * 12) | 0);
           for (let y = spacing >> 1; y < H; y += spacing) {
             for (let x = spacing >> 1; x < W; x += spacing) {
@@ -345,7 +356,7 @@ import Base from '../layouts/Base.astro';
       {
         name: 'clusters',
         fn: (g) => {
-          g.fill(0);
+          for (let i = 0; i < g.length; i++) g[i] = (Math.random() * 3) | 0;
           const groups = 12 + ((Math.random() * 12) | 0);
           for (let k = 0; k < groups; k++) {
             const cx = (Math.random() * W) | 0;
@@ -374,7 +385,8 @@ import Base from '../layouts/Base.astro';
             for (let x = 0; x < W; x++) {
               const v = x + Math.sin(y * freq) * amp;
               const idx = Math.floor(v / scale);
-              g[y * W + x] = ((idx % N) + N) % N;
+              const base = ((idx % N) + N) % N;
+              g[y * W + x] = (base + ((Math.random() * 2) | 0)) % N;
             }
           }
         },
@@ -401,7 +413,7 @@ import Base from '../layouts/Base.astro';
                 const d = dx * dx + dy * dy;
                 if (d < bestD) { bestD = d; best = ss[i]; }
               }
-              g[y * W + x] = best;
+              g[y * W + x] = (best + ((Math.random() * 2) | 0)) % N;
             }
           }
         },
