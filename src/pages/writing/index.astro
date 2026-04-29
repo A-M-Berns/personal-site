@@ -3,10 +3,10 @@ import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { otherWriting, published } from '../../data/published';
 
-const sequences: Record<string, { title: string; description?: string }> = {
+const sequences: Record<string, { title: string; href?: string }> = {
   cooperation: {
-    title: 'Cooperation',
-    description: 'On precommitments, trust, and verification.',
+    title: 'Verification for Cooperation',
+    href: '/essays/verification-for-cooperation/',
   },
 };
 
@@ -18,7 +18,7 @@ const sequenceGroups = Object.entries(sequences)
     id,
     meta,
     items: essays
-      .filter((n) => n.data.sequence === id)
+      .filter((n) => n.data.sequence === id && n.data.sequenceOrder !== 0)
       .sort((a, b) => (a.data.sequenceOrder ?? 0) - (b.data.sequenceOrder ?? 0)),
   }))
   .filter((g) => g.items.length > 0);
@@ -63,8 +63,9 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
         <div class="sequence-groups">
           {sequenceGroups.map((g) => (
             <div class="sequence-group">
-              <h3>{g.meta.title}</h3>
-              {g.meta.description && <p class="sequence-desc">{g.meta.description}</p>}
+              <h3>
+                {g.meta.href ? <a href={g.meta.href}>{g.meta.title}</a> : g.meta.title}
+              </h3>
               <ol class="note-list note-list--ordered">
                 {g.items.map((n) => (
                   <li>
