@@ -2,7 +2,7 @@
 
 Source for [amberns.com](https://amberns.com) — Anson Berns's research landing page and writings.
 
-Built with [Astro](https://astro.build). Notes live in `src/content/notes/` as Markdown, with standard footnote syntax (`[^1]`) rendered as Tufte-style sidenotes.
+Built with [Astro](https://astro.build). Essays live in `src/content/essays/` as Markdown, with standard footnote syntax (`[^1]`) rendered as Tufte-style sidenotes.
 
 ## Develop
 

@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-import { published } from '../../data/published';
+import { otherWriting, published } from '../../data/published';
 
 const sequences: Record<string, { title: string; description?: string }> = {
   cooperation: {
@@ -10,29 +10,30 @@ const sequences: Record<string, { title: string; description?: string }> = {
   },
 };
 
-const notes = (await getCollection('notes', ({ data }) => !data.draft))
+const essays = (await getCollection('essays', ({ data }) => !data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 const sequenceGroups = Object.entries(sequences)
   .map(([id, meta]) => ({
     id,
     meta,
-    items: notes
+    items: essays
       .filter((n) => n.data.sequence === id)
       .sort((a, b) => (a.data.sequenceOrder ?? 0) - (b.data.sequenceOrder ?? 0)),
   }))
   .filter((g) => g.items.length > 0);
 
-const otherNotes = notes.filter((n) => !n.data.sequence);
+const otherEssays = essays.filter((n) => !n.data.sequence);
 
 const fmt = new Intl.DateTimeFormat('en', {
   year: 'numeric',
-  month: 'short',
+  month: 'long',
   day: 'numeric',
   timeZone: 'UTC',
 });
 
 const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.sortDate.valueOf());
+const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf() - a.sortDate.valueOf());
 ---
 <Base title="Writing — A. M. Berns" description="Notes, essays, and cross-posts.">
   <header class="section-head">
@@ -67,7 +68,7 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
               <ol class="note-list note-list--ordered">
                 {g.items.map((n) => (
                   <li>
-                    <a href={`/notes/${n.id}/`}>{n.data.title}</a>
+                    <a href={`/essays/${n.id}/`}>{n.data.title}</a>
                   </li>
                 ))}
               </ol>
@@ -81,12 +82,19 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
 
     <section class="writing-pane">
       <h2>Other</h2>
-      {otherNotes.length > 0 ? (
+      {otherWritingSorted.length > 0 || otherEssays.length > 0 ? (
         <ul class="note-list">
-          {otherNotes.map((n) => (
+          {otherWritingSorted.map((p) => (
+            <li>
+              <time datetime={p.sortDate.toISOString()}>{p.displayDate}</time>
+              <a href={p.url}>{p.title}</a>
+              {p.venue && <span class="venue">{p.venue}</span>}
+            </li>
+          ))}
+          {otherEssays.map((n) => (
             <li>
               <time datetime={n.data.date.toISOString()}>{fmt.format(n.data.date)}</time>
-              <a href={`/notes/${n.id}/`}>{n.data.title}</a>
+              <a href={`/essays/${n.id}/`}>{n.data.title}</a>
             </li>
           ))}
         </ul>
