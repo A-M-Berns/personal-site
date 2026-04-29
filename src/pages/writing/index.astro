@@ -32,7 +32,7 @@ const fmt = new Intl.DateTimeFormat('en', {
   timeZone: 'UTC',
 });
 
-const publishedSorted = [...published].sort((a, b) => b.date.valueOf() - a.date.valueOf());
+const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.sortDate.valueOf());
 ---
 <Base title="Writing — A. M. Berns" description="Notes, essays, and cross-posts.">
   <header class="section-head">
@@ -45,7 +45,7 @@ const publishedSorted = [...published].sort((a, b) => b.date.valueOf() - a.date.
         <ul class="note-list">
           {publishedSorted.map((p) => (
             <li>
-              <time datetime={p.date.toISOString()}>{fmt.format(p.date)}</time>
+              <time datetime={p.sortDate.toISOString()}>{p.displayDate}</time>
               <a href={p.url}>{p.title}</a>
               {p.venue && <span class="venue">{p.venue}</span>}
             </li>
