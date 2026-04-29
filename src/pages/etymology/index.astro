@@ -1,0 +1,818 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="Etymology — A. M. Berns" description="A Wiktionary-powered etymology tree explorer.">
+  <section class="etymology-page">
+    <header class="section-head etymology-head">
+      <h1>Etymology</h1>
+    </header>
+
+    <section class="etymology-tool" aria-label="Etymology tree explorer">
+      <form id="ety-form" class="ety-form">
+        <label>
+          <span>Word</span>
+          <input id="ety-word" name="word" type="search" value="cooperation" autocomplete="off" spellcheck="false" />
+        </label>
+        <label>
+          <span>Language</span>
+          <select id="ety-language" name="language">
+            <option value="English|en" selected>English</option>
+            <option value="Latin|la">Latin</option>
+            <option value="Ancient Greek|grc">Ancient Greek</option>
+            <option value="French|fr">French</option>
+            <option value="Old English|ang">Old English</option>
+            <option value="Middle English|enm">Middle English</option>
+            <option value="Proto-Indo-European|ine-pro">Proto-Indo-European</option>
+            <option value="Proto-Germanic|gem-pro">Proto-Germanic</option>
+          </select>
+        </label>
+        <button type="submit">Trace</button>
+      </form>
+
+      <div id="ety-status" class="ety-status" role="status"></div>
+
+      <div class="ety-workspace">
+        <div class="ety-canvas">
+          <svg id="ety-tree" aria-label="Etymology tree"></svg>
+        </div>
+
+        <aside class="ety-panel" aria-live="polite">
+          <div class="ety-panel-main">
+            <p class="ety-kicker" id="ety-relation">Selected</p>
+            <h2 id="ety-panel-title">cooperation</h2>
+            <p id="ety-panel-meta" class="ety-panel-meta">English</p>
+            <p id="ety-panel-text" class="ety-panel-text"></p>
+          </div>
+          <div class="ety-panel-actions">
+            <button id="ety-expand" type="button">Expand ancestry</button>
+            <a id="ety-source" href="https://en.wiktionary.org/wiki/cooperation">Wiktionary</a>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </section>
+</Base>
+
+<script>
+  type EtyNode = {
+    id: string;
+    term: string;
+    langCode: string;
+    langName: string;
+    relation: string;
+    gloss: string;
+    sourceTitle: string;
+    sourceUrl: string;
+    etymologyText: string;
+    etymologyCount: number;
+    loaded: boolean;
+    loading: boolean;
+    children: EtyNode[];
+  };
+
+  type Candidate = {
+    term: string;
+    langCode: string;
+    langName: string;
+    relation: string;
+    gloss: string;
+    weak: boolean;
+  };
+
+  type Template = {
+    name: string;
+    params: string[];
+    named: Record<string, string>;
+    raw: string;
+  };
+
+  const API = 'https://en.wiktionary.org/w/api.php';
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  const form = document.getElementById('ety-form') as HTMLFormElement | null;
+  const wordInput = document.getElementById('ety-word') as HTMLInputElement | null;
+  const langSelect = document.getElementById('ety-language') as HTMLSelectElement | null;
+  const statusEl = document.getElementById('ety-status') as HTMLElement | null;
+  const svg = document.getElementById('ety-tree') as SVGSVGElement | null;
+  const panelTitle = document.getElementById('ety-panel-title') as HTMLElement | null;
+  const panelMeta = document.getElementById('ety-panel-meta') as HTMLElement | null;
+  const panelText = document.getElementById('ety-panel-text') as HTMLElement | null;
+  const panelRelation = document.getElementById('ety-relation') as HTMLElement | null;
+  const expandButton = document.getElementById('ety-expand') as HTMLButtonElement | null;
+  const sourceLink = document.getElementById('ety-source') as HTMLAnchorElement | null;
+
+  const langNames: Record<string, string> = {
+    ae: 'Avestan',
+    ang: 'Old English',
+    ar: 'Arabic',
+    de: 'German',
+    egy: 'Egyptian',
+    en: 'English',
+    enm: 'Middle English',
+    es: 'Spanish',
+    fr: 'French',
+    fro: 'Old French',
+    ga: 'Irish',
+    gem: 'Germanic',
+    'gem-pro': 'Proto-Germanic',
+    got: 'Gothic',
+    grc: 'Ancient Greek',
+    he: 'Hebrew',
+    hit: 'Hittite',
+    ine: 'Indo-European',
+    'ine-pro': 'Proto-Indo-European',
+    it: 'Italian',
+    la: 'Latin',
+    'la-lat': 'Latin',
+    non: 'Old Norse',
+    peo: 'Old Persian',
+    ru: 'Russian',
+    sa: 'Sanskrit',
+    sco: 'Scots',
+  };
+
+  const originTemplateRelations: Record<string, string> = {
+    affix: 'formed from',
+    af: 'formed from',
+    back: 'back-formation from',
+    bor: 'borrowed from',
+    borrowing: 'borrowed from',
+    calque: 'calque of',
+    compound: 'compound of',
+    com: 'compound of',
+    confix: 'formed from',
+    der: 'derived from',
+    derived: 'derived from',
+    doublet: 'doublet of',
+    inh: 'inherited from',
+    inherited: 'inherited from',
+    lbor: 'learned borrowing from',
+    obor: 'orthographic borrowing from',
+    prefix: 'formed from',
+    pre: 'formed from',
+    root: 'from root',
+    suffix: 'formed from',
+    suf: 'formed from',
+    surf: 'surface analysis',
+    uder: 'ultimately derived from',
+    univ: 'univerbation of',
+  };
+
+  const mentionTemplates = new Set(['l', 'link', 'm', 'mention', 'term']);
+  const relatedTemplates = new Set(['cog', 'cognate', 'ncog', 'noncognate']);
+  const wikitextCache = new Map<string, string>();
+
+  let root: EtyNode | null = null;
+  let selectedId = '';
+  let nodeSerial = 0;
+
+  function setStatus(message: string, busy = false) {
+    if (!statusEl) return;
+    statusEl.textContent = message;
+    statusEl.classList.toggle('is-busy', busy);
+  }
+
+  function escapeTitle(title: string) {
+    return encodeURIComponent(title.replaceAll(' ', '_')).replaceAll('%2F', '/');
+  }
+
+  function sourceUrl(title: string) {
+    return `https://en.wiktionary.org/wiki/${escapeTitle(title)}`;
+  }
+
+  function languageName(code: string) {
+    return langNames[code] || langNames[canonicalLangCode(code)] || code || 'Unknown';
+  }
+
+  function canonicalLangCode(code: string) {
+    const aliases: Record<string, string> = {
+      'la-lat': 'la',
+    };
+    return aliases[code] || code;
+  }
+
+  function nextId() {
+    nodeSerial += 1;
+    return `ety-${nodeSerial}`;
+  }
+
+  function cleanTerm(term: string) {
+    return stripWikiMarkup(term)
+      .replace(/^["'`]+|["'`]+$/g, '')
+      .replace(/^\s+|\s+$/g, '')
+      .replace(/\s+/g, ' ');
+  }
+
+  function hasUsableTerm(term: string) {
+    return Boolean(term && term !== '-' && term !== '?' && !term.includes('='));
+  }
+
+  function templateName(name: string) {
+    return name.trim().toLowerCase().replace(/^template:/, '').replace(/[+_]/g, '');
+  }
+
+  function splitTopLevel(input: string, sep = '|') {
+    const parts: string[] = [];
+    let depthCurly = 0;
+    let depthSquare = 0;
+    let start = 0;
+
+    for (let i = 0; i < input.length; i++) {
+      const pair = input.slice(i, i + 2);
+      if (pair === '{{') {
+        depthCurly += 1;
+        i += 1;
+      } else if (pair === '}}') {
+        depthCurly = Math.max(0, depthCurly - 1);
+        i += 1;
+      } else if (pair === '[[') {
+        depthSquare += 1;
+        i += 1;
+      } else if (pair === ']]') {
+        depthSquare = Math.max(0, depthSquare - 1);
+        i += 1;
+      } else if (input[i] === sep && depthCurly === 0 && depthSquare === 0) {
+        parts.push(input.slice(start, i));
+        start = i + 1;
+      }
+    }
+
+    parts.push(input.slice(start));
+    return parts;
+  }
+
+  function findTemplateEnd(text: string, start: number) {
+    let depth = 0;
+    for (let i = start; i < text.length - 1; i++) {
+      const pair = text.slice(i, i + 2);
+      if (pair === '{{') {
+        depth += 1;
+        i += 1;
+      } else if (pair === '}}') {
+        depth -= 1;
+        i += 1;
+        if (depth === 0) return i + 1;
+      }
+    }
+    return -1;
+  }
+
+  function parseTemplate(raw: string): Template | null {
+    if (!raw.startsWith('{{') || !raw.endsWith('}}')) return null;
+    const parts = splitTopLevel(raw.slice(2, -2));
+    const name = templateName(parts.shift() || '');
+    if (!name) return null;
+
+    const params: string[] = [];
+    const named: Record<string, string> = {};
+    for (const part of parts) {
+      const eq = part.indexOf('=');
+      if (eq > 0 && /^[a-zA-Z0-9_-]+$/.test(part.slice(0, eq).trim())) {
+        named[part.slice(0, eq).trim()] = part.slice(eq + 1).trim();
+      } else {
+        params.push(part.trim());
+      }
+    }
+    return { name, params, named, raw };
+  }
+
+  function templatesIn(text: string) {
+    const out: Template[] = [];
+    let index = 0;
+    while (index < text.length) {
+      const start = text.indexOf('{{', index);
+      if (start === -1) break;
+      const end = findTemplateEnd(text, start);
+      if (end === -1) break;
+      const raw = text.slice(start, end);
+      const parsed = parseTemplate(raw);
+      if (parsed) out.push(parsed);
+      index = end;
+    }
+    return out;
+  }
+
+  function stripWikiMarkup(text: string) {
+    return text
+      .replace(/\[\[([^|\]#]+)(?:#[^\]|]+)?\|([^\]]+)\]\]/g, '$2')
+      .replace(/\[\[([^|\]#]+)(?:#[^\]|]+)?\]\]/g, '$1')
+      .replace(/'{2,}/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&');
+  }
+
+  function renderTemplate(raw: string) {
+    const parsed = parseTemplate(raw);
+    if (!parsed) return '';
+    const { name, params, named } = parsed;
+
+    if (originTemplateRelations[name]) {
+      if (name === 'compound' || name === 'com' || name === 'affix' || name === 'af' || name === 'prefix' || name === 'pre' || name === 'suffix' || name === 'suf' || name === 'surf' || name === 'confix') {
+        return params.slice(1).map(cleanTerm).filter(Boolean).join(' + ');
+      }
+      return cleanTerm(params[2] || params[1] || named.alt || '');
+    }
+
+    if (mentionTemplates.has(name) || relatedTemplates.has(name)) {
+      return cleanTerm(params[1] || params[0] || named.alt || '');
+    }
+
+    if (name === 'gloss' || name === 'sense' || name === 'q' || name === 'qualifier') {
+      return params.join(', ');
+    }
+
+    if (name === 'ux' || name === 'quote' || name === 'rfv-etym' || name === 'rfe') {
+      return '';
+    }
+
+    return cleanTerm(named.t || named.gloss || params.find((p) => p && !p.includes('=')) || '');
+  }
+
+  function stripTemplates(text: string) {
+    let out = text;
+    let guard = 0;
+    while (out.includes('{{') && guard < 20) {
+      guard += 1;
+      out = out.replace(/\{\{([^{}]*)\}\}/g, (raw) => renderTemplate(raw));
+    }
+    return out;
+  }
+
+  function cleanExcerpt(text: string) {
+    const cleaned = stripTemplates(text)
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<ref[\s\S]*?<\/ref>/gi, '')
+      .replace(/<ref[^>]*\/>/gi, '')
+      .replace(/^\s*[:*#;]+/gm, '')
+      .replace(/\[\[Category:[^\]]+\]\]/gi, '')
+      .replace(/\[\[File:[^\]]+\]\]/gi, '')
+      .replace(/^={2,}.+?={2,}$/gm, '')
+      .split('\n')
+      .map((line) => stripWikiMarkup(line).trim())
+      .filter(Boolean)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return cleaned.length > 900 ? `${cleaned.slice(0, 880).replace(/\s+\S*$/, '')}...` : cleaned;
+  }
+
+  function findHeadings(text: string, level: number) {
+    const marks = '='.repeat(level);
+    const re = new RegExp(`^${marks}([^=\\n]+)${marks}\\s*$`, 'gm');
+    return [...text.matchAll(re)].map((m) => ({
+      title: (m[1] || '').trim(),
+      start: m.index || 0,
+      end: (m.index || 0) + m[0].length,
+    }));
+  }
+
+  function extractLanguageSection(wikitext: string, langName: string) {
+    const headings = findHeadings(wikitext, 2);
+    const wanted = langName.toLowerCase();
+    const matchIndex = headings.findIndex((h) => h.title.toLowerCase() === wanted);
+    if (matchIndex === -1) return null;
+    const start = headings[matchIndex].end;
+    const end = headings[matchIndex + 1]?.start ?? wikitext.length;
+    return wikitext.slice(start, end);
+  }
+
+  function extractEtymologies(languageText: string) {
+    const headings = findHeadings(languageText, 3);
+    const etymologies = headings
+      .map((h, i) => ({
+        title: h.title,
+        body: languageText.slice(h.end, headings[i + 1]?.start ?? languageText.length),
+      }))
+      .filter((section) => /^Etymology(?:\s+\d+)?$/i.test(section.title));
+
+    if (etymologies.length > 0) return etymologies;
+
+    const firstHeading = headings[0]?.start ?? languageText.length;
+    const fallback = languageText.slice(0, firstHeading);
+    return fallback.trim() ? [{ title: 'Etymology', body: fallback }] : [];
+  }
+
+  function titleForLookup(term: string, langCode: string, langName: string) {
+    const clean = term.replace(/^\*/, '');
+    if (langCode.endsWith('-pro')) return `Reconstruction:${langName}/${clean}`;
+    return clean;
+  }
+
+  async function fetchWikitext(title: string) {
+    const key = title.toLowerCase();
+    const cached = wikitextCache.get(key);
+    if (cached) return cached;
+
+    const url = new URL(API);
+    url.searchParams.set('action', 'query');
+    url.searchParams.set('prop', 'revisions');
+    url.searchParams.set('rvprop', 'content');
+    url.searchParams.set('rvslots', 'main');
+    url.searchParams.set('titles', title);
+    url.searchParams.set('format', 'json');
+    url.searchParams.set('formatversion', '2');
+    url.searchParams.set('origin', '*');
+
+    const response = await fetch(url.toString());
+    if (!response.ok) throw new Error(`Wiktionary returned ${response.status}.`);
+    const json = await response.json();
+    const page = json?.query?.pages?.[0];
+    if (!page || page.missing) throw new Error(`No Wiktionary page for "${title}".`);
+    const source = page.revisions?.[0]?.slots?.main?.content;
+    if (!source) throw new Error(`No source text for "${title}".`);
+    wikitextCache.set(key, source);
+    return source;
+  }
+
+  function inferLineRelation(line: string) {
+    const lower = line.toLowerCase();
+    if (lower.includes('borrow')) return 'borrowed from';
+    if (lower.includes('inherit')) return 'inherited from';
+    if (lower.includes('calque')) return 'calque of';
+    if (lower.includes('compound') || lower.includes('composed') || lower.includes('formed')) return 'formed from';
+    if (lower.includes('cognate')) return 'cognate with';
+    if (lower.includes('root')) return 'from root';
+    if (lower.includes('from')) return lower.includes('ultimately') ? 'ultimately from' : 'from';
+    return 'related to';
+  }
+
+  function lineLooksEtymological(line: string) {
+    return /\b(from|borrow|derive|inherit|compound|formed|equivalent|calque|cognate|root|ultimately)\b/i.test(line);
+  }
+
+  function candidateFromTemplate(template: Template, fallbackLangCode: string, relation: string, weak = false): Candidate | null {
+    const params = template.params;
+    let langCode = fallbackLangCode;
+    let term = '';
+    let gloss = '';
+
+    if (originTemplateRelations[template.name]) {
+      langCode = canonicalLangCode(params[1] || fallbackLangCode);
+      term = params[2] || params[1] || '';
+      gloss = template.named.t || template.named.gloss || params[3] || '';
+    } else if (mentionTemplates.has(template.name) || relatedTemplates.has(template.name)) {
+      langCode = canonicalLangCode(params[0] || fallbackLangCode);
+      term = params[1] || '';
+      gloss = template.named.t || template.named.gloss || params[2] || '';
+    }
+
+    term = cleanTerm(term);
+    gloss = cleanTerm(gloss);
+    if (!hasUsableTerm(term)) return null;
+
+    return {
+      term,
+      langCode,
+      langName: languageName(langCode),
+      relation,
+      gloss,
+      weak,
+    };
+  }
+
+  function componentCandidates(template: Template, fallbackLangCode: string, relation: string) {
+    const targetLang = canonicalLangCode(template.params[0] || fallbackLangCode);
+    return template.params
+      .slice(1)
+      .map((part) => cleanTerm(part))
+      .filter(hasUsableTerm)
+      .map((term) => ({
+        term,
+        langCode: targetLang,
+        langName: languageName(targetLang),
+        relation,
+        gloss: '',
+        weak: false,
+      }));
+  }
+
+  function wikiLinkCandidates(line: string, langCode: string, relation: string) {
+    const out: Candidate[] = [];
+    const re = /\[\[([^|\]#]+)(?:#[^\]|]+)?(?:\|([^\]]+))?\]\]/g;
+    for (const match of line.matchAll(re)) {
+      const term = cleanTerm(match[1] || match[2] || '');
+      if (!hasUsableTerm(term) || /^Category:|^File:/i.test(term)) continue;
+      out.push({
+        term,
+        langCode,
+        langName: languageName(langCode),
+        relation,
+        gloss: '',
+        weak: true,
+      });
+    }
+    return out;
+  }
+
+  function parseCandidates(etymologyText: string, currentLangCode: string) {
+    const strong: Candidate[] = [];
+    const weak: Candidate[] = [];
+    const lines = etymologyText
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    for (const line of lines) {
+      const relation = inferLineRelation(line);
+      const templates = templatesIn(line);
+
+      for (const template of templates) {
+        if (template.name === 'compound' || template.name === 'com' || template.name === 'affix' || template.name === 'af' || template.name === 'prefix' || template.name === 'pre' || template.name === 'suffix' || template.name === 'suf' || template.name === 'surf' || template.name === 'confix') {
+          strong.push(...componentCandidates(template, currentLangCode, originTemplateRelations[template.name] || relation));
+          continue;
+        }
+
+        if (originTemplateRelations[template.name]) {
+          const candidate = candidateFromTemplate(template, currentLangCode, originTemplateRelations[template.name]);
+          if (candidate) strong.push(candidate);
+          continue;
+        }
+
+        if (mentionTemplates.has(template.name) && lineLooksEtymological(line)) {
+          const candidate = candidateFromTemplate(template, currentLangCode, relation, relation === 'related to');
+          if (candidate) (candidate.weak ? weak : strong).push(candidate);
+          continue;
+        }
+
+        if (relatedTemplates.has(template.name)) {
+          const candidate = candidateFromTemplate(template, currentLangCode, 'cognate with', true);
+          if (candidate) weak.push(candidate);
+        }
+      }
+
+      if (strong.length === 0 && lineLooksEtymological(line)) {
+        weak.push(...wikiLinkCandidates(line, currentLangCode, relation));
+      }
+    }
+
+    const chosen = strong.length > 0 ? strong : weak;
+    const seen = new Set<string>();
+    return chosen.filter((candidate) => {
+      const key = `${candidate.langCode}:${candidate.term.toLowerCase()}:${candidate.relation}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).slice(0, 9);
+  }
+
+  function makeShellNode(candidate: Candidate): EtyNode {
+    const title = titleForLookup(candidate.term, candidate.langCode, candidate.langName);
+    return {
+      id: nextId(),
+      term: candidate.term,
+      langCode: candidate.langCode,
+      langName: candidate.langName,
+      relation: candidate.relation,
+      gloss: candidate.gloss,
+      sourceTitle: title,
+      sourceUrl: sourceUrl(title),
+      etymologyText: '',
+      etymologyCount: 0,
+      loaded: false,
+      loading: false,
+      children: [],
+    };
+  }
+
+  async function loadNode(term: string, langName: string, langCode: string, relation = 'Selected', gloss = '') {
+    const title = titleForLookup(term, langCode, langName);
+    const node: EtyNode = {
+      id: nextId(),
+      term,
+      langCode,
+      langName,
+      relation,
+      gloss,
+      sourceTitle: title,
+      sourceUrl: sourceUrl(title),
+      etymologyText: '',
+      etymologyCount: 0,
+      loaded: false,
+      loading: true,
+      children: [],
+    };
+
+    const source = await fetchWikitext(title);
+    const section = extractLanguageSection(source, langName) || source;
+    const etymologies = extractEtymologies(section);
+    const body = etymologies[0]?.body || '';
+    node.etymologyText = body ? cleanExcerpt(body) : 'No etymology section found for this language.';
+    node.etymologyCount = etymologies.length;
+    node.children = parseCandidates(body, langCode).map(makeShellNode);
+    node.loaded = true;
+    node.loading = false;
+    return node;
+  }
+
+  function findNode(node: EtyNode | null, id: string): EtyNode | null {
+    if (!node) return null;
+    if (node.id === id) return node;
+    for (const child of node.children) {
+      const found = findNode(child, id);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  function maxDepth(node: EtyNode): number {
+    return node.children.length ? 1 + Math.max(...node.children.map(maxDepth)) : 0;
+  }
+
+  function leafCount(node: EtyNode): number {
+    return node.children.length ? node.children.map(leafCount).reduce((a, b) => a + b, 0) : 1;
+  }
+
+  function shortLabel(text: string, max = 20) {
+    return text.length > max ? `${text.slice(0, max - 1)}...` : text;
+  }
+
+  function svgEl<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}) {
+    const el = document.createElementNS(SVG_NS, tag);
+    for (const [key, value] of Object.entries(attrs)) {
+      el.setAttribute(key, String(value));
+    }
+    return el;
+  }
+
+  function renderTree() {
+    if (!svg || !root) return;
+    svg.replaceChildren();
+
+    const leafW = 190;
+    const rowH = 132;
+    const marginX = 72;
+    const marginY = 46;
+    const width = Math.max(760, leafCount(root) * leafW + marginX * 2);
+    const height = Math.max(360, (maxDepth(root) + 1) * rowH + marginY * 2);
+    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    const positioned: Array<{ node: EtyNode; x: number; y: number }> = [];
+    const edges: Array<{ from: EtyNode; to: EtyNode; x1: number; y1: number; x2: number; y2: number }> = [];
+
+    function assign(node: EtyNode, depth: number, left: number, span: number) {
+      const x = left + span / 2;
+      const y = marginY + depth * rowH;
+      positioned.push({ node, x, y });
+
+      let childLeft = left;
+      for (const child of node.children) {
+        const childSpan = leafCount(child) * leafW;
+        const childX = childLeft + childSpan / 2;
+        const childY = marginY + (depth + 1) * rowH;
+        edges.push({ from: node, to: child, x1: x, y1: y + 28, x2: childX, y2: childY - 28 });
+        assign(child, depth + 1, childLeft, childSpan);
+        childLeft += childSpan;
+      }
+    }
+
+    assign(root, 0, marginX, width - marginX * 2);
+
+    const edgeLayer = svgEl('g', { class: 'ety-edges' });
+    for (const edge of edges) {
+      const midY = (edge.y1 + edge.y2) / 2;
+      const path = svgEl('path', {
+        d: `M ${edge.x1} ${edge.y1} C ${edge.x1} ${midY}, ${edge.x2} ${midY}, ${edge.x2} ${edge.y2}`,
+        class: edge.to.relation.includes('cognate') || edge.to.relation.includes('possibly') ? 'ety-edge ety-edge--weak' : 'ety-edge',
+      });
+      edgeLayer.append(path);
+
+      const label = svgEl('text', {
+        x: (edge.x1 + edge.x2) / 2,
+        y: midY - 6,
+        class: 'ety-edge-label',
+        'text-anchor': 'middle',
+      });
+      label.textContent = edge.to.relation;
+      edgeLayer.append(label);
+    }
+    svg.append(edgeLayer);
+
+    const nodeLayer = svgEl('g', { class: 'ety-nodes' });
+    for (const item of positioned) {
+      const { node, x, y } = item;
+      const group = svgEl('g', {
+        class: node.id === selectedId ? 'ety-node is-selected' : 'ety-node',
+        transform: `translate(${x - 74} ${y - 34})`,
+        tabindex: '0',
+      });
+      group.addEventListener('click', () => selectNode(node.id));
+      group.addEventListener('keydown', (event) => {
+        if (event instanceof KeyboardEvent && (event.key === 'Enter' || event.key === ' ')) {
+          event.preventDefault();
+          selectNode(node.id);
+        }
+      });
+
+      group.append(svgEl('rect', { width: 148, height: 68, rx: 5, ry: 5 }));
+
+      const term = svgEl('text', { x: 74, y: 27, class: 'ety-node-term', 'text-anchor': 'middle' });
+      term.textContent = shortLabel(node.term);
+      group.append(term);
+
+      const meta = svgEl('text', { x: 74, y: 49, class: 'ety-node-meta', 'text-anchor': 'middle' });
+      meta.textContent = node.loaded ? node.langName : `${node.langName} / closed`;
+      group.append(meta);
+
+      if (node.loading) {
+        group.append(svgEl('circle', { cx: 132, cy: 14, r: 4, class: 'ety-node-dot' }));
+      } else if (!node.loaded) {
+        group.append(svgEl('circle', { cx: 132, cy: 14, r: 4, class: 'ety-node-dot ety-node-dot--closed' }));
+      }
+
+      nodeLayer.append(group);
+    }
+    svg.append(nodeLayer);
+  }
+
+  function selectNode(id: string) {
+    selectedId = id;
+    const node = findNode(root, id);
+    if (!node) return;
+
+    if (panelTitle) panelTitle.textContent = node.term;
+    if (panelMeta) {
+      const parts = [node.langName];
+      if (node.gloss) parts.push(node.gloss);
+      if (node.etymologyCount > 1) parts.push(`${node.etymologyCount} etymologies`);
+      panelMeta.textContent = parts.join(' / ');
+    }
+    if (panelRelation) panelRelation.textContent = node.relation || 'Selected';
+    if (panelText) panelText.textContent = node.etymologyText || 'Not expanded yet.';
+    if (sourceLink) sourceLink.href = node.sourceUrl;
+    if (expandButton) {
+      expandButton.disabled = node.loading || node.loaded;
+      expandButton.textContent = node.loading ? 'Loading' : node.loaded ? 'Expanded' : 'Expand ancestry';
+    }
+    renderTree();
+  }
+
+  async function expandSelected() {
+    const node = findNode(root, selectedId);
+    if (!node || node.loaded || node.loading) return;
+    node.loading = true;
+    selectNode(node.id);
+    setStatus(`Tracing ${node.term}...`, true);
+
+    try {
+      const loaded = await loadNode(node.term, node.langName, node.langCode, node.relation, node.gloss);
+      node.sourceTitle = loaded.sourceTitle;
+      node.sourceUrl = loaded.sourceUrl;
+      node.etymologyText = loaded.etymologyText;
+      node.etymologyCount = loaded.etymologyCount;
+      node.children = loaded.children;
+      node.loaded = true;
+      setStatus('');
+    } catch (error) {
+      node.etymologyText = error instanceof Error ? error.message : 'Could not expand this node.';
+      setStatus(node.etymologyText);
+    } finally {
+      node.loading = false;
+      selectNode(node.id);
+    }
+  }
+
+  function selectedLanguage() {
+    const raw = langSelect?.value || 'English|en';
+    const [name, code] = raw.split('|');
+    return { name: name || 'English', code: code || 'en' };
+  }
+
+  async function traceCurrentWord() {
+    const term = cleanTerm(wordInput?.value || '');
+    if (!term) return;
+    const lang = selectedLanguage();
+    setStatus(`Tracing ${term}...`, true);
+    nodeSerial = 0;
+    root = null;
+    selectedId = '';
+    renderTree();
+
+    try {
+      root = await loadNode(term, lang.name, lang.code);
+      selectedId = root.id;
+      setStatus(root.children.length ? '' : 'No parseable ancestry found in the first etymology section.');
+      selectNode(root.id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not trace this word.';
+      setStatus(message);
+      root = null;
+      if (svg) svg.replaceChildren();
+      if (panelTitle) panelTitle.textContent = term;
+      if (panelMeta) panelMeta.textContent = lang.name;
+      if (panelRelation) panelRelation.textContent = 'Error';
+      if (panelText) panelText.textContent = message;
+    }
+  }
+
+  form?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    void traceCurrentWord();
+  });
+  expandButton?.addEventListener('click', () => {
+    void expandSelected();
+  });
+
+  void traceCurrentWord();
+</script>
