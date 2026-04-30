@@ -54,8 +54,8 @@ import Base from '../../layouts/Base.astro';
     type RGB = [number, number, number];
     type WangTile = { n: number; e: number; s: number; w: number };
     type TileSet = { name: string; colors: number; tiles: WangTile[] };
-    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'hexCells' | 'beads' | 'scales' | 'ribbons';
-    type GrowthMode = 'spores' | 'tendrils' | 'river' | 'rings' | 'islands';
+    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'hexCells' | 'beads' | 'scales' | 'ribbons' | 'triangleLattice' | 'hexLattice' | 'kiteMesh';
+    type GrowthMode = 'spores' | 'tendrils' | 'river' | 'rings' | 'islands' | 'lightning' | 'roots' | 'vortex' | 'contours';
     type SpeedMode = { name: string; divisor: number; minStep: number };
     type Cycle = {
       seed: number;
@@ -357,6 +357,21 @@ import Base from '../../layouts/Base.astro';
           scores[idx] = r + Math.sin(r * 0.9 + Math.atan2(dy, dx) * 4) * 4 + rng() * 4;
         } else if (growth === 'islands') {
           scores[idx] = nearest + wave * 1.4 + eddy * 1.8 + rng() * 8;
+        } else if (growth === 'lightning') {
+          const branch = Math.abs(Math.sin((x * 0.7 + y * 1.9) * bend + Math.sin(y * 0.33) * 2));
+          scores[idx] = nearest * 0.35 + branch * 18 + y * 0.10 + rng() * 5;
+        } else if (growth === 'roots') {
+          const roots = Math.min(...starts.map((s) => Math.abs(x - s.x) * 0.38 + Math.max(0, y - s.y) * 0.75));
+          scores[idx] = roots + Math.sin(x * bend * 2.4 + y * 0.2) * 4 + rng() * 5;
+        } else if (growth === 'vortex') {
+          const dx = x - cx;
+          const dy = y - cy;
+          const r = Math.sqrt(dx * dx + dy * dy);
+          const angle = Math.atan2(dy, dx);
+          scores[idx] = r * 0.55 + Math.sin(angle * 7 + r * 0.42) * 7 + rng() * 5;
+        } else if (growth === 'contours') {
+          const band = Math.abs(Math.sin((x * driftX + y * driftY) * bend));
+          scores[idx] = nearest * 0.55 + band * 12 + eddy + rng() * 4;
         } else {
           scores[idx] = nearest + wave + eddy + rng() * 4.5;
         }
@@ -371,8 +386,8 @@ import Base from '../../layouts/Base.astro';
     function makeCycle() {
       const seed = hashString(`${Date.now()}:${Math.random()}`);
       const rng = mulberry32(seed);
-      const skins: VisualSkin[] = ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'beads', 'scales', 'ribbons'];
-      const growthModes: GrowthMode[] = ['spores', 'tendrils', 'river', 'rings', 'islands'];
+      const skins: VisualSkin[] = ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'beads', 'scales', 'ribbons', 'triangleLattice', 'hexLattice', 'kiteMesh'];
+      const growthModes: GrowthMode[] = ['spores', 'tendrils', 'river', 'rings', 'islands', 'lightning', 'roots', 'vortex', 'contours'];
       const speeds: SpeedMode[] = [
         { name: 'slow', divisor: 480, minStep: 1 },
         { name: 'medium', divisor: 340, minStep: 2 },
@@ -444,7 +459,66 @@ import Base from '../../layouts/Base.astro';
       ctx.fill();
     }
 
-    function drawTile(tile: WangTile, x: number, y: number, size: number, palette: RGB[], skin: VisualSkin) {
+    function drawTriangleLattice(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
+      const side = size * 1.55;
+      const h = side * 0.86;
+      const x = col * side * 0.50 - side;
+      const y = row * h - h;
+      const up = ((col + row) & 1) === 0;
+      const points: Array<[number, number]> = up
+        ? [[x, y + h], [x + side, y + h], [x + side * 0.5, y]]
+        : [[x, y], [x + side, y], [x + side * 0.5, y + h]];
+      const center: [number, number] = [
+        (points[0][0] + points[1][0] + points[2][0]) / 3,
+        (points[0][1] + points[1][1] + points[2][1]) / 3,
+      ];
+      const north = colorFor(tile.n, palette);
+      const east = colorFor(tile.e, palette);
+      const south = colorFor(tile.s, palette);
+      const west = colorFor(tile.w, palette);
+      if (skin === 'kiteMesh') {
+        fillPoly([points[0], center, points[2]], mix(west, north, 0.45), 0.94);
+        fillPoly([points[2], center, points[1]], mix(north, east, 0.45), 0.94);
+        fillPoly([points[1], center, points[0]], mix(south, east, 0.45), 0.94);
+      } else {
+        fillPoly([points[0], points[1], center], up ? south : north, 0.96);
+        fillPoly([points[1], points[2], center], east, 0.88);
+        fillPoly([points[2], points[0], center], west, 0.88);
+      }
+    }
+
+    function drawHexLattice(tile: WangTile, col: number, row: number, size: number, palette: RGB[]) {
+      const r = size * 0.72;
+      const cx = col * r * 1.5 - r;
+      const cy = row * r * 1.72 + (col & 1 ? r * 0.86 : 0) - r;
+      const points: Array<[number, number]> = [];
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 6 + i * Math.PI / 3;
+        points.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+      }
+      const north = colorFor(tile.n, palette);
+      const east = colorFor(tile.e, palette);
+      const south = colorFor(tile.s, palette);
+      const west = colorFor(tile.w, palette);
+      fillPoly([points[5], points[0], [cx, cy]], north, 0.92);
+      fillPoly([points[0], points[1], [cx, cy]], mix(north, east, 0.50), 0.88);
+      fillPoly([points[1], points[2], [cx, cy]], east, 0.88);
+      fillPoly([points[2], points[3], [cx, cy]], south, 0.92);
+      fillPoly([points[3], points[4], [cx, cy]], mix(south, west, 0.50), 0.88);
+      fillPoly([points[4], points[5], [cx, cy]], west, 0.88);
+    }
+
+    function drawTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
+      if (skin === 'triangleLattice' || skin === 'kiteMesh') {
+        drawTriangleLattice(tile, col, row, size, palette, skin);
+        return;
+      }
+      if (skin === 'hexLattice') {
+        drawHexLattice(tile, col, row, size, palette);
+        return;
+      }
+      const x = col * size;
+      const y = row * size;
       const x2 = x + size;
       const y2 = y + size;
       const cx = x + size / 2;
@@ -552,9 +626,9 @@ import Base from '../../layouts/Base.astro';
         if (!cycle.visible[pos]) continue;
         const tileIdx = cycle.grid[pos];
         if (tileIdx < 0) continue;
-        const x = (pos % cycle.cols) * cycle.tileSize;
-        const y = Math.floor(pos / cycle.cols) * cycle.tileSize;
-        drawTile(cycle.tileset.tiles[tileIdx], x, y, cycle.tileSize, cycle.palette, cycle.skin);
+        const col = pos % cycle.cols;
+        const row = Math.floor(pos / cycle.cols);
+        drawTile(cycle.tileset.tiles[tileIdx], col, row, cycle.tileSize, cycle.palette, cycle.skin);
       }
     }
 
