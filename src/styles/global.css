@@ -305,7 +305,7 @@ a:focus-visible {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  opacity: 0.76;
+  opacity: 0.58;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -395,7 +395,7 @@ a:focus-visible {
 }
 @media (max-width: 900px) {
   .memory-net {
-    opacity: 0.68;
+    opacity: 0.52;
   }
   .writing-panes {
     grid-template-columns: 1fr;
