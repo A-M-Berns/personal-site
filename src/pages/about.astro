@@ -75,112 +75,147 @@ import Base from '../layouts/Base.astro';
       return out;
     }
 
+    const waterPalette = buildPalette([
+      '#06111f', '#0a2440', '#0e4964', '#12777b',
+      '#22a7a0', '#66ded0', '#d2fff8',
+    ].map(parseHex));
+
+    type Drop = {
+      x: number;
+      y: number;
+      vy: number;
+      tail: number;
+      value: number;
+    };
+
     let W = 0;
     let H = 0;
-    let water = new Uint8Array(0);
-    let next = new Uint8Array(0);
-    let rain = new Uint8Array(0);
+    let height = new Float32Array(0);
+    let velocity = new Float32Array(0);
+    let drops: Drop[] = [];
     let img: ImageData | null = null;
-    let palette = buildPalette(pickStops());
+    let rainPalette = buildPalette(pickStops());
     let draining = false;
-    let cycle = 0;
 
     function resize() {
       W = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
       H = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
       canvas.width = W;
       canvas.height = H;
-      water = new Uint8Array(W * H);
-      next = new Uint8Array(W * H);
-      rain = new Uint8Array(W * H);
+      height = new Float32Array(W);
+      velocity = new Float32Array(W);
+      drops = [];
       img = ctx.createImageData(W, H);
       draining = false;
-      cycle = 0;
-      palette = buildPalette(pickStops());
+      rainPalette = buildPalette(pickStops());
+    }
+
+    function surfaceY(x: number): number {
+      const ix = Math.max(0, Math.min(W - 1, x | 0));
+      return H - 1 - height[ix];
+    }
+
+    function splash(x: number, amount: number) {
+      const mid = Math.max(0, Math.min(W - 1, x | 0));
+      for (let dx = -5; dx <= 5; dx++) {
+        const ix = mid + dx;
+        if (ix < 0 || ix >= W) continue;
+        const falloff = Math.max(0, 1 - Math.abs(dx) / 5.8);
+        height[ix] += amount * falloff;
+        velocity[ix] += amount * 0.035 * falloff;
+      }
     }
 
     function addRain() {
-      const drops = Math.max(2, Math.floor(W / 80));
-      for (let k = 0; k < drops; k++) {
-        if (Math.random() > 0.72) continue;
-        const x = (Math.random() * W) | 0;
-        const len = 2 + ((Math.random() * 8) | 0);
-        for (let y = 0; y < len; y++) {
-          const idx = y * W + x;
-          rain[idx] = Math.max(rain[idx], N - 1 - Math.min(3, y));
-        }
+      if (draining) return;
+      const attempts = Math.max(3, Math.floor(W / 36));
+      for (let k = 0; k < attempts; k++) {
+        if (drops.length > W * 1.4 || Math.random() > 0.5) continue;
+        drops.push({
+          x: Math.random() * W,
+          y: -2 - Math.random() * H * 0.4,
+          vy: 0.75 + Math.random() * 1.1,
+          tail: 3 + ((Math.random() * 8) | 0),
+          value: 4 + ((Math.random() * 4) | 0),
+        });
       }
     }
 
     function step() {
       addRain();
 
-      next.fill(0);
-      for (let y = H - 1; y >= 0; y--) {
-        for (let x = 0; x < W; x++) {
-          const idx = y * W + x;
-          const mass = water[idx];
-          if (!mass) continue;
-          if (draining) {
-            if (Math.random() < 0.06) continue;
-          }
-          if (y + 1 < H && next[(y + 1) * W + x] < N - 1) {
-            next[(y + 1) * W + x] = Math.min(N - 1, next[(y + 1) * W + x] + mass);
-          } else {
-            const dirs = Math.random() < 0.5 ? [-1, 1] : [1, -1];
-            let placed = false;
-            for (const dx of dirs) {
-              const xx = x + dx;
-              if (xx < 0 || xx >= W) continue;
-              const nidx = y * W + xx;
-              if (next[nidx] < mass) {
-                next[nidx] = mass;
-                placed = true;
-                break;
-              }
-            }
-            if (!placed) next[idx] = Math.max(next[idx], mass);
-          }
+      for (let i = drops.length - 1; i >= 0; i--) {
+        const d = drops[i];
+        d.vy += 0.075;
+        d.y += d.vy;
+        if (d.y >= surfaceY(d.x)) {
+          splash(d.x, 0.72 + Math.random() * 0.58);
+          drops.splice(i, 1);
+        } else if (d.y > H + d.tail + 4) {
+          drops.splice(i, 1);
         }
       }
 
-      for (let y = H - 1; y >= 0; y--) {
-        for (let x = 0; x < W; x++) {
-          const idx = y * W + x;
-          if (rain[idx]) {
-            if (y + 1 < H && !next[(y + 1) * W + x]) {
-              rain[(y + 1) * W + x] = rain[idx];
-            } else {
-              next[idx] = Math.max(next[idx], rain[idx]);
-            }
-            rain[idx] = 0;
-          }
-        }
+      let total = 0;
+      for (let x = 1; x < W - 1; x++) {
+        const neighbors = (height[x - 1] + height[x + 1]) * 0.5;
+        velocity[x] += (neighbors - height[x]) * 0.06;
+        velocity[x] *= 0.988;
+      }
+      for (let x = 0; x < W; x++) {
+        if (draining) velocity[x] -= 0.045;
+        height[x] = Math.max(0, Math.min(H - 2, height[x] + velocity[x]));
+        if (draining) height[x] *= 0.992;
+        total += height[x];
       }
 
-      const tmp = water;
-      water = next;
-      next = tmp;
-
-      let filled = 0;
-      for (let i = 0; i < water.length; i++) if (water[i]) filled++;
-      if (!draining && filled > water.length * 0.62) draining = true;
-      if (draining && filled < water.length * 0.03) {
+      const avg = total / W;
+      if (!draining && avg > H * 0.68) draining = true;
+      if (draining && avg < 1) {
         draining = false;
-        rain.fill(0);
-        water.fill(0);
-        palette = buildPalette(pickStops());
+        drops = [];
+        height.fill(0);
+        velocity.fill(0);
+        rainPalette = buildPalette(pickStops());
       }
-      cycle++;
     }
 
     function draw() {
       if (!img) return;
       const data = img.data;
-      for (let i = 0; i < water.length; i++) {
-        const v = Math.max(water[i], rain[i]);
-        const c = v ? palette[Math.min(N - 1, v)] : paper;
-        const j = i * 4;
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const depth = height[x] - (H - 1 - y);
+          const c = depth > 0
+            ? waterPalette[Math.min(N - 1, Math.max(1, Math.floor(depth * 0.55) + 1))]
+            : paper;
+          const j = (y * W + x) * 4;
+          data[j] = c[0];
+          data[j + 1] = c[1];
+          data[j + 2] = c[2];
+          data[j + 3] = 255;
+        }
+      }
+
+      for (const d of drops) {
+        const x = d.x | 0;
+        for (let t = 0; t < d.tail; t++) {
+          const y = (d.y - t) | 0;
+          if (x < 0 || x >= W || y < 0 || y >= H) continue;
+          const c = rainPalette[Math.max(1, d.value - Math.min(4, t))];
+          const j = (y * W + x) * 4;
+          data[j] = c[0];
+          data[j + 1] = c[1];
+          data[j + 2] = c[2];
+          data[j + 3] = 255;
+        }
+      }
+
+      for (let x = 0; x < W; x++) {
+        const y = surfaceY(x) | 0;
+        if (y < 0 || y >= H) continue;
+        const c = waterPalette[N - 1];
+        const j = (y * W + x) * 4;
         data[j] = c[0];
         data[j + 1] = c[1];
         data[j + 2] = c[2];

@@ -90,7 +90,7 @@ a:focus-visible {
   margin-top: 1.5rem;
 }
 .hero h1 {
-  font-family: var(--display);
+  font-family: var(--font-lexend), var(--sans);
   font-size: clamp(2.75rem, 7vw, 4.25rem);
   font-weight: 700;
   letter-spacing: 0;
@@ -99,6 +99,8 @@ a:focus-visible {
 }
 .hero h1 .dot { color: var(--accent); }
 .hero .lede {
+  font-family: var(--font-lexend), var(--sans);
+  font-weight: 650;
   font-size: 1.25rem;
   line-height: 1.45;
   color: var(--c4, var(--accent));
@@ -127,7 +129,7 @@ a:focus-visible {
   gap: 0.5rem;
 }
 .bg-controls button {
-  font-family: var(--display);
+  font-family: var(--font-lexend), var(--sans);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -154,7 +156,7 @@ a:focus-visible {
   border-radius: 4px;
   padding: 1.5rem 1.75rem 1.25rem;
   max-width: 38rem;
-  font-family: var(--sans);
+  font-family: var(--font-lexend), var(--sans);
   font-size: 0.95rem;
   line-height: 1.55;
   position: relative;
@@ -220,7 +222,7 @@ a:focus-visible {
   max-width: 60ch;
 }
 .home-nav a {
-  font-family: var(--display);
+  font-family: var(--font-lexend), var(--sans);
   font-size: clamp(1.75rem, 4.5vw, 2.5rem);
   font-weight: 700;
   letter-spacing: 0;
@@ -242,40 +244,6 @@ a:focus-visible {
 .home-nav a:nth-child(3):hover { color: var(--c6, var(--accent)); }
 .home-nav a:nth-child(4):hover { color: var(--c8, var(--accent)); }
 
-.font-workshop .font-sample,
-.home-nav .font-sample {
-  display: inline-block;
-  position: relative;
-  font-weight: 800;
-  line-height: 1.05;
-  margin-right: 0.12em;
-  padding-bottom: 0.24em;
-}
-.font-workshop--lede .font-sample {
-  font-weight: 760;
-  margin-right: 0.05em;
-}
-.home-nav .font-sample::after,
-.font-workshop .font-sample::after {
-  content: attr(data-font);
-  position: absolute;
-  left: 0;
-  top: calc(100% - 0.18em);
-  color: var(--muted);
-  font-family: var(--sans);
-  font-size: 0.18em;
-  font-weight: 600;
-  line-height: 1;
-  opacity: 0.72;
-  white-space: nowrap;
-}
-.font-workshop--lede .font-sample::after {
-  font-size: 0.42em;
-  top: calc(100% - 0.1em);
-}
-.home-nav .font-sample::after {
-  font-size: 0.26em;
-}
 .font-space { font-family: var(--font-space), var(--sans); }
 .font-sora { font-family: var(--font-sora), var(--sans); }
 .font-manrope { font-family: var(--font-manrope), var(--sans); }
