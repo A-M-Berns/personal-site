@@ -71,6 +71,7 @@ import Base from '../../layouts/Base.astro';
       grid: Int16Array;
       order: number[];
       revealed: number;
+      visible: Uint8Array;
       hold: number;
       palette: RGB[];
     };
@@ -373,7 +374,6 @@ import Base from '../../layouts/Base.astro';
       const skins: VisualSkin[] = ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'beads', 'scales', 'ribbons'];
       const growthModes: GrowthMode[] = ['spores', 'tendrils', 'river', 'rings', 'islands'];
       const speeds: SpeedMode[] = [
-        { name: 'glacial', divisor: 640, minStep: 1 },
         { name: 'slow', divisor: 480, minStep: 1 },
         { name: 'medium', divisor: 340, minStep: 2 },
         { name: 'quick', divisor: 230, minStep: 3 },
@@ -407,9 +407,11 @@ import Base from '../../layouts/Base.astro';
         grid,
         order: makeOrganicOrder(cols, rows, growth, rng),
         revealed: reduce ? cols * rows : 0,
+        visible: new Uint8Array(cols * rows),
         hold: 0,
         palette: pickPalette(Math.max(3, Math.min(5, tileset.colors)), rng),
       };
+      if (reduce) cycle.visible.fill(1);
       updateLabel();
     }
 
@@ -546,9 +548,8 @@ import Base from '../../layouts/Base.astro';
       if (!cycle) return;
       ctx.fillStyle = rgb(paper);
       ctx.fillRect(0, 0, W, H);
-      const count = Math.min(cycle.order.length, Math.floor(cycle.revealed));
-      for (let i = 0; i < count; i++) {
-        const pos = cycle.order[i];
+      for (let pos = 0; pos < cycle.visible.length; pos++) {
+        if (!cycle.visible[pos]) continue;
         const tileIdx = cycle.grid[pos];
         if (tileIdx < 0) continue;
         const x = (pos % cycle.cols) * cycle.tileSize;
@@ -561,10 +562,35 @@ import Base from '../../layouts/Base.astro';
       if (!cycle) return;
       const total = cycle.cols * cycle.rows;
       if (cycle.revealed < total) {
-        cycle.revealed += cycle.revealStep;
+        const next = Math.min(total, cycle.revealed + cycle.revealStep);
+        for (let i = cycle.revealed; i < next; i++) cycle.visible[cycle.order[i]] = 1;
+        cycle.revealed = next;
       } else if (++cycle.hold > HOLD_FRAMES) {
         makeCycle();
       }
+    }
+
+    function revealBurst(clientX: number, clientY: number) {
+      if (!cycle) return;
+      const rect = canvas.getBoundingClientRect();
+      const gx = ((clientX - rect.left) / rect.width) * W;
+      const gy = ((clientY - rect.top) / rect.height) * H;
+      const cx = Math.floor(gx / cycle.tileSize);
+      const cy = Math.floor(gy / cycle.tileSize);
+      const radius = 4 + Math.floor(cycle.rng() * 5);
+      for (let y = cy - radius; y <= cy + radius; y++) {
+        if (y < 0 || y >= cycle.rows) continue;
+        for (let x = cx - radius; x <= cx + radius; x++) {
+          if (x < 0 || x >= cycle.cols) continue;
+          const dx = x - cx;
+          const dy = y - cy;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d <= radius + Math.sin((x + y) * 0.9) * 1.2 + cycle.rng() * 1.8) {
+            cycle.visible[y * cycle.cols + x] = 1;
+          }
+        }
+      }
+      draw();
     }
 
     function resize() {
@@ -594,6 +620,7 @@ import Base from '../../layouts/Base.astro';
       makeCycle();
       draw();
     });
+    canvas.addEventListener('pointerdown', (event) => revealBurst(event.clientX, event.clientY));
     infoButton?.addEventListener('click', () => aboutDialog?.showModal());
     aboutClose?.addEventListener('click', () => aboutDialog?.close());
     aboutDialog?.addEventListener('click', (event) => {
