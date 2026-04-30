@@ -263,11 +263,12 @@ a:focus-visible {
   width: 7rem;
 }
 .note-list a {
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  padding-bottom: 1px;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
 }
-.note-list a:hover { border-bottom-color: var(--accent); color: var(--ink); }
+.note-list a:hover { text-decoration-color: var(--accent); color: var(--ink); }
 .note-list .empty { color: var(--muted); font-style: italic; }
 .note-list .venue {
   font-size: 0.8125rem;
@@ -284,6 +285,25 @@ a:focus-visible {
 }
 
 /* --- Writing panes --- */
+.writing-shell {
+  position: relative;
+  isolation: isolate;
+}
+.writing-visual {
+  position: absolute;
+  top: -2rem;
+  right: -4vw;
+  z-index: 0;
+  width: min(48rem, 90vw);
+  height: 16rem;
+  pointer-events: none;
+  opacity: 0.8;
+}
+.writing-shell > .section-head,
+.writing-panes {
+  position: relative;
+  z-index: 1;
+}
 .writing-panes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -354,6 +374,17 @@ a:focus-visible {
   border: 0;
   border-radius: 8px;
   background: #1a1a1d;
+}
+.music-track h3 {
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.75rem;
+}
+.music-track audio {
+  display: block;
+  width: min(100%, 42rem);
 }
 
 /* --- Note layout (Tufte-style float sidenotes) --- */

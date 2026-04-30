@@ -36,72 +36,169 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
 const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf() - a.sortDate.valueOf());
 ---
 <Base title="Writing — A. M. Berns" description="Notes, essays, and cross-posts.">
-  <header class="section-head">
-    <h1>Writing</h1>
-  </header>
-  <div class="writing-panes">
-    <section class="writing-pane">
-      <h2>Published</h2>
-      {publishedSorted.length > 0 ? (
-        <ul class="note-list">
-          {publishedSorted.map((p) => (
-            <li>
-              <time datetime={p.sortDate.toISOString()}>{p.displayDate}</time>
-              <a href={p.url}>{p.title}</a>
-              {p.venue && <span class="venue">{p.venue}</span>}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p class="empty">Nothing here yet.</p>
-      )}
-    </section>
+  <div class="writing-shell">
+    <canvas id="writing-visual" class="writing-visual" aria-hidden="true"></canvas>
+    <header class="section-head">
+      <h1>Writing</h1>
+    </header>
+    <div class="writing-panes">
+      <section class="writing-pane">
+        <h2>Published</h2>
+        {publishedSorted.length > 0 ? (
+          <ul class="note-list">
+            {publishedSorted.map((p) => (
+              <li>
+                <time datetime={p.sortDate.toISOString()}>{p.displayDate}</time>
+                <a href={p.url}>{p.title}</a>
+                {p.venue && <span class="venue">{p.venue}</span>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="empty">Nothing here yet.</p>
+        )}
+      </section>
 
-    <section class="writing-pane">
-      <h2>Essays</h2>
-      {sequenceGroups.length > 0 ? (
-        <div class="sequence-groups">
-          {sequenceGroups.map((g) => (
-            <div class="sequence-group">
-              <h3>
-                {g.meta.href ? <a href={g.meta.href}>{g.meta.title}</a> : g.meta.title}
-              </h3>
-              <ol class="note-list note-list--ordered">
-                {g.items.map((n) => (
-                  <li>
-                    <a href={`/essays/${n.id}/`}>{n.data.title}</a>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p class="empty">Nothing here yet.</p>
-      )}
-    </section>
+      <section class="writing-pane">
+        <h2>Essays</h2>
+        {sequenceGroups.length > 0 ? (
+          <div class="sequence-groups">
+            {sequenceGroups.map((g) => (
+              <div class="sequence-group">
+                <h3>
+                  {g.meta.href ? <a href={g.meta.href}>{g.meta.title}</a> : g.meta.title}
+                </h3>
+                <ol class="note-list note-list--ordered">
+                  {g.items.map((n) => (
+                    <li>
+                      <a href={`/essays/${n.id}/`}>{n.data.title}</a>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="empty">Nothing here yet.</p>
+        )}
+      </section>
 
-    <section class="writing-pane">
-      <h2>Other</h2>
-      {otherWritingSorted.length > 0 || otherEssays.length > 0 ? (
-        <ul class="note-list">
-          {otherWritingSorted.map((p) => (
-            <li>
-              <time datetime={p.sortDate.toISOString()}>{p.displayDate}</time>
-              <a href={p.url}>{p.title}</a>
-              {p.venue && <span class="venue">{p.venue}</span>}
-            </li>
-          ))}
-          {otherEssays.map((n) => (
-            <li>
-              <time datetime={n.data.date.toISOString()}>{fmt.format(n.data.date)}</time>
-              <a href={`/essays/${n.id}/`}>{n.data.title}</a>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p class="empty">Nothing here yet.</p>
-      )}
-    </section>
+      <section class="writing-pane">
+        <h2>Other</h2>
+        {otherWritingSorted.length > 0 || otherEssays.length > 0 ? (
+          <ul class="note-list">
+            {otherWritingSorted.map((p) => (
+              <li>
+                <time datetime={p.sortDate.toISOString()}>{p.displayDate}</time>
+                <a href={p.url}>{p.title}</a>
+                {p.venue && <span class="venue">{p.venue}</span>}
+              </li>
+            ))}
+            {otherEssays.map((n) => (
+              <li>
+                <time datetime={n.data.date.toISOString()}>{fmt.format(n.data.date)}</time>
+                <a href={`/essays/${n.id}/`}>{n.data.title}</a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="empty">Nothing here yet.</p>
+        )}
+      </section>
+    </div>
   </div>
 </Base>
+
+<script>
+  const canvas = document.getElementById('writing-visual') as HTMLCanvasElement | null;
+  if (canvas) {
+    const ctx = canvas.getContext('2d')!;
+    const words = [
+      'trust', 'verify', 'proof', 'kernel', 'context', 'sequence',
+      'cooperate', 'commitment', 'formal', 'translucent', 'credible',
+      'sidenote', 'essay', 'agent', 'institution', 'specification',
+    ];
+    const styles = getComputedStyle(document.documentElement);
+    const ink = styles.getPropertyValue('--ink').trim() || '#ececec';
+    const muted = styles.getPropertyValue('--muted').trim() || '#8e8e88';
+    const accent = styles.getPropertyValue('--accent').trim() || '#c8c4ba';
+    const fontFamily = styles.getPropertyValue('--sans').trim() || 'sans-serif';
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    type Fragment = {
+      text: string;
+      x: number;
+      y: number;
+      speed: number;
+      size: number;
+      phase: number;
+      color: string;
+    };
+
+    let fragments: Fragment[] = [];
+    let w = 0;
+    let h = 0;
+    let dpr = 1;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = Math.max(1, rect.width);
+      h = Math.max(1, rect.height);
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const count = Math.max(18, Math.floor((w * h) / 15000));
+      fragments = Array.from({ length: count }, (_, i) => ({
+        text: words[i % words.length],
+        x: Math.random() * w,
+        y: Math.random() * h,
+        speed: 0.08 + Math.random() * 0.16,
+        size: 12 + Math.random() * 12,
+        phase: Math.random() * Math.PI * 2,
+        color: Math.random() < 0.2 ? accent : (Math.random() < 0.45 ? ink : muted),
+      }));
+    }
+
+    function draw(t: number) {
+      ctx.clearRect(0, 0, w, h);
+      ctx.textBaseline = 'middle';
+      for (const f of fragments) {
+        const drift = reduce ? 0 : t * f.speed * 0.04;
+        const x = (f.x + drift) % (w + 120) - 60;
+        const y = f.y + Math.sin(t * 0.001 + f.phase) * 8;
+        const alpha = 0.12 + 0.12 * Math.sin(t * 0.0008 + f.phase) ** 2;
+        ctx.font = `${f.size}px ${fontFamily}`;
+        ctx.fillStyle = f.color;
+        ctx.globalAlpha = alpha;
+        ctx.fillText(f.text, x, y);
+      }
+
+      ctx.globalAlpha = 0.18;
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 1;
+      for (let i = 0; i < fragments.length - 1; i += 3) {
+        const a = fragments[i];
+        const b = fragments[i + 1];
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    resize();
+    draw(0);
+    window.addEventListener('resize', resize);
+
+    if (!reduce) {
+      const loop = (t: number) => {
+        draw(t);
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    }
+  }
+</script>
