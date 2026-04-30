@@ -5,11 +5,11 @@ import Base from '../layouts/Base.astro';
   <div class="about-shell">
     <canvas id="rain-sim" class="rain-sim" aria-hidden="true"></canvas>
     <header class="section-head">
-      <h1>About</h1>
-      <p>A short bio goes here.</p>
+      <h1><span class="hl">About</span></h1>
+      <p><span class="hl">A short bio goes here.</span></p>
     </header>
     <article class="note">
-      <p>More to come.</p>
+      <p><span class="hl">More to come.</span></p>
     </article>
   </div>
 </Base>
@@ -18,159 +18,175 @@ import Base from '../layouts/Base.astro';
   const canvas = document.getElementById('rain-sim') as HTMLCanvasElement | null;
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
+    const N = 8;
+    const CELL_PX = 4;
     const styles = getComputedStyle(document.documentElement);
-    const ink = styles.getPropertyValue('--ink').trim() || '#ececec';
-    const muted = styles.getPropertyValue('--muted').trim() || '#8e8e88';
-    const accent = styles.getPropertyValue('--accent').trim() || '#c8c4ba';
+    const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const cols = 116;
 
-    type Drop = {
-      x: number;
-      y: number;
-      vy: number;
-      len: number;
-      alpha: number;
-    };
+    type RGB = [number, number, number];
 
-    let w = 0;
-    let h = 0;
-    let dpr = 1;
-    let colW = 1;
-    let water = new Float32Array(cols);
-    let velocity = new Float32Array(cols);
-    let drops: Drop[] = [];
+    function parseHex(h: string): RGB {
+      const s = h.trim().replace('#', '');
+      const full = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
+      const n = parseInt(full, 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+
+    function luma(c: RGB): number {
+      return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+    }
+
+    const paper = parseHex(paperHex);
+    const colorPool = [
+      '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
+      '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
+      '#fff0b8', '#d6ff5a', '#6ad84a', '#3ad48a', '#0fbfa8',
+      '#2cc7e0', '#4ad6ff', '#2a6fd6', '#1d3a8a', '#6a1a9a',
+      '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
+    ].map(parseHex).sort((a, b) => luma(a) - luma(b));
+
+    function pickStops(): RGB[] {
+      const stops: RGB[] = [];
+      for (let i = 0; i < N; i++) {
+        const lo = Math.floor((i * colorPool.length) / N);
+        const hi = Math.floor(((i + 1) * colorPool.length) / N);
+        stops.push(colorPool[lo + ((Math.random() * Math.max(1, hi - lo)) | 0)]);
+      }
+      return stops;
+    }
+
+    function buildPalette(stops: RGB[]): RGB[] {
+      const all = [paper, ...stops];
+      const out: RGB[] = [];
+      for (let i = 0; i < N; i++) {
+        const t = i / (N - 1);
+        const segF = t * (all.length - 1);
+        const seg = Math.min(Math.floor(segF), all.length - 2);
+        const lt = segF - seg;
+        const a = all[seg];
+        const b = all[seg + 1];
+        out.push([
+          Math.round(a[0] + (b[0] - a[0]) * lt),
+          Math.round(a[1] + (b[1] - a[1]) * lt),
+          Math.round(a[2] + (b[2] - a[2]) * lt),
+        ]);
+      }
+      return out;
+    }
+
+    let W = 0;
+    let H = 0;
+    let water = new Uint8Array(0);
+    let next = new Uint8Array(0);
+    let rain = new Uint8Array(0);
+    let img: ImageData | null = null;
+    let palette = buildPalette(pickStops());
     let draining = false;
+    let cycle = 0;
 
     function resize() {
-      const rect = canvas.getBoundingClientRect();
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = Math.max(1, rect.width);
-      h = Math.max(1, rect.height);
-      colW = w / (cols - 1);
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      water = new Float32Array(cols);
-      velocity = new Float32Array(cols);
-      drops = [];
+      W = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
+      H = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
+      canvas.width = W;
+      canvas.height = H;
+      water = new Uint8Array(W * H);
+      next = new Uint8Array(W * H);
+      rain = new Uint8Array(W * H);
+      img = ctx.createImageData(W, H);
       draining = false;
-      for (let i = 0; i < cols; i++) water[i] = 4 + Math.random() * 3;
+      cycle = 0;
+      palette = buildPalette(pickStops());
     }
 
-    function columnAt(x: number): number {
-      return Math.max(0, Math.min(cols - 1, Math.round(x / colW)));
-    }
-
-    function surfaceAt(x: number): number {
-      return h - 10 - water[columnAt(x)];
-    }
-
-    function addWater(x: number, amount: number) {
-      const mid = columnAt(x);
-      for (let dx = -3; dx <= 3; dx++) {
-        const i = mid + dx;
-        if (i < 0 || i >= cols) continue;
-        const falloff = 1 - Math.abs(dx) / 4;
-        water[i] += amount * falloff;
-        velocity[i] += amount * 0.08 * falloff;
-      }
-    }
-
-    function maybeRain() {
-      if (draining) return;
-      const burst = Math.random() < 0.08 ? 4 : 1;
-      for (let i = 0; i < burst; i++) {
-        if (drops.length > 160 || Math.random() > 0.72) continue;
-        drops.push({
-          x: Math.random() * w,
-          y: -8 - Math.random() * h * 0.45,
-          vy: 2.6 + Math.random() * 2.8,
-          len: 8 + Math.random() * 14,
-          alpha: 0.22 + Math.random() * 0.36,
-        });
+    function addRain() {
+      const drops = Math.max(2, Math.floor(W / 80));
+      for (let k = 0; k < drops; k++) {
+        if (Math.random() > 0.72) continue;
+        const x = (Math.random() * W) | 0;
+        const len = 2 + ((Math.random() * 8) | 0);
+        for (let y = 0; y < len; y++) {
+          const idx = y * W + x;
+          rain[idx] = Math.max(rain[idx], N - 1 - Math.min(3, y));
+        }
       }
     }
 
     function step() {
-      maybeRain();
+      addRain();
 
-      for (let i = drops.length - 1; i >= 0; i--) {
-        const d = drops[i];
-        d.vy += 0.045;
-        d.y += d.vy;
-        if (d.y >= surfaceAt(d.x)) {
-          addWater(d.x, 2.6 + Math.random() * 2.8);
-          drops.splice(i, 1);
-        } else if (d.y > h + 20) {
-          drops.splice(i, 1);
+      next.fill(0);
+      for (let y = H - 1; y >= 0; y--) {
+        for (let x = 0; x < W; x++) {
+          const idx = y * W + x;
+          const mass = water[idx];
+          if (!mass) continue;
+          if (draining) {
+            if (Math.random() < 0.06) continue;
+          }
+          if (y + 1 < H && next[(y + 1) * W + x] < N - 1) {
+            next[(y + 1) * W + x] = Math.min(N - 1, next[(y + 1) * W + x] + mass);
+          } else {
+            const dirs = Math.random() < 0.5 ? [-1, 1] : [1, -1];
+            let placed = false;
+            for (const dx of dirs) {
+              const xx = x + dx;
+              if (xx < 0 || xx >= W) continue;
+              const nidx = y * W + xx;
+              if (next[nidx] < mass) {
+                next[nidx] = mass;
+                placed = true;
+                break;
+              }
+            }
+            if (!placed) next[idx] = Math.max(next[idx], mass);
+          }
         }
       }
 
-      let avg = 0;
-      for (let i = 1; i < cols - 1; i++) {
-        const neighbors = (water[i - 1] + water[i + 1]) * 0.5;
-        velocity[i] += (neighbors - water[i]) * 0.045;
-        velocity[i] *= 0.985;
+      for (let y = H - 1; y >= 0; y--) {
+        for (let x = 0; x < W; x++) {
+          const idx = y * W + x;
+          if (rain[idx]) {
+            if (y + 1 < H && !next[(y + 1) * W + x]) {
+              rain[(y + 1) * W + x] = rain[idx];
+            } else {
+              next[idx] = Math.max(next[idx], rain[idx]);
+            }
+            rain[idx] = 0;
+          }
+        }
       }
-      for (let i = 0; i < cols; i++) {
-        water[i] = Math.max(0, water[i] + velocity[i]);
-        if (draining) water[i] *= 0.972;
-        avg += water[i];
-      }
-      avg /= cols;
 
-      if (!draining && avg > h * 0.62) draining = true;
-      if (draining && avg < 5) {
+      const tmp = water;
+      water = next;
+      next = tmp;
+
+      let filled = 0;
+      for (let i = 0; i < water.length; i++) if (water[i]) filled++;
+      if (!draining && filled > water.length * 0.62) draining = true;
+      if (draining && filled < water.length * 0.03) {
         draining = false;
-        for (let i = 0; i < cols; i++) {
-          water[i] = 4 + Math.random() * 3;
-          velocity[i] = 0;
-        }
+        rain.fill(0);
+        water.fill(0);
+        palette = buildPalette(pickStops());
       }
+      cycle++;
     }
 
     function draw() {
-      ctx.clearRect(0, 0, w, h);
-
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = muted;
-      for (const d of drops) {
-        ctx.globalAlpha = d.alpha;
-        ctx.beginPath();
-        ctx.moveTo(d.x, d.y - d.len);
-        ctx.lineTo(d.x, d.y);
-        ctx.stroke();
+      if (!img) return;
+      const data = img.data;
+      for (let i = 0; i < water.length; i++) {
+        const v = Math.max(water[i], rain[i]);
+        const c = v ? palette[Math.min(N - 1, v)] : paper;
+        const j = i * 4;
+        data[j] = c[0];
+        data[j + 1] = c[1];
+        data[j + 2] = c[2];
+        data[j + 3] = 255;
       }
-
-      ctx.globalAlpha = 0.16;
-      ctx.fillStyle = accent;
-      ctx.beginPath();
-      ctx.moveTo(0, h);
-      for (let i = 0; i < cols; i++) {
-        ctx.lineTo(i * colW, h - 10 - water[i]);
-      }
-      ctx.lineTo(w, h);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.globalAlpha = 0.56;
-      ctx.strokeStyle = accent;
-      ctx.beginPath();
-      for (let i = 0; i < cols; i++) {
-        const x = i * colW;
-        const y = h - 10 - water[i];
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-
-      ctx.globalAlpha = 0.1;
-      ctx.fillStyle = ink;
-      for (let i = 0; i < cols; i += 8) {
-        ctx.fillRect(i * colW, h - 8, 1, 6);
-      }
-      ctx.globalAlpha = 1;
+      ctx.putImageData(img, 0, 0);
     }
 
     resize();

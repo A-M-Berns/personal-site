@@ -1,6 +1,21 @@
 :root {
   --sans: 'Inter Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --display: 'Space Grotesk Variable', var(--sans);
+  --font-space: 'Space Grotesk Variable';
+  --font-sora: 'Sora Variable';
+  --font-manrope: 'Manrope Variable';
+  --font-archivo: 'Archivo Variable';
+  --font-work: 'Work Sans Variable';
+  --font-jakarta: 'Plus Jakarta Sans Variable';
+  --font-chivo: 'Chivo Variable';
+  --font-dm: 'DM Sans Variable';
+  --font-urbanist: 'Urbanist Variable';
+  --font-jost: 'Jost Variable';
+  --font-figtree: 'Figtree Variable';
+  --font-red-hat: 'Red Hat Display Variable';
+  --font-outfit: 'Outfit Variable';
+  --font-lexend: 'Lexend Variable';
+  --font-instrument: 'Instrument Sans Variable';
   --serif: et-book, Palatino, 'Palatino Linotype', 'Palatino LT STD', 'Book Antiqua', Georgia, serif;
   --ink: #ececec;
   --muted: #8e8e88;
@@ -227,6 +242,56 @@ a:focus-visible {
 .home-nav a:nth-child(3):hover { color: var(--c6, var(--accent)); }
 .home-nav a:nth-child(4):hover { color: var(--c8, var(--accent)); }
 
+.font-workshop .font-sample,
+.home-nav .font-sample {
+  display: inline-block;
+  position: relative;
+  font-weight: 800;
+  line-height: 1.05;
+  margin-right: 0.12em;
+  padding-bottom: 0.24em;
+}
+.font-workshop--lede .font-sample {
+  font-weight: 760;
+  margin-right: 0.05em;
+}
+.home-nav .font-sample::after,
+.font-workshop .font-sample::after {
+  content: attr(data-font);
+  position: absolute;
+  left: 0;
+  top: calc(100% - 0.18em);
+  color: var(--muted);
+  font-family: var(--sans);
+  font-size: 0.18em;
+  font-weight: 600;
+  line-height: 1;
+  opacity: 0.72;
+  white-space: nowrap;
+}
+.font-workshop--lede .font-sample::after {
+  font-size: 0.42em;
+  top: calc(100% - 0.1em);
+}
+.home-nav .font-sample::after {
+  font-size: 0.26em;
+}
+.font-space { font-family: var(--font-space), var(--sans); }
+.font-sora { font-family: var(--font-sora), var(--sans); }
+.font-manrope { font-family: var(--font-manrope), var(--sans); }
+.font-archivo { font-family: var(--font-archivo), var(--sans); }
+.font-work { font-family: var(--font-work), var(--sans); }
+.font-jakarta { font-family: var(--font-jakarta), var(--sans); }
+.font-chivo { font-family: var(--font-chivo), var(--sans); }
+.font-dm { font-family: var(--font-dm), var(--sans); }
+.font-urbanist { font-family: var(--font-urbanist), var(--sans); }
+.font-jost { font-family: var(--font-jost), var(--sans); }
+.font-figtree { font-family: var(--font-figtree), var(--sans); }
+.font-red-hat { font-family: var(--font-red-hat), var(--sans); }
+.font-outfit { font-family: var(--font-outfit), var(--sans); }
+.font-lexend { font-family: var(--font-lexend), var(--sans); }
+.font-instrument { font-family: var(--font-instrument), var(--sans); }
+
 /* --- Section page header --- */
 .section-head {
   max-width: 60ch;
@@ -294,16 +359,15 @@ a:focus-visible {
   isolation: isolate;
 }
 .rain-sim {
-  position: absolute;
-  top: -2rem;
-  right: -2vw;
+  position: fixed;
+  inset: 0;
   z-index: 0;
-  width: min(42rem, 86vw);
-  height: 17rem;
+  width: 100vw;
+  height: 100vh;
   pointer-events: none;
-  opacity: 0.82;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 84%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 84%, transparent);
+  opacity: 0.5;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 .about-shell > .section-head,
 .about-shell > .note {
@@ -382,10 +446,7 @@ a:focus-visible {
 }
 @media (max-width: 900px) {
   .rain-sim {
-    right: -18vw;
-    width: 116vw;
-    height: 13rem;
-    opacity: 0.55;
+    opacity: 0.48;
   }
   .symbol-evolver {
     right: -18vw;

@@ -5,17 +5,31 @@ import Base from '../layouts/Base.astro';
   <canvas id="bg-canvas" class="bg-canvas" aria-hidden="true"></canvas>
 
   <section class="hero">
-    <h1><span class="hl">A<span class="dot">.</span> M<span class="dot">.</span> Berns</span></h1>
+    <h1 class="font-workshop">
+      <span class="hl">
+        <span class="font-sample font-space" data-font="Space Grotesk">A<span class="dot">.</span></span>
+        <span class="font-sample font-sora" data-font="Sora">M<span class="dot">.</span></span>
+        <span class="font-sample font-manrope" data-font="Manrope">Berns</span>
+      </span>
+    </h1>
     <p class="lede">
-      <span class="hl">Independent research, personal writing, Lean, and other.</span>
+      <span class="hl font-workshop font-workshop--lede">
+        <span class="font-sample font-archivo" data-font="Archivo">Independent</span>
+        <span class="font-sample font-work" data-font="Work Sans">research</span><span>,</span>
+        <span class="font-sample font-jakarta" data-font="Plus Jakarta Sans">personal</span>
+        <span class="font-sample font-chivo" data-font="Chivo">writing</span><span>,</span>
+        <span class="font-sample font-dm" data-font="DM Sans">Lean</span><span>,</span>
+        <span class="font-sample font-urbanist" data-font="Urbanist">and</span>
+        <span class="font-sample font-jost" data-font="Jost">other</span><span>.</span>
+      </span>
     </p>
   </section>
 
   <nav class="home-nav" aria-label="Sections">
-    <a href="/about">About</a>
-    <a href="/writing">Writing</a>
-    <a href="/lean">Lean</a>
-    <a href="/other">Other</a>
+    <a href="/about"><span class="font-sample font-figtree" data-font="Figtree">About</span></a>
+    <a href="/writing"><span class="font-sample font-red-hat" data-font="Red Hat Display">Writing</span></a>
+    <a href="/lean"><span class="font-sample font-outfit" data-font="Outfit">Lean</span></a>
+    <a href="/other"><span class="font-sample font-lexend" data-font="Lexend">Other</span></a>
   </nav>
 
   <div class="bg-controls">
