@@ -13,8 +13,134 @@ import Base from '../../layouts/Base.astro';
         <li><span class="hl"><a href="/music/">Music</a></span></li>
       </ul>
     </article>
+
+    <aside id="tune-panel" class="tune-panel" aria-label="Particle Lenia parameters">
+      <h3>Tune</h3>
+      <div class="tune-row">
+        <label for="s-muK">μK</label>
+        <input type="range" id="s-muK" min="2.5" max="6.0" step="0.05" />
+        <span class="val" id="v-muK"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-sigmaK">σK</label>
+        <input type="range" id="s-sigmaK" min="0.5" max="1.5" step="0.02" />
+        <span class="val" id="v-sigmaK"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-wK">wK</label>
+        <input type="range" id="s-wK" min="0.012" max="0.034" step="0.0005" />
+        <span class="val" id="v-wK"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-muG">μG</label>
+        <input type="range" id="s-muG" min="0.35" max="0.80" step="0.005" />
+        <span class="val" id="v-muG"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-sigmaG">σG</label>
+        <input type="range" id="s-sigmaG" min="0.07" max="0.25" step="0.005" />
+        <span class="val" id="v-sigmaG"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-cRep">cRep</label>
+        <input type="range" id="s-cRep" min="0.4" max="2.0" step="0.02" />
+        <span class="val" id="v-cRep"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-noise">noise</label>
+        <input type="range" id="s-noise" min="0" max="0.15" step="0.002" />
+        <span class="val" id="v-noise"></span>
+      </div>
+      <button id="reset-btn" type="button">Reset</button>
+      <p class="tune-hint">Click on the background to nudge particles.</p>
+    </aside>
   </div>
 </Base>
+
+<style>
+  .tune-panel {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 3;
+    width: 16.5rem;
+    background: rgba(14, 14, 16, 0.92);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.85rem 1rem 0.9rem;
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.78rem;
+    color: var(--muted);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .tune-panel h3 {
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 0.6rem;
+    color: var(--ink);
+  }
+  .tune-row {
+    display: grid;
+    grid-template-columns: 3.5ch 1fr 4.5ch;
+    gap: 0.55rem;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+  .tune-row label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .tune-row input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+    margin: 0;
+  }
+  .tune-row .val {
+    font-size: 0.7rem;
+    color: var(--ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .tune-panel button {
+    margin-top: 0.6rem;
+    width: 100%;
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.4rem 0.7rem;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .tune-panel button:hover {
+    color: var(--ink);
+    border-color: var(--muted);
+  }
+  .tune-hint {
+    margin: 0.6rem 0 0;
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+  @media (max-width: 600px) {
+    .tune-panel {
+      bottom: 0.5rem;
+      right: 0.5rem;
+      left: 0.5rem;
+      width: auto;
+    }
+  }
+</style>
 
 <script>
   // Particle Lenia (Mordvintsev, Niklasson, Randazzo, Chan).
@@ -41,22 +167,28 @@ import Base from '../../layouts/Base.astro';
     // this box, the same way the homepage CA re-rolls its palette and seeder.
     // Tuneable starting bounds — fine-tune to taste.
     const PARAM_RANGES = {
-      muK:    [3.5, 5.0],   // kernel peak (creature radius)
-      sigmaK: [0.8, 1.2],   // kernel ring width
+      muK:    [3.5, 5.0],     // kernel peak (creature radius)
+      sigmaK: [0.8, 1.2],     // kernel ring width
       wK:     [0.020, 0.026], // per-particle field weight
-      muG:    [0.50, 0.65], // growth target field strength
-      sigmaG: [0.12, 0.17], // growth tolerance
-      cRep:   [0.8, 1.3],   // close-range repulsion strength
+      muG:    [0.50, 0.65],   // growth target field strength
+      sigmaG: [0.12, 0.17],   // growth tolerance
+      cRep:   [0.8, 1.3],     // close-range repulsion strength
+      noise:  [0.0, 0.05],    // per-step Brownian jitter
     } as const;
 
-    // Hash bucket size must cover the largest possible kernel range so any
-    // particle pair within interaction distance lands within the 3×3 window.
-    const MAX_KERNEL_RANGE = PARAM_RANGES.muK[1] + 3 * PARAM_RANGES.sigmaK[1];
+    // Slider bounds (wider than randomization range, for live exploration).
+    // The hash-cell size must cover the largest possible kernel range over
+    // these bounds, since the slider lets the user push muK/sigmaK higher
+    // than the randomization box.
+    const SLIDER_MAX_MU_K = 6.0;
+    const SLIDER_MAX_SIGMA_K = 1.5;
+    const MAX_KERNEL_RANGE = SLIDER_MAX_MU_K + 3 * SLIDER_MAX_SIGMA_K;
     const HASH_CELL_SIZE = MAX_KERNEL_RANGE;
 
     type Params = {
       muK: number; sigmaK: number; wK: number;
       muG: number; sigmaG: number; cRep: number;
+      noise: number;
       kernelRange: number; kernelRangeSq: number;
       renderRangeCells: number;
       sigmaK2: number; sigmaG2: number;
@@ -66,23 +198,28 @@ import Base from '../../layouts/Base.astro';
       return lo + Math.random() * (hi - lo);
     }
 
+    function recompute(p: Params) {
+      p.kernelRange = p.muK + 3 * p.sigmaK;
+      p.kernelRangeSq = p.kernelRange * p.kernelRange;
+      p.renderRangeCells = Math.ceil(p.kernelRange * CELLS_PER_UNIT);
+      p.sigmaK2 = p.sigmaK * p.sigmaK;
+      p.sigmaG2 = p.sigmaG * p.sigmaG;
+    }
+
     function pickParams(): Params {
-      const muK = lerp(PARAM_RANGES.muK[0], PARAM_RANGES.muK[1]);
-      const sigmaK = lerp(PARAM_RANGES.sigmaK[0], PARAM_RANGES.sigmaK[1]);
-      const sigmaG = lerp(PARAM_RANGES.sigmaG[0], PARAM_RANGES.sigmaG[1]);
-      const kernelRange = muK + 3 * sigmaK;
-      return {
-        muK, sigmaK,
-        wK: lerp(PARAM_RANGES.wK[0], PARAM_RANGES.wK[1]),
-        muG: lerp(PARAM_RANGES.muG[0], PARAM_RANGES.muG[1]),
-        sigmaG,
-        cRep: lerp(PARAM_RANGES.cRep[0], PARAM_RANGES.cRep[1]),
-        kernelRange,
-        kernelRangeSq: kernelRange * kernelRange,
-        renderRangeCells: Math.ceil(kernelRange * CELLS_PER_UNIT),
-        sigmaK2: sigmaK * sigmaK,
-        sigmaG2: sigmaG * sigmaG,
+      const p: Params = {
+        muK:    lerp(PARAM_RANGES.muK[0],    PARAM_RANGES.muK[1]),
+        sigmaK: lerp(PARAM_RANGES.sigmaK[0], PARAM_RANGES.sigmaK[1]),
+        wK:     lerp(PARAM_RANGES.wK[0],     PARAM_RANGES.wK[1]),
+        muG:    lerp(PARAM_RANGES.muG[0],    PARAM_RANGES.muG[1]),
+        sigmaG: lerp(PARAM_RANGES.sigmaG[0], PARAM_RANGES.sigmaG[1]),
+        cRep:   lerp(PARAM_RANGES.cRep[0],   PARAM_RANGES.cRep[1]),
+        noise:  lerp(PARAM_RANGES.noise[0],  PARAM_RANGES.noise[1]),
+        kernelRange: 0, kernelRangeSq: 0, renderRangeCells: 0,
+        sigmaK2: 0, sigmaG2: 0,
       };
+      recompute(p);
+      return p;
     }
 
     let params: Params = pickParams();
@@ -310,6 +447,7 @@ import Base from '../../layouts/Base.astro';
       seeders[lastSeeder].fn();
       palette = buildPalette(pickStops());
       stepCount = 0;
+      syncSliders();
     }
 
     function resize() {
@@ -425,10 +563,16 @@ import Base from '../../layouts/Base.astro';
         F[i * 2 + 1] = fy;
       }
 
-      // Overdamped integration; wrap to torus.
+      // Overdamped integration; wrap to torus. A small per-step Brownian
+      // jitter keeps the field from settling into perfectly static patterns.
+      const noise = params.noise;
       for (let i = 0; i < N_PARTICLES; i++) {
         let nx = positions[i * 2] + DT * F[i * 2];
         let ny = positions[i * 2 + 1] + DT * F[i * 2 + 1];
+        if (noise > 0) {
+          nx += (Math.random() - 0.5) * 2 * noise;
+          ny += (Math.random() - 0.5) * 2 * noise;
+        }
         nx = ((nx % W_world) + W_world) % W_world;
         ny = ((ny % H_world) + H_world) % H_world;
         positions[i * 2] = nx;
@@ -492,7 +636,89 @@ import Base from '../../layouts/Base.astro';
       ctx.putImageData(img, 0, 0);
     }
 
+    // ── Sliders ─────────────────────────────────────────────────────────
+    type SliderKey = 'muK' | 'sigmaK' | 'wK' | 'muG' | 'sigmaG' | 'cRep' | 'noise';
+    const SLIDER_KEYS: SliderKey[] = ['muK', 'sigmaK', 'wK', 'muG', 'sigmaG', 'cRep', 'noise'];
+    const FORMAT: Record<SliderKey, (n: number) => string> = {
+      muK:    (n) => n.toFixed(2),
+      sigmaK: (n) => n.toFixed(2),
+      wK:     (n) => n.toFixed(4),
+      muG:    (n) => n.toFixed(3),
+      sigmaG: (n) => n.toFixed(3),
+      cRep:   (n) => n.toFixed(2),
+      noise:  (n) => n.toFixed(3),
+    };
+    const sliderEls: Partial<Record<SliderKey, HTMLInputElement>> = {};
+    const valEls:    Partial<Record<SliderKey, HTMLElement>>    = {};
+    for (const k of SLIDER_KEYS) {
+      sliderEls[k] = document.getElementById('s-' + k) as HTMLInputElement;
+      valEls[k]    = document.getElementById('v-' + k) as HTMLElement;
+    }
+
+    function syncSliders() {
+      for (const k of SLIDER_KEYS) {
+        const el = sliderEls[k];
+        const v = valEls[k];
+        if (!el || !v) continue;
+        el.value = String(params[k]);
+        v.textContent = FORMAT[k](params[k]);
+      }
+    }
+
+    for (const k of SLIDER_KEYS) {
+      const el = sliderEls[k];
+      const v = valEls[k];
+      if (!el || !v) continue;
+      el.addEventListener('input', () => {
+        const num = parseFloat(el.value);
+        params[k] = num;
+        v.textContent = FORMAT[k](num);
+        // muK / sigmaK changes invalidate kernelRange and friends.
+        if (k === 'muK' || k === 'sigmaK') recompute(params);
+        else if (k === 'sigmaG') params.sigmaG2 = num * num;
+      });
+    }
+
+    const resetBtn = document.getElementById('reset-btn');
+    resetBtn?.addEventListener('click', () => reseed());
+
+    // ── Click perturbation ──────────────────────────────────────────────
+    // A click on bare background nudges nearby particles outward, like a
+    // pebble dropped into the field. Skip clicks on the tune panel and on
+    // links/buttons so the foreground UI still works normally.
+    const tunePanel = document.getElementById('tune-panel');
+    function perturb(wx: number, wy: number) {
+      const radius = Math.max(4, params.muK * 1.5);
+      const radius2 = radius * radius;
+      const strength = 4;
+      for (let i = 0; i < N_PARTICLES; i++) {
+        const dxw = wrap(positions[i * 2] - wx, W_world);
+        const dyw = wrap(positions[i * 2 + 1] - wy, H_world);
+        const r2 = dxw * dxw + dyw * dyw;
+        if (r2 >= radius2 || r2 < 1e-6) continue;
+        const r = Math.sqrt(r2);
+        const t = 1 - r / radius;
+        const kick = strength * t * t;
+        let nx = positions[i * 2] + (dxw / r) * kick;
+        let ny = positions[i * 2 + 1] + (dyw / r) * kick;
+        nx = ((nx % W_world) + W_world) % W_world;
+        ny = ((ny % H_world) + H_world) % H_world;
+        positions[i * 2] = nx;
+        positions[i * 2 + 1] = ny;
+      }
+    }
+
+    window.addEventListener('pointerdown', (e) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest('a, button, input, label, .tune-panel')) return;
+      const wx = (e.clientX / window.innerWidth) * W_world;
+      const wy = (e.clientY / window.innerHeight) * H_world;
+      perturb(wx, wy);
+    });
+
     resize();
+    syncSliders();
     window.addEventListener('resize', resize);
 
     if (reduce) {
