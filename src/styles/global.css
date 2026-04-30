@@ -298,14 +298,14 @@ a:focus-visible {
   position: relative;
   isolation: isolate;
 }
-.fluid-sim {
+.memory-net {
   position: fixed;
   inset: 0;
   z-index: 0;
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  opacity: 0.72;
+  opacity: 0.70;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -406,7 +406,7 @@ a:focus-visible {
   margin: 0 0 0.6rem;
 }
 @media (max-width: 900px) {
-  .fluid-sim {
+  .memory-net {
     opacity: 0.64;
   }
   .symbol-evolver {

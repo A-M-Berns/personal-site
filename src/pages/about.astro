@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 ---
 <Base title="About — A. M. Berns" description="About A. M. Berns.">
   <div class="about-shell">
-    <canvas id="fluid-sim" class="fluid-sim" aria-hidden="true"></canvas>
+    <canvas id="memory-net" class="memory-net" aria-hidden="true"></canvas>
     <header class="section-head">
       <h1><span class="hl">About</span></h1>
       <p><span class="hl">A short bio goes here.</span></p>
@@ -15,44 +15,45 @@ import Base from '../layouts/Base.astro';
 </Base>
 
 <script>
-  const canvas = document.getElementById('fluid-sim') as HTMLCanvasElement | null;
+  const canvas = document.getElementById('memory-net') as HTMLCanvasElement | null;
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
     const N = 8;
     const CELL_PX = 4;
     const TAU = Math.PI * 2;
-    const CYCLE_FRAMES = 1800;
-    const DYE_DECAY = 0.989;
-    const VELOCITY_BLEND = 0.24;
-    const ADVECT_DT = 0.82;
+    const ACTIVITY_DECAY = 0.88;
+    const EDGE_DECAY = 0.90;
+    const REFRACTORY_FRAMES = 46;
+    const AUTO_SEED_MIN = 90;
+    const AUTO_SEED_RANGE = 90;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     type RGB = [number, number, number];
-    type Vortex = {
-      cx: number;
-      cy: number;
-      rx: number;
-      ry: number;
-      sx: number;
-      sy: number;
-      phase: number;
-      radius: number;
-      spin: number;
-      breathe: number;
-      pull: number;
+    type Node = {
       x: number;
       y: number;
-    };
-    type Emitter = {
-      cx: number;
-      cy: number;
-      rx: number;
-      ry: number;
-      sx: number;
-      sy: number;
       phase: number;
-      radius: number;
-      amount: number;
+      drift: number;
+      activity: number;
+      flash: number;
+      refractory: number;
+      color: RGB;
+      edges: number[];
+    };
+    type Edge = {
+      a: number;
+      b: number;
+      weight: number;
+      trail: number;
+      color: RGB;
+    };
+    type Pulse = {
+      edge: number;
+      from: number;
+      to: number;
+      t: number;
+      speed: number;
+      strength: number;
       color: RGB;
     };
 
@@ -82,6 +83,10 @@ import Base from '../layouts/Base.astro';
       return `rgb(${c[0]} ${c[1]} ${c[2]})`;
     }
 
+    function rgba(c: RGB, a: number): string {
+      return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${Math.max(0, Math.min(1, a))})`;
+    }
+
     const paper = parseHex(paperHex);
     const colorPool = [
       '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
@@ -93,24 +98,14 @@ import Base from '../layouts/Base.astro';
 
     let W = 0;
     let H = 0;
-    let img: ImageData | null = null;
-    let dyeR = new Float32Array(0);
-    let dyeG = new Float32Array(0);
-    let dyeB = new Float32Array(0);
-    let nextR = new Float32Array(0);
-    let nextG = new Float32Array(0);
-    let nextB = new Float32Array(0);
-    let velX = new Float32Array(0);
-    let velY = new Float32Array(0);
-    let palette: RGB[] = [];
+    let nodes: Node[] = [];
+    let edges: Edge[] = [];
+    let pulses: Pulse[] = [];
     let cycleStops: RGB[] = [];
-    let vortices: Vortex[] = [];
-    let emitters: Emitter[] = [];
     let stepCount = 0;
+    let nextSeedAt = 0;
     let pointerX = -1;
     let pointerY = -1;
-    let pointerDX = 0;
-    let pointerDY = 0;
 
     function pickStops(): RGB[] {
       const stops: RGB[] = [];
@@ -122,265 +117,264 @@ import Base from '../layouts/Base.astro';
       return stops;
     }
 
-    function buildPalette(stops: RGB[]): RGB[] {
-      const all = [paper, ...stops];
-      const out: RGB[] = [];
-      for (let i = 0; i < N; i++) {
-        const t = i / (N - 1);
-        const segF = t * (all.length - 1);
-        const seg = Math.min(Math.floor(segF), all.length - 2);
-        const lt = segF - seg;
-        const a = all[seg];
-        const b = all[seg + 1];
-        out.push(mix(a, b, lt));
-      }
-      return out;
-    }
-
     function syncAccent(stops: RGB[]) {
       const root = document.documentElement;
       for (let i = 0; i < stops.length; i++) root.style.setProperty(`--c${i + 1}`, rgb(stops[i]));
       root.style.setProperty('--accent', rgb(stops[Math.min(stops.length - 1, 4)]));
     }
 
-    function wrap(v: number, max: number): number {
-      return ((v % max) + max) % max;
+    function resetSeedTimer() {
+      nextSeedAt = stepCount + AUTO_SEED_MIN + ((Math.random() * AUTO_SEED_RANGE) | 0);
     }
 
-    function addDye(cx: number, cy: number, radius: number, color: RGB, amount: number) {
-      const r = Math.max(1, Math.ceil(radius));
-      const rr = radius * radius;
-      for (let dy = -r; dy <= r; dy++) {
-        const yy = (Math.round(cy) + dy + H) % H;
-        const row = yy * W;
-        for (let dx = -r; dx <= r; dx++) {
-          const d2 = dx * dx + dy * dy;
-          if (d2 > rr) continue;
-          const x = (Math.round(cx) + dx + W) % W;
-          const q = 1 - d2 / rr;
-          const w = q * q * amount;
-          const i = row + x;
-          dyeR[i] = Math.min(520, dyeR[i] + color[0] * w);
-          dyeG[i] = Math.min(520, dyeG[i] + color[1] * w);
-          dyeB[i] = Math.min(520, dyeB[i] + color[2] * w);
+    function edgeKey(a: number, b: number): string {
+      return a < b ? `${a}:${b}` : `${b}:${a}`;
+    }
+
+    function addEdge(a: number, b: number, seen: Set<string>) {
+      if (a === b) return;
+      const key = edgeKey(a, b);
+      if (seen.has(key)) return;
+      seen.add(key);
+      const na = nodes[a];
+      const nb = nodes[b];
+      const dx = na.x - nb.x;
+      const dy = na.y - nb.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      const closeness = Math.max(0, 1 - d / Math.max(W, H));
+      const color = mix(paper, cycleStops[(a + b) % cycleStops.length], 0.55 + closeness * 0.30);
+      const idx = edges.length;
+      edges.push({
+        a,
+        b,
+        weight: 0.44 + closeness * 0.42 + Math.random() * 0.22,
+        trail: 0,
+        color,
+      });
+      na.edges.push(idx);
+      nb.edges.push(idx);
+    }
+
+    function buildNetwork() {
+      nodes = [];
+      edges = [];
+      pulses = [];
+      const area = W * H;
+      const count = Math.max(56, Math.min(150, Math.round(area / 760)));
+      const marginX = Math.max(6, W * 0.04);
+      const marginY = Math.max(6, H * 0.06);
+      for (let i = 0; i < count; i++) {
+        const band = i / Math.max(1, count - 1);
+        const x = marginX + Math.random() * Math.max(1, W - marginX * 2);
+        const y = marginY + Math.random() * Math.max(1, H - marginY * 2);
+        nodes.push({
+          x,
+          y,
+          phase: Math.random() * TAU,
+          drift: 0.004 + Math.random() * 0.008,
+          activity: 0,
+          flash: 0,
+          refractory: 0,
+          color: mix(paper, cycleStops[Math.min(cycleStops.length - 1, 1 + Math.floor(band * (cycleStops.length - 1)))], 0.82),
+          edges: [],
+        });
+      }
+
+      const seen = new Set<string>();
+      for (let i = 0; i < nodes.length; i++) {
+        const distances: Array<{ j: number; d: number }> = [];
+        for (let j = 0; j < nodes.length; j++) {
+          if (i === j) continue;
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          distances.push({ j, d: dx * dx + dy * dy });
+        }
+        distances.sort((a, b) => a.d - b.d);
+        const localCount = 2 + ((Math.random() * 2) | 0);
+        for (let k = 0; k < Math.min(localCount, distances.length); k++) addEdge(i, distances[k].j, seen);
+        if (Math.random() < 0.18 && distances.length > 8) {
+          const start = Math.min(distances.length - 1, 8 + ((Math.random() * 18) | 0));
+          addEdge(i, distances[start].j, seen);
         }
       }
     }
 
-    function addVelocity(cx: number, cy: number, vx: number, vy: number, radius: number) {
-      const r = Math.max(1, Math.ceil(radius));
-      const rr = radius * radius;
-      for (let dy = -r; dy <= r; dy++) {
-        const yy = (Math.round(cy) + dy + H) % H;
-        const row = yy * W;
-        for (let dx = -r; dx <= r; dx++) {
-          const d2 = dx * dx + dy * dy;
-          if (d2 > rr) continue;
-          const x = (Math.round(cx) + dx + W) % W;
-          const q = 1 - d2 / rr;
-          const i = row + x;
-          velX[i] += vx * q * q;
-          velY[i] += vy * q * q;
-        }
-      }
-    }
-
-    function rerollCycle(clear: boolean) {
+    function rerollNetwork() {
       cycleStops = pickStops();
-      palette = buildPalette(cycleStops);
       syncAccent(cycleStops);
-      vortices = [];
-      emitters = [];
-      const span = Math.max(12, Math.min(W, H));
-      const vortexCount = 6 + ((Math.random() * 4) | 0);
-      for (let i = 0; i < vortexCount; i++) {
-        const spinSign = Math.random() < 0.5 ? -1 : 1;
-        vortices.push({
-          cx: Math.random() * W,
-          cy: Math.random() * H,
-          rx: W * (0.08 + Math.random() * 0.22),
-          ry: H * (0.08 + Math.random() * 0.22),
-          sx: (0.0015 + Math.random() * 0.0045) * (Math.random() < 0.5 ? -1 : 1),
-          sy: (0.0015 + Math.random() * 0.0045) * (Math.random() < 0.5 ? -1 : 1),
-          phase: Math.random() * TAU,
-          radius: span * (0.11 + Math.random() * 0.14),
-          spin: spinSign * (0.55 + Math.random() * 0.75),
-          breathe: 0.006 + Math.random() * 0.014,
-          pull: (Math.random() - 0.5) * 0.0015,
-          x: 0,
-          y: 0,
-        });
-      }
-      const emitterCount = 4 + ((Math.random() * 3) | 0);
-      for (let i = 0; i < emitterCount; i++) {
-        const c = mix(paper, cycleStops[(i * 2 + ((Math.random() * 2) | 0)) % cycleStops.length], 0.96);
-        emitters.push({
-          cx: W * (0.18 + Math.random() * 0.64),
-          cy: H * (0.18 + Math.random() * 0.64),
-          rx: W * (0.10 + Math.random() * 0.28),
-          ry: H * (0.10 + Math.random() * 0.28),
-          sx: 0.003 + Math.random() * 0.008,
-          sy: 0.003 + Math.random() * 0.008,
-          phase: Math.random() * TAU,
-          radius: span * (0.026 + Math.random() * 0.028),
-          amount: 0.020 + Math.random() * 0.020,
-          color: c,
-        });
-      }
-      if (clear) {
-        dyeR.fill(0); dyeG.fill(0); dyeB.fill(0);
-        velX.fill(0); velY.fill(0);
-        for (let i = 0; i < 34; i++) {
-          const c = mix(paper, cycleStops[(Math.random() * cycleStops.length) | 0], 0.88);
-          addDye(Math.random() * W, Math.random() * H, span * (0.025 + Math.random() * 0.06), c, 0.18);
-        }
+      buildNetwork();
+      for (let i = 0; i < Math.min(8, nodes.length); i++) {
+        const n = nodes[(Math.random() * nodes.length) | 0];
+        n.activity = Math.random() * 0.25;
       }
       stepCount = 0;
+      resetSeedTimer();
     }
 
-    function updateVortices(t: number) {
-      for (const v of vortices) {
-        v.x = wrap(
-          v.cx + Math.cos(t * v.sx + v.phase) * v.rx +
-          Math.sin(t * v.sy * 0.43 + v.phase * 1.7) * v.rx * 0.35,
-          W,
-        );
-        v.y = wrap(
-          v.cy + Math.sin(t * v.sy + v.phase * 1.3) * v.ry +
-          Math.cos(t * v.sx * 0.51 + v.phase) * v.ry * 0.35,
-          H,
-        );
-      }
-    }
-
-    function updateVelocity(t: number) {
-      updateVortices(t);
-      for (let y = 0; y < H; y++) {
-        const row = y * W;
-        const baseU = Math.sin(y * 0.035 + t * 0.010) * 0.08;
-        for (let x = 0; x < W; x++) {
-          const i = row + x;
-          let u = baseU + Math.sin((x + y) * 0.021 - t * 0.007) * 0.035;
-          let v = Math.cos(x * 0.030 - t * 0.009) * 0.055;
-          for (const vortex of vortices) {
-            let dx = x - vortex.x;
-            let dy = y - vortex.y;
-            if (dx > W * 0.5) dx -= W;
-            else if (dx < -W * 0.5) dx += W;
-            if (dy > H * 0.5) dy -= H;
-            else if (dy < -H * 0.5) dy += H;
-            const r2 = dx * dx + dy * dy;
-            const qBase = 1 / (1 + r2 / (vortex.radius * vortex.radius));
-            const q = qBase * qBase;
-            const spin = vortex.spin * (0.74 + 0.26 * Math.sin(t * vortex.breathe + vortex.phase));
-            const curl = q * spin / Math.max(8, vortex.radius);
-            u += -dy * curl + dx * vortex.pull * q;
-            v += dx * curl + dy * vortex.pull * q;
-          }
-          velX[i] = velX[i] * (1 - VELOCITY_BLEND) + u * VELOCITY_BLEND;
-          velY[i] = velY[i] * (1 - VELOCITY_BLEND) + v * VELOCITY_BLEND;
+    function nearestNode(x: number, y: number): number {
+      let best = 0;
+      let bestD = Infinity;
+      for (let i = 0; i < nodes.length; i++) {
+        const dx = nodes[i].x - x;
+        const dy = nodes[i].y - y;
+        const d = dx * dx + dy * dy;
+        if (d < bestD) {
+          bestD = d;
+          best = i;
         }
       }
+      return best;
     }
 
-    function emitDye(t: number) {
-      for (const e of emitters) {
-        const x = wrap(
-          e.cx + Math.cos(t * e.sx + e.phase) * e.rx +
-          Math.sin(t * e.sy * 0.37 + e.phase * 2.1) * e.rx * 0.25,
-          W,
-        );
-        const y = wrap(
-          e.cy + Math.sin(t * e.sy + e.phase) * e.ry +
-          Math.cos(t * e.sx * 0.41 + e.phase * 0.7) * e.ry * 0.25,
-          H,
-        );
-        const pulse = 0.75 + 0.25 * Math.sin(t * 0.017 + e.phase);
-        addDye(x, y, e.radius * (0.85 + pulse * 0.35), e.color, e.amount * pulse);
+    function fireNode(idx: number, color: RGB, strength: number) {
+      const node = nodes[idx];
+      node.activity = Math.max(node.activity, strength);
+      node.flash = 1;
+      node.refractory = REFRACTORY_FRAMES + ((Math.random() * 18) | 0);
+      node.color = mix(node.color, color, 0.65);
+      const fanout = node.edges.slice().sort(() => Math.random() - 0.5);
+      const keep = Math.max(2, Math.min(fanout.length, 3 + ((Math.random() * 3) | 0)));
+      for (let k = 0; k < keep; k++) {
+        const edgeIdx = fanout[k];
+        const edge = edges[edgeIdx];
+        const to = edge.a === idx ? edge.b : edge.a;
+        edge.trail = Math.max(edge.trail, strength * edge.weight);
+        edge.color = mix(edge.color, color, 0.38);
+        pulses.push({
+          edge: edgeIdx,
+          from: idx,
+          to,
+          t: 0,
+          speed: 0.045 + Math.random() * 0.035,
+          strength: strength * edge.weight * (0.70 + Math.random() * 0.25),
+          color,
+        });
       }
-      if (pointerX >= 0) {
-        const color = mix(paper, palette[Math.max(2, palette.length - 2)], 0.96);
-        addDye(pointerX, pointerY, Math.max(5, Math.min(W, H) * 0.035), color, 0.026);
-        addVelocity(pointerX, pointerY, pointerDX * 0.06, pointerDY * 0.06, Math.max(6, Math.min(W, H) * 0.045));
-        pointerDX *= 0.68;
-        pointerDY *= 0.68;
+      if (pulses.length > 360) pulses.splice(0, pulses.length - 360);
+    }
+
+    function seedAt(x: number, y: number, strong = false) {
+      if (nodes.length === 0) return;
+      const idx = nearestNode(x, y);
+      const c = mix(paper, cycleStops[2 + ((Math.random() * Math.max(1, cycleStops.length - 3)) | 0)], 0.96);
+      fireNode(idx, c, strong ? 1.25 : 0.95);
+      const n = nodes[idx];
+      for (const edgeIdx of n.edges) {
+        const edge = edges[edgeIdx];
+        edge.trail = Math.max(edge.trail, strong ? 0.95 : 0.65);
       }
     }
 
-    function advect() {
-      for (let y = 0; y < H; y++) {
-        const row = y * W;
-        for (let x = 0; x < W; x++) {
-          const i = row + x;
-          let px = x - velX[i] * ADVECT_DT;
-          let py = y - velY[i] * ADVECT_DT;
-          px = wrap(px, W);
-          py = wrap(py, H);
-          const x0 = px | 0;
-          const y0 = py | 0;
-          const x1 = (x0 + 1) % W;
-          const y1 = (y0 + 1) % H;
-          const tx = px - x0;
-          const ty = py - y0;
-          const a = (1 - tx) * (1 - ty);
-          const b = tx * (1 - ty);
-          const c = (1 - tx) * ty;
-          const d = tx * ty;
-          const i00 = y0 * W + x0;
-          const i10 = y0 * W + x1;
-          const i01 = y1 * W + x0;
-          const i11 = y1 * W + x1;
-          nextR[i] = (dyeR[i00] * a + dyeR[i10] * b + dyeR[i01] * c + dyeR[i11] * d) * DYE_DECAY;
-          nextG[i] = (dyeG[i00] * a + dyeG[i10] * b + dyeG[i01] * c + dyeG[i11] * d) * DYE_DECAY;
-          nextB[i] = (dyeB[i00] * a + dyeB[i10] * b + dyeB[i01] * c + dyeB[i11] * d) * DYE_DECAY;
-        }
-      }
-      let tmp = dyeR; dyeR = nextR; nextR = tmp;
-      tmp = dyeG; dyeG = nextG; nextG = tmp;
-      tmp = dyeB; dyeB = nextB; nextB = tmp;
+    function autoSeed() {
+      const usePointer = pointerX >= 0 && Math.random() < 0.82;
+      const x = usePointer ? pointerX : Math.random() * W;
+      const y = usePointer ? pointerY : Math.random() * H;
+      seedAt(x, y);
+      resetSeedTimer();
     }
 
     function step() {
-      const t = stepCount;
-      updateVelocity(t);
-      emitDye(t);
-      advect();
       stepCount++;
-      if (stepCount >= CYCLE_FRAMES) rerollCycle(false);
+      if (stepCount > 2400) rerollNetwork();
+      if (stepCount >= nextSeedAt) autoSeed();
+
+      for (const node of nodes) {
+        node.activity *= ACTIVITY_DECAY;
+        node.flash *= 0.78;
+        if (node.refractory > 0) node.refractory--;
+      }
+      for (const edge of edges) edge.trail *= EDGE_DECAY;
+
+      for (let i = pulses.length - 1; i >= 0; i--) {
+        const pulse = pulses[i];
+        pulse.t += pulse.speed;
+        const edge = edges[pulse.edge];
+        edge.trail = Math.max(edge.trail, pulse.strength * (1 - Math.abs(pulse.t - 0.5) * 0.7));
+        if (pulse.t >= 1) {
+          const target = nodes[pulse.to];
+          target.activity += pulse.strength * 0.55;
+          target.color = mix(target.color, pulse.color, 0.28);
+          if (target.refractory <= 0 && target.activity > 0.52) {
+            fireNode(pulse.to, pulse.color, Math.min(1.05, target.activity));
+          }
+          pulses.splice(i, 1);
+        }
+      }
+    }
+
+    function nodeX(node: Node): number {
+      return node.x + Math.sin(stepCount * node.drift + node.phase) * 0.55;
+    }
+
+    function nodeY(node: Node): number {
+      return node.y + Math.cos(stepCount * node.drift * 0.83 + node.phase * 1.7) * 0.55;
+    }
+
+    function drawLine(ax: number, ay: number, bx: number, by: number, color: RGB, alpha: number, width: number) {
+      ctx.strokeStyle = rgba(color, alpha);
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.stroke();
     }
 
     function draw() {
-      if (!img) return;
-      const data = img.data;
-      for (let y = 0; y < H; y++) {
-        const row = y * W;
-        const yU = ((y - 1 + H) % H) * W;
-        const yD = ((y + 1) % H) * W;
-        for (let x = 0; x < W; x++) {
-          const i = row + x;
-          const xL = (x - 1 + W) % W;
-          const xR = (x + 1) % W;
-          const sum = dyeR[i] + dyeG[i] + dyeB[i];
-          const density = Math.min(1, sum / 420);
-          const curl = Math.min(
-            1,
-            Math.abs((velY[row + xR] - velY[row + xL]) - (velX[yD + x] - velX[yU + x])) * 0.45,
-          );
-          const band = density <= 0.02 ? 0 : Math.floor((density + curl * 0.16) * 7) / 7;
-          const alpha = Math.min(1, band * 0.88 + curl * 0.12);
-          const inv = sum > 1 ? Math.min(1, 360 / sum) : 1;
-          const shimmer = 0.90 + 0.18 * Math.sin(x * 0.17 + y * 0.11 + stepCount * 0.025);
-          const cr = Math.min(255, dyeR[i] * inv * shimmer);
-          const cg = Math.min(255, dyeG[i] * inv * shimmer);
-          const cb = Math.min(255, dyeB[i] * inv * shimmer);
-          const j = i * 4;
-          data[j] = Math.round(paper[0] * (1 - alpha) + cr * alpha);
-          data[j + 1] = Math.round(paper[1] * (1 - alpha) + cg * alpha);
-          data[j + 2] = Math.round(paper[2] * (1 - alpha) + cb * alpha);
-          data[j + 3] = 255;
+      ctx.fillStyle = rgb(paper);
+      ctx.fillRect(0, 0, W, H);
+      ctx.lineCap = 'square';
+
+      for (const edge of edges) {
+        const a = nodes[edge.a];
+        const b = nodes[edge.b];
+        const ax = nodeX(a);
+        const ay = nodeY(a);
+        const bx = nodeX(b);
+        const by = nodeY(b);
+        drawLine(ax, ay, bx, by, edge.color, 0.10, 1);
+        if (edge.trail > 0.02) {
+          drawLine(ax, ay, bx, by, edge.color, Math.min(0.62, edge.trail * 0.42), edge.trail > 0.65 ? 2 : 1);
         }
       }
-      ctx.putImageData(img, 0, 0);
+
+      for (const pulse of pulses) {
+        const edge = edges[pulse.edge];
+        const a = nodes[pulse.from];
+        const b = nodes[pulse.to];
+        const ax = nodeX(a);
+        const ay = nodeY(a);
+        const bx = nodeX(b);
+        const by = nodeY(b);
+        const x = ax + (bx - ax) * pulse.t;
+        const y = ay + (by - ay) * pulse.t;
+        const tailT = Math.max(0, pulse.t - 0.10);
+        drawLine(
+          ax + (bx - ax) * tailT,
+          ay + (by - ay) * tailT,
+          x,
+          y,
+          pulse.color,
+          Math.min(0.72, pulse.strength * 0.62),
+          2,
+        );
+        ctx.fillStyle = rgba(pulse.color, Math.min(0.95, pulse.strength));
+        ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 3, 3);
+      }
+
+      for (const node of nodes) {
+        const a = Math.min(1, node.activity + node.flash);
+        const x = Math.round(nodeX(node));
+        const y = Math.round(nodeY(node));
+        const refractoryGlow = node.refractory > 0 ? 0.16 : 0.08;
+        ctx.fillStyle = rgba(node.color, refractoryGlow + a * 0.70);
+        const size = a > 0.55 ? 4 : a > 0.16 ? 3 : 2;
+        ctx.fillRect(x - (size >> 1), y - (size >> 1), size, size);
+        if (a > 0.55) {
+          ctx.fillStyle = rgba(mix(node.color, cycleStops[cycleStops.length - 1], 0.45), 0.45);
+          ctx.fillRect(x - 2, y, 5, 1);
+          ctx.fillRect(x, y - 2, 1, 5);
+        }
+      }
     }
 
     function resize() {
@@ -388,34 +382,19 @@ import Base from '../layouts/Base.astro';
       H = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
       canvas.width = W;
       canvas.height = H;
-      const cells = W * H;
-      dyeR = new Float32Array(cells);
-      dyeG = new Float32Array(cells);
-      dyeB = new Float32Array(cells);
-      nextR = new Float32Array(cells);
-      nextG = new Float32Array(cells);
-      nextB = new Float32Array(cells);
-      velX = new Float32Array(cells);
-      velY = new Float32Array(cells);
-      img = ctx.createImageData(W, H);
-      rerollCycle(true);
+      rerollNetwork();
     }
 
     function setPointerFromEvent(e: PointerEvent) {
       const rect = canvas.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * W;
-      const y = ((e.clientY - rect.top) / rect.height) * H;
-      if (pointerX >= 0) {
-        pointerDX = x - pointerX;
-        pointerDY = y - pointerY;
-      }
-      pointerX = x;
-      pointerY = y;
+      pointerX = ((e.clientX - rect.left) / rect.width) * W;
+      pointerY = ((e.clientY - rect.top) / rect.height) * H;
     }
 
     resize();
     if (reduce) {
-      for (let i = 0; i < 220; i++) step();
+      seedAt(W * 0.5, H * 0.5, true);
+      for (let i = 0; i < 120; i++) step();
       draw();
     } else {
       let last = 0;
@@ -432,6 +411,11 @@ import Base from '../layouts/Base.astro';
     }
     window.addEventListener('resize', resize);
     window.addEventListener('pointermove', setPointerFromEvent);
+    window.addEventListener('pointerdown', (e) => {
+      setPointerFromEvent(e);
+      seedAt(pointerX, pointerY, true);
+      resetSeedTimer();
+    });
     window.addEventListener('pointerleave', () => { pointerX = -1; pointerY = -1; });
     window.addEventListener('pointerout', (e) => {
       if (!e.relatedTarget) { pointerX = -1; pointerY = -1; }
