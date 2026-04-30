@@ -49,12 +49,12 @@ import Base from '../../layouts/Base.astro';
       </div>
       <div class="tune-row">
         <label for="s-noise">noise</label>
-        <input type="range" id="s-noise" min="0" max="0.06" step="0.001" />
+        <input type="range" id="s-noise" min="0" max="0.04" step="0.001" />
         <span class="val" id="v-noise"></span>
       </div>
       <div class="tune-row">
         <label for="s-flow">flow</label>
-        <input type="range" id="s-flow" min="0" max="0.45" step="0.005" />
+        <input type="range" id="s-flow" min="0" max="0.30" step="0.005" />
         <span class="val" id="v-flow"></span>
       </div>
       <div class="tune-row">
@@ -202,8 +202,8 @@ import Base from '../../layouts/Base.astro';
       wK:     [0.035, 0.060], // per-particle field weight
       muG:    [0.50, 1.10],   // growth target field strength
       cRep:   [0.6, 1.7],     // close-range repulsion strength
-      noise:  [0.006, 0.034], // Brownian jitter strength
-      flow:   [0.08, 0.34],   // ambient curl-flow strength
+      noise:  [0.001, 0.014], // Brownian jitter strength
+      flow:   [0.025, 0.16],  // ambient curl-flow strength
     } as const;
     const SIGMA_G_FIXED = 0.5;
 
@@ -290,20 +290,20 @@ import Base from '../../layouts/Base.astro';
     let flowWaves: FlowWave[] = [];
 
     function pickFlowWaves(): FlowWave[] {
-      const count = 3 + ((Math.random() * 3) | 0);
+      const count = 2 + ((Math.random() * 3) | 0);
       const span = Math.max(10, Math.min(W_world || 24, H_world || 24));
       const baseAngle = Math.random() * Math.PI * 2;
       const waves: FlowWave[] = [];
       for (let i = 0; i < count; i++) {
-        const angle = baseAngle + (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 1.4;
-        const wavelength = span * (0.22 + Math.random() * 0.58);
+        const angle = baseAngle + (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.85;
+        const wavelength = span * (0.45 + Math.random() * 0.75);
         waves.push({
           dx: Math.cos(angle),
           dy: Math.sin(angle),
           k: (Math.PI * 2) / wavelength,
           phase: Math.random() * Math.PI * 2,
-          speed: (Math.random() < 0.5 ? -1 : 1) * (0.12 + Math.random() * 0.42),
-          amp: 0.8 + Math.random() * 1.4,
+          speed: (Math.random() < 0.5 ? -1 : 1) * (0.04 + Math.random() * 0.20),
+          amp: 0.45 + Math.random() * 0.80,
         });
       }
       return waves;
@@ -1354,9 +1354,13 @@ import Base from '../../layouts/Base.astro';
       //  • noise — per-particle Brownian jitter (uncorrelated kicks).
       //  • flow  — a per-cycle random curl field, so creatures get advected
       //    by coherent currents without repeating the same geometry forever.
-      const noise = params.noise;
-      const flowAmp = params.flow;
-      const flowT = stepCount * 0.005;
+      // Front-load the ambient stirring so each cycle can relax into structure
+      // instead of being shaken at the same strength until the reseed.
+      const cycleRest = 1 - Math.min(1, stepCount / RESEED_AFTER);
+      const ambient = 0.15 + 0.85 * cycleRest * cycleRest;
+      const noise = params.noise * ambient;
+      const flowAmp = params.flow * ambient;
+      const flowT = stepCount * 0.0035;
       for (let i = 0; i < N_PARTICLES; i++) {
         // Accumulate forces (gradient + flow + noise) into velocity with
         // damping. The damping factor controls how much of last step's motion
@@ -1375,8 +1379,8 @@ import Base from '../../layouts/Base.astro';
             fx += -wave.dy * curl;
             fy += wave.dx * curl;
           }
-          vx += flowAmp * fx * 1.35;
-          vy += flowAmp * fy * 1.35;
+          vx += flowAmp * fx * 1.15;
+          vy += flowAmp * fy * 1.15;
         }
         if (noise > 0) {
           vx += (Math.random() - 0.5) * 2 * noise;
