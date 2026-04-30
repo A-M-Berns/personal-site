@@ -351,8 +351,9 @@ import Base from '../../layouts/Base.astro';
     let prevField = new Float32Array(0);
     // Each frame's field is blended with the previous frame's. Higher value
     // = more temporal smoothing (kills per-frame pixel snap from rounded
-    // splat centers) but introduces motion blur. 0.35 is a light touch.
-    const FIELD_SMOOTH = 0.35;
+    // splat centers) at the cost of motion blur. 0.6 is heavier-handed —
+    // creatures leave a brief trail but the per-pixel jitter goes away.
+    const FIELD_SMOOTH = 0.6;
     let kernelLUT = new Float32Array(0);
     let img: ImageData | null = null;
     let palette: RGB[] = buildPalette(pickStops());
