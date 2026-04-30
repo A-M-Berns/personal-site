@@ -165,6 +165,19 @@ import Base from '../layouts/Base.astro';
     };
     const SPLASH_LIFE = 6;
 
+    // Wind-driven mist particles: short-lived dots that drift downwind off
+    // the water surface. Spawned proportional to wind magnitude.
+    type Spray = {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      age: number;
+      color: number;
+    };
+    const SPRAY_LIFE = 28;
+    const SPRAY_WIND_THRESHOLD = 0.10;
+
     let W = 0;
     let H = 0;
     let height = new Float32Array(0);
@@ -193,6 +206,13 @@ import Base from '../layouts/Base.astro';
     let flowB = new Float32Array(0);
     let drops: Drop[] = [];
     let splashes: Splash[] = [];
+    let spray: Spray[] = [];
+    // Lightning: integer count of remaining flash frames. Each step counts
+    // down; a rare random trigger sets it to LIGHTNING_FRAMES.
+    let lightningFrame = 0;
+    const LIGHTNING_FRAMES = 5;
+    const LIGHTNING_PROB = 0.0009;
+    let lightningTint: RGB = [255, 255, 255];
     let img: ImageData | null = null;
     let waterPalette = buildPalette(pickStops());
     let waterColor = pickWaterColor(waterPalette);
@@ -273,12 +293,16 @@ import Base from '../layouts/Base.astro';
     function spawnDrop() {
       rainCursor = (rainCursor + GOLDEN_RATIO_STEP) % 1;
       const x = Math.max(0, Math.min(W - 1, rainCursor * W + (Math.random() - 0.5) * 5));
+      // Weight roll: 4% chance of a fat drop (size 3, ~2× splash mass and
+      // a bigger spray on impact); 16% chance of medium (size 2); rest size 1.
+      const roll = Math.random();
+      const size = roll < 0.04 ? 3 : roll < 0.20 ? 2 : 1;
       drops.push({
         x,
         y: -2 - Math.random() * Math.min(48, H * 0.18),
         vx: cycleWind + (Math.random() - 0.5) * 0.04,
-        vy: 0.1 + Math.random() * 0.18,
-        size: Math.random() < 0.16 ? 2 : 1,
+        vy: 0.1 + Math.random() * 0.18 + (size === 3 ? 0.05 : 0),
+        size,
         shape: (Math.random() * 4) | 0,
         color: (Math.random() * rainColors.length) | 0,
       });
@@ -415,7 +439,11 @@ import Base from '../layouts/Base.astro';
         if (d.x < 0) d.x += W;
         else if (d.x >= W) d.x -= W;
         if (d.y >= surfaceY(d.x)) {
-          splash(d.x, 0.72 + Math.random() * 0.46, rainColors[d.color]);
+          // Fat drops deposit ~2× the mass and spawn a couple of extra
+          // surface spray particles on top of the regular splash.
+          const baseMass = 0.72 + Math.random() * 0.46;
+          const mass = d.size === 3 ? baseMass * 2 : baseMass;
+          splash(d.x, mass, rainColors[d.color]);
           splashes.push({
             x: Math.round(d.x),
             y: Math.round(surfaceY(d.x)),
@@ -423,6 +451,18 @@ import Base from '../layouts/Base.astro';
             color: d.color,
             size: d.size,
           });
+          if (d.size === 3) {
+            for (let k = 0; k < 4; k++) {
+              spray.push({
+                x: d.x,
+                y: surfaceY(d.x) - 1,
+                vx: (Math.random() - 0.5) * 1.0 + cycleWind * 1.2,
+                vy: -0.4 - Math.random() * 0.4,
+                age: 0,
+                color: d.color,
+              });
+            }
+          }
           drops.splice(i, 1);
         } else if (d.y > H + 4) {
           drops.splice(i, 1);
@@ -433,6 +473,50 @@ import Base from '../layouts/Base.astro';
       for (let i = splashes.length - 1; i >= 0; i--) {
         splashes[i].age++;
         if (splashes[i].age >= SPLASH_LIFE) splashes.splice(i, 1);
+      }
+
+      // Wind spray: spawn drifting mist particles when the wind is strong.
+      // Spawn count grows linearly with |wind| beyond a small threshold.
+      const sprayWind = Math.abs(cycleWind);
+      if (sprayWind > SPRAY_WIND_THRESHOLD) {
+        const spawnRate = (sprayWind - SPRAY_WIND_THRESHOLD) * 0.55 * W * 0.04;
+        let budget = spawnRate;
+        while (budget > 0 && spray.length < W) {
+          if (Math.random() >= Math.min(1, budget)) break;
+          budget -= 1;
+          const sx = Math.random() * W;
+          const sy = surfaceY(sx) - 1;
+          if (sy < 0) continue;
+          spray.push({
+            x: sx,
+            y: sy,
+            vx: cycleWind * (1.5 + Math.random() * 0.8),
+            vy: -0.1 - Math.random() * 0.3,
+            age: 0,
+            color: (Math.random() * rainColors.length) | 0,
+          });
+        }
+      }
+      for (let i = spray.length - 1; i >= 0; i--) {
+        const s = spray[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vy += 0.012;
+        if (s.x < 0) s.x += W;
+        else if (s.x >= W) s.x -= W;
+        s.age++;
+        if (s.age >= SPRAY_LIFE || s.y > H) spray.splice(i, 1);
+      }
+
+      // Lightning: rare bright flash. Trigger on a low probability per step,
+      // counts down each frame to fade. Tint pulled from the brightest
+      // palette stop so it matches the cycle.
+      if (lightningFrame > 0) {
+        lightningFrame--;
+      } else if (Math.random() < LIGHTNING_PROB) {
+        lightningFrame = LIGHTNING_FRAMES;
+        const top = waterPalette[Math.min(N - 1, waterPalette.length - 1)];
+        lightningTint = mix(paper, top, 0.95);
       }
 
       equalizeColumns();
@@ -477,6 +561,8 @@ import Base from '../layouts/Base.astro';
         draining = false;
         drops = [];
         splashes = [];
+        spray = [];
+        lightningFrame = 0;
         height.fill(0);
         renderHeight.fill(0);
         smoothHeight.fill(0);
@@ -579,7 +665,7 @@ import Base from '../layouts/Base.astro';
       }
 
       // Splash spray: two wings spread outward from each impact point and
-      // fade over SPLASH_LIFE frames. Big drops get a brief central plume.
+      // fade over SPLASH_LIFE frames. Bigger drops get extra plume / wings.
       for (const s of splashes) {
         const r = s.age + 1;
         const fade = 1 - s.age / SPLASH_LIFE;
@@ -590,6 +676,21 @@ import Base from '../layouts/Base.astro';
         if (s.size > 1 && s.age < 3) {
           paintDropPixel(s.x, s.y - 2 - s.age, mix(paper, c, 0.65 * fade));
         }
+        // Fat drops: a wider, brighter ring of wings.
+        if (s.size === 3) {
+          const r2 = Math.floor(r * 1.8);
+          paintDropPixel(s.x - r2, s.y - 2, mix(paper, c, 0.7 * fade));
+          paintDropPixel(s.x + r2, s.y - 2, mix(paper, c, 0.7 * fade));
+        }
+      }
+
+      // Wind spray particles. Fade as they age; slightly varied tints from
+      // the cycle's drop palette.
+      for (const s of spray) {
+        const fade = 1 - s.age / SPRAY_LIFE;
+        if (fade <= 0) continue;
+        const c = rainColors[s.color];
+        paintDropPixel(Math.round(s.x), Math.round(s.y), mix(paper, c, 0.45 * fade));
       }
 
       for (const d of drops) {
@@ -600,7 +701,7 @@ import Base from '../layouts/Base.astro';
         const y0 = Math.round(d.y);
         // Trail length scaled to the drop's own velocity — fast wind makes
         // longer streaks, calm drops stay tight teardrops.
-        const trailScale = d.size > 1 ? 2.4 : 1.8;
+        const trailScale = d.size > 1 ? 2.4 : d.size === 3 ? 3.0 : 1.8;
         const x1 = Math.round(d.x - d.vx * trailScale);
         const y1 = Math.round(d.y - d.vy * trailScale);
         paintDropLine(x0, y0, x1, y1, trailTint);
@@ -609,7 +710,25 @@ import Base from '../layouts/Base.astro';
         if (d.size > 1) {
           paintDropPixel(x0, y0 - 1, mix(paper, c, 0.65));
         }
+        if (d.size === 3) {
+          paintDropPixel(x0, y0 - 2, mix(paper, c, 0.5));
+          paintDropPixel(x0 + (cycleWind > 0 ? -1 : 1), y0 - 1, mix(paper, c, 0.55));
+        }
       }
+
+      // Lightning: full-frame additive flash that fades over LIGHTNING_FRAMES.
+      if (lightningFrame > 0) {
+        const k = lightningFrame / LIGHTNING_FRAMES;
+        const addR = lightningTint[0] * 0.55 * k;
+        const addG = lightningTint[1] * 0.55 * k;
+        const addB = lightningTint[2] * 0.55 * k;
+        for (let i = 0; i < data.length; i += 4) {
+          data[i]     = Math.min(255, data[i]     + addR);
+          data[i + 1] = Math.min(255, data[i + 1] + addG);
+          data[i + 2] = Math.min(255, data[i + 2] + addB);
+        }
+      }
+
       ctx.putImageData(img, 0, 0);
     }
 
