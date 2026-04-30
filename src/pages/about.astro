@@ -207,10 +207,17 @@ import Base from '../layouts/Base.astro';
     let drops: Drop[] = [];
     let splashes: Splash[] = [];
     let spray: Spray[] = [];
-    // Lightning: integer count of remaining flash frames. Each step counts
-    // down; a rare random trigger sets it to LIGHTNING_FRAMES.
+    // Lightning bolt: a branching path of segments generated on trigger,
+    // rendered for LIGHTNING_FRAMES frames as it fades. The flash component
+    // is a small additive overlay on top.
+    type BoltSegment = {
+      x0: number; y0: number;
+      x1: number; y1: number;
+      intensity: number;
+    };
     let lightningFrame = 0;
-    const LIGHTNING_FRAMES = 5;
+    let lightningSegments: BoltSegment[] = [];
+    const LIGHTNING_FRAMES = 6;
     const LIGHTNING_PROB = 0.0009;
     let lightningTint: RGB = [255, 255, 255];
     let img: ImageData | null = null;
@@ -508,15 +515,46 @@ import Base from '../layouts/Base.astro';
         if (s.age >= SPRAY_LIFE || s.y > H) spray.splice(i, 1);
       }
 
-      // Lightning: rare bright flash. Trigger on a low probability per step,
-      // counts down each frame to fade. Tint pulled from the brightest
-      // palette stop so it matches the cycle.
+      // Lightning bolt: rare branching path that flashes briefly. Generate
+      // a fresh bolt geometry on trigger, then count down so it fades over
+      // a few frames. Tint pulled from the brightest palette stop so it
+      // matches the cycle.
       if (lightningFrame > 0) {
         lightningFrame--;
       } else if (Math.random() < LIGHTNING_PROB) {
         lightningFrame = LIGHTNING_FRAMES;
         const top = waterPalette[Math.min(N - 1, waterPalette.length - 1)];
-        lightningTint = mix(paper, top, 0.95);
+        lightningTint = mix(paper, top, 0.98);
+        lightningSegments = [];
+        const groundY = (() => {
+          let s = 0;
+          for (let x = 0; x < W; x++) s += renderHeight[x];
+          return H - 1 - (s / W);
+        })();
+        function buildPath(sx: number, sy: number, intensity: number, depth: number, jitter: number, maxDepth: number) {
+          let cx = sx, cy = sy;
+          const limit = Math.max(0, Math.min(H - 1, groundY));
+          for (let i = 0; i < maxDepth && cy < limit; i++) {
+            const dx = (Math.random() - 0.5) * jitter;
+            const dy = 1.5 + Math.random() * 3;
+            const nx = cx + dx;
+            const ny = cy + dy;
+            lightningSegments.push({ x0: cx, y0: cy, x1: nx, y1: ny, intensity });
+            cx = nx; cy = ny;
+            if (intensity > 0.35 && Math.random() < 0.07) {
+              const sideAng = (Math.random() - 0.5) * 1.4;
+              buildPath(
+                cx + Math.cos(sideAng) * 3,
+                cy + Math.abs(Math.sin(sideAng)) * 3 + 1,
+                intensity * 0.55,
+                depth + 1,
+                jitter * 1.2,
+                Math.max(6, (maxDepth - i) >> 1),
+              );
+            }
+          }
+        }
+        buildPath(Math.random() * W, 0, 1, 0, 3.5, 90);
       }
 
       equalizeColumns();
@@ -697,35 +735,53 @@ import Base from '../layouts/Base.astro';
         const c = rainColors[d.color];
         const headTint = mix(paper, c, 0.92);
         const trailTint = mix(paper, c, 0.55);
+        const sideTint = mix(paper, c, 0.4);
         const x0 = Math.round(d.x);
         const y0 = Math.round(d.y);
-        // Trail length scaled to the drop's own velocity — fast wind makes
-        // longer streaks, calm drops stay tight teardrops.
-        const trailScale = d.size > 1 ? 2.4 : d.size === 3 ? 3.0 : 1.8;
+        // Trail length scaled to the drop's velocity. Bigger drops get a
+        // proportionally longer streak.
+        const trailScale = d.size === 3 ? 3.5 : d.size === 2 ? 2.8 : 2.2;
         const x1 = Math.round(d.x - d.vx * trailScale);
         const y1 = Math.round(d.y - d.vy * trailScale);
+        // Two-pixel-thick trail offset perpendicular to wind so the drop
+        // reads as a rounded streak instead of a thin pixel line.
+        const sideDir = cycleWind > 0 ? 1 : -1;
         paintDropLine(x0, y0, x1, y1, trailTint);
-        // Bright head over the connected trail.
+        paintDropLine(x0 + sideDir, y0, x1 + sideDir, y1, sideTint);
+        // Bright head — 2 pixels wide.
         paintDropPixel(x0, y0, headTint);
+        paintDropPixel(x0 + sideDir, y0, mix(paper, c, 0.78));
         if (d.size > 1) {
-          paintDropPixel(x0, y0 - 1, mix(paper, c, 0.65));
+          paintDropPixel(x0, y0 - 1, mix(paper, c, 0.7));
+          paintDropPixel(x0 + sideDir, y0 - 1, mix(paper, c, 0.55));
         }
         if (d.size === 3) {
-          paintDropPixel(x0, y0 - 2, mix(paper, c, 0.5));
-          paintDropPixel(x0 + (cycleWind > 0 ? -1 : 1), y0 - 1, mix(paper, c, 0.55));
+          paintDropPixel(x0, y0 - 2, mix(paper, c, 0.55));
+          paintDropPixel(x0 - sideDir, y0, mix(paper, c, 0.6));
         }
       }
 
-      // Lightning: full-frame additive flash that fades over LIGHTNING_FRAMES.
+      // Lightning bolt: render branching segments via Bresenham, with a
+      // small overall flash for atmosphere.
       if (lightningFrame > 0) {
-        const k = lightningFrame / LIGHTNING_FRAMES;
-        const addR = lightningTint[0] * 0.55 * k;
-        const addG = lightningTint[1] * 0.55 * k;
-        const addB = lightningTint[2] * 0.55 * k;
+        const fade = lightningFrame / LIGHTNING_FRAMES;
+        // Subtle full-frame flash, much dimmer than the bolt itself.
+        const addR = lightningTint[0] * 0.18 * fade;
+        const addG = lightningTint[1] * 0.18 * fade;
+        const addB = lightningTint[2] * 0.18 * fade;
         for (let i = 0; i < data.length; i += 4) {
           data[i]     = Math.min(255, data[i]     + addR);
           data[i + 1] = Math.min(255, data[i + 1] + addG);
           data[i + 2] = Math.min(255, data[i + 2] + addB);
+        }
+        for (const seg of lightningSegments) {
+          const intensity = Math.min(1, seg.intensity * (0.55 + fade * 0.6));
+          const tint = mix(paper, lightningTint, intensity);
+          paintDropLine(
+            Math.round(seg.x0), Math.round(seg.y0),
+            Math.round(seg.x1), Math.round(seg.y1),
+            tint,
+          );
         }
       }
 
