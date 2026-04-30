@@ -19,6 +19,20 @@ import Base from '../../layouts/Base.astro';
       </ul>
     </article>
     <aside id="wang-label" class="wang-label" aria-live="polite"></aside>
+    <div class="wang-controls">
+      <button id="wang-info" type="button" aria-label="About this animation">About this animation</button>
+      <button id="wang-reset" type="button" aria-label="Reset Wang tiling">Reset</button>
+    </div>
+    <dialog id="wang-about" aria-labelledby="wang-about-title">
+      <button class="wang-about-close" type="button" aria-label="Close">×</button>
+      <h2 id="wang-about-title">About this animation</h2>
+      <p>
+        A seeded Wang-tile generator fills a finite grid with square tiles whose touching edge labels always match. Each cycle chooses a mathematical tileset, a visual skin, an organic growth order, a reveal speed, and a small palette from the site's master color pool.
+      </p>
+      <p>
+        The label shows the active tileset, skin, growth mode, speed, tile size, seed, and palette so variants can be compared while tuning.
+      </p>
+    </dialog>
   </div>
 </Base>
 
@@ -26,6 +40,10 @@ import Base from '../../layouts/Base.astro';
   const canvas = document.getElementById('wang-tiles') as HTMLCanvasElement | null;
   if (canvas) {
     const label = document.getElementById('wang-label');
+    const resetButton = document.getElementById('wang-reset') as HTMLButtonElement | null;
+    const infoButton = document.getElementById('wang-info') as HTMLButtonElement | null;
+    const aboutDialog = document.getElementById('wang-about') as HTMLDialogElement | null;
+    const aboutClose = aboutDialog?.querySelector('.wang-about-close') as HTMLButtonElement | null;
     const ctx = canvas.getContext('2d')!;
     const CELL_PX = 2;
     const MIN_TILE = 7;
@@ -36,12 +54,17 @@ import Base from '../../layouts/Base.astro';
     type RGB = [number, number, number];
     type WangTile = { n: number; e: number; s: number; w: number };
     type TileSet = { name: string; colors: number; tiles: WangTile[] };
-    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric';
+    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'hexCells' | 'beads' | 'scales' | 'ribbons';
+    type GrowthMode = 'spores' | 'tendrils' | 'river' | 'rings' | 'islands';
+    type SpeedMode = { name: string; divisor: number; minStep: number };
     type Cycle = {
       seed: number;
       rng: () => number;
       tileset: TileSet;
       skin: VisualSkin;
+      growth: GrowthMode;
+      speed: SpeedMode;
+      revealStep: number;
       tileSize: number;
       cols: number;
       rows: number;
@@ -137,12 +160,12 @@ import Base from '../../layouts/Base.astro';
       return stops;
     }
 
-    function allBinary16(): WangTile[] {
+    function allWang(colors: number): WangTile[] {
       const tiles: WangTile[] = [];
-      for (let n = 0; n < 2; n++) {
-        for (let e = 0; e < 2; e++) {
-          for (let s = 0; s < 2; s++) {
-            for (let w = 0; w < 2; w++) tiles.push({ n, e, s, w });
+      for (let n = 0; n < colors; n++) {
+        for (let e = 0; e < colors; e++) {
+          for (let s = 0; s < colors; s++) {
+            for (let w = 0; w < colors; w++) tiles.push({ n, e, s, w });
           }
         }
       }
@@ -159,16 +182,57 @@ import Base from '../../layouts/Base.astro';
       return tiles;
     }
 
+    function productSet(colors: number, a: number, b: number, c: number, d: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let n = 0; n < colors; n++) {
+        for (let w = 0; w < colors; w++) {
+          tiles.push({ n, w, e: (a * n + b * w + 1) % colors, s: (c * n + d * w + 2) % colors });
+        }
+      }
+      return tiles;
+    }
+
+    function bandSet(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let a = 0; a < colors; a++) {
+        for (let b = 0; b < colors; b++) {
+          tiles.push({ n: a, e: b, s: a, w: b });
+          tiles.push({ n: a, e: (a + b + 1) % colors, s: (a + 1) % colors, w: b });
+        }
+      }
+      return tiles;
+    }
+
     const tileSets: TileSet[] = [
       {
         name: 'binary16',
         colors: 2,
-        tiles: allBinary16(),
+        tiles: allWang(2),
+      },
+      {
+        name: 'ternary81',
+        colors: 3,
+        tiles: allWang(3),
       },
       {
         name: 'flow16',
         colors: 4,
         tiles: flow16(),
+      },
+      {
+        name: 'modulo25',
+        colors: 5,
+        tiles: productSet(5, 2, 1, 1, 3),
+      },
+      {
+        name: 'skew36',
+        colors: 6,
+        tiles: productSet(6, 1, 5, 4, 1),
+      },
+      {
+        name: 'bands18',
+        colors: 3,
+        tiles: bandSet(3),
       },
       {
         name: 'jeandelRao11',
@@ -254,7 +318,7 @@ import Base from '../../layouts/Base.astro';
       return pos === total ? grid : null;
     }
 
-    function makeOrganicOrder(cols: number, rows: number, rng: () => number): number[] {
+    function makeOrganicOrder(cols: number, rows: number, growth: GrowthMode, rng: () => number): number[] {
       const total = cols * rows;
       const order = Array.from({ length: total }, (_, i) => i);
       const starts = Array.from({ length: 3 + Math.floor(rng() * 4) }, () => ({
@@ -264,6 +328,8 @@ import Base from '../../layouts/Base.astro';
       const driftX = rng() * 2 - 1;
       const driftY = rng() * 2 - 1;
       const bend = 0.12 + rng() * 0.18;
+      const cx = cols * (0.25 + rng() * 0.50);
+      const cy = rows * (0.25 + rng() * 0.50);
       const scores = new Float32Array(total);
       for (let idx = 0; idx < total; idx++) {
         const x = idx % cols;
@@ -275,7 +341,24 @@ import Base from '../../layouts/Base.astro';
         }));
         const wave = Math.sin((x * driftX + y * driftY) * bend) * 2.8;
         const eddy = Math.sin((x * 1.7 - y * 1.3 + starts.length) * bend * 0.7) * 1.6;
-        scores[idx] = nearest + wave + eddy + rng() * 4.5;
+        if (growth === 'tendrils') {
+          const angle = Math.atan2(y - cy, x - cx);
+          scores[idx] = nearest + Math.sin(angle * 5 + nearest * 0.55) * 5 + rng() * 6;
+        } else if (growth === 'river') {
+          const along = x * driftX + y * driftY;
+          const cross = x * -driftY + y * driftX;
+          const river = Math.sin(along * bend) * rows * 0.13;
+          scores[idx] = along * 0.18 + Math.abs(cross - river) * 0.72 + rng() * 5;
+        } else if (growth === 'rings') {
+          const dx = x - cx;
+          const dy = y - cy;
+          const r = Math.sqrt(dx * dx + dy * dy);
+          scores[idx] = r + Math.sin(r * 0.9 + Math.atan2(dy, dx) * 4) * 4 + rng() * 4;
+        } else if (growth === 'islands') {
+          scores[idx] = nearest + wave * 1.4 + eddy * 1.8 + rng() * 8;
+        } else {
+          scores[idx] = nearest + wave + eddy + rng() * 4.5;
+        }
       }
       return order.sort((a, b) => scores[a] - scores[b]);
     }
@@ -287,10 +370,19 @@ import Base from '../../layouts/Base.astro';
     function makeCycle() {
       const seed = hashString(`${Date.now()}:${Math.random()}`);
       const rng = mulberry32(seed);
-      const skins: VisualSkin[] = ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric'];
+      const skins: VisualSkin[] = ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'beads', 'scales', 'ribbons'];
+      const growthModes: GrowthMode[] = ['spores', 'tendrils', 'river', 'rings', 'islands'];
+      const speeds: SpeedMode[] = [
+        { name: 'glacial', divisor: 640, minStep: 1 },
+        { name: 'slow', divisor: 480, minStep: 1 },
+        { name: 'medium', divisor: 340, minStep: 2 },
+        { name: 'quick', divisor: 230, minStep: 3 },
+      ];
       const tileSize = MIN_TILE + Math.floor(rng() * (MAX_TILE - MIN_TILE + 1));
       const cols = Math.ceil(W / tileSize) + 1;
       const rows = Math.ceil(H / tileSize) + 1;
+      const growth = pick(growthModes, rng);
+      const speed = pick(speeds, rng);
       let tileset = pick(tileSets, rng);
       let grid: Int16Array | null = null;
       for (let tries = 0; tries < 8 && !grid; tries++) {
@@ -306,11 +398,14 @@ import Base from '../../layouts/Base.astro';
         rng,
         tileset,
         skin: pick(skins, rng),
+        growth,
+        speed,
+        revealStep: Math.max(speed.minStep, Math.ceil((cols * rows) / speed.divisor)),
         tileSize,
         cols,
         rows,
         grid,
-        order: makeOrganicOrder(cols, rows, rng),
+        order: makeOrganicOrder(cols, rows, growth, rng),
         revealed: reduce ? cols * rows : 0,
         hold: 0,
         palette: pickPalette(Math.max(3, Math.min(5, tileset.colors)), rng),
@@ -326,7 +421,8 @@ import Base from '../../layouts/Base.astro';
       label.innerHTML = `
         <span>tileset: ${cycle.tileset.name}</span>
         <span>skin: ${cycle.skin}</span>
-        <span>growth: organic</span>
+        <span>growth: ${cycle.growth}</span>
+        <span>speed: ${cycle.speed.name}</span>
         <span>tile: ${cycle.tileSize * CELL_PX}px</span>
         <span>seed: ${cycle.seed.toString(16).padStart(8, '0')}</span>
         <span class="wang-swatches">${swatches}</span>
@@ -396,7 +492,7 @@ import Base from '../../layouts/Base.astro';
         fillPoly([[x2, cy], [x2, y2], [cx, y2], [x2 - q, cy]], east, 0.90);
         fillPoly([[x, cy], [x + q, cy], [cx, y2], [x, y2]], south, 0.90);
         fillPoly([[cx, y], [x2 - q, cy], [cx, y2], [x + q, cy]], mix(north, south, 0.50), 0.78);
-      } else {
+      } else if (skin === 'isometric') {
         fillPoly([[x, y], [x2, y], [cx, cy]], mix(north, east, 0.35), 0.88);
         fillPoly([[x2, y], [x2, y2], [cx, cy]], mix(east, south, 0.35), 0.88);
         fillPoly([[x2, y2], [x, y2], [cx, cy]], mix(south, west, 0.35), 0.88);
@@ -406,6 +502,43 @@ import Base from '../../layouts/Base.astro';
         ctx.fillRect(Math.round(cx - rib / 2), y, rib, size);
         ctx.fillStyle = rgba(mix(north, south, 0.50), 0.34);
         ctx.fillRect(x, Math.round(cy - rib / 2), size, rib);
+      } else if (skin === 'lozenges') {
+        fillPoly([[cx, y], [x2, cy], [cx, y2], [x, cy]], mix(north, south, 0.35), 0.96);
+        fillPoly([[x, cy], [cx, y], [cx, cy]], west, 0.72);
+        fillPoly([[cx, y], [x2, cy], [cx, cy]], north, 0.72);
+        fillPoly([[x2, cy], [cx, y2], [cx, cy]], east, 0.72);
+        fillPoly([[cx, y2], [x, cy], [cx, cy]], south, 0.72);
+      } else if (skin === 'hexCells') {
+        const q = size * 0.22;
+        fillPoly([[x + q, y], [x2 - q, y], [x2, cy], [x2 - q, y2], [x + q, y2], [x, cy]], mix(north, south, 0.50), 0.94);
+        fillPoly([[x + q, y], [x2 - q, y], [cx, cy]], north, 0.60);
+        fillPoly([[x2 - q, y], [x2, cy], [cx, cy]], east, 0.60);
+        fillPoly([[x2, cy], [x2 - q, y2], [cx, cy]], south, 0.60);
+        fillPoly([[x + q, y2], [x, cy], [cx, cy]], west, 0.60);
+      } else if (skin === 'beads') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.84);
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * 0.48, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = rgba(west, 0.92);
+        ctx.fillRect(x, Math.round(cy - 1), Math.ceil(size * 0.42), 2);
+        ctx.fillStyle = rgba(east, 0.92);
+        ctx.fillRect(Math.floor(x2 - size * 0.42), Math.round(cy - 1), Math.ceil(size * 0.42), 2);
+        ctx.fillStyle = rgba(north, 0.92);
+        ctx.fillRect(Math.round(cx - 1), y, 2, Math.ceil(size * 0.42));
+      } else if (skin === 'scales') {
+        fillPoly([[x, y2], [cx, y], [x2, y2]], mix(north, east, 0.45), 0.90);
+        fillPoly([[x, y2], [cx, cy], [cx, y], [x, y]], west, 0.50);
+        fillPoly([[x2, y2], [cx, cy], [cx, y], [x2, y]], east, 0.50);
+        fillPoly([[x, y2], [cx, cy], [x2, y2]], south, 0.64);
+      } else {
+        const band = Math.max(2, Math.floor(size * 0.20));
+        fillPoly([[x, y], [x2, y], [x, y2]], north, 0.78);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], south, 0.78);
+        ctx.fillStyle = rgba(west, 0.66);
+        ctx.fillRect(x, y, band, size);
+        ctx.fillStyle = rgba(east, 0.66);
+        ctx.fillRect(x2 - band, y, band, size);
       }
     }
 
@@ -428,7 +561,7 @@ import Base from '../../layouts/Base.astro';
       if (!cycle) return;
       const total = cycle.cols * cycle.rows;
       if (cycle.revealed < total) {
-        cycle.revealed += Math.max(2, Math.ceil(total / 320));
+        cycle.revealed += cycle.revealStep;
       } else if (++cycle.hold > HOLD_FRAMES) {
         makeCycle();
       }
@@ -457,5 +590,14 @@ import Base from '../../layouts/Base.astro';
       requestAnimationFrame(loop);
     }
     window.addEventListener('resize', resize);
+    resetButton?.addEventListener('click', () => {
+      makeCycle();
+      draw();
+    });
+    infoButton?.addEventListener('click', () => aboutDialog?.showModal());
+    aboutClose?.addEventListener('click', () => aboutDialog?.close());
+    aboutDialog?.addEventListener('click', (event) => {
+      if (event.target === aboutDialog) aboutDialog.close();
+    });
   }
 </script>
