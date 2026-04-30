@@ -194,7 +194,7 @@ import Base from '../../layouts/Base.astro';
       cRep:   [0.6, 1.7],     // close-range repulsion strength
     } as const;
     const SIGMA_G_FIXED = 0.5;
-    const NOISE_FIXED = 0;    // Brownian jitter — disabled
+    const NOISE_FIXED = 0.02; // Brownian jitter
     const FLOW_FIXED = 0.2;   // spatial flow amplitude
 
     // muK ↔ sigmaK are now strictly coupled through a single "type" t ∈ [0,1].
@@ -267,6 +267,37 @@ import Base from '../../layouts/Base.astro';
     }
 
     let params: Params = pickParams();
+
+    type FlowWave = {
+      dx: number;
+      dy: number;
+      k: number;
+      phase: number;
+      speed: number;
+      amp: number;
+    };
+
+    let flowWaves: FlowWave[] = [];
+
+    function pickFlowWaves(): FlowWave[] {
+      const count = 3 + ((Math.random() * 3) | 0);
+      const span = Math.max(10, Math.min(W_world || 24, H_world || 24));
+      const baseAngle = Math.random() * Math.PI * 2;
+      const waves: FlowWave[] = [];
+      for (let i = 0; i < count; i++) {
+        const angle = baseAngle + (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 1.4;
+        const wavelength = span * (0.22 + Math.random() * 0.58);
+        waves.push({
+          dx: Math.cos(angle),
+          dy: Math.sin(angle),
+          k: (Math.PI * 2) / wavelength,
+          phase: Math.random() * Math.PI * 2,
+          speed: (Math.random() < 0.5 ? -1 : 1) * (0.12 + Math.random() * 0.42),
+          amp: 0.8 + Math.random() * 1.4,
+        });
+      }
+      return waves;
+    }
 
     const styles = getComputedStyle(document.documentElement);
     const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
@@ -1180,6 +1211,7 @@ import Base from '../../layouts/Base.astro';
 
     function reseed() {
       params = pickParams();
+      flowWaves = pickFlowWaves();
       lastSeeder = nextSeeder();
       seeders[lastSeeder].fn();
       palette = buildPalette(pickStops());
@@ -1310,9 +1342,8 @@ import Base from '../../layouts/Base.astro';
       // Overdamped integration; wrap to torus.
       // Two ambient dynamics on top of the gradient flow:
       //  • noise — per-particle Brownian jitter (uncorrelated kicks).
-      //  • flow  — coherent spatial flow field that varies in space and
-      //    slowly in time, so creatures get advected by ongoing currents
-      //    instead of locking into fixed points.
+      //  • flow  — a per-cycle random curl field, so creatures get advected
+      //    by coherent currents without repeating the same geometry forever.
       const noise = params.noise;
       const flowAmp = params.flow;
       const flowT = stepCount * 0.005;
@@ -1325,12 +1356,17 @@ import Base from '../../layouts/Base.astro';
         if (flowAmp > 0) {
           const px = positions[i * 2];
           const py = positions[i * 2 + 1];
-          const fx = Math.sin(px * 0.07 + flowT * 0.4) +
-            0.6 * Math.sin(py * 0.04 - flowT * 0.3);
-          const fy = Math.cos(py * 0.08 + flowT * 0.5) +
-            0.6 * Math.cos(px * 0.05 - flowT * 0.4);
-          vx += flowAmp * fx;
-          vy += flowAmp * fy;
+          let fx = 0;
+          let fy = 0;
+          for (const wave of flowWaves) {
+            const phase = (px * wave.dx + py * wave.dy) * wave.k +
+              flowT * wave.speed + wave.phase;
+            const curl = Math.cos(phase) * wave.amp * wave.k;
+            fx += -wave.dy * curl;
+            fy += wave.dx * curl;
+          }
+          vx += flowAmp * fx * 1.35;
+          vy += flowAmp * fy * 1.35;
         }
         if (noise > 0) {
           vx += (Math.random() - 0.5) * 2 * noise;
