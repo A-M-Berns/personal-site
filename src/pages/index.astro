@@ -419,17 +419,22 @@ import Base from '../layouts/Base.astro';
         fn: (g) => {
           // Phase singularities: state cycles 0..N-1 around each center.
           // Canonical spiral-core seed for cyclic CA — every center spawns
-          // a stable rotating wavefront immediately.
+          // a stable rotating wavefront immediately. Per-defect arm count
+          // (1–4) makes mixed-arm fields, with a chance of a sole 1-arm
+          // configuration so the simple spiral case still appears.
           const k = 3 + ((Math.random() * 4) | 0);
           const cxs = new Int32Array(k);
           const cys = new Int32Array(k);
           const sign = new Int8Array(k);
           const offset = new Uint8Array(k);
+          const arms = new Uint8Array(k);
+          const uniformOneArm = Math.random() < 0.2;
           for (let i = 0; i < k; i++) {
             cxs[i] = (Math.random() * W) | 0;
             cys[i] = (Math.random() * H) | 0;
             sign[i] = Math.random() < 0.5 ? 1 : -1;
             offset[i] = (Math.random() * N) | 0;
+            arms[i] = uniformOneArm ? 1 : 1 + ((Math.random() * 4) | 0);
           }
           for (let y = 0; y < H; y++) {
             for (let x = 0; x < W; x++) {
@@ -444,7 +449,7 @@ import Base from '../layouts/Base.astro';
               const dx = x - cxs[bestI];
               const dy = y - cys[bestI];
               const a = Math.atan2(dy, dx) * sign[bestI];
-              const phase = (a / (Math.PI * 2) + 1) * N;
+              const phase = (a / (Math.PI * 2) + 1) * N * arms[bestI];
               g[y * W + x] = ((Math.floor(phase) + offset[bestI]) % N + N) % N;
             }
           }
@@ -525,8 +530,11 @@ import Base from '../layouts/Base.astro';
           // most of the way to the rule's natural attractor.
           const cx = W / 2 + (Math.random() - 0.5) * W * 0.3;
           const cy = H / 2 + (Math.random() - 0.5) * H * 0.3;
-          const k = 0.4 + Math.random() * 0.6;
-          const arms = 1 + ((Math.random() * 4) | 0);
+          const k = 0.3 + Math.random() * 0.7;
+          // Wider arm range with occasional higher counts; the |0 plus the
+          // ramping random keeps small-arm fields common while still landing
+          // on 5–7 arms once in a while.
+          const arms = 1 + ((Math.random() * Math.random() * 7) | 0);
           for (let y = 0; y < H; y++) {
             for (let x = 0; x < W; x++) {
               const dx = x - cx;
