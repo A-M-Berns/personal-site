@@ -19,6 +19,9 @@ import Base from '../../layouts/Base.astro';
       </ul>
     </article>
     <aside id="wang-label" class="wang-label" aria-live="polite"></aside>
+    <div id="wang-boost" class="wang-boost" aria-hidden="true">
+      <span></span><span></span>
+    </div>
     <div class="wang-controls">
       <button id="wang-info" type="button" aria-label="About this animation">About this animation</button>
       <button id="wang-reset" type="button" aria-label="Reset Wang tiling">Reset</button>
@@ -40,6 +43,7 @@ import Base from '../../layouts/Base.astro';
   const canvas = document.getElementById('wang-tiles') as HTMLCanvasElement | null;
   if (canvas) {
     const label = document.getElementById('wang-label');
+    const boostIndicator = document.getElementById('wang-boost');
     const resetButton = document.getElementById('wang-reset') as HTMLButtonElement | null;
     const infoButton = document.getElementById('wang-info') as HTMLButtonElement | null;
     const aboutDialog = document.getElementById('wang-about') as HTMLDialogElement | null;
@@ -384,6 +388,11 @@ import Base from '../../layouts/Base.astro';
     let cycle: Cycle | null = null;
     let speedBoost = 1;
 
+    function setSpeedBoost(active: boolean) {
+      speedBoost = active ? 2 : 1;
+      boostIndicator?.classList.toggle('is-active', active);
+    }
+
     function makeCycle() {
       const seed = hashString(`${Date.now()}:${Math.random()}`);
       const rng = mulberry32(seed);
@@ -491,9 +500,10 @@ import Base from '../../layouts/Base.astro';
     }
 
     function drawHexLattice(tile: WangTile, col: number, row: number, size: number, palette: RGB[]) {
-      const r = size * 0.72;
+      const r = size * 0.92;
+      const h = Math.sqrt(3) * r;
       const cx = col * r * 1.5 - r;
-      const cy = row * r * 1.72 + (col & 1 ? r * 0.86 : 0) - r;
+      const cy = row * h + (col & 1 ? h * 0.5 : 0) - h;
       const points: Array<[number, number]> = [];
       for (let i = 0; i < 6; i++) {
         const a = Math.PI / 6 + i * Math.PI / 3;
@@ -674,10 +684,10 @@ import Base from '../../layouts/Base.astro';
       makeCycle();
       draw();
     });
-    canvas.addEventListener('pointerdown', () => { speedBoost = 2; });
-    canvas.addEventListener('pointerup', () => { speedBoost = 1; });
-    canvas.addEventListener('pointercancel', () => { speedBoost = 1; });
-    canvas.addEventListener('pointerleave', () => { speedBoost = 1; });
+    canvas.addEventListener('pointerdown', () => setSpeedBoost(true));
+    canvas.addEventListener('pointerup', () => setSpeedBoost(false));
+    canvas.addEventListener('pointercancel', () => setSpeedBoost(false));
+    canvas.addEventListener('pointerleave', () => setSpeedBoost(false));
     infoButton?.addEventListener('click', () => aboutDialog?.showModal());
     aboutClose?.addEventListener('click', () => aboutDialog?.close());
     aboutDialog?.addEventListener('click', (event) => {
