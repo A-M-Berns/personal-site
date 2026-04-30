@@ -2,11 +2,189 @@
 import Base from '../layouts/Base.astro';
 ---
 <Base title="About — A. M. Berns" description="About A. M. Berns.">
-  <header class="section-head">
-    <h1>About</h1>
-    <p>A short bio goes here.</p>
-  </header>
-  <article class="note">
-    <p>More to come.</p>
-  </article>
+  <div class="about-shell">
+    <canvas id="rain-sim" class="rain-sim" aria-hidden="true"></canvas>
+    <header class="section-head">
+      <h1>About</h1>
+      <p>A short bio goes here.</p>
+    </header>
+    <article class="note">
+      <p>More to come.</p>
+    </article>
+  </div>
 </Base>
+
+<script>
+  const canvas = document.getElementById('rain-sim') as HTMLCanvasElement | null;
+  if (canvas) {
+    const ctx = canvas.getContext('2d')!;
+    const styles = getComputedStyle(document.documentElement);
+    const ink = styles.getPropertyValue('--ink').trim() || '#ececec';
+    const muted = styles.getPropertyValue('--muted').trim() || '#8e8e88';
+    const accent = styles.getPropertyValue('--accent').trim() || '#c8c4ba';
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const cols = 116;
+
+    type Drop = {
+      x: number;
+      y: number;
+      vy: number;
+      len: number;
+      alpha: number;
+    };
+
+    let w = 0;
+    let h = 0;
+    let dpr = 1;
+    let colW = 1;
+    let water = new Float32Array(cols);
+    let velocity = new Float32Array(cols);
+    let drops: Drop[] = [];
+    let draining = false;
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = Math.max(1, rect.width);
+      h = Math.max(1, rect.height);
+      colW = w / (cols - 1);
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      water = new Float32Array(cols);
+      velocity = new Float32Array(cols);
+      drops = [];
+      draining = false;
+      for (let i = 0; i < cols; i++) water[i] = 4 + Math.random() * 3;
+    }
+
+    function columnAt(x: number): number {
+      return Math.max(0, Math.min(cols - 1, Math.round(x / colW)));
+    }
+
+    function surfaceAt(x: number): number {
+      return h - 10 - water[columnAt(x)];
+    }
+
+    function addWater(x: number, amount: number) {
+      const mid = columnAt(x);
+      for (let dx = -3; dx <= 3; dx++) {
+        const i = mid + dx;
+        if (i < 0 || i >= cols) continue;
+        const falloff = 1 - Math.abs(dx) / 4;
+        water[i] += amount * falloff;
+        velocity[i] += amount * 0.08 * falloff;
+      }
+    }
+
+    function maybeRain() {
+      if (draining) return;
+      const burst = Math.random() < 0.08 ? 4 : 1;
+      for (let i = 0; i < burst; i++) {
+        if (drops.length > 160 || Math.random() > 0.72) continue;
+        drops.push({
+          x: Math.random() * w,
+          y: -8 - Math.random() * h * 0.45,
+          vy: 2.6 + Math.random() * 2.8,
+          len: 8 + Math.random() * 14,
+          alpha: 0.22 + Math.random() * 0.36,
+        });
+      }
+    }
+
+    function step() {
+      maybeRain();
+
+      for (let i = drops.length - 1; i >= 0; i--) {
+        const d = drops[i];
+        d.vy += 0.045;
+        d.y += d.vy;
+        if (d.y >= surfaceAt(d.x)) {
+          addWater(d.x, 2.6 + Math.random() * 2.8);
+          drops.splice(i, 1);
+        } else if (d.y > h + 20) {
+          drops.splice(i, 1);
+        }
+      }
+
+      let avg = 0;
+      for (let i = 1; i < cols - 1; i++) {
+        const neighbors = (water[i - 1] + water[i + 1]) * 0.5;
+        velocity[i] += (neighbors - water[i]) * 0.045;
+        velocity[i] *= 0.985;
+      }
+      for (let i = 0; i < cols; i++) {
+        water[i] = Math.max(0, water[i] + velocity[i]);
+        if (draining) water[i] *= 0.972;
+        avg += water[i];
+      }
+      avg /= cols;
+
+      if (!draining && avg > h * 0.62) draining = true;
+      if (draining && avg < 5) {
+        draining = false;
+        for (let i = 0; i < cols; i++) {
+          water[i] = 4 + Math.random() * 3;
+          velocity[i] = 0;
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = muted;
+      for (const d of drops) {
+        ctx.globalAlpha = d.alpha;
+        ctx.beginPath();
+        ctx.moveTo(d.x, d.y - d.len);
+        ctx.lineTo(d.x, d.y);
+        ctx.stroke();
+      }
+
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.moveTo(0, h);
+      for (let i = 0; i < cols; i++) {
+        ctx.lineTo(i * colW, h - 10 - water[i]);
+      }
+      ctx.lineTo(w, h);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.globalAlpha = 0.56;
+      ctx.strokeStyle = accent;
+      ctx.beginPath();
+      for (let i = 0; i < cols; i++) {
+        const x = i * colW;
+        const y = h - 10 - water[i];
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.globalAlpha = 0.1;
+      ctx.fillStyle = ink;
+      for (let i = 0; i < cols; i += 8) {
+        ctx.fillRect(i * colW, h - 8, 1, 6);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    resize();
+    if (reduce) {
+      for (let i = 0; i < 260; i++) step();
+      draw();
+    } else {
+      const loop = () => {
+        step();
+        draw();
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    }
+    window.addEventListener('resize', resize);
+  }
+</script>

@@ -37,7 +37,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
 ---
 <Base title="Writing — A. M. Berns" description="Notes, essays, and cross-posts.">
   <div class="writing-shell">
-    <canvas id="writing-visual" class="writing-visual" aria-hidden="true"></canvas>
+    <canvas id="symbol-evolver" class="symbol-evolver" aria-hidden="true"></canvas>
     <header class="section-head">
       <h1>Writing</h1>
     </header>
@@ -110,35 +110,106 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
 </Base>
 
 <script>
-  const canvas = document.getElementById('writing-visual') as HTMLCanvasElement | null;
+  const canvas = document.getElementById('symbol-evolver') as HTMLCanvasElement | null;
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
-    const words = [
-      'trust', 'verify', 'proof', 'kernel', 'context', 'sequence',
-      'cooperate', 'commitment', 'formal', 'translucent', 'credible',
-      'sidenote', 'essay', 'agent', 'institution', 'specification',
+    const targets = [
+      'VERIFY BUT TRUST',
+      'PRECOMMITMENTS',
+      'VERIFICATION FOR COOPERATION',
+      'POPULAR CONSTITUTIONALISM',
+      'KANTIAN PRACTICAL ETHICS',
     ];
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789[]{}<>/\\|+-=*.:;?!#@$%&λ∀∃⊢→↔∧∨¬□◇ ';
     const styles = getComputedStyle(document.documentElement);
     const ink = styles.getPropertyValue('--ink').trim() || '#ececec';
     const muted = styles.getPropertyValue('--muted').trim() || '#8e8e88';
     const accent = styles.getPropertyValue('--accent').trim() || '#c8c4ba';
-    const fontFamily = styles.getPropertyValue('--sans').trim() || 'sans-serif';
+    const fontFamily = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    type Fragment = {
-      text: string;
-      x: number;
-      y: number;
-      speed: number;
-      size: number;
-      phase: number;
-      color: string;
-    };
-
-    let fragments: Fragment[] = [];
+    const populationSize = 34;
+    const eliteCount = 6;
+    const mutationRate = 0.05;
+    let targetIndex = 0;
+    let target = targets[targetIndex];
+    let population: string[] = [];
+    let holdFrames = 0;
     let w = 0;
     let h = 0;
     let dpr = 1;
+    let lastStep = 0;
+
+    function randomChar(i: number): string {
+      if (target[i] === ' ' && Math.random() < 0.7) return ' ';
+      return alphabet[(Math.random() * alphabet.length) | 0];
+    }
+
+    function randomGenome(): string {
+      let out = '';
+      for (let i = 0; i < target.length; i++) out += randomChar(i);
+      return out;
+    }
+
+    function resetPopulation() {
+      population = Array.from({ length: populationSize }, randomGenome);
+      holdFrames = 0;
+    }
+
+    function fitness(genome: string): number {
+      let score = 0;
+      for (let i = 0; i < target.length; i++) {
+        if (genome[i] === target[i]) score += 4;
+        else if (target[i] !== ' ' && genome[i] !== ' ') score += 1 / (1 + Math.abs(genome.charCodeAt(i) - target.charCodeAt(i)) / 16);
+      }
+      return score;
+    }
+
+    function sortedPopulation(): string[] {
+      return [...population].sort((a, b) => fitness(b) - fitness(a));
+    }
+
+    function selectParent(sorted: string[]): string {
+      const cutoff = Math.max(eliteCount, Math.floor(populationSize * 0.45));
+      return sorted[Math.floor((Math.random() ** 1.8) * cutoff)];
+    }
+
+    function mutateAt(i: number): string {
+      if (Math.random() < 0.22) return target[i];
+      return randomChar(i);
+    }
+
+    function breed(a: string, b: string): string {
+      const pivot = 1 + ((Math.random() * Math.max(1, target.length - 2)) | 0);
+      let out = '';
+      for (let i = 0; i < target.length; i++) {
+        const inherited = i < pivot ? a[i] : b[i];
+        out += Math.random() < mutationRate ? mutateAt(i) : inherited;
+      }
+      return out;
+    }
+
+    function nextTarget() {
+      targetIndex = (targetIndex + 1) % targets.length;
+      target = targets[targetIndex];
+      resetPopulation();
+    }
+
+    function evolve() {
+      const sorted = sortedPopulation();
+      const maxFitness = target.length * 4;
+      if (fitness(sorted[0]) >= maxFitness) {
+        holdFrames++;
+        if (holdFrames > 26) nextTarget();
+        return;
+      }
+
+      const next = sorted.slice(0, eliteCount);
+      while (next.length < populationSize) {
+        next.push(breed(selectParent(sorted), selectParent(sorted)));
+      }
+      population = next;
+    }
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
@@ -148,54 +219,51 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      const count = Math.max(18, Math.floor((w * h) / 15000));
-      fragments = Array.from({ length: count }, (_, i) => ({
-        text: words[i % words.length],
-        x: Math.random() * w,
-        y: Math.random() * h,
-        speed: 0.08 + Math.random() * 0.16,
-        size: 12 + Math.random() * 12,
-        phase: Math.random() * Math.PI * 2,
-        color: Math.random() < 0.2 ? accent : (Math.random() < 0.45 ? ink : muted),
-      }));
     }
 
-    function draw(t: number) {
+    function draw() {
+      const sorted = sortedPopulation();
+      const fontSize = w < 520 ? 12 : 14;
+      const lineHeight = fontSize * 1.55;
+      const charWidth = fontSize * 0.66;
+      const rows = Math.min(sorted.length, Math.max(8, Math.floor((h - 12) / lineHeight)));
+      const x0 = Math.max(4, w - target.length * charWidth - 12);
+
       ctx.clearRect(0, 0, w, h);
       ctx.textBaseline = 'middle';
-      for (const f of fragments) {
-        const drift = reduce ? 0 : t * f.speed * 0.04;
-        const x = (f.x + drift) % (w + 120) - 60;
-        const y = f.y + Math.sin(t * 0.001 + f.phase) * 8;
-        const alpha = 0.12 + 0.12 * Math.sin(t * 0.0008 + f.phase) ** 2;
-        ctx.font = `${f.size}px ${fontFamily}`;
-        ctx.fillStyle = f.color;
-        ctx.globalAlpha = alpha;
-        ctx.fillText(f.text, x, y);
+      ctx.font = `${fontSize}px ${fontFamily}`;
+
+      for (let row = 0; row < rows; row++) {
+        const genome = sorted[row] ?? randomGenome();
+        const y = 8 + row * lineHeight;
+        const alpha = row === 0 ? 0.86 : Math.max(0.14, 0.46 - row * 0.026);
+
+        for (let i = 0; i < target.length; i++) {
+          const matched = genome[i] === target[i];
+          ctx.globalAlpha = matched ? Math.min(0.95, alpha + 0.22) : alpha;
+          ctx.fillStyle = matched ? accent : (row === 0 ? ink : muted);
+          ctx.fillText(genome[i], x0 + i * charWidth, y);
+        }
       }
 
-      ctx.globalAlpha = 0.18;
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 1;
-      for (let i = 0; i < fragments.length - 1; i += 3) {
-        const a = fragments[i];
-        const b = fragments[i + 1];
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-      }
       ctx.globalAlpha = 1;
     }
 
+    resetPopulation();
     resize();
-    draw(0);
+    draw();
     window.addEventListener('resize', resize);
 
-    if (!reduce) {
+    if (reduce) {
+      for (let i = 0; i < 90; i++) evolve();
+      draw();
+    } else {
       const loop = (t: number) => {
-        draw(t);
+        if (t - lastStep > 70) {
+          evolve();
+          lastStep = t;
+        }
+        draw();
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
