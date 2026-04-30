@@ -333,6 +333,11 @@ import Base from '../../layouts/Base.astro';
     let U = new Float32Array(0);
     let Gp = new Float32Array(0);
     let F = new Float32Array(0);
+    // Per-particle velocity. Adds light momentum so the integrator low-passes
+    // both random noise and the gradient flow — visibly smooths the per-step
+    // twitchiness without departing too far from overdamped Lenia dynamics.
+    let velocities = new Float32Array(0);
+    const DAMPING = 0.55;
     let field = new Float32Array(0);
     let kernelLUT = new Float32Array(0);
     let img: ImageData | null = null;
@@ -574,6 +579,218 @@ import Base from '../../layouts/Base.astro';
           }
         },
       },
+      {
+        name: 'chevron',
+        fn: () => {
+          // V-shape: particles arranged along two arms meeting at the apex.
+          const cy = H_world * (0.3 + Math.random() * 0.4);
+          const slope = (Math.random() < 0.5 ? 1 : -1) * (0.35 + Math.random() * 0.35);
+          const halfSpan = W_world * 0.42;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const t = (i / N_PARTICLES - 0.5) * 2;
+            const cx = W_world * 0.5 + t * halfSpan;
+            const offsetY = Math.abs(t) * halfSpan * slope;
+            const px = cx + (Math.random() - 0.5) * 4;
+            const py = cy + offsetY + (Math.random() - 0.5) * 4;
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'starburst',
+        fn: () => {
+          // Particles strung along 4–8 spokes radiating from the center.
+          const spokes = 4 + ((Math.random() * 5) | 0);
+          const cx = W_world / 2, cy = H_world / 2;
+          const maxR = Math.min(W_world, H_world) * 0.45;
+          const phase = Math.random() * Math.PI * 2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const spoke = i % spokes;
+            const a = phase + (spoke / spokes) * Math.PI * 2;
+            const r = Math.pow(Math.random(), 0.7) * maxR;
+            const aJit = (Math.random() - 0.5) * 0.18;
+            positions[i * 2] = ((cx + r * Math.cos(a + aJit)) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((cy + r * Math.sin(a + aJit)) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'constellations',
+        fn: () => {
+          // Many tiny dense clusters scattered uniformly — like a star field
+          // before clusters merge into creatures.
+          const k = 15 + ((Math.random() * 15) | 0);
+          const cxs = new Float32Array(k);
+          const cys = new Float32Array(k);
+          for (let i = 0; i < k; i++) {
+            cxs[i] = Math.random() * W_world;
+            cys[i] = Math.random() * H_world;
+          }
+          const sigma = 0.9 + Math.random() * 0.8;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const c = (Math.random() * k) | 0;
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            positions[i * 2] = ((cxs[c] + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((cys[c] + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'lattice-tilt',
+        fn: () => {
+          // Square grid rotated by a random angle, with mild jitter so the
+          // rotation isn't aliased by the world dimensions.
+          const angle = Math.random() * Math.PI / 4;
+          const ca = Math.cos(angle), sa = Math.sin(angle);
+          const cols = Math.max(2, Math.round(Math.sqrt(N_PARTICLES * W_world / H_world)));
+          const rows = Math.max(2, Math.ceil(N_PARTICLES / cols));
+          const dx = W_world / cols;
+          const dy = H_world / rows;
+          let idx = 0;
+          for (let r = 0; r < rows && idx < N_PARTICLES; r++) {
+            for (let c = 0; c < cols && idx < N_PARTICLES; c++) {
+              const lx = (c + 0.5) * dx - W_world / 2;
+              const ly = (r + 0.5) * dy - H_world / 2;
+              const px = ca * lx - sa * ly + W_world / 2 + (Math.random() - 0.5) * dx * 0.3;
+              const py = sa * lx + ca * ly + H_world / 2 + (Math.random() - 0.5) * dy * 0.3;
+              positions[idx * 2] = ((px % W_world) + W_world) % W_world;
+              positions[idx * 2 + 1] = ((py % H_world) + H_world) % H_world;
+              idx++;
+            }
+          }
+        },
+      },
+      {
+        name: 'nebula',
+        fn: () => {
+          // Big diffuse Gaussian halo plus a few tighter hotspots —
+          // simultaneously sparse and clumpy.
+          const cx0 = W_world * 0.5;
+          const cy0 = H_world * 0.5;
+          const bigSigma = Math.min(W_world, H_world) * 0.22;
+          const hotspots = 3 + ((Math.random() * 4) | 0);
+          const hots: Array<[number, number, number]> = [];
+          for (let i = 0; i < hotspots; i++) {
+            hots.push([
+              cx0 + (Math.random() - 0.5) * Math.min(W_world, H_world) * 0.45,
+              cy0 + (Math.random() - 0.5) * Math.min(W_world, H_world) * 0.45,
+              1.8 + Math.random() * 2.2,
+            ]);
+          }
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const useHot = Math.random() < 0.55;
+            const cx = useHot ? hots[(Math.random() * hots.length) | 0][0] : cx0;
+            const cy = useHot ? hots[(Math.random() * hots.length) | 0][1] : cy0;
+            const sigma = useHot ? hots[(Math.random() * hots.length) | 0][2] : bigSigma;
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            positions[i * 2] = ((cx + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((cy + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'comet',
+        fn: () => {
+          // Dense head with a tapering tail along a random direction.
+          const angle = Math.random() * Math.PI * 2;
+          const ax = Math.cos(angle), ay = Math.sin(angle);
+          const cx = W_world * 0.5, cy = H_world * 0.5;
+          const span = Math.min(W_world, H_world) * 0.42;
+          const headFrac = 0.35 + Math.random() * 0.2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            if (i / N_PARTICLES < headFrac) {
+              const u1 = Math.random() || 1e-9;
+              const u2 = Math.random();
+              const mag = Math.sqrt(-2 * Math.log(u1)) * 2.2;
+              const ang = 2 * Math.PI * u2;
+              positions[i * 2] = ((cx + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+              positions[i * 2 + 1] = ((cy + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+            } else {
+              const u = (i / N_PARTICLES - headFrac) / (1 - headFrac);
+              const along = u * span;
+              const widthAtU = (1 - u) * 6;
+              const perp = (Math.random() - 0.5) * widthAtU;
+              const px = cx - ax * along - ay * perp;
+              const py = cy - ay * along + ax * perp;
+              positions[i * 2] = ((px % W_world) + W_world) % W_world;
+              positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+            }
+          }
+        },
+      },
+      {
+        name: 'layered-rings',
+        fn: () => {
+          // Concentric rings with weighting so larger outer rings hold more
+          // particles. Different from `donut` (single ring) and `rings`
+          // (random independent rings).
+          const cx = W_world / 2, cy = H_world / 2;
+          const numRings = 3 + ((Math.random() * 3) | 0);
+          const radii: number[] = [];
+          const weights: number[] = [];
+          let totalW = 0;
+          for (let r = 0; r < numRings; r++) {
+            const radius = 3 + r * (Math.min(W_world, H_world) * 0.13);
+            radii.push(radius);
+            weights.push(radius);
+            totalW += radius;
+          }
+          let idx = 0;
+          for (let r = 0; r < numRings; r++) {
+            const count = Math.min(
+              Math.round(N_PARTICLES * weights[r] / totalW),
+              N_PARTICLES - idx,
+            );
+            const phase = Math.random() * Math.PI * 2;
+            for (let i = 0; i < count; i++) {
+              const a = phase + (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.2;
+              const rj = radii[r] + (Math.random() - 0.5) * 1.5;
+              positions[idx * 2] = ((cx + rj * Math.cos(a)) % W_world + W_world) % W_world;
+              positions[idx * 2 + 1] = ((cy + rj * Math.sin(a)) % H_world + H_world) % H_world;
+              idx++;
+            }
+          }
+          for (; idx < N_PARTICLES; idx++) {
+            positions[idx * 2] = Math.random() * W_world;
+            positions[idx * 2 + 1] = Math.random() * H_world;
+          }
+        },
+      },
+      {
+        name: 'gridded-dots',
+        fn: () => {
+          // Sparse dots on a coarse grid with each dot a tight Gaussian.
+          // Reads as a polka-dot field that the dynamics can connect or
+          // dissolve into creatures.
+          const cols = 5 + ((Math.random() * 4) | 0);
+          const rows = 3 + ((Math.random() * 3) | 0);
+          const cellW = W_world / cols;
+          const cellH = H_world / rows;
+          const points: Array<[number, number]> = [];
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              points.push([(c + 0.5) * cellW, (r + 0.5) * cellH]);
+            }
+          }
+          const sigma = 0.7;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const p = points[(Math.random() * points.length) | 0];
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            positions[i * 2] = ((p[0] + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((p[1] + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+          }
+        },
+      },
     ];
 
     let deck: number[] = [];
@@ -601,6 +818,7 @@ import Base from '../../layouts/Base.astro';
       seeders[lastSeeder].fn();
       palette = buildPalette(pickStops());
       stepCount = 0;
+      velocities.fill(0);
       syncSliders();
       buildKernelLUT();
       const label = document.getElementById('seeder-label');
@@ -617,6 +835,7 @@ import Base from '../../layouts/Base.astro';
       hashW = Math.max(1, Math.floor(W_world / HASH_CELL_SIZE));
       hashH = Math.max(1, Math.floor(H_world / HASH_CELL_SIZE));
       positions = new Float32Array(N_PARTICLES * 2);
+      velocities = new Float32Array(N_PARTICLES * 2);
       U = new Float32Array(N_PARTICLES);
       Gp = new Float32Array(N_PARTICLES);
       F = new Float32Array(N_PARTICLES * 2);
@@ -730,8 +949,11 @@ import Base from '../../layouts/Base.astro';
       const flowAmp = params.flow;
       const flowT = stepCount * 0.005;
       for (let i = 0; i < N_PARTICLES; i++) {
-        let nx = positions[i * 2] + DT * F[i * 2];
-        let ny = positions[i * 2 + 1] + DT * F[i * 2 + 1];
+        // Accumulate forces (gradient + flow + noise) into velocity with
+        // damping. The damping factor controls how much of last step's motion
+        // carries over — higher = more momentum-y, smoother but less responsive.
+        let vx = velocities[i * 2] * DAMPING + DT * F[i * 2];
+        let vy = velocities[i * 2 + 1] * DAMPING + DT * F[i * 2 + 1];
         if (flowAmp > 0) {
           const px = positions[i * 2];
           const py = positions[i * 2 + 1];
@@ -739,13 +961,17 @@ import Base from '../../layouts/Base.astro';
             0.6 * Math.sin(py * 0.04 - flowT * 0.3);
           const fy = Math.cos(py * 0.08 + flowT * 0.5) +
             0.6 * Math.cos(px * 0.05 - flowT * 0.4);
-          nx += flowAmp * fx;
-          ny += flowAmp * fy;
+          vx += flowAmp * fx;
+          vy += flowAmp * fy;
         }
         if (noise > 0) {
-          nx += (Math.random() - 0.5) * 2 * noise;
-          ny += (Math.random() - 0.5) * 2 * noise;
+          vx += (Math.random() - 0.5) * 2 * noise;
+          vy += (Math.random() - 0.5) * 2 * noise;
         }
+        velocities[i * 2] = vx;
+        velocities[i * 2 + 1] = vy;
+        let nx = positions[i * 2] + vx;
+        let ny = positions[i * 2 + 1] + vy;
         nx = ((nx % W_world) + W_world) % W_world;
         ny = ((ny % H_world) + H_world) % H_world;
         positions[i * 2] = nx;
