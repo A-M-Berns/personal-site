@@ -29,18 +29,13 @@ import Base from '../../layouts/Base.astro';
       </div>
       <div class="tune-row">
         <label for="s-wK">wK</label>
-        <input type="range" id="s-wK" min="0.005" max="0.12" step="0.0005" />
+        <input type="range" id="s-wK" min="0.035" max="0.060" step="0.0005" />
         <span class="val" id="v-wK"></span>
       </div>
       <div class="tune-row">
         <label for="s-muG">μG</label>
         <input type="range" id="s-muG" min="0.20" max="1.00" step="0.005" />
         <span class="val" id="v-muG"></span>
-      </div>
-      <div class="tune-row">
-        <label for="s-sigmaG">σG</label>
-        <input type="range" id="s-sigmaG" min="0.4" max="0.6" step="0.005" />
-        <span class="val" id="v-sigmaG"></span>
       </div>
       <div class="tune-row">
         <label for="s-cRep">cRep</label>
@@ -58,7 +53,7 @@ import Base from '../../layouts/Base.astro';
         <span class="val" id="v-flow"></span>
       </div>
       <button id="reset-btn" type="button">Reset</button>
-      <p class="tune-hint">Click on the background to drop colored ink.</p>
+      <p class="tune-hint">Click on the background to nudge particles.</p>
     </aside>
   </div>
 </Base>
@@ -172,8 +167,8 @@ import Base from '../../layouts/Base.astro';
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
     const N_LEVELS = 8;
-    const CELL_PX = 6;          // display pixels per grid cell
-    const CELLS_PER_UNIT = 4;   // grid cells per world unit
+    const CELL_PX = 4;          // display pixels per grid cell
+    const CELLS_PER_UNIT = 6;   // grid cells per world unit
     const DT = 0.1;
     const N_PARTICLES = 320;
     const RESEED_AFTER = 2000;
@@ -188,11 +183,11 @@ import Base from '../../layouts/Base.astro';
       sigmaK: [0.5, 1.5],     // kernel ring width
       wK:     [0.035, 0.060], // per-particle field weight
       muG:    [0.40, 0.78],   // growth target field strength
-      sigmaG: [0.40, 0.60],   // growth tolerance (broad, permissive)
       cRep:   [0.6, 1.7],     // close-range repulsion strength
       noise:  [0.0, 0.08],    // per-step Brownian jitter
       flow:   [0.02, 0.12],   // amplitude of slowly varying spatial flow
     } as const;
+    const SIGMA_G_FIXED = 0.5;
     // Smaller jitter so the muK ↔ sigmaK inverse correlation is actually
     // visible across cycles instead of being washed out.
     const MUK_SIGMAK_JITTER = 0.2;
@@ -256,7 +251,7 @@ import Base from '../../layouts/Base.astro';
         muK, sigmaK,
         wK:     lerp(PARAM_RANGES.wK[0],     PARAM_RANGES.wK[1]),
         muG:    lerp(PARAM_RANGES.muG[0],    PARAM_RANGES.muG[1]),
-        sigmaG: lerp(PARAM_RANGES.sigmaG[0], PARAM_RANGES.sigmaG[1]),
+        sigmaG: SIGMA_G_FIXED, // fixed across cycles; tune via SIGMA_G_FIXED
         cRep:   lerp(PARAM_RANGES.cRep[0],   PARAM_RANGES.cRep[1]),
         noise:  lerp(PARAM_RANGES.noise[0],  PARAM_RANGES.noise[1]),
         flow:   lerp(PARAM_RANGES.flow[0],   PARAM_RANGES.flow[1]),
@@ -339,20 +334,37 @@ import Base from '../../layouts/Base.astro';
     let Gp = new Float32Array(0);
     let F = new Float32Array(0);
     let field = new Float32Array(0);
-    let stainR = new Float32Array(0);
-    let stainG = new Float32Array(0);
-    let stainB = new Float32Array(0);
+    let kernelLUT = new Float32Array(0);
     let img: ImageData | null = null;
     let palette: RGB[] = buildPalette(pickStops());
     let stepCount = 0;
-    const STAIN_DECAY = 0.992; // per-step decay; longer-lasting marks
-    const STAIN_RADIUS_CELLS = 24;
-    const STAIN_PEAK = 320;    // saturates additive blend for stark color
-    // Stain attracts particles up its gradient with this strength. Set high
-    // enough to noticeably gather creatures into stained areas without
-    // overwhelming the underlying gradient flow.
-    const STAIN_PULL = 0.18;
-    const STAIN_GRAD_RADIUS = 3; // grid cells used for finite-difference gradient
+
+    // Cache the kernel splat as a 2D LUT keyed by integer cell offset. The
+    // inner draw loop becomes a flat array lookup instead of an exp() call —
+    // that's the dominant render cost. Rebuilt on every reseed and on
+    // muK / sigmaK / wK slider changes via syncDerivedKernel().
+    function buildKernelLUT() {
+      const r = params.renderRangeCells;
+      const sz = 2 * r + 1;
+      kernelLUT = new Float32Array(sz * sz);
+      const wK = params.wK;
+      const muK = params.muK;
+      const sigmaK2 = params.sigmaK2;
+      const kernelRangeSq = params.kernelRangeSq;
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          const ddx = dx / CELLS_PER_UNIT;
+          const ddy = dy / CELLS_PER_UNIT;
+          const d2 = ddx * ddx + ddy * ddy;
+          if (d2 > kernelRangeSq) continue;
+          const rd = Math.sqrt(d2);
+          const dk = rd - muK;
+          const w = wK * Math.exp(-(dk * dk) / sigmaK2);
+          if (w < 1e-4) continue;
+          kernelLUT[(dy + r) * sz + (dx + r)] = w;
+        }
+      }
+    }
 
     // Spatial hash, linked-list per cell. hashHead[c] is the first particle
     // in cell c (or −1 if empty); hashNext[i] is the next particle after i.
@@ -589,10 +601,8 @@ import Base from '../../layouts/Base.astro';
       seeders[lastSeeder].fn();
       palette = buildPalette(pickStops());
       stepCount = 0;
-      stainR.fill(0);
-      stainG.fill(0);
-      stainB.fill(0);
       syncSliders();
+      buildKernelLUT();
       const label = document.getElementById('seeder-label');
       if (label) label.textContent = seeders[lastSeeder].name;
     }
@@ -611,9 +621,6 @@ import Base from '../../layouts/Base.astro';
       Gp = new Float32Array(N_PARTICLES);
       F = new Float32Array(N_PARTICLES * 2);
       field = new Float32Array(W_grid * H_grid);
-      stainR = new Float32Array(W_grid * H_grid);
-      stainG = new Float32Array(W_grid * H_grid);
-      stainB = new Float32Array(W_grid * H_grid);
       img = ctx.createImageData(W_grid, H_grid);
       hashHead = new Int32Array(hashW * hashH);
       hashNext = new Int32Array(N_PARTICLES);
@@ -713,33 +720,6 @@ import Base from '../../layouts/Base.astro';
         F[i * 2 + 1] = fy;
       }
 
-      // Stain attracts particles up its intensity gradient. We approximate
-      // ∇(R+G+B) by central differences over a few cells, then push each
-      // particle along that vector. This is what makes the click "interact"
-      // with the simulation rather than being a pure visual overlay.
-      for (let i = 0; i < N_PARTICLES; i++) {
-        const px = positions[i * 2] * CELLS_PER_UNIT;
-        const py = positions[i * 2 + 1] * CELLS_PER_UNIT;
-        const cx = Math.round(px) | 0;
-        const cy = Math.round(py) | 0;
-        const xR = (((cx + STAIN_GRAD_RADIUS) % W_grid) + W_grid) % W_grid;
-        const xL = (((cx - STAIN_GRAD_RADIUS) % W_grid) + W_grid) % W_grid;
-        const yU = (((cy - STAIN_GRAD_RADIUS) % H_grid) + H_grid) % H_grid;
-        const yD = (((cy + STAIN_GRAD_RADIUS) % H_grid) + H_grid) % H_grid;
-        const cyR = ((cy % H_grid) + H_grid) % H_grid;
-        const cxR = ((cx % W_grid) + W_grid) % W_grid;
-        const sR = stainR[cyR * W_grid + xR] + stainG[cyR * W_grid + xR] + stainB[cyR * W_grid + xR];
-        const sL = stainR[cyR * W_grid + xL] + stainG[cyR * W_grid + xL] + stainB[cyR * W_grid + xL];
-        const sU = stainR[yU * W_grid + cxR]  + stainG[yU * W_grid + cxR]  + stainB[yU * W_grid + cxR];
-        const sD = stainR[yD * W_grid + cxR]  + stainG[yD * W_grid + cxR]  + stainB[yD * W_grid + cxR];
-        // Skip when no nearby stain to avoid pointless work.
-        if (sR + sL + sU + sD < 1) continue;
-        const gradX = (sR - sL) / (2 * STAIN_GRAD_RADIUS) / 255;
-        const gradY = (sD - sU) / (2 * STAIN_GRAD_RADIUS) / 255;
-        F[i * 2] += STAIN_PULL * gradX;
-        F[i * 2 + 1] += STAIN_PULL * gradY;
-      }
-
       // Overdamped integration; wrap to torus.
       // Two ambient dynamics on top of the gradient flow:
       //  • noise — per-particle Brownian jitter (uncorrelated kicks).
@@ -772,14 +752,6 @@ import Base from '../../layouts/Base.astro';
         positions[i * 2 + 1] = ny;
       }
 
-      // Decay the colored stain layer.
-      const len = stainR.length;
-      for (let i = 0; i < len; i++) {
-        stainR[i] *= STAIN_DECAY;
-        stainG[i] *= STAIN_DECAY;
-        stainB[i] *= STAIN_DECAY;
-      }
-
       stepCount++;
       if (stepCount >= RESEED_AFTER) reseed();
     }
@@ -787,40 +759,35 @@ import Base from '../../layouts/Base.astro';
     function draw() {
       if (!img) return;
       field.fill(0);
-      const muK = params.muK;
-      const sigmaK2 = params.sigmaK2;
-      const wK = params.wK;
       const muG = params.muG;
-      const kernelRangeSq = params.kernelRangeSq;
       const renderRangeCells = params.renderRangeCells;
+      const lutSize = renderRangeCells * 2 + 1;
 
-      // Splat each particle's kernel onto the field grid. Wraps on the torus.
+      // Splat each particle's kernel onto the field grid via the precomputed
+      // 2D LUT — eliminates the per-cell exp() call which was the dominant
+      // cost in the inner loop. LUT is rebuilt on every reseed and on muK /
+      // sigmaK / wK slider changes.
       for (let p = 0; p < N_PARTICLES; p++) {
         const px = positions[p * 2] * CELLS_PER_UNIT;
         const py = positions[p * 2 + 1] * CELLS_PER_UNIT;
         const cx = Math.round(px);
         const cy = Math.round(py);
         for (let dy = -renderRangeCells; dy <= renderRangeCells; dy++) {
+          const lutRow = (dy + renderRangeCells) * lutSize;
+          const yIdx = (((cy + dy) % H_grid) + H_grid) % H_grid;
+          const fieldRow = yIdx * W_grid;
           for (let dx = -renderRangeCells; dx <= renderRangeCells; dx++) {
-            const ddx = (cx + dx - px) / CELLS_PER_UNIT;
-            const ddy = (cy + dy - py) / CELLS_PER_UNIT;
-            const r2 = ddx * ddx + ddy * ddy;
-            if (r2 > kernelRangeSq) continue;
-            const r = Math.sqrt(r2);
-            const dk = r - muK;
-            const w = wK * Math.exp(-(dk * dk) / sigmaK2);
-            if (w < 1e-5) continue;
-            const x = (((cx + dx) % W_grid) + W_grid) % W_grid;
-            const y = (((cy + dy) % H_grid) + H_grid) % H_grid;
-            field[y * W_grid + x] += w;
+            const w = kernelLUT[lutRow + (dx + renderRangeCells)];
+            if (w === 0) continue;
+            const xIdx = (((cx + dx) % W_grid) + W_grid) % W_grid;
+            field[fieldRow + xIdx] += w;
           }
         }
       }
 
       // Map field strength to a palette index, clipping at ~1.4·μ_G so dense
       // creature interiors saturate but the outer halo still resolves into
-      // distinct bands. Stain RGB is added on top so click-deposited color
-      // shows through even when the underlying field is zero.
+      // distinct bands.
       const scale = 1 / (muG * 1.4);
       const data = img.data;
       const len = field.length;
@@ -831,29 +798,22 @@ import Base from '../../layouts/Base.astro';
         if (idx >= N_LEVELS) idx = N_LEVELS - 1;
         const c = palette[idx];
         const j = i * 4;
-        let r = c[0] + stainR[i];
-        let g = c[1] + stainG[i];
-        let b = c[2] + stainB[i];
-        if (r > 255) r = 255;
-        if (g > 255) g = 255;
-        if (b > 255) b = 255;
-        data[j] = r;
-        data[j + 1] = g;
-        data[j + 2] = b;
+        data[j] = c[0];
+        data[j + 1] = c[1];
+        data[j + 2] = c[2];
         data[j + 3] = 255;
       }
       ctx.putImageData(img, 0, 0);
     }
 
     // ── Sliders ─────────────────────────────────────────────────────────
-    type SliderKey = 'muK' | 'sigmaK' | 'wK' | 'muG' | 'sigmaG' | 'cRep' | 'noise' | 'flow';
-    const SLIDER_KEYS: SliderKey[] = ['muK', 'sigmaK', 'wK', 'muG', 'sigmaG', 'cRep', 'noise', 'flow'];
+    type SliderKey = 'muK' | 'sigmaK' | 'wK' | 'muG' | 'cRep' | 'noise' | 'flow';
+    const SLIDER_KEYS: SliderKey[] = ['muK', 'sigmaK', 'wK', 'muG', 'cRep', 'noise', 'flow'];
     const FORMAT: Record<SliderKey, (n: number) => string> = {
       muK:    (n) => n.toFixed(2),
       sigmaK: (n) => n.toFixed(2),
       wK:     (n) => n.toFixed(4),
       muG:    (n) => n.toFixed(3),
-      sigmaG: (n) => n.toFixed(3),
       cRep:   (n) => n.toFixed(2),
       noise:  (n) => n.toFixed(3),
       flow:   (n) => n.toFixed(3),
@@ -885,7 +845,8 @@ import Base from '../../layouts/Base.astro';
         v.textContent = FORMAT[k](num);
         // muK / sigmaK changes invalidate kernelRange and friends.
         if (k === 'muK' || k === 'sigmaK') recompute(params);
-        else if (k === 'sigmaG') params.sigmaG2 = num * num;
+        // Any kernel-shape change requires rebuilding the splat LUT.
+        if (k === 'muK' || k === 'sigmaK' || k === 'wK') buildKernelLUT();
       });
     }
 
@@ -893,43 +854,15 @@ import Base from '../../layouts/Base.astro';
     resetBtn?.addEventListener('click', () => reseed());
 
     // ── Click perturbation ──────────────────────────────────────────────
-    // A click both kicks nearby particles outward (visible motion) AND
-    // stamps a Gaussian splatter of multi-colored stain into the canvas.
-    // Per-cell color is sampled from a small randomly-picked palette so the
-    // splat is non-monochrome. Stain decays in step() and exerts a pull on
-    // particles in step() too — see STAIN_PULL.
+    // Click drops a strong outward kick on every particle within a generous
+    // radius. Falloff is (1 − r/R)² so the center gets the brunt and the
+    // edge tapers off smoothly.
     function perturb(gx: number, gy: number) {
-      // Multi-color splat: 3–5 colors per click, sampled per cell.
-      const numColors = 3 + ((Math.random() * 3) | 0);
-      const stops: RGB[] = [];
-      for (let i = 0; i < numColors; i++) {
-        stops.push(colorPool[(Math.random() * colorPool.length) | 0]);
-      }
-      const r2max = STAIN_RADIUS_CELLS * STAIN_RADIUS_CELLS;
-      const sigma2 = (STAIN_RADIUS_CELLS * 0.5) * (STAIN_RADIUS_CELLS * 0.5);
-      const cx = Math.round(gx);
-      const cy = Math.round(gy);
-      for (let dy = -STAIN_RADIUS_CELLS; dy <= STAIN_RADIUS_CELLS; dy++) {
-        for (let dx = -STAIN_RADIUS_CELLS; dx <= STAIN_RADIUS_CELLS; dx++) {
-          const r2 = dx * dx + dy * dy;
-          if (r2 > r2max) continue;
-          const w = Math.exp(-r2 / (2 * sigma2)) * STAIN_PEAK;
-          if (w < 0.5) continue;
-          const stop = stops[(Math.random() * numColors) | 0];
-          const x = (((cx + dx) % W_grid) + W_grid) % W_grid;
-          const y = (((cy + dy) % H_grid) + H_grid) % H_grid;
-          const idx = y * W_grid + x;
-          stainR[idx] = Math.min(255, stainR[idx] + (stop[0] / 255) * w);
-          stainG[idx] = Math.min(255, stainG[idx] + (stop[1] / 255) * w);
-          stainB[idx] = Math.min(255, stainB[idx] + (stop[2] / 255) * w);
-        }
-      }
-      // Outward radial kick on nearby particles, like the prior perturb.
       const wx = gx / CELLS_PER_UNIT;
       const wy = gy / CELLS_PER_UNIT;
-      const kickRadius = Math.max(4, params.muK * 1.5);
+      const kickRadius = Math.max(8, params.muK * 3.0);
       const kickRadius2 = kickRadius * kickRadius;
-      const kickStrength = 4;
+      const kickStrength = 9;
       for (let i = 0; i < N_PARTICLES; i++) {
         const dxw = wrap(positions[i * 2] - wx, W_world);
         const dyw = wrap(positions[i * 2 + 1] - wy, H_world);
