@@ -336,6 +336,27 @@ a:focus-visible {
   z-index: 1;
 }
 
+.lean-shell {
+  position: relative;
+  isolation: isolate;
+}
+.wang-tiles {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  opacity: 0.5;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.lean-shell > .section-head,
+.lean-shell > .note {
+  position: relative;
+  z-index: 1;
+}
+
 .writing-shell {
   position: relative;
   isolation: isolate;
