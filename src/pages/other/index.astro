@@ -48,6 +48,16 @@ import Base from '../../layouts/Base.astro';
         <span class="val" id="v-cRep"></span>
       </div>
       <div class="tune-row">
+        <label for="s-noise">noise</label>
+        <input type="range" id="s-noise" min="0" max="0.06" step="0.001" />
+        <span class="val" id="v-noise"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-flow">flow</label>
+        <input type="range" id="s-flow" min="0" max="0.45" step="0.005" />
+        <span class="val" id="v-flow"></span>
+      </div>
+      <div class="tune-row">
         <label for="s-smooth">smooth</label>
         <input type="range" id="s-smooth" min="0" max="0.95" step="0.01" />
         <span class="val" id="v-smooth"></span>
@@ -192,10 +202,10 @@ import Base from '../../layouts/Base.astro';
       wK:     [0.035, 0.060], // per-particle field weight
       muG:    [0.50, 1.10],   // growth target field strength
       cRep:   [0.6, 1.7],     // close-range repulsion strength
+      noise:  [0.006, 0.034], // Brownian jitter strength
+      flow:   [0.08, 0.34],   // ambient curl-flow strength
     } as const;
     const SIGMA_G_FIXED = 0.5;
-    const NOISE_FIXED = 0.02; // Brownian jitter
-    const FLOW_FIXED = 0.2;   // spatial flow amplitude
 
     // muK ↔ sigmaK are now strictly coupled through a single "type" t ∈ [0,1].
     // The user-exposed `t` slider drives both inversely; the muK and sigmaK
@@ -257,8 +267,8 @@ import Base from '../../layouts/Base.astro';
         muG:    lerp(PARAM_RANGES.muG[0],    PARAM_RANGES.muG[1]),
         sigmaG: SIGMA_G_FIXED,
         cRep:   lerp(PARAM_RANGES.cRep[0],   PARAM_RANGES.cRep[1]),
-        noise:  NOISE_FIXED,
-        flow:   FLOW_FIXED,
+        noise:  lerp(PARAM_RANGES.noise[0],  PARAM_RANGES.noise[1]),
+        flow:   lerp(PARAM_RANGES.flow[0],   PARAM_RANGES.flow[1]),
         kernelRange: 0, kernelRangeSq: 0, renderRangeCells: 0,
         sigmaK2: 0, sigmaG2: 0,
       };
@@ -1446,14 +1456,16 @@ import Base from '../../layouts/Base.astro';
     }
 
     // ── Sliders ─────────────────────────────────────────────────────────
-    type SliderKey = 'muK' | 'sigmaK' | 'wK' | 'muG' | 'cRep';
-    const SLIDER_KEYS: SliderKey[] = ['muK', 'sigmaK', 'wK', 'muG', 'cRep'];
+    type SliderKey = 'muK' | 'sigmaK' | 'wK' | 'muG' | 'cRep' | 'noise' | 'flow';
+    const SLIDER_KEYS: SliderKey[] = ['muK', 'sigmaK', 'wK', 'muG', 'cRep', 'noise', 'flow'];
     const FORMAT: Record<SliderKey, (n: number) => string> = {
       muK:    (n) => n.toFixed(2),
       sigmaK: (n) => n.toFixed(2),
       wK:     (n) => n.toFixed(4),
       muG:    (n) => n.toFixed(3),
       cRep:   (n) => n.toFixed(2),
+      noise:  (n) => n.toFixed(3),
+      flow:   (n) => n.toFixed(3),
     };
     const sliderEls: Partial<Record<SliderKey, HTMLInputElement>> = {};
     const valEls:    Partial<Record<SliderKey, HTMLElement>>    = {};
