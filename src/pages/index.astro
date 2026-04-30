@@ -41,7 +41,7 @@ import Base from '../layouts/Base.astro';
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
     const N = 8;
-    const CELL_PX = 1;
+    const CELL_PX = 2;
     // Brush radius in cells, sized so the trail reads as ~18 screen px.
     const BRUSH = Math.max(2, Math.round(18 / CELL_PX));
     let W = 0;
