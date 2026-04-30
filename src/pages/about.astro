@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 ---
 <Base title="About — A. M. Berns" description="About A. M. Berns.">
   <div class="about-shell">
-    <canvas id="rain-sim" class="rain-sim" aria-hidden="true"></canvas>
+    <canvas id="fluid-sim" class="fluid-sim" aria-hidden="true"></canvas>
     <header class="section-head">
       <h1><span class="hl">About</span></h1>
       <p><span class="hl">A short bio goes here.</span></p>
@@ -15,41 +15,49 @@ import Base from '../layouts/Base.astro';
 </Base>
 
 <script>
-  const canvas = document.getElementById('rain-sim') as HTMLCanvasElement | null;
+  const canvas = document.getElementById('fluid-sim') as HTMLCanvasElement | null;
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
     const N = 8;
-    const CELL_PX = 3;
-    const DRAIN_START = 0.94;
-    const RESET_LEVEL = 0.65;
-    const DRAIN_RATE = 0.9992;
-    const FLOW_PASSES = 8;
-    const FLOW_RATE = 0.16;
-    const FLOW_CAP = 0.42;
-    const SURFACE_LAG = 0.11;
-    const RAIN_RATE = 0.006;
-    const RAIN_MAX_DROPS = 2.2;
-    const GOLDEN_RATIO_STEP = 0.6180339887498949;
-    // Wind drifts drops sideways and advects column color in the same
-    // direction. COLOR_DIFFUSE is symmetric lateral mixing; COLOR_ADVECT
-    // scales how much wind drags color from upwind columns each step.
-    const WIND_MAX = 0.34;     // peak instantaneous wind
-    const WIND_VAR_MAX = 0.20; // peak amplitude of in-cycle wind drift
-    const COLOR_DIFFUSE = 0.06;
-    const COLOR_ADVECT = 0.55;
-    // Wind-driven traveling surface wave: spatial wavenumber and temporal
-    // angular frequency, scaled by the current wind magnitude so calm
-    // cycles stay flat and gusty ones ripple visibly.
-    const WAVE_K = 0.10;
-    const WAVE_OMEGA = 0.42;
-    const WAVE_AMP = 0.18;
-    const WATER_SWIRL = 0.24;
-    const WATER_SHIMMER = 0.07;
-    const styles = getComputedStyle(document.documentElement);
-    const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
+    const CELL_PX = 4;
+    const TAU = Math.PI * 2;
+    const CYCLE_FRAMES = 1800;
+    const DYE_DECAY = 0.989;
+    const VELOCITY_BLEND = 0.24;
+    const ADVECT_DT = 0.82;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     type RGB = [number, number, number];
+    type Vortex = {
+      cx: number;
+      cy: number;
+      rx: number;
+      ry: number;
+      sx: number;
+      sy: number;
+      phase: number;
+      radius: number;
+      spin: number;
+      breathe: number;
+      pull: number;
+      x: number;
+      y: number;
+    };
+    type Emitter = {
+      cx: number;
+      cy: number;
+      rx: number;
+      ry: number;
+      sx: number;
+      sy: number;
+      phase: number;
+      radius: number;
+      amount: number;
+      color: RGB;
+    };
+
+    const styles = getComputedStyle(document.documentElement);
+    const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
 
     function parseHex(h: string): RGB {
       const s = h.trim().replace('#', '');
@@ -70,6 +78,10 @@ import Base from '../layouts/Base.astro';
       ];
     }
 
+    function rgb(c: RGB): string {
+      return `rgb(${c[0]} ${c[1]} ${c[2]})`;
+    }
+
     const paper = parseHex(paperHex);
     const colorPool = [
       '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
@@ -78,6 +90,27 @@ import Base from '../layouts/Base.astro';
       '#2cc7e0', '#4ad6ff', '#2a6fd6', '#1d3a8a', '#6a1a9a',
       '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
     ].map(parseHex).sort((a, b) => luma(a) - luma(b));
+
+    let W = 0;
+    let H = 0;
+    let img: ImageData | null = null;
+    let dyeR = new Float32Array(0);
+    let dyeG = new Float32Array(0);
+    let dyeB = new Float32Array(0);
+    let nextR = new Float32Array(0);
+    let nextG = new Float32Array(0);
+    let nextB = new Float32Array(0);
+    let velX = new Float32Array(0);
+    let velY = new Float32Array(0);
+    let palette: RGB[] = [];
+    let cycleStops: RGB[] = [];
+    let vortices: Vortex[] = [];
+    let emitters: Emitter[] = [];
+    let stepCount = 0;
+    let pointerX = -1;
+    let pointerY = -1;
+    let pointerDX = 0;
+    let pointerDY = 0;
 
     function pickStops(): RGB[] {
       const stops: RGB[] = [];
@@ -99,812 +132,309 @@ import Base from '../layouts/Base.astro';
         const lt = segF - seg;
         const a = all[seg];
         const b = all[seg + 1];
-        out.push([
-          Math.round(a[0] + (b[0] - a[0]) * lt),
-          Math.round(a[1] + (b[1] - a[1]) * lt),
-          Math.round(a[2] + (b[2] - a[2]) * lt),
-        ]);
+        out.push(mix(a, b, lt));
       }
       return out;
     }
 
-    function pickRainColors(palette: RGB[]): RGB[] {
-      // Pick 4–5 stops spanning the palette so drops can carry visibly
-      // distinct colors that still come from the same harmonious cycle
-      // palette. Uses the bottom/mid/top luma bands so a downpour reads as
-      // multicolored rather than tinted-monochrome.
-      const count = 4 + ((Math.random() * 2) | 0); // 4 or 5
-      const bands = [
-        [1, 2],          // bottom (deep)
-        [2, 3],          // lower-mid
-        [3, 4, 5],       // mid
-        [5, 6],          // upper-mid
-        [6, 7],          // top (bright)
-      ];
-      const used = new Set<number>();
-      const colors: RGB[] = [];
-      const last = palette.length - 1;
-      for (const band of bands) {
-        if (colors.length >= count) break;
-        const candidates = band.filter((i) => i <= last && !used.has(i));
-        if (candidates.length === 0) continue;
-        const idx = candidates[(Math.random() * candidates.length) | 0];
-        used.add(idx);
-        colors.push(mix(paper, palette[idx], 0.82));
+    function syncAccent(stops: RGB[]) {
+      const root = document.documentElement;
+      for (let i = 0; i < stops.length; i++) root.style.setProperty(`--c${i + 1}`, rgb(stops[i]));
+      root.style.setProperty('--accent', rgb(stops[Math.min(stops.length - 1, 4)]));
+    }
+
+    function wrap(v: number, max: number): number {
+      return ((v % max) + max) % max;
+    }
+
+    function addDye(cx: number, cy: number, radius: number, color: RGB, amount: number) {
+      const r = Math.max(1, Math.ceil(radius));
+      const rr = radius * radius;
+      for (let dy = -r; dy <= r; dy++) {
+        const yy = (Math.round(cy) + dy + H) % H;
+        const row = yy * W;
+        for (let dx = -r; dx <= r; dx++) {
+          const d2 = dx * dx + dy * dy;
+          if (d2 > rr) continue;
+          const x = (Math.round(cx) + dx + W) % W;
+          const q = 1 - d2 / rr;
+          const w = q * q * amount;
+          const i = row + x;
+          dyeR[i] = Math.min(520, dyeR[i] + color[0] * w);
+          dyeG[i] = Math.min(520, dyeG[i] + color[1] * w);
+          dyeB[i] = Math.min(520, dyeB[i] + color[2] * w);
+        }
       }
-      // Top up if any band missed.
-      for (let k = 1; k < palette.length && colors.length < count; k++) {
-        if (used.has(k)) continue;
-        used.add(k);
-        colors.push(mix(paper, palette[k], 0.82));
+    }
+
+    function addVelocity(cx: number, cy: number, vx: number, vy: number, radius: number) {
+      const r = Math.max(1, Math.ceil(radius));
+      const rr = radius * radius;
+      for (let dy = -r; dy <= r; dy++) {
+        const yy = (Math.round(cy) + dy + H) % H;
+        const row = yy * W;
+        for (let dx = -r; dx <= r; dx++) {
+          const d2 = dx * dx + dy * dy;
+          if (d2 > rr) continue;
+          const x = (Math.round(cx) + dx + W) % W;
+          const q = 1 - d2 / rr;
+          const i = row + x;
+          velX[i] += vx * q * q;
+          velY[i] += vy * q * q;
+        }
       }
-      return colors;
     }
 
-    function pickWaterColor(palette: RGB[]): RGB {
-      const idx = 2 + ((Math.random() * 3) | 0);
-      return mix(paper, palette[Math.min(idx, palette.length - 1)], 0.62);
+    function rerollCycle(clear: boolean) {
+      cycleStops = pickStops();
+      palette = buildPalette(cycleStops);
+      syncAccent(cycleStops);
+      vortices = [];
+      emitters = [];
+      const span = Math.max(12, Math.min(W, H));
+      const vortexCount = 6 + ((Math.random() * 4) | 0);
+      for (let i = 0; i < vortexCount; i++) {
+        const spinSign = Math.random() < 0.5 ? -1 : 1;
+        vortices.push({
+          cx: Math.random() * W,
+          cy: Math.random() * H,
+          rx: W * (0.08 + Math.random() * 0.22),
+          ry: H * (0.08 + Math.random() * 0.22),
+          sx: (0.0015 + Math.random() * 0.0045) * (Math.random() < 0.5 ? -1 : 1),
+          sy: (0.0015 + Math.random() * 0.0045) * (Math.random() < 0.5 ? -1 : 1),
+          phase: Math.random() * TAU,
+          radius: span * (0.11 + Math.random() * 0.14),
+          spin: spinSign * (0.55 + Math.random() * 0.75),
+          breathe: 0.006 + Math.random() * 0.014,
+          pull: (Math.random() - 0.5) * 0.0015,
+          x: 0,
+          y: 0,
+        });
+      }
+      const emitterCount = 4 + ((Math.random() * 3) | 0);
+      for (let i = 0; i < emitterCount; i++) {
+        const c = mix(paper, cycleStops[(i * 2 + ((Math.random() * 2) | 0)) % cycleStops.length], 0.96);
+        emitters.push({
+          cx: W * (0.18 + Math.random() * 0.64),
+          cy: H * (0.18 + Math.random() * 0.64),
+          rx: W * (0.10 + Math.random() * 0.28),
+          ry: H * (0.10 + Math.random() * 0.28),
+          sx: 0.003 + Math.random() * 0.008,
+          sy: 0.003 + Math.random() * 0.008,
+          phase: Math.random() * TAU,
+          radius: span * (0.026 + Math.random() * 0.028),
+          amount: 0.020 + Math.random() * 0.020,
+          color: c,
+        });
+      }
+      if (clear) {
+        dyeR.fill(0); dyeG.fill(0); dyeB.fill(0);
+        velX.fill(0); velY.fill(0);
+        for (let i = 0; i < 34; i++) {
+          const c = mix(paper, cycleStops[(Math.random() * cycleStops.length) | 0], 0.88);
+          addDye(Math.random() * W, Math.random() * H, span * (0.025 + Math.random() * 0.06), c, 0.18);
+        }
+      }
+      stepCount = 0;
     }
 
-    type Drop = {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      size: number;
-      shape: number;
-      color: number;
-    };
-    // A short-lived spray ring at a drop's impact point. Two wings spread
-    // outward from (x, y) over its lifetime — gives drops visual feedback
-    // when they hit the surface.
-    type Splash = {
-      x: number;
-      y: number;
-      age: number;
-      color: number;
-      size: number;
-    };
-    const SPLASH_LIFE = 6;
-
-    // Wind-driven mist particles: short-lived dots that drift downwind off
-    // the water surface. Spawned proportional to wind magnitude.
-    type Spray = {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      age: number;
-      color: number;
-    };
-    const SPRAY_LIFE = 28;
-    const SPRAY_WIND_THRESHOLD = 0.10;
-
-    let W = 0;
-    let H = 0;
-    let height = new Float32Array(0);
-    let renderHeight = new Float32Array(0);
-    let smoothHeight = new Float32Array(0);
-    let flow = new Float32Array(0);
-    // Per-column color is stored as extensive "color mass" (concentration ×
-    // height); intensive RGB is recovered as colMass / height when rendering.
-    // Storing it extensive lets the column-equalization pass move color in
-    // proportion to the water it carries — same physics as the height flow.
-    let colMassR = new Float32Array(0);
-    let colMassG = new Float32Array(0);
-    let colMassB = new Float32Array(0);
-    let columnR = new Float32Array(0);
-    let columnG = new Float32Array(0);
-    let columnB = new Float32Array(0);
-    // Snapshot + per-pass accumulators reused across equalization and the
-    // separate diffuse/advect pass to avoid per-frame allocations.
-    let scratchH = new Float32Array(0);
-    let scratchR = new Float32Array(0);
-    let scratchG = new Float32Array(0);
-    let scratchB = new Float32Array(0);
-    let flowH = new Float32Array(0);
-    let flowR = new Float32Array(0);
-    let flowG = new Float32Array(0);
-    let flowB = new Float32Array(0);
-    let drops: Drop[] = [];
-    let splashes: Splash[] = [];
-    let spray: Spray[] = [];
-    // Lightning bolt: a branching path of segments generated on trigger,
-    // rendered for LIGHTNING_FRAMES frames as it fades. The flash component
-    // is a small additive overlay on top.
-    type BoltSegment = {
-      x0: number; y0: number;
-      x1: number; y1: number;
-      intensity: number;
-    };
-    let lightningFrame = 0;
-    let lightningSegments: BoltSegment[] = [];
-    const LIGHTNING_FRAMES = 6;
-    const LIGHTNING_PROB = 0.0009;
-    let lightningTint: RGB = [255, 255, 255];
-
-    // Umbrella that follows the mouse pointer. Drops that fall on the canopy
-    // splash off and disappear, leaving the area beneath the umbrella dry.
-    // The mouse is tracked in canvas grid coords (W × H) so all the
-    // collision math works in the same space as drops + height.
-    let mouseX = -1;
-    let mouseY = -1;
-    const UMBRELLA_RADIUS = 9;       // half-width of the canopy in cells
-    const UMBRELLA_HEIGHT = 4;       // canopy peak above its edges
-    const UMBRELLA_OFFSET = 6;       // edge of canopy above the cursor tip
-    const UMBRELLA_HANDLE = 5;       // handle length below canopy
-    let img: ImageData | null = null;
-    let waterPalette = buildPalette(pickStops());
-    let waterColor = pickWaterColor(waterPalette);
-    let rainColors = pickRainColors(waterPalette);
-    let rainCarry = 0;
-    let rainCursor = Math.random();
-    let draining = false;
-    let cycleWindBase = 0;
-    let cycleWindAmp = 0;
-    let cycleWindFreq = 0;
-    let cycleWind = 0;
-    let stepCount = 0;
-    function rerollWind() {
-      cycleWindBase = (Math.random() - 0.5) * 2 * WIND_MAX;
-      cycleWindAmp = Math.random() * WIND_VAR_MAX;
-      cycleWindFreq = 0.0015 + Math.random() * 0.004;
+    function updateVortices(t: number) {
+      for (const v of vortices) {
+        v.x = wrap(
+          v.cx + Math.cos(t * v.sx + v.phase) * v.rx +
+          Math.sin(t * v.sy * 0.43 + v.phase * 1.7) * v.rx * 0.35,
+          W,
+        );
+        v.y = wrap(
+          v.cy + Math.sin(t * v.sy + v.phase * 1.3) * v.ry +
+          Math.cos(t * v.sx * 0.51 + v.phase) * v.ry * 0.35,
+          H,
+        );
+      }
     }
-    rerollWind();
+
+    function updateVelocity(t: number) {
+      updateVortices(t);
+      for (let y = 0; y < H; y++) {
+        const row = y * W;
+        const baseU = Math.sin(y * 0.035 + t * 0.010) * 0.08;
+        for (let x = 0; x < W; x++) {
+          const i = row + x;
+          let u = baseU + Math.sin((x + y) * 0.021 - t * 0.007) * 0.035;
+          let v = Math.cos(x * 0.030 - t * 0.009) * 0.055;
+          for (const vortex of vortices) {
+            let dx = x - vortex.x;
+            let dy = y - vortex.y;
+            if (dx > W * 0.5) dx -= W;
+            else if (dx < -W * 0.5) dx += W;
+            if (dy > H * 0.5) dy -= H;
+            else if (dy < -H * 0.5) dy += H;
+            const r2 = dx * dx + dy * dy;
+            const qBase = 1 / (1 + r2 / (vortex.radius * vortex.radius));
+            const q = qBase * qBase;
+            const spin = vortex.spin * (0.74 + 0.26 * Math.sin(t * vortex.breathe + vortex.phase));
+            const curl = q * spin / Math.max(8, vortex.radius);
+            u += -dy * curl + dx * vortex.pull * q;
+            v += dx * curl + dy * vortex.pull * q;
+          }
+          velX[i] = velX[i] * (1 - VELOCITY_BLEND) + u * VELOCITY_BLEND;
+          velY[i] = velY[i] * (1 - VELOCITY_BLEND) + v * VELOCITY_BLEND;
+        }
+      }
+    }
+
+    function emitDye(t: number) {
+      for (const e of emitters) {
+        const x = wrap(
+          e.cx + Math.cos(t * e.sx + e.phase) * e.rx +
+          Math.sin(t * e.sy * 0.37 + e.phase * 2.1) * e.rx * 0.25,
+          W,
+        );
+        const y = wrap(
+          e.cy + Math.sin(t * e.sy + e.phase) * e.ry +
+          Math.cos(t * e.sx * 0.41 + e.phase * 0.7) * e.ry * 0.25,
+          H,
+        );
+        const pulse = 0.75 + 0.25 * Math.sin(t * 0.017 + e.phase);
+        addDye(x, y, e.radius * (0.85 + pulse * 0.35), e.color, e.amount * pulse);
+      }
+      if (pointerX >= 0) {
+        const color = mix(paper, palette[Math.max(2, palette.length - 2)], 0.96);
+        addDye(pointerX, pointerY, Math.max(5, Math.min(W, H) * 0.035), color, 0.026);
+        addVelocity(pointerX, pointerY, pointerDX * 0.06, pointerDY * 0.06, Math.max(6, Math.min(W, H) * 0.045));
+        pointerDX *= 0.68;
+        pointerDY *= 0.68;
+      }
+    }
+
+    function advect() {
+      for (let y = 0; y < H; y++) {
+        const row = y * W;
+        for (let x = 0; x < W; x++) {
+          const i = row + x;
+          let px = x - velX[i] * ADVECT_DT;
+          let py = y - velY[i] * ADVECT_DT;
+          px = wrap(px, W);
+          py = wrap(py, H);
+          const x0 = px | 0;
+          const y0 = py | 0;
+          const x1 = (x0 + 1) % W;
+          const y1 = (y0 + 1) % H;
+          const tx = px - x0;
+          const ty = py - y0;
+          const a = (1 - tx) * (1 - ty);
+          const b = tx * (1 - ty);
+          const c = (1 - tx) * ty;
+          const d = tx * ty;
+          const i00 = y0 * W + x0;
+          const i10 = y0 * W + x1;
+          const i01 = y1 * W + x0;
+          const i11 = y1 * W + x1;
+          nextR[i] = (dyeR[i00] * a + dyeR[i10] * b + dyeR[i01] * c + dyeR[i11] * d) * DYE_DECAY;
+          nextG[i] = (dyeG[i00] * a + dyeG[i10] * b + dyeG[i01] * c + dyeG[i11] * d) * DYE_DECAY;
+          nextB[i] = (dyeB[i00] * a + dyeB[i10] * b + dyeB[i01] * c + dyeB[i11] * d) * DYE_DECAY;
+        }
+      }
+      let tmp = dyeR; dyeR = nextR; nextR = tmp;
+      tmp = dyeG; dyeG = nextG; nextG = tmp;
+      tmp = dyeB; dyeB = nextB; nextB = tmp;
+    }
+
+    function step() {
+      const t = stepCount;
+      updateVelocity(t);
+      emitDye(t);
+      advect();
+      stepCount++;
+      if (stepCount >= CYCLE_FRAMES) rerollCycle(false);
+    }
+
+    function draw() {
+      if (!img) return;
+      const data = img.data;
+      for (let y = 0; y < H; y++) {
+        const row = y * W;
+        const yU = ((y - 1 + H) % H) * W;
+        const yD = ((y + 1) % H) * W;
+        for (let x = 0; x < W; x++) {
+          const i = row + x;
+          const xL = (x - 1 + W) % W;
+          const xR = (x + 1) % W;
+          const sum = dyeR[i] + dyeG[i] + dyeB[i];
+          const density = Math.min(1, sum / 420);
+          const curl = Math.min(
+            1,
+            Math.abs((velY[row + xR] - velY[row + xL]) - (velX[yD + x] - velX[yU + x])) * 0.45,
+          );
+          const band = density <= 0.02 ? 0 : Math.floor((density + curl * 0.16) * 7) / 7;
+          const alpha = Math.min(1, band * 0.88 + curl * 0.12);
+          const inv = sum > 1 ? Math.min(1, 360 / sum) : 1;
+          const shimmer = 0.90 + 0.18 * Math.sin(x * 0.17 + y * 0.11 + stepCount * 0.025);
+          const cr = Math.min(255, dyeR[i] * inv * shimmer);
+          const cg = Math.min(255, dyeG[i] * inv * shimmer);
+          const cb = Math.min(255, dyeB[i] * inv * shimmer);
+          const j = i * 4;
+          data[j] = Math.round(paper[0] * (1 - alpha) + cr * alpha);
+          data[j + 1] = Math.round(paper[1] * (1 - alpha) + cg * alpha);
+          data[j + 2] = Math.round(paper[2] * (1 - alpha) + cb * alpha);
+          data[j + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    }
 
     function resize() {
       W = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
       H = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
       canvas.width = W;
       canvas.height = H;
-      height = new Float32Array(W);
-      renderHeight = new Float32Array(W);
-      smoothHeight = new Float32Array(W);
-      flow = new Float32Array(W);
-      colMassR = new Float32Array(W);
-      colMassG = new Float32Array(W);
-      colMassB = new Float32Array(W);
-      columnR = new Float32Array(W);
-      columnG = new Float32Array(W);
-      columnB = new Float32Array(W);
-      scratchH = new Float32Array(W);
-      scratchR = new Float32Array(W);
-      scratchG = new Float32Array(W);
-      scratchB = new Float32Array(W);
-      flowH = new Float32Array(W);
-      flowR = new Float32Array(W);
-      flowG = new Float32Array(W);
-      flowB = new Float32Array(W);
-      drops = [];
+      const cells = W * H;
+      dyeR = new Float32Array(cells);
+      dyeG = new Float32Array(cells);
+      dyeB = new Float32Array(cells);
+      nextR = new Float32Array(cells);
+      nextG = new Float32Array(cells);
+      nextB = new Float32Array(cells);
+      velX = new Float32Array(cells);
+      velY = new Float32Array(cells);
       img = ctx.createImageData(W, H);
-      rainCarry = 0;
-      rainCursor = Math.random();
-      draining = false;
-      waterPalette = buildPalette(pickStops());
-      waterColor = pickWaterColor(waterPalette);
-      rainColors = pickRainColors(waterPalette);
-      rerollWind();
-      stepCount = 0;
+      rerollCycle(true);
     }
 
-    function surfaceY(x: number): number {
-      const ix = ((((x | 0) % W) + W) % W);
-      let sum = 0;
-      for (let dx = -2; dx <= 2; dx++) {
-        const j = ((ix + dx) % W + W) % W;
-        sum += height[j];
+    function setPointerFromEvent(e: PointerEvent) {
+      const rect = canvas.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * W;
+      const y = ((e.clientY - rect.top) / rect.height) * H;
+      if (pointerX >= 0) {
+        pointerDX = x - pointerX;
+        pointerDY = y - pointerY;
       }
-      return H - 1 - sum / 5;
-    }
-
-    function splash(x: number, amount: number, dropColor: RGB) {
-      const mid = ((((x | 0) % W) + W) % W);
-      for (let dx = -5; dx <= 5; dx++) {
-        const ix = ((mid + dx) % W + W) % W;
-        const falloff = Math.max(0, 1 - Math.abs(dx) / 5.8);
-        const deposit = amount * falloff;
-        height[ix] = Math.min(H - 2, height[ix] + deposit);
-        colMassR[ix] += dropColor[0] * deposit;
-        colMassG[ix] += dropColor[1] * deposit;
-        colMassB[ix] += dropColor[2] * deposit;
-      }
-    }
-
-    function spawnDrop() {
-      rainCursor = (rainCursor + GOLDEN_RATIO_STEP) % 1;
-      const x = Math.max(0, Math.min(W - 1, rainCursor * W + (Math.random() - 0.5) * 5));
-      // Weight roll: 4% chance of a fat drop (size 3, ~2× splash mass and
-      // a bigger spray on impact); 16% chance of medium (size 2); rest size 1.
-      const roll = Math.random();
-      const size = roll < 0.04 ? 3 : roll < 0.20 ? 2 : 1;
-      drops.push({
-        x,
-        y: -2 - Math.random() * Math.min(48, H * 0.18),
-        vx: cycleWind + (Math.random() - 0.5) * 0.04,
-        vy: 0.1 + Math.random() * 0.18 + (size === 3 ? 0.05 : 0),
-        size,
-        shape: (Math.random() * 4) | 0,
-        color: (Math.random() * rainColors.length) | 0,
-      });
-    }
-
-    function addRain(rate: number) {
-      rainCarry = Math.min(rainCarry + W * rate, W * rate * 2);
-      const room = Math.max(0, Math.floor(W * RAIN_MAX_DROPS - drops.length));
-      if (room <= 0) {
-        rainCarry = Math.min(rainCarry, 0.99);
-        return;
-      }
-      const count = Math.min(room, Math.floor(rainCarry));
-      rainCarry -= count;
-      for (let k = 0; k < count; k++) spawnDrop();
-    }
-
-    function equalizeColumns() {
-      // Adjacent columns exchange water volume; repeated capped passes level the
-      // pool without introducing springy surface oscillation. Color mass moves
-      // with the water it rides — extracting that fraction of the *sender's*
-      // color so equalizing levels naturally mixes their tints together.
-      for (let pass = 0; pass < FLOW_PASSES; pass++) {
-        scratchH.set(height);
-        scratchR.set(colMassR);
-        scratchG.set(colMassG);
-        scratchB.set(colMassB);
-        flowH.fill(0);
-        flowR.fill(0);
-        flowG.fill(0);
-        flowB.fill(0);
-        for (let x = 0; x < W; x++) {
-          const nx = (x + 1) % W; // torus wraparound
-          const diff = scratchH[x] - scratchH[nx];
-          const transfer = Math.max(-FLOW_CAP, Math.min(FLOW_CAP, diff * FLOW_RATE));
-          flowH[x] -= transfer;
-          flowH[nx] += transfer;
-          if (transfer > 0 && scratchH[x] > 1e-6) {
-            const f = transfer / scratchH[x];
-            const dR = scratchR[x] * f;
-            const dG = scratchG[x] * f;
-            const dB = scratchB[x] * f;
-            flowR[x] -= dR; flowR[nx] += dR;
-            flowG[x] -= dG; flowG[nx] += dG;
-            flowB[x] -= dB; flowB[nx] += dB;
-          } else if (transfer < 0 && scratchH[nx] > 1e-6) {
-            const f = -transfer / scratchH[nx];
-            const dR = scratchR[nx] * f;
-            const dG = scratchG[nx] * f;
-            const dB = scratchB[nx] * f;
-            flowR[nx] -= dR; flowR[x] += dR;
-            flowG[nx] -= dG; flowG[x] += dG;
-            flowB[nx] -= dB; flowB[x] += dB;
-          }
-        }
-        for (let x = 0; x < W; x++) {
-          height[x] = Math.max(0, Math.min(H - 2, height[x] + flowH[x]));
-          colMassR[x] = Math.max(0, colMassR[x] + flowR[x]);
-          colMassG[x] = Math.max(0, colMassG[x] + flowG[x]);
-          colMassB[x] = Math.max(0, colMassB[x] + flowB[x]);
-        }
-      }
-    }
-
-    function diffuseAndAdvectColor() {
-      // Symmetric lateral diffusion gently blends neighboring columns even
-      // when their water levels match (which is most of the time in the
-      // settled pool, where equalizeColumns transfers nothing). Wind biases
-      // the diffusion so color visibly drifts in the wind direction.
-      scratchR.set(colMassR);
-      scratchG.set(colMassG);
-      scratchB.set(colMassB);
-      const advect = cycleWind * COLOR_ADVECT;
-      const advT = Math.min(0.35, Math.abs(advect));
-      const advDir = advect > 0 ? -1 : advect < 0 ? 1 : 0;
-      for (let x = 0; x < W; x++) {
-        const left = (x - 1 + W) % W;  // torus wraparound
-        const right = (x + 1) % W;
-        let dR = COLOR_DIFFUSE * (scratchR[left] + scratchR[right] - 2 * scratchR[x]);
-        let dG = COLOR_DIFFUSE * (scratchG[left] + scratchG[right] - 2 * scratchG[x]);
-        let dB = COLOR_DIFFUSE * (scratchB[left] + scratchB[right] - 2 * scratchB[x]);
-        if (advDir !== 0) {
-          const upX = advDir < 0 ? right : left;
-          dR += advT * (scratchR[upX] - scratchR[x]);
-          dG += advT * (scratchG[upX] - scratchG[x]);
-          dB += advT * (scratchB[upX] - scratchB[x]);
-        }
-        colMassR[x] = Math.max(0, scratchR[x] + dR);
-        colMassG[x] = Math.max(0, scratchG[x] + dG);
-        colMassB[x] = Math.max(0, scratchB[x] + dB);
-      }
-    }
-
-    function smoothVisibleSurface() {
-      for (let x = 0; x < W; x++) {
-        const a = height[(x - 2 + W) % W];
-        const b = height[(x - 1 + W) % W];
-        const c = height[x];
-        const d = height[(x + 1) % W];
-        const e = height[(x + 2) % W];
-        smoothHeight[x] = (a + b * 2 + c * 3 + d * 2 + e) / 9;
-      }
-      for (let x = 0; x < W; x++) {
-        renderHeight[x] += (smoothHeight[x] - renderHeight[x]) * SURFACE_LAG;
-      }
-    }
-
-    function step() {
-      // Slowly modulate wind within the cycle so it isn't a fixed force.
-      cycleWind = cycleWindBase + cycleWindAmp * Math.sin(stepCount * cycleWindFreq);
-      stepCount++;
-
-      // Storm tempo: rain rate ramps up early in the cycle, peaks midway,
-      // tapers off as the pool fills. Reads as a single rainstorm with
-      // structure rather than a constant downpour.
-      let preTotal = 0;
-      for (let x = 0; x < W; x++) preTotal += height[x];
-      const fillFrac = preTotal / (W * H);
-      let stormScale = 1;
-      if (!draining) {
-        const t = Math.min(1, fillFrac / DRAIN_START);
-        stormScale = Math.max(0.25, 4 * t * (1 - t) + 0.18);
-      } else {
-        stormScale = 0.35;
-      }
-      addRain(RAIN_RATE * stormScale);
-
-      for (let i = drops.length - 1; i >= 0; i--) {
-        const d = drops[i];
-        d.vy += 0.0035;
-        d.x += d.vx;
-        d.y += d.vy;
-        // Horizontal torus: drops carried off one side reappear on the other.
-        if (d.x < 0) d.x += W;
-        else if (d.x >= W) d.x -= W;
-        // Umbrella collision: parabolic canopy with peak directly above the
-        // cursor. A drop within UMBRELLA_RADIUS horizontally that reaches
-        // the canopy surface splashes off into the spray system.
-        if (mouseX >= 0) {
-          let dx = d.x - mouseX;
-          // Wrap dx to the shorter torus distance so the canopy isn't split
-          // when the cursor sits near the screen edge.
-          if (dx > W * 0.5) dx -= W;
-          else if (dx < -W * 0.5) dx += W;
-          if (Math.abs(dx) <= UMBRELLA_RADIUS) {
-            const t = dx / UMBRELLA_RADIUS;
-            const canopyY = mouseY - UMBRELLA_OFFSET - UMBRELLA_HEIGHT * (1 - t * t);
-            if (d.y >= canopyY && d.y <= canopyY + 2.5) {
-              splashes.push({
-                x: Math.round(d.x),
-                y: Math.round(canopyY),
-                age: 0,
-                color: d.color,
-                size: d.size,
-              });
-              // A few small spray particles slide off the canopy in the
-              // direction of the slope so the deflection is visible.
-              const slopeSign = dx >= 0 ? 1 : -1;
-              const sprayCount = d.size === 3 ? 4 : d.size === 2 ? 2 : 1;
-              for (let s = 0; s < sprayCount; s++) {
-                spray.push({
-                  x: d.x,
-                  y: canopyY,
-                  vx: slopeSign * (0.6 + Math.random() * 0.6) + cycleWind * 0.5,
-                  vy: 0.05 + Math.random() * 0.4,
-                  age: 0,
-                  color: d.color,
-                });
-              }
-              drops.splice(i, 1);
-              continue;
-            }
-          }
-        }
-        if (d.y >= surfaceY(d.x)) {
-          // Fat drops deposit ~2× the mass and spawn a couple of extra
-          // surface spray particles on top of the regular splash.
-          const baseMass = 0.72 + Math.random() * 0.46;
-          const mass = d.size === 3 ? baseMass * 2 : baseMass;
-          splash(d.x, mass, rainColors[d.color]);
-          splashes.push({
-            x: Math.round(d.x),
-            y: Math.round(surfaceY(d.x)),
-            age: 0,
-            color: d.color,
-            size: d.size,
-          });
-          if (d.size === 3) {
-            for (let k = 0; k < 4; k++) {
-              spray.push({
-                x: d.x,
-                y: surfaceY(d.x) - 1,
-                vx: (Math.random() - 0.5) * 1.0 + cycleWind * 1.2,
-                vy: -0.4 - Math.random() * 0.4,
-                age: 0,
-                color: d.color,
-              });
-            }
-          }
-          drops.splice(i, 1);
-        } else if (d.y > H + 4) {
-          drops.splice(i, 1);
-        }
-      }
-
-      // Age splashes; drop dead ones.
-      for (let i = splashes.length - 1; i >= 0; i--) {
-        splashes[i].age++;
-        if (splashes[i].age >= SPLASH_LIFE) splashes.splice(i, 1);
-      }
-
-      // Wind spray: spawn drifting mist particles when the wind is strong.
-      // Spawn count grows linearly with |wind| beyond a small threshold.
-      const sprayWind = Math.abs(cycleWind);
-      if (sprayWind > SPRAY_WIND_THRESHOLD) {
-        const spawnRate = (sprayWind - SPRAY_WIND_THRESHOLD) * 0.55 * W * 0.04;
-        let budget = spawnRate;
-        while (budget > 0 && spray.length < W) {
-          if (Math.random() >= Math.min(1, budget)) break;
-          budget -= 1;
-          const sx = Math.random() * W;
-          const sy = surfaceY(sx) - 1;
-          if (sy < 0) continue;
-          spray.push({
-            x: sx,
-            y: sy,
-            vx: cycleWind * (1.5 + Math.random() * 0.8),
-            vy: -0.1 - Math.random() * 0.3,
-            age: 0,
-            color: (Math.random() * rainColors.length) | 0,
-          });
-        }
-      }
-      for (let i = spray.length - 1; i >= 0; i--) {
-        const s = spray[i];
-        s.x += s.vx;
-        s.y += s.vy;
-        s.vy += 0.012;
-        if (s.x < 0) s.x += W;
-        else if (s.x >= W) s.x -= W;
-        s.age++;
-        if (s.age >= SPRAY_LIFE || s.y > H) spray.splice(i, 1);
-      }
-
-      // Lightning bolt: rare branching path that flashes briefly. Generate
-      // a fresh bolt geometry on trigger, then count down so it fades over
-      // a few frames. Tint pulled from the brightest palette stop so it
-      // matches the cycle.
-      if (lightningFrame > 0) {
-        lightningFrame--;
-      } else if (Math.random() < LIGHTNING_PROB) {
-        lightningFrame = LIGHTNING_FRAMES;
-        const top = waterPalette[Math.min(N - 1, waterPalette.length - 1)];
-        lightningTint = mix(paper, top, 0.98);
-        lightningSegments = [];
-        const groundY = (() => {
-          let s = 0;
-          for (let x = 0; x < W; x++) s += renderHeight[x];
-          return H - 1 - (s / W);
-        })();
-        function buildPath(sx: number, sy: number, intensity: number, depth: number, jitter: number, maxDepth: number) {
-          let cx = sx, cy = sy;
-          const limit = Math.max(0, Math.min(H - 1, groundY));
-          for (let i = 0; i < maxDepth && cy < limit; i++) {
-            const dx = (Math.random() - 0.5) * jitter;
-            const dy = 1.5 + Math.random() * 3;
-            const nx = cx + dx;
-            const ny = cy + dy;
-            lightningSegments.push({ x0: cx, y0: cy, x1: nx, y1: ny, intensity });
-            cx = nx; cy = ny;
-            if (intensity > 0.35 && Math.random() < 0.07) {
-              const sideAng = (Math.random() - 0.5) * 1.4;
-              buildPath(
-                cx + Math.cos(sideAng) * 3,
-                cy + Math.abs(Math.sin(sideAng)) * 3 + 1,
-                intensity * 0.55,
-                depth + 1,
-                jitter * 1.2,
-                Math.max(6, (maxDepth - i) >> 1),
-              );
-            }
-          }
-        }
-        buildPath(Math.random() * W, 0, 1, 0, 3.5, 90);
-      }
-
-      equalizeColumns();
-      diffuseAndAdvectColor();
-      // Wind drives a small traveling sinusoidal ripple along the surface.
-      // Multiplied by a smooth ramp on existing height so empty columns stay
-      // empty (the previous additive form was clamped at 0, which let the
-      // positive half of each sin cycle accumulate water from nothing).
-      const windMag = Math.abs(cycleWind);
-      if (windMag > 0.04) {
-        const phase = stepCount * WAVE_OMEGA;
-        const dir = cycleWind >= 0 ? 1 : -1;
-        const amp = WAVE_AMP * windMag;
-        for (let x = 0; x < W; x++) {
-          // Tanh-like ramp keyed on existing height so the wave amplitude
-          // grows smoothly with the water depth and is exactly 0 in dry
-          // columns. WAVE_RAMP_DEPTH controls the cross-over point.
-          const ramp = height[x] <= 0
-            ? 0
-            : 1 - 1 / (1 + height[x] * 0.4);
-          if (ramp <= 0) continue;
-          const v = amp * ramp * Math.sin(x * WAVE_K - phase * dir);
-          height[x] = Math.max(0, Math.min(H - 2, height[x] + v));
-        }
-      }
-
-      let total = 0;
-      for (let x = 0; x < W; x++) {
-        if (draining) {
-          height[x] *= DRAIN_RATE;
-          colMassR[x] *= DRAIN_RATE;
-          colMassG[x] *= DRAIN_RATE;
-          colMassB[x] *= DRAIN_RATE;
-        }
-        total += height[x];
-      }
-      smoothVisibleSurface();
-
-      const avg = total / W;
-      if (!draining && avg > H * DRAIN_START) draining = true;
-      if (draining && avg < RESET_LEVEL) {
-        draining = false;
-        drops = [];
-        splashes = [];
-        spray = [];
-        lightningFrame = 0;
-        height.fill(0);
-        renderHeight.fill(0);
-        smoothHeight.fill(0);
-        flow.fill(0);
-        colMassR.fill(0);
-        colMassG.fill(0);
-        colMassB.fill(0);
-        waterPalette = buildPalette(pickStops());
-        waterColor = pickWaterColor(waterPalette);
-        rainColors = pickRainColors(waterPalette);
-        rerollWind();
-        stepCount = 0;
-      }
-    }
-
-    function draw() {
-      if (!img) return;
-      const data = img.data;
-      // Resolve each column's intensive RGB once, then fill the column. Use
-      // the actual sim height for the concentration ratio (rendered surface
-      // is lagged via renderHeight, but the color is column-stable either
-      // way so the lag doesn't bleed wrong concentrations).
-      for (let x = 0; x < W; x++) {
-        const h = height[x];
-        if (h > 1e-6) {
-          const inv = 1 / h;
-          let r = colMassR[x] * inv;
-          let g = colMassG[x] * inv;
-          let b = colMassB[x] * inv;
-          if (r > 255) r = 255;
-          if (g > 255) g = 255;
-          if (b > 255) b = 255;
-          columnR[x] = r;
-          columnG[x] = g;
-          columnB[x] = b;
-        } else {
-          columnR[x] = waterColor[0];
-          columnG[x] = waterColor[1];
-          columnB[x] = waterColor[2];
-        }
-      }
-      for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-          const depth = renderHeight[x] - (H - 1 - y);
-          const j = (y * W + x) * 4;
-          if (depth > 0) {
-            // Top of water is full saturation; deeper columns fade toward
-            // paper so the pool reads with a sense of depth instead of a
-            // flat horizontal stripe. The first water row (depth < 1) is
-            // the visible surface — we add a small specular highlight there
-            // so the pool reads as wet rather than as a solid block.
-            const surface = renderHeight[x];
-            const submerged = surface > 0 ? depth / surface : 0;
-            const shade = 1 - submerged * 0.45;
-            const isSurface = depth < 1;
-            const lift = isSurface ? 1.1 : 1;
-            const swirl =
-              Math.sin(x * 0.13 + y * 0.19 + stepCount * 0.035) +
-              0.55 * Math.sin(x * 0.041 - y * 0.11 - stepCount * 0.021);
-            const drift = Math.round(swirl * 1.7);
-            const sx0 = (x + drift + W) % W;
-            const sx = height[sx0] > 1e-6 ? sx0 : x;
-            const eddy = WATER_SWIRL * Math.min(1, Math.abs(swirl) * 0.55);
-            const shimmer = 1 + WATER_SHIMMER * Math.sin(x * 0.31 - y * 0.23 + stepCount * 0.057);
-            const cr = columnR[x] * (1 - eddy) + columnR[sx] * eddy;
-            const cg = columnG[x] * (1 - eddy) + columnG[sx] * eddy;
-            const cb = columnB[x] * (1 - eddy) + columnB[sx] * eddy;
-            const r = cr * shade * shimmer + paper[0] * (1 - shade);
-            const g = cg * shade * shimmer + paper[1] * (1 - shade);
-            const b = cb * shade * shimmer + paper[2] * (1 - shade);
-            data[j]     = Math.min(255, r * lift);
-            data[j + 1] = Math.min(255, g * lift);
-            data[j + 2] = Math.min(255, b * lift);
-          } else {
-            data[j] = paper[0];
-            data[j + 1] = paper[1];
-            data[j + 2] = paper[2];
-          }
-          data[j + 3] = 255;
-        }
-      }
-
-      function paintDropPixel(x: number, y: number, c: RGB) {
-        if (y < 0 || y >= H) return;
-        const wx = ((x % W) + W) % W; // horizontal torus
-        const j = (y * W + wx) * 4;
-        data[j] = c[0];
-        data[j + 1] = c[1];
-        data[j + 2] = c[2];
-        data[j + 3] = 255;
-      }
-
-      // Bresenham line so the drop's tail is a connected stroke from its
-      // previous to current rounded position — eliminates the jitter caused
-      // by independently rounding several trail samples per frame.
-      function paintDropLine(x0: number, y0: number, x1: number, y1: number, c: RGB) {
-        let x = x0;
-        let y = y0;
-        const dx = Math.abs(x1 - x0);
-        const dy = Math.abs(y1 - y0);
-        const sx = x0 < x1 ? 1 : -1;
-        const sy = y0 < y1 ? 1 : -1;
-        let err = dx - dy;
-        for (let i = 0; i < dx + dy + 1; i++) {
-          paintDropPixel(x, y, c);
-          if (x === x1 && y === y1) break;
-          const e2 = err * 2;
-          if (e2 > -dy) { err -= dy; x += sx; }
-          if (e2 < dx)  { err += dx;  y += sy; }
-        }
-      }
-
-      // Splash spray: two wings spread outward from each impact point and
-      // fade over SPLASH_LIFE frames. Bigger drops get extra plume / wings.
-      for (const s of splashes) {
-        const r = s.age + 1;
-        const fade = 1 - s.age / SPLASH_LIFE;
-        const c = rainColors[s.color];
-        const tint = mix(paper, c, 0.85 * fade);
-        paintDropPixel(s.x - r, s.y - 1, tint);
-        paintDropPixel(s.x + r, s.y - 1, tint);
-        if (s.size > 1 && s.age < 3) {
-          paintDropPixel(s.x, s.y - 2 - s.age, mix(paper, c, 0.65 * fade));
-        }
-        // Fat drops: a wider, brighter ring of wings.
-        if (s.size === 3) {
-          const r2 = Math.floor(r * 1.8);
-          paintDropPixel(s.x - r2, s.y - 2, mix(paper, c, 0.7 * fade));
-          paintDropPixel(s.x + r2, s.y - 2, mix(paper, c, 0.7 * fade));
-        }
-      }
-
-      // Wind spray particles. Fade as they age; slightly varied tints from
-      // the cycle's drop palette.
-      for (const s of spray) {
-        const fade = 1 - s.age / SPRAY_LIFE;
-        if (fade <= 0) continue;
-        const c = rainColors[s.color];
-        paintDropPixel(Math.round(s.x), Math.round(s.y), mix(paper, c, 0.45 * fade));
-      }
-
-      for (const d of drops) {
-        const c = rainColors[d.color];
-        const headTint = mix(paper, c, 0.92);
-        const trailTint = mix(paper, c, 0.55);
-        const sideTint = mix(paper, c, 0.4);
-        const x0 = Math.round(d.x);
-        const y0 = Math.round(d.y);
-        // Trail length scaled to the drop's velocity. Bigger drops get a
-        // proportionally longer streak.
-        const trailScale = d.size === 3 ? 3.5 : d.size === 2 ? 2.8 : 2.2;
-        const x1 = Math.round(d.x - d.vx * trailScale);
-        const y1 = Math.round(d.y - d.vy * trailScale);
-        // Two-pixel-thick trail offset perpendicular to wind so the drop
-        // reads as a rounded streak instead of a thin pixel line.
-        const sideDir = cycleWind > 0 ? 1 : -1;
-        paintDropLine(x0, y0, x1, y1, trailTint);
-        paintDropLine(x0 + sideDir, y0, x1 + sideDir, y1, sideTint);
-        // Bright head — 2 pixels wide.
-        paintDropPixel(x0, y0, headTint);
-        paintDropPixel(x0 + sideDir, y0, mix(paper, c, 0.78));
-        if (d.size > 1) {
-          paintDropPixel(x0, y0 - 1, mix(paper, c, 0.7));
-          paintDropPixel(x0 + sideDir, y0 - 1, mix(paper, c, 0.55));
-        }
-        if (d.size === 3) {
-          paintDropPixel(x0, y0 - 2, mix(paper, c, 0.55));
-          paintDropPixel(x0 - sideDir, y0, mix(paper, c, 0.6));
-        }
-      }
-
-      // Umbrella: parabolic canopy + thin handle, drawn at the cursor.
-      if (mouseX >= 0) {
-        const top = waterPalette[Math.min(N - 1, waterPalette.length - 1)];
-        const canopyTint = mix(paper, top, 0.92);
-        const ribTint = mix(paper, top, 0.7);
-        const handleTint = mix(paper, top, 0.55);
-        for (let dx = -UMBRELLA_RADIUS; dx <= UMBRELLA_RADIUS; dx++) {
-          const t = dx / UMBRELLA_RADIUS;
-          const dy = -UMBRELLA_OFFSET - Math.round(UMBRELLA_HEIGHT * (1 - t * t));
-          const cx = Math.round(mouseX + dx);
-          const cy = Math.round(mouseY + dy);
-          paintDropPixel(cx, cy, canopyTint);
-          // Rim — one pixel below canopy edge so the dome reads thicker.
-          if (Math.abs(dx) >= UMBRELLA_RADIUS - 1) {
-            paintDropPixel(cx, cy + 1, ribTint);
-          }
-        }
-        // Handle: vertical line from canopy peak down to just above the
-        // cursor tip. The hook at the bottom is two pixels going right.
-        const peakY = Math.round(mouseY) - UMBRELLA_OFFSET - UMBRELLA_HEIGHT;
-        for (let h = 0; h < UMBRELLA_HANDLE; h++) {
-          paintDropPixel(Math.round(mouseX), peakY + UMBRELLA_HEIGHT + h + 1, handleTint);
-        }
-        const hookY = peakY + UMBRELLA_HEIGHT + UMBRELLA_HANDLE;
-        paintDropPixel(Math.round(mouseX) + 1, hookY, handleTint);
-        paintDropPixel(Math.round(mouseX) + 2, hookY - 1, handleTint);
-      }
-
-      // Lightning bolt: render branching segments via Bresenham, with a
-      // small overall flash for atmosphere.
-      if (lightningFrame > 0) {
-        const fade = lightningFrame / LIGHTNING_FRAMES;
-        // Subtle full-frame flash, much dimmer than the bolt itself.
-        const addR = lightningTint[0] * 0.18 * fade;
-        const addG = lightningTint[1] * 0.18 * fade;
-        const addB = lightningTint[2] * 0.18 * fade;
-        for (let i = 0; i < data.length; i += 4) {
-          data[i]     = Math.min(255, data[i]     + addR);
-          data[i + 1] = Math.min(255, data[i + 1] + addG);
-          data[i + 2] = Math.min(255, data[i + 2] + addB);
-        }
-        for (const seg of lightningSegments) {
-          const intensity = Math.min(1, seg.intensity * (0.55 + fade * 0.6));
-          const tint = mix(paper, lightningTint, intensity);
-          paintDropLine(
-            Math.round(seg.x0), Math.round(seg.y0),
-            Math.round(seg.x1), Math.round(seg.y1),
-            tint,
-          );
-        }
-      }
-
-      ctx.putImageData(img, 0, 0);
+      pointerX = x;
+      pointerY = y;
     }
 
     resize();
     if (reduce) {
-      for (let i = 0; i < 260; i++) step();
+      for (let i = 0; i < 220; i++) step();
       draw();
     } else {
-      const loop = () => {
-        step();
-        draw();
+      let last = 0;
+      const targetMs = 33;
+      const loop = (now: number) => {
+        if (now - last >= targetMs) {
+          step();
+          draw();
+          last = now;
+        }
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
     }
     window.addEventListener('resize', resize);
-
-    // Track the pointer in canvas grid coordinates so the umbrella sits
-    // wherever the mouse is. The canvas is `pointer-events: none`, so we
-    // listen on window and convert via the canvas's bounding rect.
-    function setMouseFromEvent(e: PointerEvent) {
-      const rect = canvas.getBoundingClientRect();
-      mouseX = ((e.clientX - rect.left) / rect.width) * W;
-      mouseY = ((e.clientY - rect.top) / rect.height) * H;
-    }
-    window.addEventListener('pointermove', setMouseFromEvent);
-    window.addEventListener('pointerleave', () => { mouseX = -1; mouseY = -1; });
+    window.addEventListener('pointermove', setPointerFromEvent);
+    window.addEventListener('pointerleave', () => { pointerX = -1; pointerY = -1; });
     window.addEventListener('pointerout', (e) => {
-      if (!e.relatedTarget) { mouseX = -1; mouseY = -1; }
+      if (!e.relatedTarget) { pointerX = -1; pointerY = -1; }
     });
   }
 </script>
