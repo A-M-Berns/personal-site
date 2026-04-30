@@ -1,11 +1,109 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { otherWriting, published } from '../../data/published';
+
+const sequences: Record<string, { title: string; href?: string }> = {
+  cooperation: {
+    title: 'Verification for Cooperation',
+    href: '/essays/verification-for-cooperation/',
+  },
+};
+
+const essays = (await getCollection('essays', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
+const sequenceGroups = Object.entries(sequences)
+  .map(([id, meta]) => ({
+    id,
+    meta,
+    items: essays
+      .filter((n) => n.data.sequence === id && n.data.sequenceOrder !== 0)
+      .sort((a, b) => (a.data.sequenceOrder ?? 0) - (b.data.sequenceOrder ?? 0)),
+  }))
+  .filter((g) => g.items.length > 0);
+
+const otherEssays = essays.filter((n) => !n.data.sequence);
+
+const fmt = new Intl.DateTimeFormat('en', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'UTC',
+});
+
+const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.sortDate.valueOf());
+const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf() - a.sortDate.valueOf());
 ---
-<Base title="Writing — A. M. Berns" description="Writing.">
-  <header class="section-head">
-    <h1>Writing</h1>
-  </header>
-  <article class="note">
-    <p>More to come.</p>
-  </article>
+<Base title="Writing — A. M. Berns" description="Notes, essays, and cross-posts.">
+  <div class="writing-shell">
+    <header class="section-head">
+      <h1>Writing</h1>
+    </header>
+    <div class="writing-panes">
+      <section class="writing-pane">
+        <h2>Published</h2>
+        {publishedSorted.length > 0 ? (
+          <ul class="note-list">
+            {publishedSorted.map((p) => (
+              <li>
+                <time datetime={p.sortDate.toISOString()}>{p.displayDate}</time>
+                <a href={p.url}>{p.title}</a>
+                {p.venue && <span class="venue">{p.venue}</span>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="empty">Nothing here yet.</p>
+        )}
+      </section>
+
+      <section class="writing-pane">
+        <h2>Essays</h2>
+        {sequenceGroups.length > 0 ? (
+          <div class="sequence-groups">
+            {sequenceGroups.map((g) => (
+              <div class="sequence-group">
+                <h3>
+                  {g.meta.href ? <a href={g.meta.href}>{g.meta.title}</a> : g.meta.title}
+                </h3>
+                <ol class="note-list note-list--ordered">
+                  {g.items.map((n) => (
+                    <li>
+                      <a href={`/essays/${n.id}/`}>{n.data.title}</a>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="empty">Nothing here yet.</p>
+        )}
+      </section>
+
+      <section class="writing-pane">
+        <h2>Other</h2>
+        {otherWritingSorted.length > 0 || otherEssays.length > 0 ? (
+          <ul class="note-list">
+            {otherWritingSorted.map((p) => (
+              <li>
+                <time datetime={p.sortDate.toISOString()}>{p.displayDate}</time>
+                <a href={p.url}>{p.title}</a>
+                {p.venue && <span class="venue">{p.venue}</span>}
+              </li>
+            ))}
+            {otherEssays.map((n) => (
+              <li>
+                <time datetime={n.data.date.toISOString()}>{fmt.format(n.data.date)}</time>
+                <a href={`/essays/${n.id}/`}>{n.data.title}</a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="empty">Nothing here yet.</p>
+        )}
+      </section>
+    </div>
+  </div>
 </Base>

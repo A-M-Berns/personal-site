@@ -305,7 +305,7 @@ a:focus-visible {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  opacity: 0.70;
+  opacity: 0.76;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -339,18 +339,6 @@ a:focus-visible {
 .writing-shell {
   position: relative;
   isolation: isolate;
-}
-.symbol-evolver {
-  position: absolute;
-  top: -1.35rem;
-  right: -2vw;
-  z-index: 0;
-  width: min(44rem, 84vw);
-  height: 13.5rem;
-  pointer-events: none;
-  opacity: 0.9;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 82%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 14%, #000 82%, transparent);
 }
 .writing-shell > .section-head,
 .writing-panes {
@@ -407,13 +395,7 @@ a:focus-visible {
 }
 @media (max-width: 900px) {
   .memory-net {
-    opacity: 0.64;
-  }
-  .symbol-evolver {
-    right: -18vw;
-    width: 116vw;
-    height: 11rem;
-    opacity: 0.55;
+    opacity: 0.68;
   }
   .writing-panes {
     grid-template-columns: 1fr;

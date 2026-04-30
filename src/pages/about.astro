@@ -19,19 +19,22 @@ import Base from '../layouts/Base.astro';
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
     const N = 8;
-    const CELL_PX = 4;
+    const CELL_PX = 3;
     const TAU = Math.PI * 2;
-    const ACTIVITY_DECAY = 0.88;
-    const EDGE_DECAY = 0.90;
-    const REFRACTORY_FRAMES = 46;
-    const AUTO_SEED_MIN = 90;
-    const AUTO_SEED_RANGE = 90;
+    const ACTIVITY_DECAY = 0.92;
+    const EDGE_DECAY = 0.94;
+    const REFRACTORY_FRAMES = 24;
+    const AUTO_SEED_MIN = 22;
+    const AUTO_SEED_RANGE = 34;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     type RGB = [number, number, number];
+    type Cluster = { x: number; y: number; color: RGB };
     type Node = {
       x: number;
       y: number;
+      cluster: number;
+      hub: boolean;
       phase: number;
       drift: number;
       activity: number;
@@ -44,6 +47,7 @@ import Base from '../layouts/Base.astro';
       a: number;
       b: number;
       weight: number;
+      length: number;
       trail: number;
       color: RGB;
     };
@@ -51,6 +55,7 @@ import Base from '../layouts/Base.astro';
       edge: number;
       from: number;
       to: number;
+      route: number;
       t: number;
       speed: number;
       strength: number;
@@ -101,6 +106,9 @@ import Base from '../layouts/Base.astro';
     let nodes: Node[] = [];
     let edges: Edge[] = [];
     let pulses: Pulse[] = [];
+    let clusters: Cluster[] = [];
+    let attractors: number[] = [];
+    let routeDistances: number[][] = [];
     let cycleStops: RGB[] = [];
     let stepCount = 0;
     let nextSeedAt = 0;
@@ -131,6 +139,28 @@ import Base from '../layouts/Base.astro';
       return a < b ? `${a}:${b}` : `${b}:${a}`;
     }
 
+    function clamp(v: number, lo: number, hi: number): number {
+      return v < lo ? lo : v > hi ? hi : v;
+    }
+
+    function addNode(x: number, y: number, cluster: number, hub: boolean): number {
+      const c = clusters[cluster]?.color ?? cycleStops[cluster % cycleStops.length];
+      nodes.push({
+        x,
+        y,
+        cluster,
+        hub,
+        phase: Math.random() * TAU,
+        drift: 0.003 + Math.random() * 0.006,
+        activity: 0,
+        flash: 0,
+        refractory: 0,
+        color: mix(paper, c, hub ? 0.92 : 0.76 + Math.random() * 0.16),
+        edges: [],
+      });
+      return nodes.length - 1;
+    }
+
     function addEdge(a: number, b: number, seen: Set<string>) {
       if (a === b) return;
       const key = edgeKey(a, b);
@@ -140,14 +170,17 @@ import Base from '../layouts/Base.astro';
       const nb = nodes[b];
       const dx = na.x - nb.x;
       const dy = na.y - nb.y;
-      const d = Math.sqrt(dx * dx + dy * dy);
+      const d = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      const sameCluster = na.cluster === nb.cluster;
       const closeness = Math.max(0, 1 - d / Math.max(W, H));
-      const color = mix(paper, cycleStops[(a + b) % cycleStops.length], 0.55 + closeness * 0.30);
+      const colorBase = sameCluster ? clusters[na.cluster]?.color : cycleStops[(na.cluster + nb.cluster) % cycleStops.length];
+      const color = mix(paper, colorBase ?? cycleStops[0], sameCluster ? 0.52 + closeness * 0.28 : 0.42 + closeness * 0.22);
       const idx = edges.length;
       edges.push({
         a,
         b,
-        weight: 0.44 + closeness * 0.42 + Math.random() * 0.22,
+        weight: (sameCluster ? 0.62 : 0.42) + closeness * 0.34 + Math.random() * 0.20,
+        length: d,
         trail: 0,
         color,
       });
@@ -159,53 +192,111 @@ import Base from '../layouts/Base.astro';
       nodes = [];
       edges = [];
       pulses = [];
+      clusters = [];
+      attractors = [];
+      routeDistances = [];
+
       const area = W * H;
-      const count = Math.max(56, Math.min(150, Math.round(area / 760)));
-      const marginX = Math.max(6, W * 0.04);
-      const marginY = Math.max(6, H * 0.06);
-      for (let i = 0; i < count; i++) {
-        const band = i / Math.max(1, count - 1);
-        const x = marginX + Math.random() * Math.max(1, W - marginX * 2);
-        const y = marginY + Math.random() * Math.max(1, H - marginY * 2);
-        nodes.push({
-          x,
-          y,
-          phase: Math.random() * TAU,
-          drift: 0.004 + Math.random() * 0.008,
-          activity: 0,
-          flash: 0,
-          refractory: 0,
-          color: mix(paper, cycleStops[Math.min(cycleStops.length - 1, 1 + Math.floor(band * (cycleStops.length - 1)))], 0.82),
-          edges: [],
+      const count = Math.max(170, Math.min(380, Math.round(area / 390)));
+      const clusterCount = 8 + ((Math.random() * 4) | 0);
+      const marginX = Math.max(10, W * 0.06);
+      const marginY = Math.max(10, H * 0.08);
+      const span = Math.max(12, Math.min(W, H));
+
+      for (let i = 0; i < clusterCount; i++) {
+        clusters.push({
+          x: marginX + Math.random() * Math.max(1, W - marginX * 2),
+          y: marginY + Math.random() * Math.max(1, H - marginY * 2),
+          color: mix(paper, cycleStops[(i * 2 + 1) % cycleStops.length], 0.94),
         });
+      }
+
+      for (let i = 0; i < clusters.length; i++) {
+        const c = clusters[i];
+        attractors.push(addNode(c.x, c.y, i, true));
+      }
+
+      while (nodes.length < count) {
+        const cluster = (Math.random() * clusters.length) | 0;
+        const c = clusters[cluster];
+        let x: number;
+        let y: number;
+        if (Math.random() < 0.82) {
+          const a = Math.random() * TAU;
+          const r = Math.sqrt(Math.random()) * span * (0.16 + Math.random() * 0.18);
+          x = clamp(c.x + Math.cos(a) * r, marginX * 0.5, W - marginX * 0.5);
+          y = clamp(c.y + Math.sin(a) * r, marginY * 0.5, H - marginY * 0.5);
+        } else {
+          x = marginX * 0.5 + Math.random() * Math.max(1, W - marginX);
+          y = marginY * 0.5 + Math.random() * Math.max(1, H - marginY);
+        }
+        addNode(x, y, cluster, false);
       }
 
       const seen = new Set<string>();
       for (let i = 0; i < nodes.length; i++) {
-        const distances: Array<{ j: number; d: number }> = [];
+        const distances: Array<{ j: number; d: number; same: boolean }> = [];
         for (let j = 0; j < nodes.length; j++) {
           if (i === j) continue;
           const dx = nodes[i].x - nodes[j].x;
           const dy = nodes[i].y - nodes[j].y;
-          distances.push({ j, d: dx * dx + dy * dy });
+          distances.push({ j, d: dx * dx + dy * dy, same: nodes[i].cluster === nodes[j].cluster });
         }
         distances.sort((a, b) => a.d - b.d);
-        const localCount = 2 + ((Math.random() * 2) | 0);
+        const localCount = nodes[i].hub ? 9 : 5 + ((Math.random() * 3) | 0);
         for (let k = 0; k < Math.min(localCount, distances.length); k++) addEdge(i, distances[k].j, seen);
-        if (Math.random() < 0.18 && distances.length > 8) {
-          const start = Math.min(distances.length - 1, 8 + ((Math.random() * 18) | 0));
+        const same = distances.filter((d) => d.same);
+        for (let k = 0; k < Math.min(2, same.length); k++) addEdge(i, same[k].j, seen);
+        addEdge(i, attractors[nodes[i].cluster], seen);
+        if (Math.random() < 0.45 && distances.length > 16) {
+          const start = Math.min(distances.length - 1, 12 + ((Math.random() * 42) | 0));
           addEdge(i, distances[start].j, seen);
         }
       }
+
+      for (let i = 0; i < attractors.length; i++) {
+        const a = attractors[i];
+        const b = attractors[(i + 1) % attractors.length];
+        addEdge(a, b, seen);
+        if (i + 2 < attractors.length && Math.random() < 0.65) addEdge(a, attractors[i + 2], seen);
+      }
+      rebuildRouteDistances();
+    }
+
+    function rebuildRouteDistances() {
+      routeDistances = attractors.map((target) => {
+        const dist = new Array(nodes.length).fill(Infinity);
+        const used = new Array(nodes.length).fill(false);
+        dist[target] = 0;
+        for (let n = 0; n < nodes.length; n++) {
+          let best = -1;
+          let bestD = Infinity;
+          for (let i = 0; i < nodes.length; i++) {
+            if (!used[i] && dist[i] < bestD) {
+              best = i;
+              bestD = dist[i];
+            }
+          }
+          if (best < 0) break;
+          used[best] = true;
+          for (const edgeIdx of nodes[best].edges) {
+            const edge = edges[edgeIdx];
+            const to = edge.a === best ? edge.b : edge.a;
+            const nd = bestD + edge.length / Math.max(0.2, edge.weight);
+            if (nd < dist[to]) dist[to] = nd;
+          }
+        }
+        return dist;
+      });
     }
 
     function rerollNetwork() {
       cycleStops = pickStops();
       syncAccent(cycleStops);
       buildNetwork();
-      for (let i = 0; i < Math.min(8, nodes.length); i++) {
-        const n = nodes[(Math.random() * nodes.length) | 0];
-        n.activity = Math.random() * 0.25;
+      for (let i = 0; i < Math.min(18, nodes.length); i++) {
+        const idx = (Math.random() * nodes.length) | 0;
+        nodes[idx].activity = Math.random() * 0.35;
       }
       stepCount = 0;
       resetSeedTimer();
@@ -226,57 +317,93 @@ import Base from '../layouts/Base.astro';
       return best;
     }
 
-    function fireNode(idx: number, color: RGB, strength: number) {
+    function chooseRouteFrom(source: number): number {
+      if (attractors.length === 0) return 0;
+      const ranked = attractors
+        .map((_, route) => ({ route, d: routeDistances[route]?.[source] ?? 0 }))
+        .sort((a, b) => b.d - a.d);
+      const pick = Math.min(ranked.length - 1, ((Math.random() ** 1.8) * Math.min(4, ranked.length)) | 0);
+      return ranked[pick].route;
+    }
+
+    function otherNode(edge: Edge, idx: number): number {
+      return edge.a === idx ? edge.b : edge.a;
+    }
+
+    function fireNode(idx: number, color: RGB, strength: number, route: number, forceFanout = false) {
+      if (nodes.length === 0 || attractors.length === 0) return;
       const node = nodes[idx];
       node.activity = Math.max(node.activity, strength);
       node.flash = 1;
-      node.refractory = REFRACTORY_FRAMES + ((Math.random() * 18) | 0);
-      node.color = mix(node.color, color, 0.65);
-      const fanout = node.edges.slice().sort(() => Math.random() - 0.5);
-      const keep = Math.max(2, Math.min(fanout.length, 3 + ((Math.random() * 3) | 0)));
-      for (let k = 0; k < keep; k++) {
-        const edgeIdx = fanout[k];
+      node.refractory = Math.max(node.refractory, REFRACTORY_FRAMES + ((Math.random() * 12) | 0));
+      node.color = mix(node.color, color, 0.58);
+      const here = routeDistances[route]?.[idx] ?? Infinity;
+      const scored = node.edges.map((edgeIdx) => {
         const edge = edges[edgeIdx];
-        const to = edge.a === idx ? edge.b : edge.a;
+        const to = otherNode(edge, idx);
+        const next = routeDistances[route]?.[to] ?? Infinity;
+        const progress = here - next;
+        const score =
+          progress * 0.052 +
+          edge.weight * 0.58 +
+          edge.trail * 0.32 +
+          (nodes[to].hub ? 0.34 : 0) -
+          (nodes[to].refractory > 0 ? 0.12 : 0) +
+          Math.random() * 0.25;
+        return { edgeIdx, to, score, progress };
+      }).sort((a, b) => b.score - a.score);
+      const keep = Math.max(3, Math.min(scored.length, forceFanout || node.hub ? 8 : 5 + ((Math.random() * 3) | 0)));
+      for (let k = 0; k < keep; k++) {
+        const choice = scored[k];
+        if (!choice || (choice.progress < -8 && Math.random() > 0.18)) continue;
+        const edge = edges[choice.edgeIdx];
         edge.trail = Math.max(edge.trail, strength * edge.weight);
-        edge.color = mix(edge.color, color, 0.38);
+        edge.color = mix(edge.color, color, 0.34);
         pulses.push({
-          edge: edgeIdx,
+          edge: choice.edgeIdx,
           from: idx,
-          to,
+          to: choice.to,
+          route,
           t: 0,
-          speed: 0.045 + Math.random() * 0.035,
-          strength: strength * edge.weight * (0.70 + Math.random() * 0.25),
+          speed: 0.055 + Math.random() * 0.050,
+          strength: strength * edge.weight * (0.68 + Math.random() * 0.30),
           color,
         });
       }
-      if (pulses.length > 360) pulses.splice(0, pulses.length - 360);
+      if (pulses.length > 1100) pulses.splice(0, pulses.length - 1100);
     }
 
     function seedAt(x: number, y: number, strong = false) {
       if (nodes.length === 0) return;
       const idx = nearestNode(x, y);
-      const c = mix(paper, cycleStops[2 + ((Math.random() * Math.max(1, cycleStops.length - 3)) | 0)], 0.96);
-      fireNode(idx, c, strong ? 1.25 : 0.95);
-      const n = nodes[idx];
-      for (const edgeIdx of n.edges) {
-        const edge = edges[edgeIdx];
-        edge.trail = Math.max(edge.trail, strong ? 0.95 : 0.65);
+      const route = chooseRouteFrom(idx);
+      const c = mix(paper, cycleStops[(route * 2 + 3) % cycleStops.length], 0.98);
+      fireNode(idx, c, strong ? 1.45 : 1.08, route, true);
+      for (const edgeIdx of nodes[idx].edges) {
+        edges[edgeIdx].trail = Math.max(edges[edgeIdx].trail, strong ? 1.0 : 0.72);
       }
     }
 
     function autoSeed() {
-      const usePointer = pointerX >= 0 && Math.random() < 0.82;
-      const x = usePointer ? pointerX : Math.random() * W;
-      const y = usePointer ? pointerY : Math.random() * H;
-      seedAt(x, y);
+      const usePointer = pointerX >= 0 && Math.random() < 0.90;
+      seedAt(usePointer ? pointerX : Math.random() * W, usePointer ? pointerY : Math.random() * H);
+      if (Math.random() < 0.35) {
+        const source = attractors[(Math.random() * attractors.length) | 0];
+        const route = chooseRouteFrom(source);
+        fireNode(source, mix(paper, cycleStops[(route + 5) % cycleStops.length], 0.92), 0.55, route, true);
+      }
       resetSeedTimer();
     }
 
     function step() {
       stepCount++;
-      if (stepCount > 2400) rerollNetwork();
+      if (stepCount > 3000) rerollNetwork();
       if (stepCount >= nextSeedAt) autoSeed();
+      if (stepCount % 20 === 0 && attractors.length > 0) {
+        const source = attractors[(stepCount / 20 | 0) % attractors.length];
+        const route = chooseRouteFrom(source);
+        fireNode(source, mix(paper, cycleStops[(route + 2) % cycleStops.length], 0.82), 0.42, route);
+      }
 
       for (const node of nodes) {
         node.activity *= ACTIVITY_DECAY;
@@ -289,13 +416,18 @@ import Base from '../layouts/Base.astro';
         const pulse = pulses[i];
         pulse.t += pulse.speed;
         const edge = edges[pulse.edge];
-        edge.trail = Math.max(edge.trail, pulse.strength * (1 - Math.abs(pulse.t - 0.5) * 0.7));
+        edge.trail = Math.max(edge.trail, pulse.strength * (1 - Math.abs(pulse.t - 0.5) * 0.62));
         if (pulse.t >= 1) {
           const target = nodes[pulse.to];
-          target.activity += pulse.strength * 0.55;
-          target.color = mix(target.color, pulse.color, 0.28);
-          if (target.refractory <= 0 && target.activity > 0.52) {
-            fireNode(pulse.to, pulse.color, Math.min(1.05, target.activity));
+          target.activity += pulse.strength * 0.62;
+          target.color = mix(target.color, pulse.color, 0.26);
+          const routeTarget = attractors[pulse.route];
+          if (pulse.to === routeTarget && target.refractory <= 0) {
+            const nextRoute = chooseRouteFrom(pulse.to);
+            const nextColor = mix(pulse.color, cycleStops[(nextRoute * 2 + 1) % cycleStops.length], 0.38);
+            fireNode(pulse.to, nextColor, Math.min(1.30, pulse.strength + 0.38), nextRoute, true);
+          } else if (target.refractory <= 0 && target.activity > 0.34) {
+            fireNode(pulse.to, pulse.color, Math.min(1.02, target.activity), pulse.route);
           }
           pulses.splice(i, 1);
         }
@@ -303,11 +435,11 @@ import Base from '../layouts/Base.astro';
     }
 
     function nodeX(node: Node): number {
-      return node.x + Math.sin(stepCount * node.drift + node.phase) * 0.55;
+      return node.x + Math.sin(stepCount * node.drift + node.phase) * 0.45;
     }
 
     function nodeY(node: Node): number {
-      return node.y + Math.cos(stepCount * node.drift * 0.83 + node.phase * 1.7) * 0.55;
+      return node.y + Math.cos(stepCount * node.drift * 0.83 + node.phase * 1.7) * 0.45;
     }
 
     function drawLine(ax: number, ay: number, bx: number, by: number, color: RGB, alpha: number, width: number) {
@@ -331,9 +463,9 @@ import Base from '../layouts/Base.astro';
         const ay = nodeY(a);
         const bx = nodeX(b);
         const by = nodeY(b);
-        drawLine(ax, ay, bx, by, edge.color, 0.10, 1);
-        if (edge.trail > 0.02) {
-          drawLine(ax, ay, bx, by, edge.color, Math.min(0.62, edge.trail * 0.42), edge.trail > 0.65 ? 2 : 1);
+        drawLine(ax, ay, bx, by, edge.color, 0.072, 1);
+        if (edge.trail > 0.015) {
+          drawLine(ax, ay, bx, by, edge.color, Math.min(0.72, edge.trail * 0.48), edge.trail > 0.70 ? 2 : 1);
         }
       }
 
@@ -347,30 +479,35 @@ import Base from '../layouts/Base.astro';
         const by = nodeY(b);
         const x = ax + (bx - ax) * pulse.t;
         const y = ay + (by - ay) * pulse.t;
-        const tailT = Math.max(0, pulse.t - 0.10);
+        const tailT = Math.max(0, pulse.t - 0.12);
         drawLine(
           ax + (bx - ax) * tailT,
           ay + (by - ay) * tailT,
           x,
           y,
           pulse.color,
-          Math.min(0.72, pulse.strength * 0.62),
+          Math.min(0.82, pulse.strength * 0.68),
           2,
         );
-        ctx.fillStyle = rgba(pulse.color, Math.min(0.95, pulse.strength));
+        ctx.fillStyle = rgba(pulse.color, Math.min(0.98, pulse.strength));
         ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 3, 3);
       }
 
-      for (const node of nodes) {
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
         const a = Math.min(1, node.activity + node.flash);
         const x = Math.round(nodeX(node));
         const y = Math.round(nodeY(node));
-        const refractoryGlow = node.refractory > 0 ? 0.16 : 0.08;
-        ctx.fillStyle = rgba(node.color, refractoryGlow + a * 0.70);
-        const size = a > 0.55 ? 4 : a > 0.16 ? 3 : 2;
+        const base = node.hub ? 0.26 : node.refractory > 0 ? 0.15 : 0.07;
+        ctx.fillStyle = rgba(node.color, base + a * 0.72);
+        const size = node.hub ? (a > 0.50 ? 5 : 4) : a > 0.55 ? 4 : a > 0.16 ? 3 : 2;
         ctx.fillRect(x - (size >> 1), y - (size >> 1), size, size);
-        if (a > 0.55) {
-          ctx.fillStyle = rgba(mix(node.color, cycleStops[cycleStops.length - 1], 0.45), 0.45);
+        if (node.hub) {
+          ctx.fillStyle = rgba(mix(node.color, cycleStops[cycleStops.length - 1], 0.38), 0.20 + a * 0.45);
+          ctx.fillRect(x - 3, y, 7, 1);
+          ctx.fillRect(x, y - 3, 1, 7);
+        } else if (a > 0.55) {
+          ctx.fillStyle = rgba(mix(node.color, cycleStops[cycleStops.length - 1], 0.45), 0.44);
           ctx.fillRect(x - 2, y, 5, 1);
           ctx.fillRect(x, y - 2, 1, 5);
         }
@@ -394,7 +531,7 @@ import Base from '../layouts/Base.astro';
     resize();
     if (reduce) {
       seedAt(W * 0.5, H * 0.5, true);
-      for (let i = 0; i < 120; i++) step();
+      for (let i = 0; i < 140; i++) step();
       draw();
     } else {
       let last = 0;
