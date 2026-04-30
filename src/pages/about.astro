@@ -20,13 +20,16 @@ import Base from '../layouts/Base.astro';
     const ctx = canvas.getContext('2d')!;
     const N = 8;
     const CELL_PX = 3;
-    const DRAIN_START = 0.88;
+    const DRAIN_START = 0.94;
     const RESET_LEVEL = 0.65;
-    const DRAIN_RATE = 0.998;
+    const DRAIN_RATE = 0.9992;
     const FLOW_PASSES = 8;
     const FLOW_RATE = 0.16;
     const FLOW_CAP = 0.42;
     const SURFACE_LAG = 0.11;
+    const RAIN_RATE = 0.006;
+    const RAIN_MAX_DROPS = 2.2;
+    const GOLDEN_RATIO_STEP = 0.6180339887498949;
     const styles = getComputedStyle(document.documentElement);
     const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -105,11 +108,18 @@ import Base from '../layouts/Base.astro';
       return colors;
     }
 
+    function pickWaterColor(palette: RGB[]): RGB {
+      const idx = 1 + ((Math.random() * 2) | 0);
+      return mix(paper, palette[Math.min(idx, palette.length - 1)], 0.48);
+    }
+
     type Drop = {
       x: number;
       y: number;
+      vx: number;
       vy: number;
-      tail: number;
+      size: number;
+      shape: number;
       color: number;
     };
 
@@ -122,7 +132,10 @@ import Base from '../layouts/Base.astro';
     let drops: Drop[] = [];
     let img: ImageData | null = null;
     let waterPalette = buildPalette(pickStops());
+    let waterColor = pickWaterColor(waterPalette);
     let rainColors = pickRainColors(waterPalette);
+    let rainCarry = 0;
+    let rainCursor = Math.random();
     let draining = false;
 
     function resize() {
@@ -136,8 +149,11 @@ import Base from '../layouts/Base.astro';
       flow = new Float32Array(W);
       drops = [];
       img = ctx.createImageData(W, H);
+      rainCarry = 0;
+      rainCursor = Math.random();
       draining = false;
       waterPalette = buildPalette(pickStops());
+      waterColor = pickWaterColor(waterPalette);
       rainColors = pickRainColors(waterPalette);
     }
 
@@ -164,19 +180,30 @@ import Base from '../layouts/Base.astro';
       }
     }
 
+    function spawnDrop() {
+      rainCursor = (rainCursor + GOLDEN_RATIO_STEP) % 1;
+      const x = Math.max(0, Math.min(W - 1, rainCursor * W + (Math.random() - 0.5) * 5));
+      drops.push({
+        x,
+        y: -2 - Math.random() * Math.min(48, H * 0.18),
+        vx: (Math.random() - 0.5) * 0.026,
+        vy: 0.1 + Math.random() * 0.18,
+        size: Math.random() < 0.16 ? 2 : 1,
+        shape: (Math.random() * 4) | 0,
+        color: (Math.random() * rainColors.length) | 0,
+      });
+    }
+
     function addRain() {
-      if (draining) return;
-      const attempts = Math.max(3, Math.floor(W / 34));
-      for (let k = 0; k < attempts; k++) {
-        if (drops.length > W * 1.35 || Math.random() > 0.34) continue;
-        drops.push({
-          x: Math.random() * W,
-          y: -2 - Math.random() * H * 0.4,
-          vy: 0.1 + Math.random() * 0.18,
-          tail: 7 + ((Math.random() * 8) | 0),
-          color: (Math.random() * rainColors.length) | 0,
-        });
+      rainCarry = Math.min(rainCarry + W * RAIN_RATE, W * RAIN_RATE * 2);
+      const room = Math.max(0, Math.floor(W * RAIN_MAX_DROPS - drops.length));
+      if (room <= 0) {
+        rainCarry = Math.min(rainCarry, 0.99);
+        return;
       }
+      const count = Math.min(room, Math.floor(rainCarry));
+      rainCarry -= count;
+      for (let k = 0; k < count; k++) spawnDrop();
     }
 
     function equalizeColumns() {
@@ -216,11 +243,12 @@ import Base from '../layouts/Base.astro';
       for (let i = drops.length - 1; i >= 0; i--) {
         const d = drops[i];
         d.vy += 0.0035;
+        d.x += d.vx;
         d.y += d.vy;
         if (d.y >= surfaceY(d.x)) {
           splash(d.x, 0.72 + Math.random() * 0.46);
           drops.splice(i, 1);
-        } else if (d.y > H + d.tail + 4) {
+        } else if (d.x < -3 || d.x > W + 3 || d.y > H + 4) {
           drops.splice(i, 1);
         }
       }
@@ -244,6 +272,7 @@ import Base from '../layouts/Base.astro';
         smoothHeight.fill(0);
         flow.fill(0);
         waterPalette = buildPalette(pickStops());
+        waterColor = pickWaterColor(waterPalette);
         rainColors = pickRainColors(waterPalette);
       }
     }
@@ -254,9 +283,7 @@ import Base from '../layouts/Base.astro';
       for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
           const depth = renderHeight[x] - (H - 1 - y);
-          const c = depth > 0
-            ? waterPalette[Math.min(N - 1, Math.max(1, Math.floor(depth * 0.55) + 1))]
-            : paper;
+          const c = depth > 0 ? waterColor : paper;
           const j = (y * W + x) * 4;
           data[j] = c[0];
           data[j + 1] = c[1];
@@ -265,17 +292,29 @@ import Base from '../layouts/Base.astro';
         }
       }
 
+      function paintDropPixel(x: number, y: number, c: RGB) {
+        if (x < 0 || x >= W || y < 0 || y >= H) return;
+        const j = (y * W + x) * 4;
+        data[j] = c[0];
+        data[j + 1] = c[1];
+        data[j + 2] = c[2];
+        data[j + 3] = 255;
+      }
+
       for (const d of drops) {
-        const x = d.x | 0;
-        for (let t = 0; t < d.tail; t++) {
-          const y = (d.y - t) | 0;
-          if (x < 0 || x >= W || y < 0 || y >= H) continue;
-          const c = mix(paper, rainColors[d.color], 1 - t / d.tail * 0.65);
-          const j = (y * W + x) * 4;
-          data[j] = c[0];
-          data[j + 1] = c[1];
-          data[j + 2] = c[2];
-          data[j + 3] = 255;
+        const x = Math.round(d.x);
+        const y = Math.round(d.y);
+        const c = rainColors[d.color];
+        const body = mix(paper, c, 0.68);
+        const shadow = mix(paper, c, 0.42);
+        const side = d.shape % 2 === 0 ? -1 : 1;
+        paintDropPixel(x, y, c);
+        paintDropPixel(x, y - 1, c);
+        paintDropPixel(x + side, y - 1, body);
+        if (d.shape > 1) paintDropPixel(x - side, y - 2, shadow);
+        if (d.size > 1) {
+          paintDropPixel(x, y - 2, body);
+          paintDropPixel(x + side, y, body);
         }
       }
       ctx.putImageData(img, 0, 0);
