@@ -420,18 +420,18 @@ import Base from '../../layouts/Base.astro';
       const rectangleShape = shape === 'rectangle';
       const parallelogramShape = shape === 'parallelogram';
       const cols = rectangleShape
-        ? Math.ceil(W / (tileSize * 1.55)) + 3
+        ? Math.ceil(W / (tileSize * 1.55)) + 8
         : triangleShape
           ? Math.ceil(W / (tileSize * 0.74)) + 16
           : parallelogramShape
-          ? Math.ceil(W / (tileSize * 1.18)) + 10
+          ? Math.ceil(W / (tileSize * 1.18)) + 16
           : Math.ceil(W / tileSize) + (hexShape ? 10 : 1);
       const rows = rectangleShape
-        ? Math.ceil(H / (tileSize * 0.72)) + 3
+        ? Math.ceil(H / (tileSize * 0.72)) + 8
         : triangleShape
           ? Math.ceil(H / (tileSize * 1.33)) + 8
         : parallelogramShape
-          ? Math.ceil(H / tileSize) + 3
+          ? Math.ceil(H / tileSize) + 8
           : Math.ceil(H / tileSize) + (hexShape ? 10 : 1);
       const growth = pick(growthModes, rng);
       const speed = pick(speeds, rng);
@@ -453,7 +453,7 @@ import Base from '../../layouts/Base.astro';
         skin,
         growth,
         speed,
-        revealStep: Math.max(speed.minStep, Math.ceil((cols * rows) / speed.divisor)),
+        revealStep: Math.ceil(Math.max(speed.minStep, Math.ceil((cols * rows) / speed.divisor)) * 1.5),
         tileSize,
         cols,
         rows,
@@ -571,8 +571,8 @@ import Base from '../../layouts/Base.astro';
     function drawParallelogramTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
       const w = size * 1.24;
       const skew = size * 0.46;
-      const x = col * w + row * skew - size * 5;
-      const y = row * size - size;
+      const x = col * w + row * skew - size * 10;
+      const y = row * size - size * 4;
       const points: Array<[number, number]> = [[x, y], [x + w, y], [x + w + skew, y + size], [x + skew, y + size]];
       const center: [number, number] = [x + w * 0.5 + skew * 0.5, y + size * 0.5];
       const north = colorFor(tile.n, palette);
@@ -597,8 +597,8 @@ import Base from '../../layouts/Base.astro';
       const w = size * 1.55;
       const h = size * 0.72;
       const offset = skin === 'brickwork' && (row & 1) ? w * 0.5 : 0;
-      const x = col * w - offset - w;
-      const y = row * h - h;
+      const x = col * w - offset - w * 3;
+      const y = row * h - h * 3;
       const x2 = x + w;
       const y2 = y + h;
       const cx = x + w * 0.5;
