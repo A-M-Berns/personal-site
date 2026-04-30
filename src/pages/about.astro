@@ -220,6 +220,17 @@ import Base from '../layouts/Base.astro';
     const LIGHTNING_FRAMES = 6;
     const LIGHTNING_PROB = 0.0009;
     let lightningTint: RGB = [255, 255, 255];
+
+    // Umbrella that follows the mouse pointer. Drops that fall on the canopy
+    // splash off and disappear, leaving the area beneath the umbrella dry.
+    // The mouse is tracked in canvas grid coords (W × H) so all the
+    // collision math works in the same space as drops + height.
+    let mouseX = -1;
+    let mouseY = -1;
+    const UMBRELLA_RADIUS = 9;       // half-width of the canopy in cells
+    const UMBRELLA_HEIGHT = 4;       // canopy peak above its edges
+    const UMBRELLA_OFFSET = 6;       // edge of canopy above the cursor tip
+    const UMBRELLA_HANDLE = 5;       // handle length below canopy
     let img: ImageData | null = null;
     let waterPalette = buildPalette(pickStops());
     let waterColor = pickWaterColor(waterPalette);
@@ -445,6 +456,45 @@ import Base from '../layouts/Base.astro';
         // Horizontal torus: drops carried off one side reappear on the other.
         if (d.x < 0) d.x += W;
         else if (d.x >= W) d.x -= W;
+        // Umbrella collision: parabolic canopy with peak directly above the
+        // cursor. A drop within UMBRELLA_RADIUS horizontally that reaches
+        // the canopy surface splashes off into the spray system.
+        if (mouseX >= 0) {
+          let dx = d.x - mouseX;
+          // Wrap dx to the shorter torus distance so the canopy isn't split
+          // when the cursor sits near the screen edge.
+          if (dx > W * 0.5) dx -= W;
+          else if (dx < -W * 0.5) dx += W;
+          if (Math.abs(dx) <= UMBRELLA_RADIUS) {
+            const t = dx / UMBRELLA_RADIUS;
+            const canopyY = mouseY - UMBRELLA_OFFSET - UMBRELLA_HEIGHT * (1 - t * t);
+            if (d.y >= canopyY && d.y <= canopyY + 2.5) {
+              splashes.push({
+                x: Math.round(d.x),
+                y: Math.round(canopyY),
+                age: 0,
+                color: d.color,
+                size: d.size,
+              });
+              // A few small spray particles slide off the canopy in the
+              // direction of the slope so the deflection is visible.
+              const slopeSign = dx >= 0 ? 1 : -1;
+              const sprayCount = d.size === 3 ? 4 : d.size === 2 ? 2 : 1;
+              for (let s = 0; s < sprayCount; s++) {
+                spray.push({
+                  x: d.x,
+                  y: canopyY,
+                  vx: slopeSign * (0.6 + Math.random() * 0.6) + cycleWind * 0.5,
+                  vy: 0.05 + Math.random() * 0.4,
+                  age: 0,
+                  color: d.color,
+                });
+              }
+              drops.splice(i, 1);
+              continue;
+            }
+          }
+        }
         if (d.y >= surfaceY(d.x)) {
           // Fat drops deposit ~2× the mass and spawn a couple of extra
           // surface spray particles on top of the regular splash.
@@ -761,6 +811,34 @@ import Base from '../layouts/Base.astro';
         }
       }
 
+      // Umbrella: parabolic canopy + thin handle, drawn at the cursor.
+      if (mouseX >= 0) {
+        const top = waterPalette[Math.min(N - 1, waterPalette.length - 1)];
+        const canopyTint = mix(paper, top, 0.92);
+        const ribTint = mix(paper, top, 0.7);
+        const handleTint = mix(paper, top, 0.55);
+        for (let dx = -UMBRELLA_RADIUS; dx <= UMBRELLA_RADIUS; dx++) {
+          const t = dx / UMBRELLA_RADIUS;
+          const dy = -UMBRELLA_OFFSET - Math.round(UMBRELLA_HEIGHT * (1 - t * t));
+          const cx = Math.round(mouseX + dx);
+          const cy = Math.round(mouseY + dy);
+          paintDropPixel(cx, cy, canopyTint);
+          // Rim — one pixel below canopy edge so the dome reads thicker.
+          if (Math.abs(dx) >= UMBRELLA_RADIUS - 1) {
+            paintDropPixel(cx, cy + 1, ribTint);
+          }
+        }
+        // Handle: vertical line from canopy peak down to just above the
+        // cursor tip. The hook at the bottom is two pixels going right.
+        const peakY = Math.round(mouseY) - UMBRELLA_OFFSET - UMBRELLA_HEIGHT;
+        for (let h = 0; h < UMBRELLA_HANDLE; h++) {
+          paintDropPixel(Math.round(mouseX), peakY + UMBRELLA_HEIGHT + h + 1, handleTint);
+        }
+        const hookY = peakY + UMBRELLA_HEIGHT + UMBRELLA_HANDLE;
+        paintDropPixel(Math.round(mouseX) + 1, hookY, handleTint);
+        paintDropPixel(Math.round(mouseX) + 2, hookY - 1, handleTint);
+      }
+
       // Lightning bolt: render branching segments via Bresenham, with a
       // small overall flash for atmosphere.
       if (lightningFrame > 0) {
@@ -801,5 +879,19 @@ import Base from '../layouts/Base.astro';
       requestAnimationFrame(loop);
     }
     window.addEventListener('resize', resize);
+
+    // Track the pointer in canvas grid coordinates so the umbrella sits
+    // wherever the mouse is. The canvas is `pointer-events: none`, so we
+    // listen on window and convert via the canvas's bounding rect.
+    function setMouseFromEvent(e: PointerEvent) {
+      const rect = canvas.getBoundingClientRect();
+      mouseX = ((e.clientX - rect.left) / rect.width) * W;
+      mouseY = ((e.clientY - rect.top) / rect.height) * H;
+    }
+    window.addEventListener('pointermove', setMouseFromEvent);
+    window.addEventListener('pointerleave', () => { mouseX = -1; mouseY = -1; });
+    window.addEventListener('pointerout', (e) => {
+      if (!e.relatedTarget) { mouseX = -1; mouseY = -1; }
+    });
   }
 </script>
