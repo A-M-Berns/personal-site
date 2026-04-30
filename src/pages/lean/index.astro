@@ -58,13 +58,15 @@ import Base from '../../layouts/Base.astro';
     type RGB = [number, number, number];
     type WangTile = { n: number; e: number; s: number; w: number };
     type TileSet = { name: string; colors: number; tiles: WangTile[] };
-    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'hexCells' | 'beads' | 'scales' | 'ribbons' | 'triangleLattice' | 'hexLattice' | 'kiteMesh';
+    type ShapeKind = 'square' | 'triangle' | 'hexagon' | 'parallelogram' | 'rectangle';
+    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'hexCells' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork';
     type GrowthMode = 'spores' | 'tendrils' | 'river' | 'rings' | 'islands' | 'lightning' | 'roots' | 'vortex' | 'contours';
     type SpeedMode = { name: string; divisor: number; minStep: number };
     type Cycle = {
       seed: number;
       rng: () => number;
       tileset: TileSet;
+      shape: ShapeKind;
       skin: VisualSkin;
       growth: GrowthMode;
       speed: SpeedMode;
@@ -389,14 +391,21 @@ import Base from '../../layouts/Base.astro';
     let speedBoost = 1;
 
     function setSpeedBoost(active: boolean) {
-      speedBoost = active ? 2 : 1;
+      speedBoost = active ? 3 : 1;
       boostIndicator?.classList.toggle('is-active', active);
     }
 
     function makeCycle() {
       const seed = hashString(`${Date.now()}:${Math.random()}`);
       const rng = mulberry32(seed);
-      const skins: VisualSkin[] = ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'beads', 'scales', 'ribbons', 'triangleLattice', 'hexLattice', 'kiteMesh'];
+      const shapes: ShapeKind[] = ['square', 'triangle', 'hexagon', 'parallelogram', 'rectangle'];
+      const skinsByShape: Record<ShapeKind, VisualSkin[]> = {
+        square: ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'beads', 'scales', 'ribbons', 'chevrons', 'insetDiamonds', 'pixelGlyphs', 'quarterArcs', 'ladder'],
+        triangle: ['facets', 'kite', 'bands', 'mesh'],
+        hexagon: ['facets', 'bands', 'mosaic', 'beads'],
+        parallelogram: ['facets', 'blocks', 'bands', 'ribbons'],
+        rectangle: ['bands', 'brickwork', 'mosaic', 'edgeBands'],
+      };
       const growthModes: GrowthMode[] = ['spores', 'tendrils', 'river', 'rings', 'islands', 'lightning', 'roots', 'vortex', 'contours'];
       const speeds: SpeedMode[] = [
         { name: 'slow', divisor: 480, minStep: 1 },
@@ -404,10 +413,26 @@ import Base from '../../layouts/Base.astro';
         { name: 'quick', divisor: 230, minStep: 3 },
       ];
       const tileSize = MIN_TILE + Math.floor(rng() * (MAX_TILE - MIN_TILE + 1));
-      const skin = pick(skins, rng);
-      const latticePad = skin === 'triangleLattice' || skin === 'kiteMesh' || skin === 'hexLattice';
-      const cols = Math.ceil(W / tileSize) + (latticePad ? 8 : 1);
-      const rows = Math.ceil(H / tileSize) + (latticePad ? 8 : 1);
+      const shape = pick(shapes, rng);
+      const skin = pick(skinsByShape[shape], rng);
+      const triangleShape = shape === 'triangle';
+      const hexShape = shape === 'hexagon';
+      const rectangleShape = shape === 'rectangle';
+      const parallelogramShape = shape === 'parallelogram';
+      const cols = rectangleShape
+        ? Math.ceil(W / (tileSize * 1.55)) + 3
+        : triangleShape
+          ? Math.ceil(W / (tileSize * 0.74)) + 16
+          : parallelogramShape
+          ? Math.ceil(W / (tileSize * 1.18)) + 10
+          : Math.ceil(W / tileSize) + (hexShape ? 10 : 1);
+      const rows = rectangleShape
+        ? Math.ceil(H / (tileSize * 0.72)) + 3
+        : triangleShape
+          ? Math.ceil(H / (tileSize * 1.33)) + 8
+        : parallelogramShape
+          ? Math.ceil(H / tileSize) + 3
+          : Math.ceil(H / tileSize) + (hexShape ? 10 : 1);
       const growth = pick(growthModes, rng);
       const speed = pick(speeds, rng);
       let tileset = pick(tileSets, rng);
@@ -424,6 +449,7 @@ import Base from '../../layouts/Base.astro';
         seed,
         rng,
         tileset,
+        shape,
         skin,
         growth,
         speed,
@@ -449,6 +475,7 @@ import Base from '../../layouts/Base.astro';
         .join('');
       label.innerHTML = `
         <span>tileset: ${cycle.tileset.name}</span>
+        <span>shape: ${cycle.shape}</span>
         <span>skin: ${cycle.skin}</span>
         <span>growth: ${cycle.growth}</span>
         <span>speed: ${cycle.speed.name}</span>
@@ -488,10 +515,14 @@ import Base from '../../layouts/Base.astro';
       const east = colorFor(tile.e, palette);
       const south = colorFor(tile.s, palette);
       const west = colorFor(tile.w, palette);
-      if (skin === 'kiteMesh') {
+      if (skin === 'kite') {
         fillPoly([points[0], center, points[2]], mix(west, north, 0.45), 0.94);
         fillPoly([points[2], center, points[1]], mix(north, east, 0.45), 0.94);
         fillPoly([points[1], center, points[0]], mix(south, east, 0.45), 0.94);
+      } else if (skin === 'bands') {
+        fillPoly([points[0], points[1], center], mix(north, south, 0.50), 0.90);
+        fillPoly([points[1], points[2], center], east, 0.72);
+        fillPoly([points[2], points[0], center], west, 0.72);
       } else {
         fillPoly([points[0], points[1], center], up ? south : north, 0.96);
         fillPoly([points[1], points[2], center], east, 0.88);
@@ -499,7 +530,7 @@ import Base from '../../layouts/Base.astro';
       }
     }
 
-    function drawHexLattice(tile: WangTile, col: number, row: number, size: number, palette: RGB[]) {
+    function drawHexLattice(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
       const r = size * 0.92;
       const h = Math.sqrt(3) * r;
       const cx = col * r * 1.5 - r;
@@ -513,21 +544,104 @@ import Base from '../../layouts/Base.astro';
       const east = colorFor(tile.e, palette);
       const south = colorFor(tile.s, palette);
       const west = colorFor(tile.w, palette);
-      fillPoly([points[5], points[0], [cx, cy]], north, 0.92);
-      fillPoly([points[0], points[1], [cx, cy]], mix(north, east, 0.50), 0.88);
-      fillPoly([points[1], points[2], [cx, cy]], east, 0.88);
-      fillPoly([points[2], points[3], [cx, cy]], south, 0.92);
-      fillPoly([points[3], points[4], [cx, cy]], mix(south, west, 0.50), 0.88);
-      fillPoly([points[4], points[5], [cx, cy]], west, 0.88);
+      if (skin === 'bands') {
+        fillPoly(points, mix(north, south, 0.50), 0.88);
+        fillPoly([points[5], points[0], points[1], [cx, cy]], north, 0.58);
+        fillPoly([points[2], points[3], points[4], [cx, cy]], south, 0.58);
+      } else if (skin === 'mosaic') {
+        fillPoly([points[5], points[0], [cx, cy]], north, 0.92);
+        fillPoly([points[0], points[1], [cx, cy]], mix(north, east, 0.50), 0.88);
+        fillPoly([points[1], points[2], [cx, cy]], east, 0.88);
+        fillPoly([points[2], points[3], [cx, cy]], south, 0.92);
+        fillPoly([points[3], points[4], [cx, cy]], mix(south, west, 0.50), 0.88);
+        fillPoly([points[4], points[5], [cx, cy]], west, 0.88);
+      } else if (skin === 'beads') {
+        fillPoly(points, mix(east, west, 0.50), 0.82);
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.92);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        fillPoly(points, mix(north, south, 0.50), 0.90);
+        fillPoly([points[0], points[1], points[2], [cx, cy]], east, 0.48);
+        fillPoly([points[3], points[4], points[5], [cx, cy]], west, 0.48);
+      }
     }
 
-    function drawTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
-      if (skin === 'triangleLattice' || skin === 'kiteMesh') {
+    function drawParallelogramTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
+      const w = size * 1.24;
+      const skew = size * 0.46;
+      const x = col * w + row * skew - size * 5;
+      const y = row * size - size;
+      const points: Array<[number, number]> = [[x, y], [x + w, y], [x + w + skew, y + size], [x + skew, y + size]];
+      const center: [number, number] = [x + w * 0.5 + skew * 0.5, y + size * 0.5];
+      const north = colorFor(tile.n, palette);
+      const east = colorFor(tile.e, palette);
+      const south = colorFor(tile.s, palette);
+      const west = colorFor(tile.w, palette);
+      if (skin === 'blocks') {
+        fillPoly(points, mix(north, south, 0.45), 0.94);
+        fillPoly([points[0], points[1], center], north, 0.55);
+        fillPoly([points[1], points[2], center], east, 0.55);
+        fillPoly([points[2], points[3], center], south, 0.55);
+        fillPoly([points[3], points[0], center], west, 0.55);
+      } else {
+        fillPoly([points[0], points[1], center], north, 0.90);
+        fillPoly([points[1], points[2], center], east, 0.86);
+        fillPoly([points[2], points[3], center], south, 0.90);
+        fillPoly([points[3], points[0], center], west, 0.86);
+      }
+    }
+
+    function drawRectangleTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
+      const w = size * 1.55;
+      const h = size * 0.72;
+      const offset = skin === 'brickwork' && (row & 1) ? w * 0.5 : 0;
+      const x = col * w - offset - w;
+      const y = row * h - h;
+      const x2 = x + w;
+      const y2 = y + h;
+      const cx = x + w * 0.5;
+      const cy = y + h * 0.5;
+      const north = colorFor(tile.n, palette);
+      const east = colorFor(tile.e, palette);
+      const south = colorFor(tile.s, palette);
+      const west = colorFor(tile.w, palette);
+      if (skin === 'bands') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.88);
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = rgba(west, 0.76);
+        ctx.fillRect(x, y, Math.max(2, w * 0.18), h);
+        ctx.fillStyle = rgba(east, 0.76);
+        ctx.fillRect(x2 - Math.max(2, w * 0.18), y, Math.max(2, w * 0.18), h);
+      } else if (skin === 'brickwork') {
+        ctx.fillStyle = rgba(mix(north, east, 0.45), 0.92);
+        ctx.fillRect(x, y, w, h);
+        ctx.fillStyle = rgba(south, 0.52);
+        ctx.fillRect(x, y2 - Math.max(1, h * 0.24), w, Math.max(1, h * 0.24));
+      } else {
+        fillPoly([[x, y], [x2, y], [cx, cy]], north, 0.82);
+        fillPoly([[x2, y], [x2, y2], [cx, cy]], east, 0.82);
+        fillPoly([[x2, y2], [x, y2], [cx, cy]], south, 0.82);
+        fillPoly([[x, y2], [x, y], [cx, cy]], west, 0.82);
+      }
+    }
+
+    function drawTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], shape: ShapeKind, skin: VisualSkin) {
+      if (shape === 'triangle') {
         drawTriangleLattice(tile, col, row, size, palette, skin);
         return;
       }
-      if (skin === 'hexLattice') {
-        drawHexLattice(tile, col, row, size, palette);
+      if (shape === 'hexagon') {
+        drawHexLattice(tile, col, row, size, palette, skin);
+        return;
+      }
+      if (shape === 'parallelogram') {
+        drawParallelogramTile(tile, col, row, size, palette, skin);
+        return;
+      }
+      if (shape === 'rectangle') {
+        drawRectangleTile(tile, col, row, size, palette, skin);
         return;
       }
       const x = col * size;
@@ -620,6 +734,35 @@ import Base from '../../layouts/Base.astro';
         fillPoly([[x, y2], [cx, cy], [cx, y], [x, y]], west, 0.50);
         fillPoly([[x2, y2], [cx, cy], [cx, y], [x2, y]], east, 0.50);
         fillPoly([[x, y2], [cx, cy], [x2, y2]], south, 0.64);
+      } else if (skin === 'chevrons') {
+        fillPoly([[x, y], [cx, cy], [x, y2]], west, 0.88);
+        fillPoly([[x2, y], [cx, cy], [x2, y2]], east, 0.88);
+        fillPoly([[x, y], [cx, cy], [x2, y]], north, 0.62);
+        fillPoly([[x, y2], [cx, cy], [x2, y2]], south, 0.62);
+      } else if (skin === 'insetDiamonds') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.82);
+        ctx.fillRect(x, y, size, size);
+        fillPoly([[cx, y + 1], [x2 - 1, cy], [cx, y2 - 1], [x + 1, cy]], mix(east, west, 0.5), 0.92);
+      } else if (skin === 'pixelGlyphs') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.80);
+        ctx.fillRect(x, y, size, size);
+        ctx.fillStyle = rgba(west, 0.95);
+        ctx.fillRect(x + 1, y + 1, Math.max(1, size * 0.22), Math.max(1, size * 0.22));
+        ctx.fillStyle = rgba(east, 0.95);
+        ctx.fillRect(x2 - Math.max(2, size * 0.28), y2 - Math.max(2, size * 0.28), Math.max(1, size * 0.22), Math.max(1, size * 0.22));
+      } else if (skin === 'quarterArcs') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.86);
+        ctx.fillRect(x, y, size, size);
+        ctx.fillStyle = rgba(east, 0.55);
+        ctx.beginPath();
+        ctx.arc(x2, y, size * 0.82, Math.PI * 0.5, Math.PI, false);
+        ctx.lineTo(x2, y);
+        ctx.fill();
+        ctx.fillStyle = rgba(west, 0.55);
+        ctx.beginPath();
+        ctx.arc(x, y2, size * 0.82, -Math.PI * 0.5, 0, false);
+        ctx.lineTo(x, y2);
+        ctx.fill();
       } else {
         const band = Math.max(2, Math.floor(size * 0.20));
         fillPoly([[x, y], [x2, y], [x, y2]], north, 0.78);
@@ -641,7 +784,7 @@ import Base from '../../layouts/Base.astro';
         if (tileIdx < 0) continue;
         const col = pos % cycle.cols;
         const row = Math.floor(pos / cycle.cols);
-        drawTile(cycle.tileset.tiles[tileIdx], col, row, cycle.tileSize, cycle.palette, cycle.skin);
+        drawTile(cycle.tileset.tiles[tileIdx], col, row, cycle.tileSize, cycle.palette, cycle.shape, cycle.skin);
       }
     }
 
@@ -684,10 +827,14 @@ import Base from '../../layouts/Base.astro';
       makeCycle();
       draw();
     });
-    canvas.addEventListener('pointerdown', () => setSpeedBoost(true));
-    canvas.addEventListener('pointerup', () => setSpeedBoost(false));
-    canvas.addEventListener('pointercancel', () => setSpeedBoost(false));
-    canvas.addEventListener('pointerleave', () => setSpeedBoost(false));
+    document.addEventListener('pointerdown', (event) => {
+      const target = event.target as Element | null;
+      if (target?.closest('a, button, dialog')) return;
+      setSpeedBoost(true);
+    });
+    window.addEventListener('pointerup', () => setSpeedBoost(false));
+    window.addEventListener('pointercancel', () => setSpeedBoost(false));
+    window.addEventListener('blur', () => setSpeedBoost(false));
     infoButton?.addEventListener('click', () => aboutDialog?.showModal());
     aboutClose?.addEventListener('click', () => aboutDialog?.close());
     aboutDialog?.addEventListener('click', (event) => {
