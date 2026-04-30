@@ -57,11 +57,6 @@ import Base from '../../layouts/Base.astro';
         <input type="range" id="s-flow" min="0" max="0.30" step="0.005" />
         <span class="val" id="v-flow"></span>
       </div>
-      <div class="tune-row">
-        <label for="s-smooth">smooth</label>
-        <input type="range" id="s-smooth" min="0" max="0.95" step="0.01" />
-        <span class="val" id="v-smooth"></span>
-      </div>
       <button id="reset-btn" type="button">Reset</button>
       <p class="tune-hint">Click on the background to nudge particles.</p>
     </aside>
@@ -386,9 +381,8 @@ import Base from '../../layouts/Base.astro';
     let field = new Float32Array(0);
     let prevField = new Float32Array(0);
     // Per-frame blend with previous frame's field. Higher value = more
-    // temporal smoothing at the cost of motion blur. Exposed as a slider so
-    // it's easy to dial in.
-    let fieldSmooth = 0.6;
+    // temporal smoothing at the cost of motion blur.
+    const FIELD_SMOOTH = 0.8;
     let kernelLUT = new Float32Array(0);
     let img: ImageData | null = null;
     let palette: RGB[] = buildPalette(pickStops());
@@ -1432,9 +1426,9 @@ import Base from '../../layouts/Base.astro';
       // Blend with previous frame's field so the rendered pixels don't snap
       // when each particle's rounded splat center hops by one cell.
       const len = field.length;
-      const ks = 1 - fieldSmooth;
+      const ks = 1 - FIELD_SMOOTH;
       for (let i = 0; i < len; i++) {
-        const blended = field[i] * ks + prevField[i] * fieldSmooth;
+        const blended = field[i] * ks + prevField[i] * FIELD_SMOOTH;
         field[i] = blended;
         prevField[i] = blended;
       }
@@ -1483,10 +1477,6 @@ import Base from '../../layouts/Base.astro';
     // single Params field — it computes two derived ones at once.
     const tSlider = document.getElementById('s-t') as HTMLInputElement | null;
     const tVal = document.getElementById('v-t') as HTMLElement | null;
-    // Frame-blend slider for the temporal smoothing factor (separate from
-    // params because it's a render-only setting).
-    const smoothSlider = document.getElementById('s-smooth') as HTMLInputElement | null;
-    const smoothVal = document.getElementById('v-smooth') as HTMLElement | null;
     function syncSliders() {
       for (const k of SLIDER_KEYS) {
         const el = sliderEls[k];
@@ -1499,16 +1489,7 @@ import Base from '../../layouts/Base.astro';
         tSlider.value = String(params.t);
         tVal.textContent = params.t.toFixed(2);
       }
-      if (smoothSlider && smoothVal) {
-        smoothSlider.value = String(fieldSmooth);
-        smoothVal.textContent = fieldSmooth.toFixed(2);
-      }
     }
-
-    smoothSlider?.addEventListener('input', () => {
-      fieldSmooth = parseFloat(smoothSlider.value);
-      if (smoothVal) smoothVal.textContent = fieldSmooth.toFixed(2);
-    });
 
     for (const k of SLIDER_KEYS) {
       const el = sliderEls[k];
