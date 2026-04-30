@@ -48,14 +48,9 @@ import Base from '../../layouts/Base.astro';
         <span class="val" id="v-cRep"></span>
       </div>
       <div class="tune-row">
-        <label for="s-noise">noise</label>
-        <input type="range" id="s-noise" min="0" max="0.30" step="0.002" />
-        <span class="val" id="v-noise"></span>
-      </div>
-      <div class="tune-row">
-        <label for="s-flow">flow</label>
-        <input type="range" id="s-flow" min="0" max="0.30" step="0.002" />
-        <span class="val" id="v-flow"></span>
+        <label for="s-smooth">smooth</label>
+        <input type="range" id="s-smooth" min="0" max="0.95" step="0.01" />
+        <span class="val" id="v-smooth"></span>
       </div>
       <button id="reset-btn" type="button">Reset</button>
       <p class="tune-hint">Click on the background to nudge particles.</p>
@@ -197,10 +192,10 @@ import Base from '../../layouts/Base.astro';
       wK:     [0.035, 0.060], // per-particle field weight
       muG:    [0.50, 1.10],   // growth target field strength
       cRep:   [0.6, 1.7],     // close-range repulsion strength
-      noise:  [0.0, 0.08],    // per-step Brownian jitter
-      flow:   [0.02, 0.12],   // amplitude of slowly varying spatial flow
     } as const;
     const SIGMA_G_FIXED = 0.5;
+    const NOISE_FIXED = 0;    // Brownian jitter — disabled
+    const FLOW_FIXED = 0.2;   // spatial flow amplitude
 
     // muK ↔ sigmaK are now strictly coupled through a single "type" t ∈ [0,1].
     // The user-exposed `t` slider drives both inversely; the muK and sigmaK
@@ -260,10 +255,10 @@ import Base from '../../layouts/Base.astro';
         sigmaK: deriveSigmaKFromT(t),
         wK:     lerp(PARAM_RANGES.wK[0],     PARAM_RANGES.wK[1]),
         muG:    lerp(PARAM_RANGES.muG[0],    PARAM_RANGES.muG[1]),
-        sigmaG: SIGMA_G_FIXED, // fixed across cycles; tune via SIGMA_G_FIXED
+        sigmaG: SIGMA_G_FIXED,
         cRep:   lerp(PARAM_RANGES.cRep[0],   PARAM_RANGES.cRep[1]),
-        noise:  lerp(PARAM_RANGES.noise[0],  PARAM_RANGES.noise[1]),
-        flow:   lerp(PARAM_RANGES.flow[0],   PARAM_RANGES.flow[1]),
+        noise:  NOISE_FIXED,
+        flow:   FLOW_FIXED,
         kernelRange: 0, kernelRangeSq: 0, renderRangeCells: 0,
         sigmaK2: 0, sigmaG2: 0,
       };
@@ -349,11 +344,10 @@ import Base from '../../layouts/Base.astro';
     const DAMPING = 0.55;
     let field = new Float32Array(0);
     let prevField = new Float32Array(0);
-    // Each frame's field is blended with the previous frame's. Higher value
-    // = more temporal smoothing (kills per-frame pixel snap from rounded
-    // splat centers) at the cost of motion blur. 0.6 is heavier-handed —
-    // creatures leave a brief trail but the per-pixel jitter goes away.
-    const FIELD_SMOOTH = 0.6;
+    // Per-frame blend with previous frame's field. Higher value = more
+    // temporal smoothing at the cost of motion blur. Exposed as a slider so
+    // it's easy to dial in.
+    let fieldSmooth = 0.6;
     let kernelLUT = new Float32Array(0);
     let img: ImageData | null = null;
     let palette: RGB[] = buildPalette(pickStops());
@@ -1263,9 +1257,9 @@ import Base from '../../layouts/Base.astro';
       // Blend with previous frame's field so the rendered pixels don't snap
       // when each particle's rounded splat center hops by one cell.
       const len = field.length;
-      const ks = 1 - FIELD_SMOOTH;
+      const ks = 1 - fieldSmooth;
       for (let i = 0; i < len; i++) {
-        const blended = field[i] * ks + prevField[i] * FIELD_SMOOTH;
+        const blended = field[i] * ks + prevField[i] * fieldSmooth;
         field[i] = blended;
         prevField[i] = blended;
       }
@@ -1291,16 +1285,14 @@ import Base from '../../layouts/Base.astro';
     }
 
     // ── Sliders ─────────────────────────────────────────────────────────
-    type SliderKey = 'muK' | 'sigmaK' | 'wK' | 'muG' | 'cRep' | 'noise' | 'flow';
-    const SLIDER_KEYS: SliderKey[] = ['muK', 'sigmaK', 'wK', 'muG', 'cRep', 'noise', 'flow'];
+    type SliderKey = 'muK' | 'sigmaK' | 'wK' | 'muG' | 'cRep';
+    const SLIDER_KEYS: SliderKey[] = ['muK', 'sigmaK', 'wK', 'muG', 'cRep'];
     const FORMAT: Record<SliderKey, (n: number) => string> = {
       muK:    (n) => n.toFixed(2),
       sigmaK: (n) => n.toFixed(2),
       wK:     (n) => n.toFixed(4),
       muG:    (n) => n.toFixed(3),
       cRep:   (n) => n.toFixed(2),
-      noise:  (n) => n.toFixed(3),
-      flow:   (n) => n.toFixed(3),
     };
     const sliderEls: Partial<Record<SliderKey, HTMLInputElement>> = {};
     const valEls:    Partial<Record<SliderKey, HTMLElement>>    = {};
@@ -1314,6 +1306,10 @@ import Base from '../../layouts/Base.astro';
     // single Params field — it computes two derived ones at once.
     const tSlider = document.getElementById('s-t') as HTMLInputElement | null;
     const tVal = document.getElementById('v-t') as HTMLElement | null;
+    // Frame-blend slider for the temporal smoothing factor (separate from
+    // params because it's a render-only setting).
+    const smoothSlider = document.getElementById('s-smooth') as HTMLInputElement | null;
+    const smoothVal = document.getElementById('v-smooth') as HTMLElement | null;
     function syncSliders() {
       for (const k of SLIDER_KEYS) {
         const el = sliderEls[k];
@@ -1326,7 +1322,16 @@ import Base from '../../layouts/Base.astro';
         tSlider.value = String(params.t);
         tVal.textContent = params.t.toFixed(2);
       }
+      if (smoothSlider && smoothVal) {
+        smoothSlider.value = String(fieldSmooth);
+        smoothVal.textContent = fieldSmooth.toFixed(2);
+      }
     }
+
+    smoothSlider?.addEventListener('input', () => {
+      fieldSmooth = parseFloat(smoothSlider.value);
+      if (smoothVal) smoothVal.textContent = fieldSmooth.toFixed(2);
+    });
 
     for (const k of SLIDER_KEYS) {
       const el = sliderEls[k];
