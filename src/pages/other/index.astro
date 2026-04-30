@@ -17,16 +17,76 @@ import Base from '../../layouts/Base.astro';
 </Base>
 
 <script>
-  // Lenia: continuous cellular automaton on a torus. Each cell holds a value
-  // in [0, 1]. Per step, convolve the field with a bell-ring kernel, pass the
-  // result through a Gaussian growth function, and integrate with small dt.
-  // With Orbium-ish parameters (mu≈0.15, sigma≈0.022, R=10), random circular
-  // patches usually evolve into pulsing blobs and gliders before dissolving.
+  // Particle Lenia (Mordvintsev, Niklasson, Randazzo, Chan).
+  // Each particle is a point in 2D world space. The continuous field U(x) is
+  // a sum of bell-ring kernels K(|x − p_j|) over all particles, and each
+  // particle's energy is R(p_i) − G(U(p_i)) where R is short-range repulsion
+  // and G is a Gaussian "growth" preference for the field strength near it.
+  // Particles flow along the negative gradient of total energy, producing
+  // self-propelled clusters that swim, divide, and dissolve.
+  //
+  // Rendered by splatting each particle's kernel onto a coarse pixel grid;
+  // the chunky pixel look matches the rest of the site's animations.
   const canvas = document.getElementById('lenia-sim') as HTMLCanvasElement | null;
   if (canvas) {
     const ctx = canvas.getContext('2d')!;
-    const N = 8;
-    const CELL_PX = 6;
+    const N_LEVELS = 8;
+    const CELL_PX = 6;          // display pixels per grid cell
+    const CELLS_PER_UNIT = 4;   // grid cells per world unit
+    const DT = 0.1;
+    const N_PARTICLES = 320;
+    const RESEED_AFTER = 2000;
+
+    // Parameter ranges sampled per cycle. Each reseed picks a fresh point in
+    // this box, the same way the homepage CA re-rolls its palette and seeder.
+    // Tuneable starting bounds — fine-tune to taste.
+    const PARAM_RANGES = {
+      muK:    [3.5, 5.0],   // kernel peak (creature radius)
+      sigmaK: [0.8, 1.2],   // kernel ring width
+      wK:     [0.020, 0.026], // per-particle field weight
+      muG:    [0.50, 0.65], // growth target field strength
+      sigmaG: [0.12, 0.17], // growth tolerance
+      cRep:   [0.8, 1.3],   // close-range repulsion strength
+    } as const;
+
+    // Hash bucket size must cover the largest possible kernel range so any
+    // particle pair within interaction distance lands within the 3×3 window.
+    const MAX_KERNEL_RANGE = PARAM_RANGES.muK[1] + 3 * PARAM_RANGES.sigmaK[1];
+    const HASH_CELL_SIZE = MAX_KERNEL_RANGE;
+
+    type Params = {
+      muK: number; sigmaK: number; wK: number;
+      muG: number; sigmaG: number; cRep: number;
+      kernelRange: number; kernelRangeSq: number;
+      renderRangeCells: number;
+      sigmaK2: number; sigmaG2: number;
+    };
+
+    function lerp(lo: number, hi: number) {
+      return lo + Math.random() * (hi - lo);
+    }
+
+    function pickParams(): Params {
+      const muK = lerp(PARAM_RANGES.muK[0], PARAM_RANGES.muK[1]);
+      const sigmaK = lerp(PARAM_RANGES.sigmaK[0], PARAM_RANGES.sigmaK[1]);
+      const sigmaG = lerp(PARAM_RANGES.sigmaG[0], PARAM_RANGES.sigmaG[1]);
+      const kernelRange = muK + 3 * sigmaK;
+      return {
+        muK, sigmaK,
+        wK: lerp(PARAM_RANGES.wK[0], PARAM_RANGES.wK[1]),
+        muG: lerp(PARAM_RANGES.muG[0], PARAM_RANGES.muG[1]),
+        sigmaG,
+        cRep: lerp(PARAM_RANGES.cRep[0], PARAM_RANGES.cRep[1]),
+        kernelRange,
+        kernelRangeSq: kernelRange * kernelRange,
+        renderRangeCells: Math.ceil(kernelRange * CELLS_PER_UNIT),
+        sigmaK2: sigmaK * sigmaK,
+        sigmaG2: sigmaG * sigmaG,
+      };
+    }
+
+    let params: Params = pickParams();
+
     const styles = getComputedStyle(document.documentElement);
     const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -55,9 +115,9 @@ import Base from '../../layouts/Base.astro';
 
     function pickStops(): RGB[] {
       const stops: RGB[] = [];
-      for (let i = 0; i < N; i++) {
-        const lo = Math.floor((i * colorPool.length) / N);
-        const hi = Math.floor(((i + 1) * colorPool.length) / N);
+      for (let i = 0; i < N_LEVELS; i++) {
+        const lo = Math.floor((i * colorPool.length) / N_LEVELS);
+        const hi = Math.floor(((i + 1) * colorPool.length) / N_LEVELS);
         stops.push(colorPool[lo + ((Math.random() * Math.max(1, hi - lo)) | 0)]);
       }
       return stops;
@@ -66,8 +126,8 @@ import Base from '../../layouts/Base.astro';
     function buildPalette(stops: RGB[]): RGB[] {
       const all = [paper, ...stops];
       const out: RGB[] = [];
-      for (let i = 0; i < N; i++) {
-        const t = i / (N - 1);
+      for (let i = 0; i < N_LEVELS; i++) {
+        const t = i / (N_LEVELS - 1);
         const segF = t * (all.length - 1);
         const seg = Math.min(Math.floor(segF), all.length - 2);
         const lt = segF - seg;
@@ -82,177 +142,144 @@ import Base from '../../layouts/Base.astro';
       return out;
     }
 
-    // Lenia parameters.
-    const R = 10;
-    const T = 10;
-    const dt = 1 / T;
-    const mu = 0.14;
-    const sigma = 0.022;
-
-    // Bell-ring kernel core: peaks at r=0.5, vanishes at r=0 and r=1. Standard
-    // Lenia "core" function K_C(r) = exp(α − α / (4r(1−r))) with α=4.
-    function kernelCore(r: number): number {
-      if (r <= 0 || r >= 1) return 0;
-      const a = 4;
-      return Math.exp(a - a / (4 * r * (1 - r)));
+    function wrap(d: number, size: number): number {
+      if (d > size * 0.5) return d - size;
+      if (d < -size * 0.5) return d + size;
+      return d;
     }
 
-    // Flatten the kernel into parallel arrays of nonzero entries — the inner
-    // convolution loop indexes these directly, avoiding per-cell branches on
-    // zero weights.
-    let kdx = new Int16Array(0);
-    let kdy = new Int16Array(0);
-    let kw = new Float32Array(0);
-    let klen = 0;
-    {
-      const dxs: number[] = [];
-      const dys: number[] = [];
-      const ws: number[] = [];
-      let total = 0;
-      for (let dy = -R; dy <= R; dy++) {
-        for (let dx = -R; dx <= R; dx++) {
-          if (dx === 0 && dy === 0) continue;
-          const r = Math.sqrt(dx * dx + dy * dy) / R;
-          const w = kernelCore(r);
-          if (w <= 1e-4) continue;
-          dxs.push(dx);
-          dys.push(dy);
-          ws.push(w);
-          total += w;
-        }
-      }
-      kdx = new Int16Array(dxs);
-      kdy = new Int16Array(dys);
-      kw = new Float32Array(ws.length);
-      for (let i = 0; i < ws.length; i++) kw[i] = ws[i] / total;
-      klen = kdx.length;
-    }
+    let W_grid = 0, H_grid = 0;
+    let W_world = 0, H_world = 0;
+    let hashW = 0, hashH = 0;
 
-    let W = 0;
-    let H = 0;
-    let A = new Float32Array(0);
-    let next = new Float32Array(0);
+    let positions = new Float32Array(0);
+    let U = new Float32Array(0);
+    let Gp = new Float32Array(0);
+    let F = new Float32Array(0);
+    let field = new Float32Array(0);
     let img: ImageData | null = null;
     let palette: RGB[] = buildPalette(pickStops());
     let stepCount = 0;
-    const RESEED_AFTER = 1500;
+
+    // Spatial hash, linked-list per cell. hashHead[c] is the first particle
+    // in cell c (or −1 if empty); hashNext[i] is the next particle after i.
+    let hashHead = new Int32Array(0);
+    let hashNext = new Int32Array(0);
+
+    function rebuildHash() {
+      hashHead.fill(-1);
+      for (let i = 0; i < N_PARTICLES; i++) {
+        const x = positions[i * 2];
+        const y = positions[i * 2 + 1];
+        const hx = Math.floor(x / HASH_CELL_SIZE);
+        const hy = Math.floor(y / HASH_CELL_SIZE);
+        const cx = ((hx % hashW) + hashW) % hashW;
+        const cy = ((hy % hashH) + hashH) % hashH;
+        const slot = cy * hashW + cx;
+        hashNext[i] = hashHead[slot];
+        hashHead[slot] = i;
+      }
+    }
 
     type Seeder = { name: string; fn: () => void };
     const seeders: Seeder[] = [
       {
-        name: 'patches',
+        name: 'scatter',
         fn: () => {
-          A.fill(0);
-          const k = 6 + ((Math.random() * 8) | 0);
-          for (let i = 0; i < k; i++) {
-            const cx = (Math.random() * W) | 0;
-            const cy = (Math.random() * H) | 0;
-            const r = R + ((Math.random() * R) | 0);
-            const r2 = r * r;
-            for (let dy = -r; dy <= r; dy++) {
-              for (let dx = -r; dx <= r; dx++) {
-                if (dx * dx + dy * dy > r2) continue;
-                const x = ((cx + dx) % W + W) % W;
-                const y = ((cy + dy) % H + H) % H;
-                A[y * W + x] = 0.6 + Math.random() * 0.4;
-              }
-            }
+          for (let i = 0; i < N_PARTICLES; i++) {
+            positions[i * 2] = Math.random() * W_world;
+            positions[i * 2 + 1] = Math.random() * H_world;
           }
         },
       },
       {
-        name: 'blobs',
+        name: 'clusters',
         fn: () => {
-          A.fill(0);
-          const k = 4 + ((Math.random() * 5) | 0);
+          const k = 6 + ((Math.random() * 8) | 0);
+          const cxs = new Float32Array(k);
+          const cys = new Float32Array(k);
           for (let i = 0; i < k; i++) {
-            const cx = (Math.random() * W) | 0;
-            const cy = (Math.random() * H) | 0;
-            const sx = R * (0.7 + Math.random() * 0.8);
-            const sy = R * (0.7 + Math.random() * 0.8);
-            const reach = Math.ceil(Math.max(sx, sy) * 2.5);
-            for (let dy = -reach; dy <= reach; dy++) {
-              for (let dx = -reach; dx <= reach; dx++) {
-                const v = Math.exp(-(dx * dx) / (2 * sx * sx) - (dy * dy) / (2 * sy * sy));
-                if (v < 0.05) continue;
-                const x = ((cx + dx) % W + W) % W;
-                const y = ((cy + dy) % H + H) % H;
-                A[y * W + x] = Math.min(1, A[y * W + x] + v);
-              }
-            }
+            cxs[i] = Math.random() * W_world;
+            cys[i] = Math.random() * H_world;
+          }
+          const sigma = 2.5 + Math.random() * 2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const c = (Math.random() * k) | 0;
+            // Box–Muller for a 2D Gaussian offset.
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            const px = cxs[c] + Math.cos(ang) * mag;
+            const py = cys[c] + Math.sin(ang) * mag;
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
           }
         },
       },
       {
         name: 'rings',
         fn: () => {
-          A.fill(0);
           const k = 3 + ((Math.random() * 4) | 0);
-          for (let i = 0; i < k; i++) {
-            const cx = (Math.random() * W) | 0;
-            const cy = (Math.random() * H) | 0;
-            const inner = R * 0.45;
-            const outer = R * 1.1;
-            const reach = Math.ceil(outer);
-            for (let dy = -reach; dy <= reach; dy++) {
-              for (let dx = -reach; dx <= reach; dx++) {
-                const r = Math.sqrt(dx * dx + dy * dy);
-                if (r < inner || r > outer) continue;
-                const x = ((cx + dx) % W + W) % W;
-                const y = ((cy + dy) % H + H) % H;
-                A[y * W + x] = 0.65 + Math.random() * 0.35;
-              }
+          const perRing = Math.ceil(N_PARTICLES / k);
+          let idx = 0;
+          for (let ri = 0; ri < k && idx < N_PARTICLES; ri++) {
+            const cx = Math.random() * W_world;
+            const cy = Math.random() * H_world;
+            const radius = 4 + Math.random() * 6;
+            const count = Math.min(perRing, N_PARTICLES - idx);
+            const phase = Math.random() * Math.PI * 2;
+            for (let i = 0; i < count; i++) {
+              const theta = phase + (i / count) * Math.PI * 2;
+              const jitter = (Math.random() - 0.5) * 0.6;
+              const px = cx + Math.cos(theta) * (radius + jitter);
+              const py = cy + Math.sin(theta) * (radius + jitter);
+              positions[idx * 2] = ((px % W_world) + W_world) % W_world;
+              positions[idx * 2 + 1] = ((py % H_world) + H_world) % H_world;
+              idx++;
+            }
+          }
+          for (; idx < N_PARTICLES; idx++) {
+            positions[idx * 2] = Math.random() * W_world;
+            positions[idx * 2 + 1] = Math.random() * H_world;
+          }
+        },
+      },
+      {
+        name: 'jitter-grid',
+        fn: () => {
+          const cols = Math.max(1, Math.round(Math.sqrt(N_PARTICLES * W_world / H_world)));
+          const rows = Math.max(1, Math.ceil(N_PARTICLES / cols));
+          const dx = W_world / cols;
+          const dy = H_world / rows;
+          let idx = 0;
+          for (let r = 0; r < rows && idx < N_PARTICLES; r++) {
+            for (let c = 0; c < cols && idx < N_PARTICLES; c++) {
+              positions[idx * 2] = (c + 0.5 + (Math.random() - 0.5) * 0.5) * dx;
+              positions[idx * 2 + 1] = (r + 0.5 + (Math.random() - 0.5) * 0.5) * dy;
+              idx++;
             }
           }
         },
       },
       {
-        name: 'speckle',
+        name: 'streak',
         fn: () => {
-          A.fill(0);
-          const target = Math.floor(W * H * 0.0015);
-          for (let i = 0; i < target; i++) {
-            const cx = (Math.random() * W) | 0;
-            const cy = (Math.random() * H) | 0;
-            const r = 2 + ((Math.random() * 4) | 0);
-            const r2 = r * r;
-            for (let dy = -r; dy <= r; dy++) {
-              for (let dx = -r; dx <= r; dx++) {
-                if (dx * dx + dy * dy > r2) continue;
-                const x = ((cx + dx) % W + W) % W;
-                const y = ((cy + dy) % H + H) % H;
-                A[y * W + x] = 1;
-              }
-            }
-          }
-        },
-      },
-      {
-        name: 'drift',
-        fn: () => {
-          // Cluster of small dense circles biased along a random axis — gives
-          // the field a coherent direction so emergent gliders tend to travel
-          // together rather than scattering immediately.
-          A.fill(0);
+          // Particles laid out along a random line, biased to seed cluster
+          // formation along a coherent direction.
           const angle = Math.random() * Math.PI * 2;
-          const dxA = Math.cos(angle);
-          const dyA = Math.sin(angle);
-          const k = 8 + ((Math.random() * 6) | 0);
-          for (let i = 0; i < k; i++) {
-            const t = (i / k - 0.5) * Math.min(W, H) * 0.9;
-            const j = (Math.random() - 0.5) * Math.min(W, H) * 0.4;
-            const cx = ((W / 2 + dxA * t - dyA * j) | 0);
-            const cy = ((H / 2 + dyA * t + dxA * j) | 0);
-            const r = Math.floor(R * (0.7 + Math.random() * 0.5));
-            const r2 = r * r;
-            for (let dy = -r; dy <= r; dy++) {
-              for (let dx = -r; dx <= r; dx++) {
-                if (dx * dx + dy * dy > r2) continue;
-                const x = ((cx + dx) % W + W) % W;
-                const y = ((cy + dy) % H + H) % H;
-                A[y * W + x] = 0.65 + Math.random() * 0.35;
-              }
-            }
+          const ax = Math.cos(angle);
+          const ay = Math.sin(angle);
+          const span = Math.min(W_world, H_world) * 0.45;
+          const cx0 = W_world * 0.5;
+          const cy0 = H_world * 0.5;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const t = (i / N_PARTICLES - 0.5) * span * 2;
+            const j = (Math.random() - 0.5) * 4;
+            const px = cx0 + ax * t - ay * j;
+            const py = cy0 + ay * t + ax * j;
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
           }
         },
       },
@@ -278,6 +305,7 @@ import Base from '../../layouts/Base.astro';
     }
 
     function reseed() {
+      params = pickParams();
       lastSeeder = nextSeeder();
       seeders[lastSeeder].fn();
       palette = buildPalette(pickStops());
@@ -285,51 +313,175 @@ import Base from '../../layouts/Base.astro';
     }
 
     function resize() {
-      W = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
-      H = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
-      canvas.width = W;
-      canvas.height = H;
-      A = new Float32Array(W * H);
-      next = new Float32Array(W * H);
-      img = ctx.createImageData(W, H);
+      W_grid = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
+      H_grid = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
+      canvas.width = W_grid;
+      canvas.height = H_grid;
+      W_world = W_grid / CELLS_PER_UNIT;
+      H_world = H_grid / CELLS_PER_UNIT;
+      hashW = Math.max(1, Math.floor(W_world / HASH_CELL_SIZE));
+      hashH = Math.max(1, Math.floor(H_world / HASH_CELL_SIZE));
+      positions = new Float32Array(N_PARTICLES * 2);
+      U = new Float32Array(N_PARTICLES);
+      Gp = new Float32Array(N_PARTICLES);
+      F = new Float32Array(N_PARTICLES * 2);
+      field = new Float32Array(W_grid * H_grid);
+      img = ctx.createImageData(W_grid, H_grid);
+      hashHead = new Int32Array(hashW * hashH);
+      hashNext = new Int32Array(N_PARTICLES);
       reseed();
     }
 
     function step() {
-      let total = 0;
-      for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-          let u = 0;
-          for (let i = 0; i < klen; i++) {
-            let nx = x + kdx[i];
-            let ny = y + kdy[i];
-            if (nx < 0) nx += W; else if (nx >= W) nx -= W;
-            if (ny < 0) ny += H; else if (ny >= H) ny -= H;
-            u += A[ny * W + nx] * kw[i];
-          }
-          const d = u - mu;
-          const g = 2 * Math.exp(-(d * d) / (2 * sigma * sigma)) - 1;
-          let v = A[y * W + x] + dt * g;
-          if (v < 0) v = 0;
-          else if (v > 1) v = 1;
-          next[y * W + x] = v;
-          total += v;
-        }
-      }
-      const tmp = A; A = next; next = tmp;
-      stepCount++;
+      rebuildHash();
+      // Hoist params into locals — these inner loops run 10⁴⁺ times per step.
+      const muK = params.muK;
+      const sigmaK2 = params.sigmaK2;
+      const muG = params.muG;
+      const sigmaG2 = params.sigmaG2;
+      const wK = params.wK;
+      const cRep = params.cRep;
+      const kernelRange = params.kernelRange;
+      const kernelRangeSq = params.kernelRangeSq;
 
-      const avg = total / (W * H);
-      // Reseed if the field has died out, runaway-saturated, or run long enough.
-      if (avg < 0.003 || avg > 0.55 || stepCount >= RESEED_AFTER) reseed();
+      // Pass 1: U(p_i) for every particle by summing kernel contributions
+      // from all neighbors in the 3×3 hash-cell window.
+      for (let i = 0; i < N_PARTICLES; i++) {
+        const px = positions[i * 2];
+        const py = positions[i * 2 + 1];
+        const hx = Math.floor(px / HASH_CELL_SIZE);
+        const hy = Math.floor(py / HASH_CELL_SIZE);
+        let u = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const cx = (((hx + dx) % hashW) + hashW) % hashW;
+            const cy = (((hy + dy) % hashH) + hashH) % hashH;
+            let j = hashHead[cy * hashW + cx];
+            while (j !== -1) {
+              const dxw = wrap(px - positions[j * 2], W_world);
+              const dyw = wrap(py - positions[j * 2 + 1], H_world);
+              const r2 = dxw * dxw + dyw * dyw;
+              if (r2 < kernelRangeSq) {
+                const r = Math.sqrt(r2);
+                const dk = (r - muK);
+                u += wK * Math.exp(-(dk * dk) / sigmaK2);
+              }
+              j = hashNext[j];
+            }
+          }
+        }
+        U[i] = u;
+      }
+
+      // Cache G'(U_i) for each particle so the force pass doesn't recompute.
+      for (let i = 0; i < N_PARTICLES; i++) {
+        const d = U[i] - muG;
+        Gp[i] = -2 * d / sigmaG2 * Math.exp(-(d * d) / sigmaG2);
+      }
+
+      // Pass 2: pair-wise force on each particle. Growth-driven force on i
+      // from j is (G'(U_i) + G'(U_j)) · K'(r) · (p_i − p_j)/r; repulsion
+      // adds 2·c_rep·(1−r) along the same axis when r < 1.
+      for (let i = 0; i < N_PARTICLES; i++) {
+        const px = positions[i * 2];
+        const py = positions[i * 2 + 1];
+        const hx = Math.floor(px / HASH_CELL_SIZE);
+        const hy = Math.floor(py / HASH_CELL_SIZE);
+        const Gpi = Gp[i];
+        let fx = 0;
+        let fy = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const cx = (((hx + dx) % hashW) + hashW) % hashW;
+            const cy = (((hy + dy) % hashH) + hashH) % hashH;
+            let j = hashHead[cy * hashW + cx];
+            while (j !== -1) {
+              if (j === i) { j = hashNext[j]; continue; }
+              const dxw = wrap(px - positions[j * 2], W_world);
+              const dyw = wrap(py - positions[j * 2 + 1], H_world);
+              const r2 = dxw * dxw + dyw * dyw;
+              if (r2 < 1e-10) { j = hashNext[j]; continue; }
+              const r = Math.sqrt(r2);
+              const ux = dxw / r;
+              const uy = dyw / r;
+              if (r < 1.0) {
+                const rep = 2 * cRep * (1 - r);
+                fx += rep * ux;
+                fy += rep * uy;
+              }
+              if (r < kernelRange) {
+                const dk = (r - muK);
+                const Kr = Math.exp(-(dk * dk) / sigmaK2);
+                const Kp = -2 * dk / sigmaK2 * Kr * wK;
+                const ff = (Gpi + Gp[j]) * Kp;
+                fx += ff * ux;
+                fy += ff * uy;
+              }
+              j = hashNext[j];
+            }
+          }
+        }
+        F[i * 2] = fx;
+        F[i * 2 + 1] = fy;
+      }
+
+      // Overdamped integration; wrap to torus.
+      for (let i = 0; i < N_PARTICLES; i++) {
+        let nx = positions[i * 2] + DT * F[i * 2];
+        let ny = positions[i * 2 + 1] + DT * F[i * 2 + 1];
+        nx = ((nx % W_world) + W_world) % W_world;
+        ny = ((ny % H_world) + H_world) % H_world;
+        positions[i * 2] = nx;
+        positions[i * 2 + 1] = ny;
+      }
+      stepCount++;
+      if (stepCount >= RESEED_AFTER) reseed();
     }
 
     function draw() {
       if (!img) return;
+      field.fill(0);
+      const muK = params.muK;
+      const sigmaK2 = params.sigmaK2;
+      const wK = params.wK;
+      const muG = params.muG;
+      const kernelRangeSq = params.kernelRangeSq;
+      const renderRangeCells = params.renderRangeCells;
+
+      // Splat each particle's kernel onto the field grid. Wraps on the torus.
+      for (let p = 0; p < N_PARTICLES; p++) {
+        const px = positions[p * 2] * CELLS_PER_UNIT;
+        const py = positions[p * 2 + 1] * CELLS_PER_UNIT;
+        const cx = Math.round(px);
+        const cy = Math.round(py);
+        for (let dy = -renderRangeCells; dy <= renderRangeCells; dy++) {
+          for (let dx = -renderRangeCells; dx <= renderRangeCells; dx++) {
+            const ddx = (cx + dx - px) / CELLS_PER_UNIT;
+            const ddy = (cy + dy - py) / CELLS_PER_UNIT;
+            const r2 = ddx * ddx + ddy * ddy;
+            if (r2 > kernelRangeSq) continue;
+            const r = Math.sqrt(r2);
+            const dk = r - muK;
+            const w = wK * Math.exp(-(dk * dk) / sigmaK2);
+            if (w < 1e-5) continue;
+            const x = (((cx + dx) % W_grid) + W_grid) % W_grid;
+            const y = (((cy + dy) % H_grid) + H_grid) % H_grid;
+            field[y * W_grid + x] += w;
+          }
+        }
+      }
+
+      // Map field strength to a palette index, clipping at ~1.4·μ_G so dense
+      // creature interiors saturate but the outer halo still resolves into
+      // distinct bands.
+      const scale = 1 / (muG * 1.4);
       const data = img.data;
-      for (let i = 0; i < A.length; i++) {
-        let idx = (A[i] * N) | 0;
-        if (idx >= N) idx = N - 1;
+      const len = field.length;
+      for (let i = 0; i < len; i++) {
+        let v = field[i] * scale;
+        if (v > 1) v = 1;
+        let idx = (v * N_LEVELS) | 0;
+        if (idx >= N_LEVELS) idx = N_LEVELS - 1;
         const c = palette[idx];
         const j = i * 4;
         data[j] = c[0];
@@ -348,7 +500,7 @@ import Base from '../../layouts/Base.astro';
       draw();
     } else {
       let last = 0;
-      const targetMs = 100;
+      const targetMs = 50;
       const loop = (t: number) => {
         if (t - last >= targetMs) {
           step();
