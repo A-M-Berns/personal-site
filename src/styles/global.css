@@ -356,6 +356,40 @@ a:focus-visible {
   position: relative;
   z-index: 1;
 }
+.wang-label {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.7rem;
+  max-width: min(38rem, calc(100vw - 2rem));
+  background: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(236, 236, 236, 0.12);
+  border-radius: 3px;
+  padding: 0.45rem 0.6rem;
+  color: var(--muted);
+  font-family: var(--font-lexend), var(--sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0;
+  pointer-events: none;
+}
+.wang-label span {
+  white-space: nowrap;
+}
+.wang-swatches {
+  display: inline-flex;
+  gap: 0.2rem;
+  align-items: center;
+}
+.wang-swatch {
+  display: inline-block;
+  width: 0.72rem;
+  height: 0.72rem;
+}
 
 .writing-shell {
   position: relative;

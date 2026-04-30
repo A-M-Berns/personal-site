@@ -18,16 +18,18 @@ import Base from '../../layouts/Base.astro';
         </li>
       </ul>
     </article>
+    <aside id="wang-label" class="wang-label" aria-live="polite"></aside>
   </div>
 </Base>
 
 <script>
   const canvas = document.getElementById('wang-tiles') as HTMLCanvasElement | null;
   if (canvas) {
+    const label = document.getElementById('wang-label');
     const ctx = canvas.getContext('2d')!;
-    const CELL_PX = 3;
-    const MIN_TILE = 9;
-    const MAX_TILE = 14;
+    const CELL_PX = 2;
+    const MIN_TILE = 7;
+    const MAX_TILE = 11;
     const HOLD_FRAMES = 90;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -313,6 +315,22 @@ import Base from '../../layouts/Base.astro';
         hold: 0,
         palette: pickPalette(Math.max(3, Math.min(5, tileset.colors)), rng),
       };
+      updateLabel();
+    }
+
+    function updateLabel() {
+      if (!cycle || !label) return;
+      const swatches = cycle.palette
+        .map((c) => `<span class="wang-swatch" style="background:${rgb(c)}"></span>`)
+        .join('');
+      label.innerHTML = `
+        <span>tileset: ${cycle.tileset.name}</span>
+        <span>skin: ${cycle.skin}</span>
+        <span>growth: organic</span>
+        <span>tile: ${cycle.tileSize * CELL_PX}px</span>
+        <span>seed: ${cycle.seed.toString(16).padStart(8, '0')}</span>
+        <span class="wang-swatches">${swatches}</span>
+      `;
     }
 
     function colorFor(label: number, palette: RGB[]): RGB {
@@ -410,7 +428,7 @@ import Base from '../../layouts/Base.astro';
       if (!cycle) return;
       const total = cycle.cols * cycle.rows;
       if (cycle.revealed < total) {
-        cycle.revealed += Math.max(4, Math.ceil(total / 150));
+        cycle.revealed += Math.max(2, Math.ceil(total / 320));
       } else if (++cycle.hold > HOLD_FRAMES) {
         makeCycle();
       }
@@ -439,9 +457,5 @@ import Base from '../../layouts/Base.astro';
       requestAnimationFrame(loop);
     }
     window.addEventListener('resize', resize);
-    window.addEventListener('pointerdown', () => {
-      makeCycle();
-      draw();
-    });
   }
 </script>
