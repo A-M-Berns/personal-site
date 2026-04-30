@@ -399,15 +399,23 @@ import Base from '../layouts/Base.astro';
       equalizeColumns();
       diffuseAndAdvectColor();
       // Wind drives a small traveling sinusoidal ripple along the surface.
-      // Spatial integral of one period is zero so this conserves volume on
-      // average; equalizeColumns smooths any leftover bias each pass.
+      // Multiplied by a smooth ramp on existing height so empty columns stay
+      // empty (the previous additive form was clamped at 0, which let the
+      // positive half of each sin cycle accumulate water from nothing).
       const windMag = Math.abs(cycleWind);
       if (windMag > 0.04) {
         const phase = stepCount * WAVE_OMEGA;
         const dir = cycleWind >= 0 ? 1 : -1;
         const amp = WAVE_AMP * windMag;
         for (let x = 0; x < W; x++) {
-          const v = amp * Math.sin(x * WAVE_K - phase * dir);
+          // Tanh-like ramp keyed on existing height so the wave amplitude
+          // grows smoothly with the water depth and is exactly 0 in dry
+          // columns. WAVE_RAMP_DEPTH controls the cross-over point.
+          const ramp = height[x] <= 0
+            ? 0
+            : 1 - 1 / (1 + height[x] * 0.4);
+          if (ramp <= 0) continue;
+          const v = amp * ramp * Math.sin(x * WAVE_K - phase * dir);
           height[x] = Math.max(0, Math.min(H - 2, height[x] + v));
         }
       }
@@ -475,9 +483,15 @@ import Base from '../layouts/Base.astro';
           const depth = renderHeight[x] - (H - 1 - y);
           const j = (y * W + x) * 4;
           if (depth > 0) {
-            data[j] = columnR[x];
-            data[j + 1] = columnG[x];
-            data[j + 2] = columnB[x];
+            // Top of water is full saturation; deeper columns fade toward
+            // paper so the pool reads with a sense of depth instead of a
+            // flat horizontal stripe.
+            const surface = renderHeight[x];
+            const submerged = surface > 0 ? depth / surface : 0;
+            const shade = 1 - submerged * 0.45;
+            data[j] = columnR[x] * shade + paper[0] * (1 - shade);
+            data[j + 1] = columnG[x] * shade + paper[1] * (1 - shade);
+            data[j + 2] = columnB[x] * shade + paper[2] * (1 - shade);
           } else {
             data[j] = paper[0];
             data[j + 1] = paper[1];
@@ -497,19 +511,42 @@ import Base from '../layouts/Base.astro';
         data[j + 3] = 255;
       }
 
+      // Bresenham line so the drop's tail is a connected stroke from its
+      // previous to current rounded position — eliminates the jitter caused
+      // by independently rounding several trail samples per frame.
+      function paintDropLine(x0: number, y0: number, x1: number, y1: number, c: RGB) {
+        let x = x0;
+        let y = y0;
+        const dx = Math.abs(x1 - x0);
+        const dy = Math.abs(y1 - y0);
+        const sx = x0 < x1 ? 1 : -1;
+        const sy = y0 < y1 ? 1 : -1;
+        let err = dx - dy;
+        for (let i = 0; i < dx + dy + 1; i++) {
+          paintDropPixel(x, y, c);
+          if (x === x1 && y === y1) break;
+          const e2 = err * 2;
+          if (e2 > -dy) { err -= dy; x += sx; }
+          if (e2 < dx)  { err += dx;  y += sy; }
+        }
+      }
+
       for (const d of drops) {
         const c = rainColors[d.color];
-        // Trail follows the drop's own velocity, so wind-blown drops lean
-        // visibly in the wind direction. Tail tapers toward paper.
-        const trailLen = d.size > 1 ? 4 : 3;
-        for (let t = 0; t < trailLen; t++) {
-          const tx = Math.round(d.x - d.vx * t * 1.6);
-          const ty = Math.round(d.y - d.vy * t * 1.6);
-          const tint = mix(paper, c, Math.max(0.28, 0.86 - t * 0.18));
-          paintDropPixel(tx, ty, tint);
-          if (d.size > 1 && t > 0) {
-            paintDropPixel(tx + (cycleWind > 0 ? 1 : -1), ty, mix(paper, c, 0.34));
-          }
+        const headTint = mix(paper, c, 0.92);
+        const trailTint = mix(paper, c, 0.55);
+        const x0 = Math.round(d.x);
+        const y0 = Math.round(d.y);
+        // Trail length scaled to the drop's own velocity — fast wind makes
+        // longer streaks, calm drops stay tight teardrops.
+        const trailScale = d.size > 1 ? 2.4 : 1.8;
+        const x1 = Math.round(d.x - d.vx * trailScale);
+        const y1 = Math.round(d.y - d.vy * trailScale);
+        paintDropLine(x0, y0, x1, y1, trailTint);
+        // Bright head over the connected trail.
+        paintDropPixel(x0, y0, headTint);
+        if (d.size > 1) {
+          paintDropPixel(x0, y0 - 1, mix(paper, c, 0.65));
         }
       }
       ctx.putImageData(img, 0, 0);
