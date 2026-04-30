@@ -1032,25 +1032,150 @@ import Base from '../../layouts/Base.astro';
           }, 4);
         },
       },
+      {
+        name: 'lissajous',
+        fn: () => {
+          // Particles arranged along a Lissajous curve sampled at evenly
+          // spaced parameter values. Self-intersecting paths in 2D.
+          const a = 1 + ((Math.random() * 4) | 0);
+          let b = a;
+          while (b === a) b = 1 + ((Math.random() * 4) | 0);
+          const phase = Math.random() * Math.PI * 2;
+          const cx = W_world / 2, cy = H_world / 2;
+          const ax = W_world * 0.42, ay = H_world * 0.42;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const t = (i / N_PARTICLES) * Math.PI * 2;
+            const px = cx + ax * Math.sin(a * t + phase) + (Math.random() - 0.5) * 1.5;
+            const py = cy + ay * Math.sin(b * t) + (Math.random() - 0.5) * 1.5;
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'honeycomb',
+        fn: () => {
+          // Triangular / hex lattice — different lattice symmetry than the
+          // square lattice-tilt seeder. Each lattice point is a tight cluster.
+          const spacing = 4 + Math.random() * 2;
+          const dx = spacing;
+          const dy = spacing * Math.sqrt(3) / 2;
+          const points: Array<[number, number]> = [];
+          for (let r = 0; r * dy < H_world; r++) {
+            const offset = (r % 2) * dx * 0.5;
+            for (let c = 0; c * dx + offset < W_world; c++) {
+              points.push([c * dx + offset, r * dy]);
+            }
+          }
+          const sigma = 0.6;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const p = points[(Math.random() * points.length) | 0];
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            positions[i * 2] = ((p[0] + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((p[1] + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'caustics',
+        fn: () => {
+          // Particles on Voronoi *edges* (not centers): for each candidate
+          // point, accept if its distance-difference between the two closest
+          // sites is small. Reads as a network of bright filaments.
+          const k = 10 + ((Math.random() * 10) | 0);
+          const sx = new Float32Array(k);
+          const sy = new Float32Array(k);
+          for (let i = 0; i < k; i++) {
+            sx[i] = Math.random() * W_world;
+            sy[i] = Math.random() * H_world;
+          }
+          const edgeWidth = 1.5;
+          let placed = 0, attempts = 0;
+          while (placed < N_PARTICLES && attempts < N_PARTICLES * 80) {
+            attempts++;
+            const px = Math.random() * W_world;
+            const py = Math.random() * H_world;
+            let best = Infinity, second = Infinity;
+            for (let i = 0; i < k; i++) {
+              const ddx = px - sx[i], ddy = py - sy[i];
+              const d2 = ddx * ddx + ddy * ddy;
+              if (d2 < best) { second = best; best = d2; }
+              else if (d2 < second) { second = d2; }
+            }
+            const diff = Math.sqrt(second) - Math.sqrt(best);
+            if (diff < edgeWidth) {
+              positions[placed * 2] = px;
+              positions[placed * 2 + 1] = py;
+              placed++;
+            }
+          }
+          while (placed < N_PARTICLES) {
+            positions[placed * 2] = Math.random() * W_world;
+            positions[placed * 2 + 1] = Math.random() * H_world;
+            placed++;
+          }
+        },
+      },
+      {
+        name: 'petals',
+        fn: () => {
+          // Rose curve: r(θ) = a · cos(k · θ) gives radial petals. Particles
+          // distributed along the curve.
+          const petals = 3 + ((Math.random() * 5) | 0);
+          const cx = W_world / 2, cy = H_world / 2;
+          const maxR = Math.min(W_world, H_world) * 0.40;
+          const phase = Math.random() * Math.PI * 2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const t = (i / N_PARTICLES) * Math.PI * 2;
+            const rho = Math.abs(Math.cos(petals * t + phase)) * maxR;
+            const px = cx + rho * Math.cos(t) + (Math.random() - 0.5) * 1.4;
+            const py = cy + rho * Math.sin(t) + (Math.random() - 0.5) * 1.4;
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'shockwave',
+        fn: () => {
+          // Dense central cluster with several radial filaments shooting
+          // outward, like a frozen explosion.
+          const cx = W_world / 2, cy = H_world / 2;
+          const centerFrac = 0.3 + Math.random() * 0.15;
+          const arms = 5 + ((Math.random() * 5) | 0);
+          const armSpread = 0.18;
+          const maxR = Math.min(W_world, H_world) * 0.45;
+          const phase = Math.random() * Math.PI * 2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            if (i / N_PARTICLES < centerFrac) {
+              const u1 = Math.random() || 1e-9;
+              const u2 = Math.random();
+              const mag = Math.sqrt(-2 * Math.log(u1)) * 1.8;
+              const ang = 2 * Math.PI * u2;
+              positions[i * 2] = ((cx + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+              positions[i * 2 + 1] = ((cy + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+            } else {
+              const armIdx = i % arms;
+              const u = Math.random();
+              const r = Math.pow(u, 0.6) * maxR;
+              const a = phase + (armIdx / arms) * Math.PI * 2 + (Math.random() - 0.5) * armSpread;
+              positions[i * 2] = ((cx + r * Math.cos(a)) % W_world + W_world) % W_world;
+              positions[i * 2 + 1] = ((cy + r * Math.sin(a)) % H_world + H_world) % H_world;
+            }
+          }
+        },
+      },
     ];
 
-    let deck: number[] = [];
+    // Deterministic round-robin cycle through seeders[0..N-1] (temporary —
+    // makes it easy to verify each seeder by watching the label).
     let lastSeeder = -1;
-    function refillDeck(avoid: number) {
-      const idxs: number[] = [];
-      for (let i = 0; i < seeders.length; i++) idxs.push(i);
-      for (let i = idxs.length - 1; i > 0; i--) {
-        const j = (Math.random() * (i + 1)) | 0;
-        const t = idxs[i]; idxs[i] = idxs[j]; idxs[j] = t;
-      }
-      if (avoid >= 0 && idxs.length > 1 && idxs[0] === avoid) {
-        const t = idxs[0]; idxs[0] = idxs[1]; idxs[1] = t;
-      }
-      deck = idxs;
-    }
     function nextSeeder(): number {
-      if (deck.length === 0) refillDeck(lastSeeder);
-      return deck.shift()!;
+      lastSeeder = (lastSeeder + 1) % seeders.length;
+      return lastSeeder;
     }
 
     function reseed() {
@@ -1377,9 +1502,9 @@ import Base from '../../layouts/Base.astro';
     function perturb(gx: number, gy: number) {
       const wx = gx / CELLS_PER_UNIT;
       const wy = gy / CELLS_PER_UNIT;
-      const kickRadius = Math.max(12, params.muK * 4.5);
+      const kickRadius = Math.max(11, params.muK * 4.0);
       const kickRadius2 = kickRadius * kickRadius;
-      const kickStrength = 22;
+      const kickStrength = 16;
       for (let i = 0; i < N_PARTICLES; i++) {
         const dxw = wrap(positions[i * 2] - wx, W_world);
         const dyw = wrap(positions[i * 2 + 1] - wy, H_world);
