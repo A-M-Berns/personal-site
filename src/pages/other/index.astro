@@ -405,6 +405,33 @@ import Base from '../../layouts/Base.astro';
       }
     }
 
+    // Rejection sampler: place particles where a scalar field is high. The
+    // power exponent biases toward peaks (higher = stronger concentration).
+    // Falls back to uniform random for any unplaced slots.
+    function sampleByField(sampler: (wx: number, wy: number) => number, power = 2) {
+      let placed = 0;
+      let attempts = 0;
+      const maxAttempts = N_PARTICLES * 40;
+      while (placed < N_PARTICLES && attempts < maxAttempts) {
+        attempts++;
+        const px = Math.random() * W_world;
+        const py = Math.random() * H_world;
+        let v = sampler(px, py);
+        if (v < 0) v = 0;
+        else if (v > 1) v = 1;
+        if (Math.random() < Math.pow(v, power)) {
+          positions[placed * 2] = px;
+          positions[placed * 2 + 1] = py;
+          placed++;
+        }
+      }
+      while (placed < N_PARTICLES) {
+        positions[placed * 2] = Math.random() * W_world;
+        positions[placed * 2 + 1] = Math.random() * H_world;
+        placed++;
+      }
+    }
+
     type Seeder = { name: string; fn: () => void };
     const seeders: Seeder[] = [
       {
@@ -803,6 +830,211 @@ import Base from '../../layouts/Base.astro';
             positions[i * 2] = ((p[0] + Math.cos(ang) * mag) % W_world + W_world) % W_world;
             positions[i * 2 + 1] = ((p[1] + Math.sin(ang) * mag) % H_world + H_world) % H_world;
           }
+        },
+      },
+      {
+        name: 'value-noise',
+        fn: () => {
+          // Multi-octave bilinear value noise, cousin to the homepage CA's
+          // value-noise seed. Particles concentrate where the noise is high.
+          const octaves = 3;
+          type Layer = { vals: Float32Array; cw: number; block: number };
+          const layers: Layer[] = [];
+          for (let o = 0; o < octaves; o++) {
+            const block = Math.max(1, 8 >> o);
+            const lcw = Math.ceil(W_world / block) + 2;
+            const lch = Math.ceil(H_world / block) + 2;
+            const vals = new Float32Array(lcw * lch);
+            for (let i = 0; i < vals.length; i++) vals[i] = Math.random();
+            layers.push({ vals, cw: lcw, block });
+          }
+          let totalAmp = 0;
+          for (let o = 0; o < octaves; o++) totalAmp += 1 / (1 << o);
+          sampleByField((wx, wy) => {
+            let v = 0;
+            for (let o = 0; o < octaves; o++) {
+              const layer = layers[o];
+              const fx = wx / layer.block;
+              const fy = wy / layer.block;
+              const ix = Math.floor(fx);
+              const iy = Math.floor(fy);
+              const tx = fx - ix;
+              const ty = fy - iy;
+              const a = layer.vals[iy * layer.cw + ix];
+              const b = layer.vals[iy * layer.cw + ix + 1];
+              const c = layer.vals[(iy + 1) * layer.cw + ix];
+              const d = layer.vals[(iy + 1) * layer.cw + ix + 1];
+              const ab = a + (b - a) * tx;
+              const cd = c + (d - c) * tx;
+              v += (ab + (cd - ab) * ty) / (1 << o);
+            }
+            return v / totalAmp;
+          }, 2);
+        },
+      },
+      {
+        name: 'plasma',
+        fn: () => {
+          // Diamond-square / midpoint displacement noise — softer, more
+          // organic than value-noise's bilinear octaves.
+          let size = 1;
+          const need = Math.max(W_world, H_world) + 1;
+          while (size + 1 < need) size *= 2;
+          const stride = size + 1;
+          const buf = new Float32Array(stride * stride);
+          buf[0] = Math.random();
+          buf[size] = Math.random();
+          buf[size * stride] = Math.random();
+          buf[size * stride + size] = Math.random();
+          let step = size;
+          let scale = 0.5;
+          while (step > 1) {
+            const half = step >> 1;
+            for (let y = half; y < size; y += step) {
+              for (let x = half; x < size; x += step) {
+                const a = buf[(y - half) * stride + (x - half)];
+                const b = buf[(y - half) * stride + (x + half)];
+                const c = buf[(y + half) * stride + (x - half)];
+                const d = buf[(y + half) * stride + (x + half)];
+                buf[y * stride + x] = (a + b + c + d) / 4 + (Math.random() - 0.5) * scale;
+              }
+            }
+            for (let y = 0; y <= size; y += half) {
+              const xStart = ((y / half) & 1) === 0 ? half : 0;
+              for (let x = xStart; x <= size; x += step) {
+                let s = 0, n = 0;
+                if (y >= half) { s += buf[(y - half) * stride + x]; n++; }
+                if (y + half <= size) { s += buf[(y + half) * stride + x]; n++; }
+                if (x >= half) { s += buf[y * stride + (x - half)]; n++; }
+                if (x + half <= size) { s += buf[y * stride + (x + half)]; n++; }
+                buf[y * stride + x] = s / n + (Math.random() - 0.5) * scale;
+              }
+            }
+            step = half;
+            scale *= 0.55;
+          }
+          let lo = Infinity, hi = -Infinity;
+          for (let i = 0; i < buf.length; i++) {
+            if (buf[i] < lo) lo = buf[i];
+            if (buf[i] > hi) hi = buf[i];
+          }
+          const range = hi - lo || 1;
+          sampleByField((wx, wy) => {
+            const ix = Math.min(size, Math.max(0, Math.floor(wx)));
+            const iy = Math.min(size, Math.max(0, Math.floor(wy)));
+            return (buf[iy * stride + ix] - lo) / range;
+          }, 2);
+        },
+      },
+      {
+        name: 'moire',
+        fn: () => {
+          // Two close-frequency plane waves; particles cluster at the bright
+          // bands of constructive interference.
+          const a1 = Math.random() * Math.PI * 2;
+          const a2 = a1 + (Math.random() - 0.5) * 0.5;
+          const p1 = 5 + Math.random() * 6;
+          const p2 = p1 * (0.92 + Math.random() * 0.08);
+          const fx1 = Math.cos(a1), fy1 = Math.sin(a1);
+          const fx2 = Math.cos(a2), fy2 = Math.sin(a2);
+          sampleByField((wx, wy) => {
+            const v = Math.sin((wx * fx1 + wy * fy1) / p1 * Math.PI * 2)
+                    + Math.sin((wx * fx2 + wy * fy2) / p2 * Math.PI * 2);
+            return (v + 2) / 4;
+          }, 3);
+        },
+      },
+      {
+        name: 'interference',
+        fn: () => {
+          // Sum of 3 plane waves at random angles. Produces hex-ish cluster
+          // patterns where the wave peaks coincide.
+          const waves = 3;
+          const dirs: { fx: number; fy: number; period: number }[] = [];
+          for (let i = 0; i < waves; i++) {
+            const a = Math.random() * Math.PI * 2;
+            dirs.push({
+              fx: Math.cos(a),
+              fy: Math.sin(a),
+              period: 4 + Math.random() * 6,
+            });
+          }
+          sampleByField((wx, wy) => {
+            let v = 0;
+            for (let i = 0; i < waves; i++) {
+              const d = dirs[i];
+              v += Math.sin((wx * d.fx + wy * d.fy) / d.period * Math.PI * 2);
+            }
+            return (v / waves + 1) / 2;
+          }, 3);
+        },
+      },
+      {
+        name: 'stratified',
+        fn: () => {
+          // Horizontal strata, each with its own random plane-wave phase
+          // gradient. Reads as banded noise that the dynamics can knit
+          // together vertically over time.
+          const layers = 4 + ((Math.random() * 4) | 0);
+          type Dir = { fx: number; fy: number; period: number; offset: number };
+          const dirs: Dir[] = [];
+          for (let i = 0; i < layers; i++) {
+            const a = Math.random() * Math.PI * 2;
+            dirs.push({
+              fx: Math.cos(a),
+              fy: Math.sin(a),
+              period: 5 + Math.random() * 5,
+              offset: Math.random() * Math.PI * 2,
+            });
+          }
+          sampleByField((wx, wy) => {
+            const layer = Math.min(layers - 1, ((wy / H_world) * layers) | 0);
+            const d = dirs[layer];
+            const v = Math.sin((wx * d.fx + wy * d.fy) / d.period * Math.PI * 2 + d.offset);
+            return (v + 1) / 2;
+          }, 2);
+        },
+      },
+      {
+        name: 'phase-rings',
+        fn: () => {
+          // Concentric phase rings around 2–4 random centers — particles fall
+          // into the ring crests, giving spiral-prone seed states.
+          const k = 2 + ((Math.random() * 3) | 0);
+          const cxs = new Float32Array(k);
+          const cys = new Float32Array(k);
+          const periods = new Float32Array(k);
+          for (let i = 0; i < k; i++) {
+            cxs[i] = Math.random() * W_world;
+            cys[i] = Math.random() * H_world;
+            periods[i] = 3 + Math.random() * 4;
+          }
+          sampleByField((wx, wy) => {
+            let v = 0;
+            for (let i = 0; i < k; i++) {
+              const dx = wx - cxs[i];
+              const dy = wy - cys[i];
+              const r = Math.sqrt(dx * dx + dy * dy);
+              v += Math.sin(r / periods[i] * Math.PI * 2);
+            }
+            return (v / k + 1) / 2;
+          }, 3);
+        },
+      },
+      {
+        name: 'maze',
+        fn: () => {
+          // Two perpendicular plane waves give a square-tile lattice; particles
+          // fall on the lattice intersections.
+          const angle = Math.random() * Math.PI / 4;
+          const period = 4 + Math.random() * 4;
+          const fx1 = Math.cos(angle), fy1 = Math.sin(angle);
+          const fx2 = -Math.sin(angle), fy2 = Math.cos(angle);
+          sampleByField((wx, wy) => {
+            const v1 = Math.sin((wx * fx1 + wy * fy1) / period * Math.PI * 2);
+            const v2 = Math.sin((wx * fx2 + wy * fy2) / period * Math.PI * 2);
+            return (Math.max(v1, v2) + 1) / 2;
+          }, 4);
         },
       },
     ];
