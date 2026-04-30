@@ -107,40 +107,41 @@ import Base from '../layouts/Base.astro';
     }
 
     function pickRainColors(palette: RGB[]): RGB[] {
-      // Pick a single base index, then neighboring stops from the same luma
-      // band. Drops and water then read as one harmonious palette per cycle
-      // rather than three random points across the spectrum.
-      const count = 2 + ((Math.random() * 2) | 0); // 2 or 3 stops
-      const base = 2 + ((Math.random() * 3) | 0); // 2..4
-      const used = new Set<number>([base]);
-      const colors: RGB[] = [mix(paper, palette[base], 0.55)];
-      const offsets = [-2, -1, 1, 2];
-      while (colors.length < count) {
-        const off = offsets[(Math.random() * offsets.length) | 0];
-        const idx = base + off;
-        if (idx < 1 || idx >= palette.length || used.has(idx)) {
-          // Fall back to any unused mid stop if neighbors are exhausted.
-          let found = false;
-          for (let k = 1; k < palette.length - 1; k++) {
-            if (!used.has(k)) {
-              used.add(k);
-              colors.push(mix(paper, palette[k], 0.55));
-              found = true;
-              break;
-            }
-          }
-          if (!found) break;
-          continue;
-        }
+      // Pick 4–5 stops spanning the palette so drops can carry visibly
+      // distinct colors that still come from the same harmonious cycle
+      // palette. Uses the bottom/mid/top luma bands so a downpour reads as
+      // multicolored rather than tinted-monochrome.
+      const count = 4 + ((Math.random() * 2) | 0); // 4 or 5
+      const bands = [
+        [1, 2],          // bottom (deep)
+        [2, 3],          // lower-mid
+        [3, 4, 5],       // mid
+        [5, 6],          // upper-mid
+        [6, 7],          // top (bright)
+      ];
+      const used = new Set<number>();
+      const colors: RGB[] = [];
+      const last = palette.length - 1;
+      for (const band of bands) {
+        if (colors.length >= count) break;
+        const candidates = band.filter((i) => i <= last && !used.has(i));
+        if (candidates.length === 0) continue;
+        const idx = candidates[(Math.random() * candidates.length) | 0];
         used.add(idx);
-        colors.push(mix(paper, palette[idx], 0.55));
+        colors.push(mix(paper, palette[idx], 0.82));
+      }
+      // Top up if any band missed.
+      for (let k = 1; k < palette.length && colors.length < count; k++) {
+        if (used.has(k)) continue;
+        used.add(k);
+        colors.push(mix(paper, palette[k], 0.82));
       }
       return colors;
     }
 
     function pickWaterColor(palette: RGB[]): RGB {
-      const idx = 1 + ((Math.random() * 2) | 0);
-      return mix(paper, palette[Math.min(idx, palette.length - 1)], 0.36);
+      const idx = 2 + ((Math.random() * 3) | 0);
+      return mix(paper, palette[Math.min(idx, palette.length - 1)], 0.62);
     }
 
     type Drop = {

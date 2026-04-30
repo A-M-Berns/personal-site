@@ -305,7 +305,7 @@ a:focus-visible {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.78;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -407,7 +407,7 @@ a:focus-visible {
 }
 @media (max-width: 900px) {
   .rain-sim {
-    opacity: 0.48;
+    opacity: 0.7;
   }
   .symbol-evolver {
     right: -18vw;
