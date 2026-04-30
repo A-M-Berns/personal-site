@@ -16,6 +16,7 @@ import Base from '../../layouts/Base.astro';
 
     <aside id="tune-panel" class="tune-panel" aria-label="Particle Lenia parameters">
       <h3>Tune</h3>
+      <p class="tune-seeder">seeder: <span id="seeder-label">—</span></p>
       <div class="tune-row">
         <label for="s-muK">μK</label>
         <input type="range" id="s-muK" min="2.5" max="6.0" step="0.05" />
@@ -80,7 +81,16 @@ import Base from '../../layouts/Base.astro';
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    margin: 0 0 0.6rem;
+    margin: 0 0 0.4rem;
+    color: var(--ink);
+  }
+  .tune-seeder {
+    margin: 0 0 0.55rem;
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .tune-seeder span {
     color: var(--ink);
   }
   .tune-row {
@@ -448,6 +458,8 @@ import Base from '../../layouts/Base.astro';
       palette = buildPalette(pickStops());
       stepCount = 0;
       syncSliders();
+      const label = document.getElementById('seeder-label');
+      if (label) label.textContent = seeders[lastSeeder].name;
     }
 
     function resize() {
