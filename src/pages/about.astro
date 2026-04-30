@@ -30,6 +30,12 @@ import Base from '../layouts/Base.astro';
     const RAIN_RATE = 0.006;
     const RAIN_MAX_DROPS = 2.2;
     const GOLDEN_RATIO_STEP = 0.6180339887498949;
+    // Wind drifts drops sideways and advects column color in the same
+    // direction. COLOR_DIFFUSE is symmetric lateral mixing; COLOR_ADVECT
+    // scales how much wind drags color from upwind columns each step.
+    const WIND_MAX = 0.22;
+    const COLOR_DIFFUSE = 0.06;
+    const COLOR_ADVECT = 0.55;
     const styles = getComputedStyle(document.documentElement);
     const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -129,6 +135,26 @@ import Base from '../layouts/Base.astro';
     let renderHeight = new Float32Array(0);
     let smoothHeight = new Float32Array(0);
     let flow = new Float32Array(0);
+    // Per-column color is stored as extensive "color mass" (concentration ×
+    // height); intensive RGB is recovered as colMass / height when rendering.
+    // Storing it extensive lets the column-equalization pass move color in
+    // proportion to the water it carries — same physics as the height flow.
+    let colMassR = new Float32Array(0);
+    let colMassG = new Float32Array(0);
+    let colMassB = new Float32Array(0);
+    let columnR = new Float32Array(0);
+    let columnG = new Float32Array(0);
+    let columnB = new Float32Array(0);
+    // Snapshot + per-pass accumulators reused across equalization and the
+    // separate diffuse/advect pass to avoid per-frame allocations.
+    let scratchH = new Float32Array(0);
+    let scratchR = new Float32Array(0);
+    let scratchG = new Float32Array(0);
+    let scratchB = new Float32Array(0);
+    let flowH = new Float32Array(0);
+    let flowR = new Float32Array(0);
+    let flowG = new Float32Array(0);
+    let flowB = new Float32Array(0);
     let drops: Drop[] = [];
     let img: ImageData | null = null;
     let waterPalette = buildPalette(pickStops());
@@ -137,6 +163,7 @@ import Base from '../layouts/Base.astro';
     let rainCarry = 0;
     let rainCursor = Math.random();
     let draining = false;
+    let cycleWind = (Math.random() - 0.5) * 2 * WIND_MAX;
 
     function resize() {
       W = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
@@ -147,6 +174,20 @@ import Base from '../layouts/Base.astro';
       renderHeight = new Float32Array(W);
       smoothHeight = new Float32Array(W);
       flow = new Float32Array(W);
+      colMassR = new Float32Array(W);
+      colMassG = new Float32Array(W);
+      colMassB = new Float32Array(W);
+      columnR = new Float32Array(W);
+      columnG = new Float32Array(W);
+      columnB = new Float32Array(W);
+      scratchH = new Float32Array(W);
+      scratchR = new Float32Array(W);
+      scratchG = new Float32Array(W);
+      scratchB = new Float32Array(W);
+      flowH = new Float32Array(W);
+      flowR = new Float32Array(W);
+      flowG = new Float32Array(W);
+      flowB = new Float32Array(W);
       drops = [];
       img = ctx.createImageData(W, H);
       rainCarry = 0;
@@ -155,6 +196,7 @@ import Base from '../layouts/Base.astro';
       waterPalette = buildPalette(pickStops());
       waterColor = pickWaterColor(waterPalette);
       rainColors = pickRainColors(waterPalette);
+      cycleWind = (Math.random() - 0.5) * 2 * WIND_MAX;
     }
 
     function surfaceY(x: number): number {
@@ -170,13 +212,18 @@ import Base from '../layouts/Base.astro';
       return H - 1 - sum / count;
     }
 
-    function splash(x: number, amount: number) {
+    function splash(x: number, amount: number, dropColor: RGB) {
       const mid = Math.max(0, Math.min(W - 1, x | 0));
       for (let dx = -5; dx <= 5; dx++) {
         const ix = mid + dx;
         if (ix < 0 || ix >= W) continue;
         const falloff = Math.max(0, 1 - Math.abs(dx) / 5.8);
-        height[ix] = Math.min(H - 2, height[ix] + amount * falloff);
+        const deposit = amount * falloff;
+        height[ix] = Math.min(H - 2, height[ix] + deposit);
+        // Add color in proportion to deposited mass — RGB · volume.
+        colMassR[ix] += dropColor[0] * deposit;
+        colMassG[ix] += dropColor[1] * deposit;
+        colMassB[ix] += dropColor[2] * deposit;
       }
     }
 
@@ -186,7 +233,7 @@ import Base from '../layouts/Base.astro';
       drops.push({
         x,
         y: -2 - Math.random() * Math.min(48, H * 0.18),
-        vx: (Math.random() - 0.5) * 0.026,
+        vx: cycleWind + (Math.random() - 0.5) * 0.04,
         vy: 0.1 + Math.random() * 0.18,
         size: Math.random() < 0.16 ? 2 : 1,
         shape: (Math.random() * 4) | 0,
@@ -208,18 +255,76 @@ import Base from '../layouts/Base.astro';
 
     function equalizeColumns() {
       // Adjacent columns exchange water volume; repeated capped passes level the
-      // pool without introducing springy surface oscillation.
+      // pool without introducing springy surface oscillation. Color mass moves
+      // with the water it rides — extracting that fraction of the *sender's*
+      // color so equalizing levels naturally mixes their tints together.
       for (let pass = 0; pass < FLOW_PASSES; pass++) {
-        flow.fill(0);
+        scratchH.set(height);
+        scratchR.set(colMassR);
+        scratchG.set(colMassG);
+        scratchB.set(colMassB);
+        flowH.fill(0);
+        flowR.fill(0);
+        flowG.fill(0);
+        flowB.fill(0);
         for (let x = 0; x < W - 1; x++) {
-          const diff = height[x] - height[x + 1];
+          const diff = scratchH[x] - scratchH[x + 1];
           const transfer = Math.max(-FLOW_CAP, Math.min(FLOW_CAP, diff * FLOW_RATE));
-          flow[x] -= transfer;
-          flow[x + 1] += transfer;
+          flowH[x] -= transfer;
+          flowH[x + 1] += transfer;
+          if (transfer > 0 && scratchH[x] > 1e-6) {
+            const f = transfer / scratchH[x];
+            const dR = scratchR[x] * f;
+            const dG = scratchG[x] * f;
+            const dB = scratchB[x] * f;
+            flowR[x] -= dR; flowR[x + 1] += dR;
+            flowG[x] -= dG; flowG[x + 1] += dG;
+            flowB[x] -= dB; flowB[x + 1] += dB;
+          } else if (transfer < 0 && scratchH[x + 1] > 1e-6) {
+            const f = -transfer / scratchH[x + 1];
+            const dR = scratchR[x + 1] * f;
+            const dG = scratchG[x + 1] * f;
+            const dB = scratchB[x + 1] * f;
+            flowR[x + 1] -= dR; flowR[x] += dR;
+            flowG[x + 1] -= dG; flowG[x] += dG;
+            flowB[x + 1] -= dB; flowB[x] += dB;
+          }
         }
         for (let x = 0; x < W; x++) {
-          height[x] = Math.max(0, Math.min(H - 2, height[x] + flow[x]));
+          height[x] = Math.max(0, Math.min(H - 2, height[x] + flowH[x]));
+          colMassR[x] = Math.max(0, colMassR[x] + flowR[x]);
+          colMassG[x] = Math.max(0, colMassG[x] + flowG[x]);
+          colMassB[x] = Math.max(0, colMassB[x] + flowB[x]);
         }
+      }
+    }
+
+    function diffuseAndAdvectColor() {
+      // Symmetric lateral diffusion gently blends neighboring columns even
+      // when their water levels match (which is most of the time in the
+      // settled pool, where equalizeColumns transfers nothing). Wind biases
+      // the diffusion so color visibly drifts in the wind direction.
+      scratchR.set(colMassR);
+      scratchG.set(colMassG);
+      scratchB.set(colMassB);
+      const advect = cycleWind * COLOR_ADVECT;
+      const advT = Math.min(0.35, Math.abs(advect));
+      const advDir = advect > 0 ? -1 : advect < 0 ? 1 : 0;
+      for (let x = 0; x < W; x++) {
+        const left = x > 0 ? x - 1 : x;
+        const right = x < W - 1 ? x + 1 : x;
+        let dR = COLOR_DIFFUSE * (scratchR[left] + scratchR[right] - 2 * scratchR[x]);
+        let dG = COLOR_DIFFUSE * (scratchG[left] + scratchG[right] - 2 * scratchG[x]);
+        let dB = COLOR_DIFFUSE * (scratchB[left] + scratchB[right] - 2 * scratchB[x]);
+        if (advDir !== 0) {
+          const upX = advDir < 0 ? right : left;
+          dR += advT * (scratchR[upX] - scratchR[x]);
+          dG += advT * (scratchG[upX] - scratchG[x]);
+          dB += advT * (scratchB[upX] - scratchB[x]);
+        }
+        colMassR[x] = Math.max(0, scratchR[x] + dR);
+        colMassG[x] = Math.max(0, scratchG[x] + dG);
+        colMassB[x] = Math.max(0, scratchB[x] + dB);
       }
     }
 
@@ -246,7 +351,7 @@ import Base from '../layouts/Base.astro';
         d.x += d.vx;
         d.y += d.vy;
         if (d.y >= surfaceY(d.x)) {
-          splash(d.x, 0.72 + Math.random() * 0.46);
+          splash(d.x, 0.72 + Math.random() * 0.46, rainColors[d.color]);
           drops.splice(i, 1);
         } else if (d.x < -3 || d.x > W + 3 || d.y > H + 4) {
           drops.splice(i, 1);
@@ -254,10 +359,16 @@ import Base from '../layouts/Base.astro';
       }
 
       equalizeColumns();
+      diffuseAndAdvectColor();
 
       let total = 0;
       for (let x = 0; x < W; x++) {
-        if (draining) height[x] *= DRAIN_RATE;
+        if (draining) {
+          height[x] *= DRAIN_RATE;
+          colMassR[x] *= DRAIN_RATE;
+          colMassG[x] *= DRAIN_RATE;
+          colMassB[x] *= DRAIN_RATE;
+        }
         total += height[x];
       }
       smoothVisibleSurface();
@@ -271,23 +382,55 @@ import Base from '../layouts/Base.astro';
         renderHeight.fill(0);
         smoothHeight.fill(0);
         flow.fill(0);
+        colMassR.fill(0);
+        colMassG.fill(0);
+        colMassB.fill(0);
         waterPalette = buildPalette(pickStops());
         waterColor = pickWaterColor(waterPalette);
         rainColors = pickRainColors(waterPalette);
+        cycleWind = (Math.random() - 0.5) * 2 * WIND_MAX;
       }
     }
 
     function draw() {
       if (!img) return;
       const data = img.data;
+      // Resolve each column's intensive RGB once, then fill the column. Use
+      // the actual sim height for the concentration ratio (rendered surface
+      // is lagged via renderHeight, but the color is column-stable either
+      // way so the lag doesn't bleed wrong concentrations).
+      for (let x = 0; x < W; x++) {
+        const h = height[x];
+        if (h > 1e-6) {
+          const inv = 1 / h;
+          let r = colMassR[x] * inv;
+          let g = colMassG[x] * inv;
+          let b = colMassB[x] * inv;
+          if (r > 255) r = 255;
+          if (g > 255) g = 255;
+          if (b > 255) b = 255;
+          columnR[x] = r;
+          columnG[x] = g;
+          columnB[x] = b;
+        } else {
+          columnR[x] = waterColor[0];
+          columnG[x] = waterColor[1];
+          columnB[x] = waterColor[2];
+        }
+      }
       for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
           const depth = renderHeight[x] - (H - 1 - y);
-          const c = depth > 0 ? waterColor : paper;
           const j = (y * W + x) * 4;
-          data[j] = c[0];
-          data[j + 1] = c[1];
-          data[j + 2] = c[2];
+          if (depth > 0) {
+            data[j] = columnR[x];
+            data[j + 1] = columnG[x];
+            data[j + 2] = columnB[x];
+          } else {
+            data[j] = paper[0];
+            data[j + 1] = paper[1];
+            data[j + 2] = paper[2];
+          }
           data[j + 3] = 255;
         }
       }
@@ -302,19 +445,18 @@ import Base from '../layouts/Base.astro';
       }
 
       for (const d of drops) {
-        const x = Math.round(d.x);
-        const y = Math.round(d.y);
         const c = rainColors[d.color];
-        const body = mix(paper, c, 0.68);
-        const shadow = mix(paper, c, 0.42);
-        const side = d.shape % 2 === 0 ? -1 : 1;
-        paintDropPixel(x, y, c);
-        paintDropPixel(x, y - 1, c);
-        paintDropPixel(x + side, y - 1, body);
-        if (d.shape > 1) paintDropPixel(x - side, y - 2, shadow);
-        if (d.size > 1) {
-          paintDropPixel(x, y - 2, body);
-          paintDropPixel(x + side, y, body);
+        // Trail follows the drop's own velocity, so wind-blown drops lean
+        // visibly in the wind direction. Tail tapers toward paper.
+        const trailLen = d.size > 1 ? 4 : 3;
+        for (let t = 0; t < trailLen; t++) {
+          const tx = Math.round(d.x - d.vx * t * 1.6);
+          const ty = Math.round(d.y - d.vy * t * 1.6);
+          const tint = mix(paper, c, Math.max(0.28, 0.86 - t * 0.18));
+          paintDropPixel(tx, ty, tint);
+          if (d.size > 1 && t > 0) {
+            paintDropPixel(tx + (cycleWind > 0 ? 1 : -1), ty, mix(paper, c, 0.34));
+          }
         }
       }
       ctx.putImageData(img, 0, 0);
