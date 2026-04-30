@@ -160,7 +160,6 @@ a:focus-visible {
   margin-top: 1rem;
   font-size: 0.8125rem;
   color: var(--muted);
-  font-style: italic;
 }
 .bg-about-close {
   position: absolute;
@@ -311,7 +310,7 @@ a:focus-visible {
 .writing-pane .note-list li {
   flex-direction: column;
   gap: 0.15rem;
-  align-items: stretch;
+  align-items: flex-start;
 }
 .writing-pane .note-list time {
   width: auto;
@@ -338,6 +337,23 @@ a:focus-visible {
     grid-template-columns: 1fr;
     gap: 2.5rem;
   }
+}
+
+/* --- Music --- */
+.music-section + .music-section {
+  margin-top: 2.5rem;
+}
+.spotify-embed {
+  max-width: 42rem;
+  margin: 1rem 0 0;
+}
+.spotify-embed iframe {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: #1a1a1d;
 }
 
 /* --- Note layout (Tufte-style float sidenotes) --- */
