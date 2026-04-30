@@ -33,9 +33,16 @@ import Base from '../layouts/Base.astro';
     // Wind drifts drops sideways and advects column color in the same
     // direction. COLOR_DIFFUSE is symmetric lateral mixing; COLOR_ADVECT
     // scales how much wind drags color from upwind columns each step.
-    const WIND_MAX = 0.22;
+    const WIND_MAX = 0.34;     // peak instantaneous wind
+    const WIND_VAR_MAX = 0.20; // peak amplitude of in-cycle wind drift
     const COLOR_DIFFUSE = 0.06;
     const COLOR_ADVECT = 0.55;
+    // Wind-driven traveling surface wave: spatial wavenumber and temporal
+    // angular frequency, scaled by the current wind magnitude so calm
+    // cycles stay flat and gusty ones ripple visibly.
+    const WAVE_K = 0.10;
+    const WAVE_OMEGA = 0.42;
+    const WAVE_AMP = 0.18;
     const styles = getComputedStyle(document.documentElement);
     const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -100,23 +107,40 @@ import Base from '../layouts/Base.astro';
     }
 
     function pickRainColors(palette: RGB[]): RGB[] {
-      const count = Math.random() < 0.5 ? 2 : 3;
-      const colors: RGB[] = [];
-      const picked = new Set<number>();
-      const first = 2;
-      const last = Math.min(palette.length - 1, 5);
+      // Pick a single base index, then neighboring stops from the same luma
+      // band. Drops and water then read as one harmonious palette per cycle
+      // rather than three random points across the spectrum.
+      const count = 2 + ((Math.random() * 2) | 0); // 2 or 3 stops
+      const base = 2 + ((Math.random() * 3) | 0); // 2..4
+      const used = new Set<number>([base]);
+      const colors: RGB[] = [mix(paper, palette[base], 0.55)];
+      const offsets = [-2, -1, 1, 2];
       while (colors.length < count) {
-        const idx = first + ((Math.random() * (last - first + 1)) | 0);
-        if (picked.has(idx)) continue;
-        picked.add(idx);
-        colors.push(mix(paper, palette[idx], 0.72));
+        const off = offsets[(Math.random() * offsets.length) | 0];
+        const idx = base + off;
+        if (idx < 1 || idx >= palette.length || used.has(idx)) {
+          // Fall back to any unused mid stop if neighbors are exhausted.
+          let found = false;
+          for (let k = 1; k < palette.length - 1; k++) {
+            if (!used.has(k)) {
+              used.add(k);
+              colors.push(mix(paper, palette[k], 0.55));
+              found = true;
+              break;
+            }
+          }
+          if (!found) break;
+          continue;
+        }
+        used.add(idx);
+        colors.push(mix(paper, palette[idx], 0.55));
       }
       return colors;
     }
 
     function pickWaterColor(palette: RGB[]): RGB {
       const idx = 1 + ((Math.random() * 2) | 0);
-      return mix(paper, palette[Math.min(idx, palette.length - 1)], 0.48);
+      return mix(paper, palette[Math.min(idx, palette.length - 1)], 0.36);
     }
 
     type Drop = {
@@ -163,7 +187,17 @@ import Base from '../layouts/Base.astro';
     let rainCarry = 0;
     let rainCursor = Math.random();
     let draining = false;
-    let cycleWind = (Math.random() - 0.5) * 2 * WIND_MAX;
+    let cycleWindBase = 0;
+    let cycleWindAmp = 0;
+    let cycleWindFreq = 0;
+    let cycleWind = 0;
+    let stepCount = 0;
+    function rerollWind() {
+      cycleWindBase = (Math.random() - 0.5) * 2 * WIND_MAX;
+      cycleWindAmp = Math.random() * WIND_VAR_MAX;
+      cycleWindFreq = 0.0015 + Math.random() * 0.004;
+    }
+    rerollWind();
 
     function resize() {
       W = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
@@ -196,31 +230,27 @@ import Base from '../layouts/Base.astro';
       waterPalette = buildPalette(pickStops());
       waterColor = pickWaterColor(waterPalette);
       rainColors = pickRainColors(waterPalette);
-      cycleWind = (Math.random() - 0.5) * 2 * WIND_MAX;
+      rerollWind();
+      stepCount = 0;
     }
 
     function surfaceY(x: number): number {
-      const ix = Math.max(0, Math.min(W - 1, x | 0));
+      const ix = ((((x | 0) % W) + W) % W);
       let sum = 0;
-      let count = 0;
       for (let dx = -2; dx <= 2; dx++) {
-        const j = ix + dx;
-        if (j < 0 || j >= W) continue;
+        const j = ((ix + dx) % W + W) % W;
         sum += height[j];
-        count++;
       }
-      return H - 1 - sum / count;
+      return H - 1 - sum / 5;
     }
 
     function splash(x: number, amount: number, dropColor: RGB) {
-      const mid = Math.max(0, Math.min(W - 1, x | 0));
+      const mid = ((((x | 0) % W) + W) % W);
       for (let dx = -5; dx <= 5; dx++) {
-        const ix = mid + dx;
-        if (ix < 0 || ix >= W) continue;
+        const ix = ((mid + dx) % W + W) % W;
         const falloff = Math.max(0, 1 - Math.abs(dx) / 5.8);
         const deposit = amount * falloff;
         height[ix] = Math.min(H - 2, height[ix] + deposit);
-        // Add color in proportion to deposited mass — RGB · volume.
         colMassR[ix] += dropColor[0] * deposit;
         colMassG[ix] += dropColor[1] * deposit;
         colMassB[ix] += dropColor[2] * deposit;
@@ -267,27 +297,28 @@ import Base from '../layouts/Base.astro';
         flowR.fill(0);
         flowG.fill(0);
         flowB.fill(0);
-        for (let x = 0; x < W - 1; x++) {
-          const diff = scratchH[x] - scratchH[x + 1];
+        for (let x = 0; x < W; x++) {
+          const nx = (x + 1) % W; // torus wraparound
+          const diff = scratchH[x] - scratchH[nx];
           const transfer = Math.max(-FLOW_CAP, Math.min(FLOW_CAP, diff * FLOW_RATE));
           flowH[x] -= transfer;
-          flowH[x + 1] += transfer;
+          flowH[nx] += transfer;
           if (transfer > 0 && scratchH[x] > 1e-6) {
             const f = transfer / scratchH[x];
             const dR = scratchR[x] * f;
             const dG = scratchG[x] * f;
             const dB = scratchB[x] * f;
-            flowR[x] -= dR; flowR[x + 1] += dR;
-            flowG[x] -= dG; flowG[x + 1] += dG;
-            flowB[x] -= dB; flowB[x + 1] += dB;
-          } else if (transfer < 0 && scratchH[x + 1] > 1e-6) {
-            const f = -transfer / scratchH[x + 1];
-            const dR = scratchR[x + 1] * f;
-            const dG = scratchG[x + 1] * f;
-            const dB = scratchB[x + 1] * f;
-            flowR[x + 1] -= dR; flowR[x] += dR;
-            flowG[x + 1] -= dG; flowG[x] += dG;
-            flowB[x + 1] -= dB; flowB[x] += dB;
+            flowR[x] -= dR; flowR[nx] += dR;
+            flowG[x] -= dG; flowG[nx] += dG;
+            flowB[x] -= dB; flowB[nx] += dB;
+          } else if (transfer < 0 && scratchH[nx] > 1e-6) {
+            const f = -transfer / scratchH[nx];
+            const dR = scratchR[nx] * f;
+            const dG = scratchG[nx] * f;
+            const dB = scratchB[nx] * f;
+            flowR[nx] -= dR; flowR[x] += dR;
+            flowG[nx] -= dG; flowG[x] += dG;
+            flowB[nx] -= dB; flowB[x] += dB;
           }
         }
         for (let x = 0; x < W; x++) {
@@ -311,8 +342,8 @@ import Base from '../layouts/Base.astro';
       const advT = Math.min(0.35, Math.abs(advect));
       const advDir = advect > 0 ? -1 : advect < 0 ? 1 : 0;
       for (let x = 0; x < W; x++) {
-        const left = x > 0 ? x - 1 : x;
-        const right = x < W - 1 ? x + 1 : x;
+        const left = (x - 1 + W) % W;  // torus wraparound
+        const right = (x + 1) % W;
         let dR = COLOR_DIFFUSE * (scratchR[left] + scratchR[right] - 2 * scratchR[x]);
         let dG = COLOR_DIFFUSE * (scratchG[left] + scratchG[right] - 2 * scratchG[x]);
         let dB = COLOR_DIFFUSE * (scratchB[left] + scratchB[right] - 2 * scratchB[x]);
@@ -330,11 +361,11 @@ import Base from '../layouts/Base.astro';
 
     function smoothVisibleSurface() {
       for (let x = 0; x < W; x++) {
-        const a = height[Math.max(0, x - 2)];
-        const b = height[Math.max(0, x - 1)];
+        const a = height[(x - 2 + W) % W];
+        const b = height[(x - 1 + W) % W];
         const c = height[x];
-        const d = height[Math.min(W - 1, x + 1)];
-        const e = height[Math.min(W - 1, x + 2)];
+        const d = height[(x + 1) % W];
+        const e = height[(x + 2) % W];
         smoothHeight[x] = (a + b * 2 + c * 3 + d * 2 + e) / 9;
       }
       for (let x = 0; x < W; x++) {
@@ -343,6 +374,9 @@ import Base from '../layouts/Base.astro';
     }
 
     function step() {
+      // Slowly modulate wind within the cycle so it isn't a fixed force.
+      cycleWind = cycleWindBase + cycleWindAmp * Math.sin(stepCount * cycleWindFreq);
+      stepCount++;
       addRain();
 
       for (let i = drops.length - 1; i >= 0; i--) {
@@ -350,16 +384,32 @@ import Base from '../layouts/Base.astro';
         d.vy += 0.0035;
         d.x += d.vx;
         d.y += d.vy;
+        // Horizontal torus: drops carried off one side reappear on the other.
+        if (d.x < 0) d.x += W;
+        else if (d.x >= W) d.x -= W;
         if (d.y >= surfaceY(d.x)) {
           splash(d.x, 0.72 + Math.random() * 0.46, rainColors[d.color]);
           drops.splice(i, 1);
-        } else if (d.x < -3 || d.x > W + 3 || d.y > H + 4) {
+        } else if (d.y > H + 4) {
           drops.splice(i, 1);
         }
       }
 
       equalizeColumns();
       diffuseAndAdvectColor();
+      // Wind drives a small traveling sinusoidal ripple along the surface.
+      // Spatial integral of one period is zero so this conserves volume on
+      // average; equalizeColumns smooths any leftover bias each pass.
+      const windMag = Math.abs(cycleWind);
+      if (windMag > 0.04) {
+        const phase = stepCount * WAVE_OMEGA;
+        const dir = cycleWind >= 0 ? 1 : -1;
+        const amp = WAVE_AMP * windMag;
+        for (let x = 0; x < W; x++) {
+          const v = amp * Math.sin(x * WAVE_K - phase * dir);
+          height[x] = Math.max(0, Math.min(H - 2, height[x] + v));
+        }
+      }
 
       let total = 0;
       for (let x = 0; x < W; x++) {
@@ -388,7 +438,8 @@ import Base from '../layouts/Base.astro';
         waterPalette = buildPalette(pickStops());
         waterColor = pickWaterColor(waterPalette);
         rainColors = pickRainColors(waterPalette);
-        cycleWind = (Math.random() - 0.5) * 2 * WIND_MAX;
+        rerollWind();
+        stepCount = 0;
       }
     }
 
@@ -436,8 +487,9 @@ import Base from '../layouts/Base.astro';
       }
 
       function paintDropPixel(x: number, y: number, c: RGB) {
-        if (x < 0 || x >= W || y < 0 || y >= H) return;
-        const j = (y * W + x) * 4;
+        if (y < 0 || y >= H) return;
+        const wx = ((x % W) + W) % W; // horizontal torus
+        const j = (y * W + wx) * 4;
         data[j] = c[0];
         data[j + 1] = c[1];
         data[j + 2] = c[2];
