@@ -1377,9 +1377,9 @@ import Base from '../../layouts/Base.astro';
     function perturb(gx: number, gy: number) {
       const wx = gx / CELLS_PER_UNIT;
       const wy = gy / CELLS_PER_UNIT;
-      const kickRadius = Math.max(8, params.muK * 3.0);
+      const kickRadius = Math.max(12, params.muK * 4.5);
       const kickRadius2 = kickRadius * kickRadius;
-      const kickStrength = 9;
+      const kickStrength = 22;
       for (let i = 0; i < N_PARTICLES; i++) {
         const dxw = wrap(positions[i * 2] - wx, W_world);
         const dyw = wrap(positions[i * 2 + 1] - wy, H_world);
@@ -1394,6 +1394,11 @@ import Base from '../../layouts/Base.astro';
         ny = ((ny % H_world) + H_world) % H_world;
         positions[i * 2] = nx;
         positions[i * 2 + 1] = ny;
+        // Impulse velocity in the same direction so the damped integrator
+        // carries momentum through several frames after the click; without
+        // this the gradient flow snaps particles back almost immediately.
+        velocities[i * 2] += (dxw / r) * kick * 0.6;
+        velocities[i * 2 + 1] += (dyw / r) * kick * 0.6;
       }
     }
 
