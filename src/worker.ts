@@ -134,7 +134,7 @@ function constructionPage(
         place-items: center;
         background: var(--paper);
         color: var(--ink);
-        font-family: "Space Grotesk", "Avenir Next", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: "Lexend Variable", "Lexend", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         line-height: 1.45;
         padding: 2rem;
       }
