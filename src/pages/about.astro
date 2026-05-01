@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 ---
 <Base title="About — A. M. Berns" description="About A. M. Berns.">
   <div class="about-shell">
-    <canvas id="memory-net" class="memory-net" aria-hidden="true"></canvas>
+    <canvas id="wang-tiles" class="wang-tiles" aria-hidden="true"></canvas>
     <header class="section-head">
       <h1><span class="hl">About</span></h1>
       <p><span class="hl">A short bio goes here.</span></p>
@@ -11,58 +11,81 @@ import Base from '../layouts/Base.astro';
     <article class="note">
       <p><span class="hl">More to come.</span></p>
     </article>
+    <aside id="wang-label" class="wang-label" aria-live="polite"></aside>
+    <div id="wang-boost" class="wang-boost" aria-hidden="true">
+      <span></span><span></span>
+    </div>
+    <div class="wang-controls">
+      <label>
+        <span>Shape</span>
+        <select id="wang-shape" aria-label="Select tiling shape"></select>
+      </label>
+      <label>
+        <span>Skin</span>
+        <select id="wang-skin" aria-label="Select visual skin"></select>
+      </label>
+      <button id="wang-info" type="button" aria-label="About this animation">About this animation</button>
+      <button id="wang-reset" type="button" aria-label="Reset Wang tiling">Reset</button>
+    </div>
+    <dialog id="wang-about" aria-labelledby="wang-about-title">
+      <button class="wang-about-close" type="button" aria-label="Close">×</button>
+      <h2 id="wang-about-title">About this animation</h2>
+      <p>
+        A seeded tile generator fills a finite lattice with shape-native matching rules: four labels for square-like tiles, three for triangles, and six for hexagonal or circle-packed tiles. Touching sides always share the same label. Each cycle chooses a mathematical tileset, a visual skin, an organic growth order, a reveal speed, and a small palette from the site's master color pool.
+      </p>
+      <p>
+        The label shows the active tileset, skin, growth mode, speed, tile size, seed, and palette so variants can be compared while tuning.
+      </p>
+    </dialog>
   </div>
 </Base>
 
 <script>
-  const canvas = document.getElementById('memory-net') as HTMLCanvasElement | null;
+  const canvas = document.getElementById('wang-tiles') as HTMLCanvasElement | null;
   if (canvas) {
+    const label = document.getElementById('wang-label');
+    const boostIndicator = document.getElementById('wang-boost');
+    const resetButton = document.getElementById('wang-reset') as HTMLButtonElement | null;
+    const shapeSelect = document.getElementById('wang-shape') as HTMLSelectElement | null;
+    const skinSelect = document.getElementById('wang-skin') as HTMLSelectElement | null;
+    const infoButton = document.getElementById('wang-info') as HTMLButtonElement | null;
+    const aboutDialog = document.getElementById('wang-about') as HTMLDialogElement | null;
+    const aboutClose = aboutDialog?.querySelector('.wang-about-close') as HTMLButtonElement | null;
     const ctx = canvas.getContext('2d')!;
-    const N = 8;
-    const CELL_PX = 3;
-    const TAU = Math.PI * 2;
-    const K_NEIGHBORS = 3;
-    const REWIRE_PROB = 0.085;
-    const ACTIVITY_DECAY = 0.91;
-    const EDGE_DECAY = 0.945;
-    const REFRACTORY_FRAMES = 22;
-    const AUTO_SEED_MIN = 52;
-    const AUTO_SEED_RANGE = 64;
+    ctx.imageSmoothingEnabled = false;
+    const CELL_PX = 2;
+    const MIN_TILE = 5;
+    const MAX_TILE = 15;
+    const HOLD_FRAMES = 60;
+    const BLACK_FRAMES = 10;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     type RGB = [number, number, number];
-    type Cluster = { x: number; y: number; color: RGB; hub: number };
-    type Node = {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      cluster: number;
-      hub: boolean;
-      activity: number;
-      flash: number;
-      refractory: number;
-      color: RGB;
-      edges: number[];
-    };
-    type Edge = {
-      a: number;
-      b: number;
-      weight: number;
-      length: number;
-      trail: number;
-      color: RGB;
-      shortcut: boolean;
-    };
-    type Pulse = {
-      edge: number;
-      from: number;
-      to: number;
-      route: number;
-      t: number;
-      speed: number;
-      strength: number;
-      color: RGB;
+    type ShapeKind = 'square' | 'triangle' | 'hexagon' | 'circle' | 'parallelogram' | 'rectangle';
+    type WangTile = { edges: number[] };
+    type TileSet = { name: string; colors: number; edgeCount: number; tiles: WangTile[] };
+    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork' | 'diagonalBars' | 'checker' | 'orbit' | 'splitBands' | 'pinwheel' | 'crosshatch' | 'plusGlyph' | 'nestedBox' | 'strata' | 'zigzag' | 'wedges' | 'petals' | 'target' | 'shards' | 'caps' | 'spokes' | 'rays' | 'slats' | 'steps' | 'frame' | 'arcBands' | 'splitDiag' | 'edgeCorners' | 'iris' | 'triad' | 'hexFan' | 'lanes';
+    type GrowthMode = 'spores' | 'tendrils' | 'river' | 'rings' | 'islands' | 'lightning' | 'roots' | 'vortex' | 'contours' | 'maze' | 'faults' | 'braid' | 'nebula';
+    type SpeedMode = { name: string; divisor: number; minStep: number };
+    type Cycle = {
+      seed: number;
+      rng: () => number;
+      tileset: TileSet;
+      shape: ShapeKind;
+      skin: VisualSkin;
+      growth: GrowthMode;
+      speed: SpeedMode;
+      revealStep: number;
+      tileSize: number;
+      cols: number;
+      rows: number;
+      grid: Int16Array;
+      order: number[];
+      revealed: number;
+      visible: Uint8Array;
+      hold: number;
+      blackHold: number;
+      palette: RGB[];
     };
 
     const styles = getComputedStyle(document.documentElement);
@@ -95,6 +118,38 @@ import Base from '../layouts/Base.astro';
       return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${Math.max(0, Math.min(1, a))})`;
     }
 
+    function hashString(s: string): number {
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    function mulberry32(seed: number) {
+      let t = seed >>> 0;
+      return () => {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function pick<T>(items: T[], rng: () => number): T {
+      return items[Math.floor(rng() * items.length)];
+    }
+
+    function shuffle<T>(items: T[], rng: () => number): T[] {
+      const out = items.slice();
+      for (let i = out.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
+      }
+      return out;
+    }
+
     const paper = parseHex(paperHex);
     const colorPool = [
       '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
@@ -104,507 +159,1268 @@ import Base from '../layouts/Base.astro';
       '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
     ].map(parseHex).sort((a, b) => luma(a) - luma(b));
 
-    let W = 0;
-    let H = 0;
-    let nodes: Node[] = [];
-    let edges: Edge[] = [];
-    let pulses: Pulse[] = [];
-    let clusters: Cluster[] = [];
-    let attractors: number[] = [];
-    let routeDistances: number[][] = [];
-    let routeGlow: number[] = [];
-    let cycleStops: RGB[] = [];
-    let stepCount = 0;
-    let nextSeedAt = 0;
-    let pointerX = -1;
-    let pointerY = -1;
-
-    function pickStops(): RGB[] {
+    function pickPalette(count: number, rng: () => number): RGB[] {
       const stops: RGB[] = [];
-      for (let i = 0; i < N; i++) {
-        const lo = Math.floor((i * colorPool.length) / N);
-        const hi = Math.floor(((i + 1) * colorPool.length) / N);
-        stops.push(colorPool[lo + ((Math.random() * Math.max(1, hi - lo)) | 0)]);
+      for (let i = 0; i < count; i++) {
+        const lo = Math.floor((i * colorPool.length) / count);
+        const hi = Math.floor(((i + 1) * colorPool.length) / count);
+        const c = colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))];
+        stops.push(mix(paper, c, 0.92));
       }
+      const root = document.documentElement;
+      for (let i = 0; i < Math.min(8, stops.length); i++) root.style.setProperty(`--c${i + 1}`, rgb(stops[i]));
+      root.style.setProperty('--accent', rgb(stops[Math.min(stops.length - 1, 2)]));
       return stops;
     }
 
-    function syncAccent(stops: RGB[]) {
-      const root = document.documentElement;
-      for (let i = 0; i < stops.length; i++) root.style.setProperty(`--c${i + 1}`, rgb(stops[i]));
-      root.style.setProperty('--accent', rgb(stops[Math.min(stops.length - 1, 4)]));
+    function makeTile(edges: number[]): WangTile {
+      return { edges };
     }
 
-    function resetSeedTimer() {
-      nextSeedAt = stepCount + AUTO_SEED_MIN + ((Math.random() * AUTO_SEED_RANGE) | 0);
+    function allWang(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let n = 0; n < colors; n++) {
+        for (let e = 0; e < colors; e++) {
+          for (let s = 0; s < colors; s++) {
+            for (let w = 0; w < colors; w++) tiles.push(makeTile([n, e, s, w]));
+          }
+        }
+      }
+      return tiles;
     }
 
-    function edgeKey(a: number, b: number): string {
-      return a < b ? `${a}:${b}` : `${b}:${a}`;
+    function flow16(): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let n = 0; n < 4; n++) {
+        for (let w = 0; w < 4; w++) {
+          tiles.push(makeTile([n, (n + w + 1) % 4, (n + 2 * w + 1) % 4, w]));
+        }
+      }
+      return tiles;
     }
 
-    function clamp(v: number, lo: number, hi: number): number {
-      return v < lo ? lo : v > hi ? hi : v;
+    function productSet(colors: number, a: number, b: number, c: number, d: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let n = 0; n < colors; n++) {
+        for (let w = 0; w < colors; w++) {
+          tiles.push(makeTile([n, (a * n + b * w + 1) % colors, (c * n + d * w + 2) % colors, w]));
+        }
+      }
+      return tiles;
     }
 
-    function addNode(x: number, y: number, cluster: number, hub: boolean): number {
-      const c = clusters[cluster]?.color ?? cycleStops[cluster % cycleStops.length];
-      nodes.push({
-        x,
-        y,
-        vx: 0,
-        vy: 0,
-        cluster,
-        hub,
-        activity: 0,
-        flash: 0,
-        refractory: 0,
-        color: mix(paper, c, hub ? 0.86 : 0.58 + Math.random() * 0.20),
-        edges: [],
-      });
-      return nodes.length - 1;
+    function bandSet(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let a = 0; a < colors; a++) {
+        for (let b = 0; b < colors; b++) {
+          tiles.push(makeTile([a, b, a, b]));
+          tiles.push(makeTile([a, (a + b + 1) % colors, (a + 1) % colors, b]));
+        }
+      }
+      return tiles;
     }
 
-    function addEdge(a: number, b: number, seen: Set<string>, shortcut = false) {
-      if (a === b) return;
-      const key = edgeKey(a, b);
-      if (seen.has(key)) return;
-      seen.add(key);
-      const na = nodes[a];
-      const nb = nodes[b];
-      const dx = na.x - nb.x;
-      const dy = na.y - nb.y;
-      const d = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-      const sameCluster = na.cluster === nb.cluster;
-      const closeness = Math.max(0, 1 - d / Math.max(W, H));
-      const colorBase = sameCluster ? clusters[na.cluster]?.color : cycleStops[(na.cluster + nb.cluster) % cycleStops.length];
-      const color = mix(paper, colorBase ?? cycleStops[0], sameCluster ? 0.48 + closeness * 0.18 : 0.38 + closeness * 0.16);
-      const idx = edges.length;
-      edges.push({
-        a,
-        b,
-        weight: (sameCluster ? 0.70 : 0.48) + closeness * 0.24 + (shortcut ? 0.12 : 0) + Math.random() * 0.10,
-        length: d,
-        trail: 0,
-        color,
-        shortcut,
-      });
-      na.edges.push(idx);
-      nb.edges.push(idx);
+    function allTriangle(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let a = 0; a < colors; a++) {
+        for (let b = 0; b < colors; b++) {
+          for (let c = 0; c < colors; c++) tiles.push(makeTile([a, b, c]));
+        }
+      }
+      return tiles;
     }
 
-    function connectSmallWorld(seen: Set<string>) {
-      for (let cluster = 0; cluster < clusters.length; cluster++) {
-        const group = nodes
-          .map((node, idx) => ({ node, idx }))
-          .filter(({ node }) => node.cluster === cluster && !node.hub)
-          .sort((a, b) => Math.atan2(a.node.y - clusters[cluster].y, a.node.x - clusters[cluster].x) - Math.atan2(b.node.y - clusters[cluster].y, b.node.x - clusters[cluster].x))
-          .map(({ idx }) => idx);
-
-        if (group.length === 0) continue;
-        for (let i = 0; i < group.length; i++) {
-          for (let j = 1; j <= K_NEIGHBORS; j++) {
-            const a = group[i];
-            const ringTarget = group[(i + j) % group.length];
-            let target = ringTarget;
-            let shortcut = false;
-            if (Math.random() < REWIRE_PROB) {
-              const longRange = nodes
-                .map((node, idx) => ({ node, idx }))
-                .filter(({ node, idx }) => idx !== a && node.cluster !== cluster);
-              if (longRange.length > 0) {
-                target = longRange[(Math.random() * longRange.length) | 0].idx;
-                shortcut = true;
+    function allHex(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let ne = 0; ne < colors; ne++) {
+        for (let e = 0; e < colors; e++) {
+          for (let se = 0; se < colors; se++) {
+            for (let sw = 0; sw < colors; sw++) {
+              for (let w = 0; w < colors; w++) {
+                for (let nw = 0; nw < colors; nw++) tiles.push(makeTile([ne, e, se, sw, w, nw]));
               }
             }
-            addEdge(a, target, seen, shortcut);
-          }
-          addEdge(group[i], clusters[cluster].hub, seen);
-        }
-      }
-
-      for (let i = 0; i < clusters.length; i++) {
-        const a = clusters[i].hub;
-        const b = clusters[(i + 1) % clusters.length].hub;
-        addEdge(a, b, seen, true);
-        const c = clusters[(i + 3) % clusters.length].hub;
-        addEdge(a, c, seen, true);
-      }
-    }
-
-    function refreshEdgeLengths() {
-      for (const edge of edges) {
-        const a = nodes[edge.a];
-        const b = nodes[edge.b];
-        const dx = a.x - b.x;
-        const dy = a.y - b.y;
-        edge.length = Math.max(1, Math.sqrt(dx * dx + dy * dy));
-      }
-    }
-
-    function settleLayout(iterations: number) {
-      const count = Math.max(1, nodes.length);
-      const k = Math.sqrt((W * H) / count) * 0.92;
-      const margin = 4;
-
-      for (let iter = 0; iter < iterations; iter++) {
-        const temp = Math.max(0.55, k * 0.16 * (1 - iter / iterations));
-        for (const node of nodes) {
-          node.vx = 0;
-          node.vy = 0;
-        }
-
-        for (let i = 0; i < nodes.length; i++) {
-          const a = nodes[i];
-          for (let j = i + 1; j < nodes.length; j++) {
-            const b = nodes[j];
-            let dx = a.x - b.x;
-            let dy = a.y - b.y;
-            let d = Math.sqrt(dx * dx + dy * dy) || 1;
-            dx /= d;
-            dy /= d;
-            const force = Math.min(k * 0.48, (k * k) / d) * 0.045;
-            a.vx += dx * force;
-            a.vy += dy * force;
-            b.vx -= dx * force;
-            b.vy -= dy * force;
           }
         }
-
-        for (const edge of edges) {
-          const a = nodes[edge.a];
-          const b = nodes[edge.b];
-          let dx = a.x - b.x;
-          let dy = a.y - b.y;
-          let d = Math.sqrt(dx * dx + dy * dy) || 1;
-          dx /= d;
-          dy /= d;
-          const desired = edge.shortcut ? k * 3.1 : k * 1.24;
-          const force = (d - desired) * 0.014 * edge.weight;
-          a.vx -= dx * force;
-          a.vy -= dy * force;
-          b.vx += dx * force;
-          b.vy += dy * force;
-        }
-
-        for (const node of nodes) {
-          const cluster = clusters[node.cluster];
-          const pull = node.hub ? 0.032 : 0.0065;
-          node.vx += (cluster.x - node.x) * pull;
-          node.vy += (cluster.y - node.y) * pull;
-          const dx = clamp(node.vx, -temp, temp);
-          const dy = clamp(node.vy, -temp, temp);
-          node.x = clamp(node.x + dx, margin, W - margin);
-          node.y = clamp(node.y + dy, margin, H - margin);
-        }
       }
-      refreshEdgeLengths();
+      return tiles;
     }
 
-    function buildNetwork() {
-      nodes = [];
-      edges = [];
-      pulses = [];
-      clusters = [];
-      attractors = [];
-      routeDistances = [];
-      routeGlow = [];
-
-      const area = W * H;
-      const count = Math.max(150, Math.min(420, Math.round(area / 760)));
-      const clusterCount = 8 + ((Math.random() * 3) | 0);
-      const marginX = Math.max(10, W * 0.06);
-      const marginY = Math.max(10, H * 0.08);
-      const span = Math.max(12, Math.min(W, H));
-
-      for (let i = 0; i < clusterCount; i++) {
-        const angle = (i / clusterCount) * TAU + Math.random() * 0.32;
-        const radial = 0.18 + Math.random() * 0.23;
-        clusters.push({
-          x: clamp(W * 0.5 + Math.cos(angle) * W * radial, marginX, W - marginX),
-          y: clamp(H * 0.5 + Math.sin(angle) * H * radial, marginY, H - marginY),
-          color: mix(paper, cycleStops[(i * 2 + 1) % cycleStops.length], 0.88),
-          hub: -1,
-        });
+    function triangleFlow(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let left = 0; left < colors; left++) {
+        for (let base = 0; base < colors; base++) {
+          tiles.push(makeTile([left, (left + base + 1) % colors, base]));
+        }
       }
+      return tiles;
+    }
 
-      for (let i = 0; i < clusters.length; i++) {
-        const c = clusters[i];
-        c.hub = addNode(c.x, c.y, i, true);
-        attractors.push(c.hub);
+    function hexFlow(colors: number, twist = 1): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let w = 0; w < colors; w++) {
+        for (let nw = 0; nw < colors; nw++) {
+          const ne = (w + nw + twist) % colors;
+          const e = (2 * w + nw + 1) % colors;
+          const se = (w + 2 * nw + twist + 1) % colors;
+          const sw = (w + 3 * nw + 2) % colors;
+          tiles.push(makeTile([ne, e, se, sw, w, nw]));
+        }
       }
+      return tiles;
+    }
 
-      while (nodes.length < count) {
-        const cluster = (Math.random() * clusters.length) | 0;
-        const c = clusters[cluster];
-        let x: number;
-        let y: number;
-        if (Math.random() < 0.82) {
-          const a = Math.random() * TAU;
-          const r = Math.sqrt(Math.random()) * span * (0.12 + Math.random() * 0.16);
-          x = clamp(c.x + Math.cos(a) * r, marginX * 0.5, W - marginX * 0.5);
-          y = clamp(c.y + Math.sin(a) * r, marginY * 0.5, H - marginY * 0.5);
+    function hexBand(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let a = 0; a < colors; a++) {
+        for (let b = 0; b < colors; b++) {
+          for (let c = 0; c < colors; c++) tiles.push(makeTile([a, b, c, a, b, c]));
+        }
+      }
+      return tiles;
+    }
+
+    const squareTileSets: TileSet[] = [
+      {
+        name: 'binary16',
+        colors: 2,
+        edgeCount: 4,
+        tiles: allWang(2),
+      },
+      {
+        name: 'ternary81',
+        colors: 3,
+        edgeCount: 4,
+        tiles: allWang(3),
+      },
+      {
+        name: 'flow16',
+        colors: 4,
+        edgeCount: 4,
+        tiles: flow16(),
+      },
+      {
+        name: 'modulo25',
+        colors: 5,
+        edgeCount: 4,
+        tiles: productSet(5, 2, 1, 1, 3),
+      },
+      {
+        name: 'skew36',
+        colors: 6,
+        edgeCount: 4,
+        tiles: productSet(6, 1, 5, 4, 1),
+      },
+      {
+        name: 'bands18',
+        colors: 3,
+        edgeCount: 4,
+        tiles: bandSet(3),
+      },
+      {
+        name: 'jeandelRao11',
+        colors: 4,
+        edgeCount: 4,
+        tiles: [
+          makeTile([0, 0, 1, 0]),
+          makeTile([1, 2, 3, 0]),
+          makeTile([3, 0, 3, 1]),
+          makeTile([3, 1, 0, 1]),
+          makeTile([2, 2, 3, 1]),
+          makeTile([1, 0, 1, 2]),
+          makeTile([3, 1, 3, 2]),
+          makeTile([1, 2, 2, 2]),
+          makeTile([0, 3, 1, 3]),
+          makeTile([3, 3, 0, 3]),
+          makeTile([1, 1, 1, 2]),
+        ],
+      },
+      {
+        name: 'machine13',
+        colors: 5,
+        edgeCount: 4,
+        tiles: [
+          makeTile([0, 1, 0, 0]),
+          makeTile([0, 2, 1, 1]),
+          makeTile([0, 3, 2, 2]),
+          makeTile([0, 4, 3, 3]),
+          makeTile([1, 1, 2, 0]),
+          makeTile([1, 3, 3, 1]),
+          makeTile([1, 4, 4, 2]),
+          makeTile([2, 0, 1, 3]),
+          makeTile([2, 2, 4, 4]),
+          makeTile([2, 4, 0, 1]),
+          makeTile([3, 0, 3, 2]),
+          makeTile([3, 2, 0, 3]),
+          makeTile([4, 1, 4, 4]),
+        ],
+      },
+    ];
+
+    const triangleTileSets: TileSet[] = [
+      { name: 'tri27', colors: 3, edgeCount: 3, tiles: allTriangle(3) },
+      { name: 'triFlow16', colors: 4, edgeCount: 3, tiles: triangleFlow(4) },
+      { name: 'triFlow25', colors: 5, edgeCount: 3, tiles: triangleFlow(5) },
+    ];
+
+    const hexTileSets: TileSet[] = [
+      { name: 'hex729', colors: 3, edgeCount: 6, tiles: allHex(3) },
+      { name: 'hexFlow16', colors: 4, edgeCount: 6, tiles: hexFlow(4, 1) },
+      { name: 'hexFlow25', colors: 5, edgeCount: 6, tiles: hexFlow(5, 2) },
+      { name: 'hexBands27', colors: 3, edgeCount: 6, tiles: hexBand(3) },
+    ];
+
+    function tileSetsFor(shape: ShapeKind): TileSet[] {
+      if (shape === 'triangle') return triangleTileSets;
+      if (shape === 'hexagon' || shape === 'circle') return hexTileSets;
+      return squareTileSets;
+    }
+
+    function previousConstraints(shape: ShapeKind, x: number, y: number, cols: number): Array<{ edge: number; neighbor: number; neighborEdge: number }> {
+      if (shape === 'triangle') {
+        const up = ((x + y) & 1) === 0;
+        const constraints: Array<{ edge: number; neighbor: number; neighborEdge: number }> = [];
+        if (x > 0) constraints.push({ edge: 0, neighbor: y * cols + x - 1, neighborEdge: 1 });
+        if (!up && y > 0) constraints.push({ edge: 2, neighbor: (y - 1) * cols + x, neighborEdge: 2 });
+        return constraints;
+      }
+      if (shape === 'hexagon' || shape === 'circle') {
+        const constraints: Array<{ edge: number; neighbor: number; neighborEdge: number }> = [];
+        if (x > 0) constraints.push({ edge: 4, neighbor: y * cols + x - 1, neighborEdge: 1 });
+        if (y > 0) {
+          if (y & 1) {
+            constraints.push({ edge: 5, neighbor: (y - 1) * cols + x, neighborEdge: 2 });
+            if (x < cols - 1) constraints.push({ edge: 0, neighbor: (y - 1) * cols + x + 1, neighborEdge: 3 });
+          } else {
+            if (x > 0) constraints.push({ edge: 5, neighbor: (y - 1) * cols + x - 1, neighborEdge: 2 });
+            constraints.push({ edge: 0, neighbor: (y - 1) * cols + x, neighborEdge: 3 });
+          }
+        }
+        return constraints;
+      }
+      const constraints: Array<{ edge: number; neighbor: number; neighborEdge: number }> = [];
+      if (y > 0) constraints.push({ edge: 0, neighbor: (y - 1) * cols + x, neighborEdge: 2 });
+      if (x > 0) constraints.push({ edge: 3, neighbor: y * cols + x - 1, neighborEdge: 1 });
+      return constraints;
+    }
+
+    function solvePatch(shape: ShapeKind, tileset: TileSet, cols: number, rows: number, rng: () => number): Int16Array | null {
+      const total = cols * rows;
+      const grid = new Int16Array(total);
+      grid.fill(-1);
+      for (let pos = 0; pos < total; pos++) {
+        const x = pos % cols;
+        const y = Math.floor(pos / cols);
+        const constraints = previousConstraints(shape, x, y, cols);
+        const candidates = tileset.tiles
+          .map((tile, idx) => ({ tile, idx }))
+          .filter(({ tile }) => constraints.every(({ edge, neighbor, neighborEdge }) =>
+            grid[neighbor] >= 0 && tile.edges[edge] === tileset.tiles[grid[neighbor]].edges[neighborEdge]
+          ))
+          .map(({ idx }) => idx);
+        if (!candidates.length) return null;
+        grid[pos] = candidates[Math.floor(rng() * candidates.length)];
+      }
+      return grid;
+    }
+
+    function validatePatch(shape: ShapeKind, tileset: TileSet, grid: Int16Array, cols: number, rows: number): boolean {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const idx = y * cols + x;
+          const tile = tileset.tiles[grid[idx]];
+          if (!tile || tile.edges.length !== tileset.edgeCount) return false;
+          const constraints = previousConstraints(shape, x, y, cols);
+          for (const { edge, neighbor, neighborEdge } of constraints) {
+            const neighborTile = tileset.tiles[grid[neighbor]];
+            if (!neighborTile || tile.edges[edge] !== neighborTile.edges[neighborEdge]) return false;
+          }
+        }
+      }
+      return true;
+    }
+
+    function makeOrganicOrder(cols: number, rows: number, growth: GrowthMode, rng: () => number): number[] {
+      const total = cols * rows;
+      const order = Array.from({ length: total }, (_, i) => i);
+      const starts = Array.from({ length: 3 + Math.floor(rng() * 4) }, () => ({
+        x: Math.floor(rng() * cols),
+        y: Math.floor(rng() * rows),
+      }));
+      const driftX = rng() * 2 - 1;
+      const driftY = rng() * 2 - 1;
+      const bend = 0.12 + rng() * 0.18;
+      const cx = cols * (0.25 + rng() * 0.50);
+      const cy = rows * (0.25 + rng() * 0.50);
+      const faultA = cols * (0.15 + rng() * 0.7);
+      const faultB = rows * (0.15 + rng() * 0.7);
+      const scores = new Float32Array(total);
+      for (let idx = 0; idx < total; idx++) {
+        const x = idx % cols;
+        const y = Math.floor(idx / cols);
+        const nearest = Math.min(...starts.map((s) => {
+          const dx = x - s.x;
+          const dy = y - s.y;
+          return Math.sqrt(dx * dx + dy * dy);
+        }));
+        const wave = Math.sin((x * driftX + y * driftY) * bend) * 2.8;
+        const eddy = Math.sin((x * 1.7 - y * 1.3 + starts.length) * bend * 0.7) * 1.6;
+        if (growth === 'tendrils') {
+          const angle = Math.atan2(y - cy, x - cx);
+          scores[idx] = nearest + Math.sin(angle * 5 + nearest * 0.55) * 5 + rng() * 6;
+        } else if (growth === 'river') {
+          const along = x * driftX + y * driftY;
+          const cross = x * -driftY + y * driftX;
+          const river = Math.sin(along * bend) * rows * 0.13;
+          scores[idx] = along * 0.18 + Math.abs(cross - river) * 0.72 + rng() * 5;
+        } else if (growth === 'rings') {
+          const dx = x - cx;
+          const dy = y - cy;
+          const r = Math.sqrt(dx * dx + dy * dy);
+          scores[idx] = r + Math.sin(r * 0.9 + Math.atan2(dy, dx) * 4) * 4 + rng() * 4;
+        } else if (growth === 'islands') {
+          scores[idx] = nearest + wave * 1.4 + eddy * 1.8 + rng() * 8;
+        } else if (growth === 'lightning') {
+          const branch = Math.abs(Math.sin((x * 0.7 + y * 1.9) * bend + Math.sin(y * 0.33) * 2));
+          scores[idx] = nearest * 0.35 + branch * 18 + y * 0.10 + rng() * 5;
+        } else if (growth === 'roots') {
+          const roots = Math.min(...starts.map((s) => Math.abs(x - s.x) * 0.38 + Math.max(0, y - s.y) * 0.75));
+          scores[idx] = roots + Math.sin(x * bend * 2.4 + y * 0.2) * 4 + rng() * 5;
+        } else if (growth === 'vortex') {
+          const dx = x - cx;
+          const dy = y - cy;
+          const r = Math.sqrt(dx * dx + dy * dy);
+          const angle = Math.atan2(dy, dx);
+          scores[idx] = r * 0.55 + Math.sin(angle * 7 + r * 0.42) * 7 + rng() * 5;
+        } else if (growth === 'contours') {
+          const band = Math.abs(Math.sin((x * driftX + y * driftY) * bend));
+          scores[idx] = nearest * 0.55 + band * 12 + eddy + rng() * 4;
+        } else if (growth === 'maze') {
+          const cell = Math.sin(x * bend * 3.1) * Math.cos(y * bend * 2.7);
+          const corridor = Math.abs(cell + Math.sin((x + y) * bend * 1.4) * 0.5);
+          scores[idx] = nearest * 0.42 + corridor * 16 + rng() * 4;
+        } else if (growth === 'faults') {
+          const lineA = x * driftX + y * driftY - faultA;
+          const lineB = x * -driftY + y * driftX - faultB;
+          const fracture = Math.min(Math.abs(lineA), Math.abs(lineB)) * 0.55;
+          scores[idx] = nearest * 0.35 + fracture + Math.sin((lineA - lineB) * bend) * 4 + rng() * 5;
+        } else if (growth === 'braid') {
+          const along = x * driftX + y * driftY;
+          const cross = x * -driftY + y * driftX;
+          const strand = Math.sin(along * bend * 1.8) * 6 + Math.sin(along * bend * 0.9 + 2.1) * 4;
+          scores[idx] = along * 0.12 + Math.abs(cross - strand) * 0.85 + nearest * 0.22 + rng() * 4;
+        } else if (growth === 'nebula') {
+          const dx = x - cx;
+          const dy = y - cy;
+          const cloud = Math.sin(x * bend * 2.2 + Math.sin(y * bend) * 3) + Math.cos(y * bend * 2.6 + Math.sin(x * bend) * 2);
+          scores[idx] = nearest * 0.50 + Math.sqrt(dx * dx + dy * dy) * 0.18 - cloud * 5 + rng() * 7;
         } else {
-          x = marginX * 0.5 + Math.random() * Math.max(1, W - marginX);
-          y = marginY * 0.5 + Math.random() * Math.max(1, H - marginY);
+          scores[idx] = nearest + wave + eddy + rng() * 4.5;
         }
-        addNode(x, y, cluster, false);
       }
-
-      const seen = new Set<string>();
-      connectSmallWorld(seen);
-      settleLayout(reduce ? 54 : 118);
-      rebuildRouteDistances();
+      return order.sort((a, b) => scores[a] - scores[b]);
     }
 
-    function rebuildRouteDistances() {
-      routeDistances = attractors.map((target) => {
-        const dist = new Array(nodes.length).fill(Infinity);
-        const used = new Array(nodes.length).fill(false);
-        dist[target] = 0;
-        for (let n = 0; n < nodes.length; n++) {
-          let best = -1;
-          let bestD = Infinity;
-          for (let i = 0; i < nodes.length; i++) {
-            if (!used[i] && dist[i] < bestD) {
-              best = i;
-              bestD = dist[i];
-            }
-          }
-          if (best < 0) break;
-          used[best] = true;
-          for (const edgeIdx of nodes[best].edges) {
-            const edge = edges[edgeIdx];
-            const to = edge.a === best ? edge.b : edge.a;
-            const nd = bestD + edge.length / Math.max(0.2, edge.weight);
-            if (nd < dist[to]) dist[to] = nd;
-          }
-        }
-        return dist;
+    let W = 0;
+    let H = 0;
+    let cycle: Cycle | null = null;
+    let playbackDirection = 1;
+    let playbackSpeed = 1;
+    let selectedShape: ShapeKind | 'random' = 'random';
+    let selectedSkin: VisualSkin | 'random' = 'random';
+
+    const shapes: ShapeKind[] = ['square', 'triangle', 'hexagon', 'circle', 'parallelogram', 'rectangle'];
+    const skinsByShape: Record<ShapeKind, VisualSkin[]> = {
+      square: ['triangles', 'edgeBands', 'cornerCuts', 'diamondWeave', 'isometric', 'lozenges', 'scales', 'chevrons', 'insetDiamonds', 'diagonalBars', 'checker', 'splitBands', 'pinwheel', 'crosshatch', 'shards', 'caps', 'slats', 'steps', 'splitDiag', 'edgeCorners', 'lanes'],
+      triangle: ['facets', 'kite', 'bands', 'strata', 'zigzag', 'splitBands', 'pinwheel', 'shards', 'rays', 'triad', 'lanes'],
+      hexagon: ['facets', 'bands', 'mosaic', 'wedges', 'splitBands', 'shards', 'spokes', 'rays', 'hexFan', 'edgeCorners'],
+      circle: ['bands', 'mosaic', 'facets', 'splitBands', 'spokes', 'rays', 'arcBands', 'caps', 'iris', 'hexFan'],
+      parallelogram: ['facets', 'blocks', 'bands', 'ribbons', 'diagonalBars', 'strata', 'splitBands', 'shards', 'slats', 'steps', 'splitDiag', 'lanes'],
+      rectangle: ['bands', 'brickwork', 'mosaic', 'edgeBands', 'splitBands', 'checker', 'crosshatch', 'slats', 'steps', 'caps', 'splitDiag', 'edgeCorners', 'lanes'],
+    };
+
+    function option(label: string, value: string): HTMLOptionElement {
+      const item = document.createElement('option');
+      item.value = value;
+      item.textContent = label;
+      return item;
+    }
+
+    function syncSkinOptions() {
+      if (!skinSelect) return;
+      const current = skinSelect.value as VisualSkin | 'random';
+      skinSelect.replaceChildren(option('Random', 'random'));
+      const available = selectedShape === 'random' ? [] : skinsByShape[selectedShape];
+      for (const skin of available) skinSelect.append(option(skin, skin));
+      selectedSkin = current !== 'random' && available.includes(current as VisualSkin) ? current : 'random';
+      skinSelect.value = selectedSkin;
+      skinSelect.disabled = selectedShape === 'random';
+    }
+
+    function setupSelectors() {
+      if (!shapeSelect || !skinSelect) return;
+      shapeSelect.replaceChildren(option('Random', 'random'));
+      for (const shape of shapes) shapeSelect.append(option(shape, shape));
+      shapeSelect.value = selectedShape;
+      syncSkinOptions();
+      shapeSelect.addEventListener('change', () => {
+        selectedShape = shapeSelect.value as ShapeKind | 'random';
+        syncSkinOptions();
+        makeCycle();
+        draw();
       });
-      routeGlow = new Array(attractors.length).fill(0);
+      skinSelect.addEventListener('change', () => {
+        selectedSkin = skinSelect.value as VisualSkin | 'random';
+        makeCycle();
+        draw();
+      });
     }
 
-    function rerollNetwork() {
-      cycleStops = pickStops();
-      syncAccent(cycleStops);
-      buildNetwork();
-      for (let i = 0; i < Math.min(10, attractors.length); i++) nodes[attractors[i]].activity = 0.22;
-      stepCount = 0;
-      resetSeedTimer();
+    function setPlayback(direction: -1 | 1, boosted: boolean) {
+      playbackDirection = direction;
+      playbackSpeed = boosted ? 4 : 1;
+      boostIndicator?.classList.toggle('is-active', boosted);
+      boostIndicator?.classList.toggle('is-reverse', boosted && direction < 0);
     }
 
-    function nearestNode(x: number, y: number): number {
-      let best = 0;
-      let bestD = Infinity;
-      for (let i = 0; i < nodes.length; i++) {
-        const dx = nodes[i].x - x;
-        const dy = nodes[i].y - y;
-        const d = dx * dx + dy * dy;
-        if (d < bestD) {
-          bestD = d;
-          best = i;
-        }
+    function makeCycle() {
+      const seed = hashString(`${Date.now()}:${Math.random()}`);
+      const rng = mulberry32(seed);
+      const growthModes: GrowthMode[] = ['spores', 'tendrils', 'river', 'rings', 'islands', 'lightning', 'roots', 'vortex', 'contours', 'maze', 'faults', 'braid', 'nebula'];
+      const speeds: SpeedMode[] = [
+        { name: 'slow', divisor: 480, minStep: 1 },
+        { name: 'medium', divisor: 340, minStep: 2 },
+        { name: 'quick', divisor: 230, minStep: 3 },
+      ];
+      const tileSize = MIN_TILE + Math.floor(rng() * (MAX_TILE - MIN_TILE + 1));
+      const shape = selectedShape === 'random' ? pick(shapes, rng) : selectedShape;
+      const skin = selectedSkin === 'random' ? pick(skinsByShape[shape], rng) : selectedSkin;
+      const triangleShape = shape === 'triangle';
+      const hexShape = shape === 'hexagon';
+      const circleShape = shape === 'circle';
+      const rectangleShape = shape === 'rectangle';
+      const parallelogramShape = shape === 'parallelogram';
+      const cols = rectangleShape
+        ? Math.ceil(W / (tileSize * 1.55)) + 8
+        : triangleShape
+          ? Math.ceil(W / (tileSize * 0.74)) + 16
+          : parallelogramShape
+          ? Math.ceil(W / (tileSize * 1.18)) + Math.ceil(H / (tileSize * 2.2)) + 18
+          : Math.ceil(W / tileSize) + (hexShape || circleShape ? 10 : 1);
+      const rows = rectangleShape
+        ? Math.ceil(H / (tileSize * 0.72)) + 8
+        : triangleShape
+          ? Math.ceil(H / (tileSize * 1.33)) + 8
+        : parallelogramShape
+          ? Math.ceil(H / tileSize) + 12
+          : Math.ceil(H / tileSize) + (hexShape || circleShape ? 10 : 1);
+      const growth = pick(growthModes, rng);
+      const speed = pick(speeds, rng);
+      const candidateTileSets = tileSetsFor(shape);
+      let tileset = pick(candidateTileSets, rng);
+      let grid: Int16Array | null = null;
+      for (let tries = 0; tries < 8 && !grid; tries++) {
+        grid = solvePatch(shape, tileset, cols, rows, rng);
+        if (grid && !validatePatch(shape, tileset, grid, cols, rows)) grid = null;
+        if (!grid) tileset = pick(candidateTileSets, rng);
       }
-      return best;
-    }
-
-    function chooseRouteFrom(source: number): number {
-      if (attractors.length === 0) return 0;
-      const ranked = attractors
-        .map((target, route) => ({
-          route,
-          d: routeDistances[route]?.[source] ?? 0,
-          load: nodes[target]?.activity ?? 0,
-        }))
-        .sort((a, b) => b.d - a.d);
-      const top = ranked.slice(0, Math.min(4, ranked.length));
-      top.sort((a, b) => (b.d - b.load * 80) - (a.d - a.load * 80));
-      const pick = Math.min(top.length - 1, ((Math.random() ** 1.9) * top.length) | 0);
-      return top[pick].route;
-    }
-
-    function otherNode(edge: Edge, idx: number): number {
-      return edge.a === idx ? edge.b : edge.a;
-    }
-
-    function fireNode(idx: number, color: RGB, strength: number, route: number, forceFanout = false) {
-      if (nodes.length === 0 || attractors.length === 0) return;
-      const node = nodes[idx];
-      node.activity = Math.max(node.activity, strength);
-      node.flash = 1;
-      node.refractory = Math.max(node.refractory, REFRACTORY_FRAMES + ((Math.random() * 12) | 0));
-      node.color = mix(node.color, color, 0.58);
-      const here = routeDistances[route]?.[idx] ?? Infinity;
-      routeGlow[route] = Math.min(1, (routeGlow[route] ?? 0) + strength * 0.18);
-      const scored = node.edges.map((edgeIdx) => {
-        const edge = edges[edgeIdx];
-        const to = otherNode(edge, idx);
-        const next = routeDistances[route]?.[to] ?? Infinity;
-        const progress = here - next;
-        const score =
-          progress * 0.090 +
-          edge.weight * 0.44 +
-          edge.trail * 0.20 +
-          (nodes[to].hub ? 0.26 : 0) +
-          (edge.shortcut ? 0.10 : 0) -
-          (nodes[to].refractory > 0 ? 0.18 : 0) +
-          Math.random() * 0.08;
-        return { edgeIdx, to, score, progress };
-      }).sort((a, b) => b.score - a.score);
-      const keep = Math.max(2, Math.min(scored.length, forceFanout || node.hub ? 5 : 3));
-      for (let k = 0; k < keep; k++) {
-        const choice = scored[k];
-        if (!choice || (choice.progress < -4 && Math.random() > 0.06)) continue;
-        const edge = edges[choice.edgeIdx];
-        edge.trail = Math.max(edge.trail, strength * edge.weight);
-        edge.color = mix(edge.color, color, 0.34);
-        pulses.push({
-          edge: choice.edgeIdx,
-          from: idx,
-          to: choice.to,
-          route,
-          t: 0,
-          speed: 0.034 + Math.random() * 0.026,
-          strength: strength * edge.weight * (0.70 + Math.random() * 0.18),
-          color,
-        });
+      if (!grid) {
+        tileset = candidateTileSets[0];
+        grid = solvePatch(shape, tileset, cols, rows, rng)!;
+        if (!validatePatch(shape, tileset, grid, cols, rows)) throw new Error(`Invalid ${shape} tile patch`);
       }
-      if (pulses.length > 760) pulses.splice(0, pulses.length - 760);
+      cycle = {
+        seed,
+        rng,
+        tileset,
+        shape,
+        skin,
+        growth,
+        speed,
+        revealStep: Math.ceil(Math.max(speed.minStep, Math.ceil((cols * rows) / speed.divisor)) * 1.5),
+        tileSize,
+        cols,
+        rows,
+        grid,
+        order: makeOrganicOrder(cols, rows, growth, rng),
+        revealed: reduce ? cols * rows : 0,
+        visible: new Uint8Array(cols * rows),
+        hold: 0,
+        blackHold: reduce ? 0 : BLACK_FRAMES,
+        palette: pickPalette(Math.max(3, Math.min(5, tileset.colors)), rng),
+      };
+      if (reduce) cycle.visible.fill(1);
+      updateLabel();
     }
 
-    function seedAt(x: number, y: number, strong = false) {
-      if (nodes.length === 0) return;
-      const idx = nearestNode(x, y);
-      const route = chooseRouteFrom(idx);
-      const c = mix(paper, cycleStops[(route * 2 + 3) % cycleStops.length], 0.90);
-      fireNode(idx, c, strong ? 1.20 : 0.92, route, true);
-      for (const edgeIdx of nodes[idx].edges) {
-        edges[edgeIdx].trail = Math.max(edges[edgeIdx].trail, strong ? 0.82 : 0.56);
-      }
+    function updateLabel() {
+      if (!cycle || !label) return;
+      const swatches = cycle.palette
+        .map((c) => `<span class="wang-swatch" style="background:${rgb(c)}"></span>`)
+        .join('');
+      label.innerHTML = `
+        <span>tileset: ${cycle.tileset.name}</span>
+        <span>shape: ${cycle.shape}</span>
+        <span>edges: ${cycle.tileset.edgeCount}</span>
+        <span>skin: ${cycle.skin}</span>
+        <span>growth: ${cycle.growth}</span>
+        <span>speed: ${cycle.speed.name}</span>
+        <span>tile: ${cycle.tileSize * CELL_PX}px</span>
+        <span>seed: ${cycle.seed.toString(16).padStart(8, '0')}</span>
+        <span class="wang-swatches">${swatches}</span>
+      `;
     }
 
-    function autoSeed() {
-      const usePointer = pointerX >= 0 && Math.random() < 0.78;
-      seedAt(usePointer ? pointerX : Math.random() * W, usePointer ? pointerY : Math.random() * H);
-      if (Math.random() < 0.28) {
-        const source = attractors[(Math.random() * attractors.length) | 0];
-        const route = chooseRouteFrom(source);
-        fireNode(source, mix(paper, cycleStops[(route + 5) % cycleStops.length], 0.76), 0.42, route, true);
-      }
-      resetSeedTimer();
+    function colorFor(label: number, palette: RGB[]): RGB {
+      return palette[label % palette.length];
     }
 
-    function step() {
-      stepCount++;
-      if (stepCount > 6000) rerollNetwork();
-      if (stepCount >= nextSeedAt) autoSeed();
-      if (stepCount % 34 === 0 && attractors.length > 0) {
-        const source = attractors[((stepCount / 34) | 0) % attractors.length];
-        const route = chooseRouteFrom(source);
-        fireNode(source, mix(paper, cycleStops[(route + 2) % cycleStops.length], 0.68), 0.34, route);
-      }
-
-      for (const node of nodes) {
-        node.activity *= ACTIVITY_DECAY;
-        node.flash *= 0.78;
-        if (node.refractory > 0) node.refractory--;
-      }
-      for (const edge of edges) edge.trail *= EDGE_DECAY;
-      for (let i = 0; i < routeGlow.length; i++) routeGlow[i] *= 0.944;
-
-      for (let i = pulses.length - 1; i >= 0; i--) {
-        const pulse = pulses[i];
-        pulse.t += pulse.speed;
-        const edge = edges[pulse.edge];
-        edge.trail = Math.max(edge.trail, pulse.strength * (1 - Math.abs(pulse.t - 0.5) * 0.62));
-        if (pulse.t >= 1) {
-          const target = nodes[pulse.to];
-          target.activity += pulse.strength * 0.62;
-          target.color = mix(target.color, pulse.color, 0.26);
-          const routeTarget = attractors[pulse.route];
-          if (pulse.to === routeTarget && target.refractory <= 0) {
-            const nextRoute = chooseRouteFrom(pulse.to);
-            const nextColor = mix(pulse.color, cycleStops[(nextRoute * 2 + 1) % cycleStops.length], 0.38);
-            fireNode(pulse.to, nextColor, Math.min(1.05, pulse.strength + 0.28), nextRoute, true);
-          } else if (target.refractory <= 0 && target.activity > 0.38) {
-            fireNode(pulse.to, pulse.color, Math.min(0.82, target.activity), pulse.route);
-          }
-          pulses.splice(i, 1);
-        }
-      }
+    function edgeColors(tile: WangTile, palette: RGB[]): RGB[] {
+      return tile.edges.map((edge) => colorFor(edge, palette));
     }
 
-    function drawLine(ax: number, ay: number, bx: number, by: number, color: RGB, alpha: number, width: number) {
-      ctx.strokeStyle = rgba(color, alpha);
-      ctx.lineWidth = width;
+    function squareColors(tile: WangTile, palette: RGB[]) {
+      const colors = edgeColors(tile, palette);
+      return { north: colors[0], east: colors[1], south: colors[2], west: colors[3] };
+    }
+
+    function fillPoly(points: Array<[number, number]>, color: RGB, alpha = 1) {
+      const cx = points.reduce((sum, point) => sum + point[0], 0) / points.length;
+      const cy = points.reduce((sum, point) => sum + point[1], 0) / points.length;
+      const bleed = 0.38;
+      const expanded = points.map(([x, y]) => {
+        const dx = x - cx;
+        const dy = y - cy;
+        const d = Math.sqrt(dx * dx + dy * dy) || 1;
+        return [x + (dx / d) * bleed, y + (dy / d) * bleed] as [number, number];
+      });
+      ctx.fillStyle = rgba(color, alpha);
       ctx.beginPath();
-      ctx.moveTo(ax, ay);
-      ctx.lineTo(bx, by);
-      ctx.stroke();
+      ctx.moveTo(expanded[0][0], expanded[0][1]);
+      for (let i = 1; i < expanded.length; i++) ctx.lineTo(expanded[i][0], expanded[i][1]);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function fillRectBleed(x: number, y: number, w: number, h: number) {
+      ctx.fillRect(Math.floor(x) - 0.5, Math.floor(y) - 0.5, Math.ceil(w) + 1, Math.ceil(h) + 1);
+    }
+
+    function drawTriangleLattice(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
+      const side = size * 1.55;
+      const h = side * 0.86;
+      const x = col * side * 0.50 - side;
+      const y = row * h - h;
+      const up = ((col + row) & 1) === 0;
+      const points: Array<[number, number]> = up
+        ? [[x, y + h], [x + side, y + h], [x + side * 0.5, y]]
+        : [[x, y], [x + side, y], [x + side * 0.5, y + h]];
+      const center: [number, number] = [
+        (points[0][0] + points[1][0] + points[2][0]) / 3,
+        (points[0][1] + points[1][1] + points[2][1]) / 3,
+      ];
+      const [west, east, base] = edgeColors(tile, palette);
+      const north = base;
+      const south = base;
+      if (skin === 'kite') {
+        fillPoly([points[0], center, points[2]], mix(west, north, 0.45), 0.94);
+        fillPoly([points[2], center, points[1]], mix(north, east, 0.45), 0.94);
+        fillPoly([points[1], center, points[0]], mix(south, east, 0.45), 0.94);
+      } else if (skin === 'bands') {
+        fillPoly([points[0], points[1], center], mix(north, south, 0.50), 0.90);
+        fillPoly([points[1], points[2], center], east, 0.72);
+        fillPoly([points[2], points[0], center], west, 0.72);
+      } else if (skin === 'strata') {
+        fillPoly(points, mix(north, south, 0.50), 0.88);
+        fillPoly([points[0], points[1], center], north, 0.42);
+        fillPoly([points[1], points[2], center], mix(east, south, 0.45), 0.55);
+      } else if (skin === 'zigzag') {
+        fillPoly([points[0], points[1], center], mix(west, east, 0.50), 0.82);
+        fillPoly([points[1], points[2], center], north, 0.68);
+        fillPoly([points[2], points[0], center], south, 0.68);
+      } else if (skin === 'splitBands') {
+        fillPoly(points, mix(north, south, 0.50), 0.86);
+        fillPoly([points[0], center, points[2]], west, 0.48);
+        fillPoly([points[1], center, points[2]], east, 0.48);
+      } else if (skin === 'pinwheel') {
+        fillPoly([points[0], center, points[2]], north, 0.84);
+        fillPoly([points[2], center, points[1]], east, 0.74);
+        fillPoly([points[1], center, points[0]], south, 0.64);
+      } else if (skin === 'shards') {
+        fillPoly(points, mix(west, east, 0.50), 0.82);
+        fillPoly([points[0], center, points[1]], base, 0.50);
+        fillPoly([points[1], center, points[2]], east, 0.58);
+      } else if (skin === 'caps') {
+        fillPoly(points, mix(base, west, 0.45), 0.82);
+        fillPoly([points[0], points[1], center], base, 0.60);
+      } else if (skin === 'rays') {
+        fillPoly([points[0], center, points[1]], base, 0.78);
+        fillPoly([points[1], center, points[2]], east, 0.58);
+        fillPoly([points[2], center, points[0]], west, 0.58);
+      } else if (skin === 'slats') {
+        fillPoly(points, mix(base, east, 0.45), 0.84);
+        fillPoly([points[0], points[2], center], west, 0.42);
+        fillPoly([points[1], points[2], center], east, 0.42);
+      } else if (skin === 'triad') {
+        fillPoly([points[0], points[1], center], base, 0.82);
+        fillPoly([points[1], points[2], center], east, 0.70);
+        fillPoly([points[2], points[0], center], west, 0.70);
+        fillPoly([points[0], points[1], points[2]], mix(base, mix(east, west, 0.50), 0.25), 0.26);
+      } else if (skin === 'lanes') {
+        fillPoly(points, mix(base, mix(east, west, 0.50), 0.35), 0.86);
+        fillPoly([points[0], points[1], center], base, 0.44);
+        fillPoly([points[1], points[2], center], east, 0.44);
+        fillPoly([points[2], points[0], center], west, 0.44);
+      } else {
+        fillPoly([points[0], points[1], center], up ? south : north, 0.96);
+        fillPoly([points[1], points[2], center], east, 0.88);
+        fillPoly([points[2], points[0], center], west, 0.88);
+      }
+    }
+
+    function drawHexLattice(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
+      const r = size * 1.02;
+      const stepX = Math.sqrt(3) * r;
+      const stepY = 1.5 * r;
+      const cx = col * stepX + (row & 1 ? stepX * 0.5 : 0) - stepX * 2;
+      const cy = row * stepY - stepY * 2;
+      const points: Array<[number, number]> = [];
+      for (let i = 0; i < 6; i++) {
+        const angle = -Math.PI / 2 + i * Math.PI / 3;
+        points.push([cx + Math.cos(angle) * r, cy + Math.sin(angle) * r]);
+      }
+      const [ne, east, se, sw, west, nw] = edgeColors(tile, palette);
+      const north = mix(nw, ne, 0.50);
+      const south = mix(sw, se, 0.50);
+      fillPoly(points, mix(north, south, 0.50), 0.92);
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+      ctx.closePath();
+      ctx.clip();
+      if (skin === 'bands') {
+        for (let i = 0; i < 6; i++) fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [ne, east, se, sw, west, nw][i], i % 2 ? 0.54 : 0.70);
+      } else if (skin === 'mosaic') {
+        fillPoly([points[5], points[0], [cx, cy]], nw, 0.92);
+        fillPoly([points[0], points[1], [cx, cy]], ne, 0.88);
+        fillPoly([points[1], points[2], [cx, cy]], east, 0.88);
+        fillPoly([points[2], points[3], [cx, cy]], se, 0.92);
+        fillPoly([points[3], points[4], [cx, cy]], sw, 0.88);
+        fillPoly([points[4], points[5], [cx, cy]], west, 0.88);
+      } else if (skin === 'beads') {
+        fillPoly(points, mix(east, west, 0.50), 0.82);
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.92);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (skin === 'wedges') {
+        for (let i = 0; i < 6; i++) {
+          fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [ne, east, se, sw, west, nw][i], 0.76);
+        }
+      } else if (skin === 'orbit') {
+        fillPoly([points[0], points[1], points[2], [cx, cy]], mix(ne, east, 0.45), 0.58);
+        fillPoly([points[3], points[4], points[5], [cx, cy]], mix(sw, west, 0.45), 0.58);
+        ctx.strokeStyle = rgba(mix(east, west, 0.50), 0.62);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.48, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (skin === 'petals') {
+        for (let i = 0; i < 3; i++) {
+          fillPoly([points[i], points[(i + 1) % 6], points[(i + 3) % 6], points[(i + 4) % 6]], [ne, east, se][i], 0.42);
+        }
+      } else if (skin === 'splitBands') {
+        fillPoly([points[5], points[0], points[1], points[2], [cx, cy]], mix(nw, east, 0.45), 0.58);
+        fillPoly([points[2], points[3], points[4], points[5], [cx, cy]], mix(se, west, 0.45), 0.58);
+      } else if (skin === 'shards') {
+        fillPoly([points[5], points[0], points[2], [cx, cy]], mix(nw, east, 0.45), 0.66);
+        fillPoly([points[2], points[3], points[5], [cx, cy]], mix(se, west, 0.45), 0.58);
+      } else if (skin === 'spokes') {
+        for (let i = 0; i < 6; i += 2) fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [ne, se, west][i / 2], 0.70);
+      } else if (skin === 'rays') {
+        for (let i = 0; i < 6; i++) fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [ne, east, se, sw, west, nw][i], 0.48 + (i % 2) * 0.22);
+      } else if (skin === 'caps') {
+        fillPoly([points[5], points[0], points[1], [cx, cy]], mix(nw, ne, 0.50), 0.64);
+        fillPoly([points[2], points[3], points[4], [cx, cy]], mix(se, sw, 0.50), 0.64);
+      } else if (skin === 'hexFan') {
+        for (let i = 0; i < 6; i++) {
+          const color = [ne, east, se, sw, west, nw][i];
+          fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], mix(color, palette[(i + 1) % palette.length], 0.18), 0.66);
+        }
+        fillPoly([[cx, cy - r * 0.28], [cx + r * 0.24, cy + r * 0.14], [cx - r * 0.24, cy + r * 0.14]], mix(ne, sw, 0.50), 0.64);
+      } else if (skin === 'edgeCorners') {
+        fillPoly(points, mix(north, south, 0.50), 0.84);
+        for (let i = 0; i < 6; i += 2) {
+          fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [ne, se, west][i / 2], 0.72);
+        }
+      } else {
+        fillPoly([points[0], points[1], points[2], [cx, cy]], east, 0.48);
+        fillPoly([points[3], points[4], points[5], [cx, cy]], west, 0.48);
+      }
+      ctx.restore();
+    }
+
+    function drawCirclePacking(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
+      const r = size * 0.82;
+      const gap = r * 0.08;
+      const h = Math.sqrt(3) * (r + gap);
+      const cx = col * (r + gap) * 1.5 - r * 2;
+      const cy = row * h + (col & 1 ? h * 0.5 : 0) - h * 2;
+      const [ne, east, se, sw, west, nw] = edgeColors(tile, palette);
+      const north = mix(nw, ne, 0.50);
+      const south = mix(sw, se, 0.50);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 0.25, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = rgba(mix(east, west, 0.50), 0.84);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 0.25, 0, Math.PI * 2);
+      ctx.fill();
+      for (let i = 0; i < 6; i++) {
+        const a0 = -Math.PI / 2 + i * Math.PI / 3;
+        const a1 = a0 + Math.PI / 3;
+        ctx.fillStyle = rgba([ne, east, se, sw, west, nw][i], 0.66);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, a0, a1);
+        ctx.closePath();
+        ctx.fill();
+      }
+      if (skin === 'bands') {
+        fillPoly([[cx - r, cy - r * 0.12], [cx + r, cy - r * 0.12], [cx + r, cy - r], [cx - r, cy - r]], north, 0.34);
+        fillPoly([[cx - r, cy + r * 0.12], [cx + r, cy + r * 0.12], [cx + r, cy + r], [cx - r, cy + r]], south, 0.34);
+      } else if (skin === 'mosaic') {
+        for (let i = 0; i < 6; i++) {
+          const a0 = -Math.PI / 2 + i * Math.PI / 3;
+          const a1 = a0 + Math.PI / 3;
+          const color = [ne, east, se, sw, west, nw][i];
+          ctx.fillStyle = rgba(color, 0.58);
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, r, a0, a1);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (skin === 'orbit') {
+        ctx.strokeStyle = rgba(north, 0.76);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r * 0.76, r * 0.34, Math.PI * 0.18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = rgba(south, 0.64);
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r * 0.76, r * 0.34, -Math.PI * 0.18, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (skin === 'petals') {
+        for (let i = 0; i < 6; i++) {
+          const a = -Math.PI / 2 + i * Math.PI / 3;
+          ctx.fillStyle = rgba([ne, east, se, sw, west, nw][i], 0.46);
+          ctx.beginPath();
+          ctx.ellipse(cx + Math.cos(a) * r * 0.25, cy + Math.sin(a) * r * 0.25, r * 0.42, r * 0.18, a, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (skin === 'splitBands') {
+        fillPoly([[cx - r, cy - r], [cx, cy - r], [cx, cy + r], [cx - r, cy + r]], west, 0.42);
+        fillPoly([[cx, cy - r], [cx + r, cy - r], [cx + r, cy + r], [cx, cy + r]], east, 0.42);
+      } else if (skin === 'target') {
+        for (let i = 0; i < 3; i++) {
+          ctx.strokeStyle = rgba([ne, se, west][i], 0.56);
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * (0.32 + i * 0.2), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else if (skin === 'spokes') {
+        for (let i = 0; i < 6; i++) {
+          const a = -Math.PI / 3 + i * Math.PI / 3;
+          ctx.strokeStyle = rgba([ne, east, se, sw, west, nw][i], 0.72);
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+          ctx.stroke();
+        }
+      } else if (skin === 'rays') {
+        for (let i = 0; i < 6; i++) {
+          const a0 = -Math.PI / 2 + i * Math.PI / 3;
+          fillPoly([[cx, cy], [cx + Math.cos(a0) * r, cy + Math.sin(a0) * r], [cx + Math.cos(a0 + 0.34) * r, cy + Math.sin(a0 + 0.34) * r]], [ne, east, se, sw, west, nw][i], 0.54);
+        }
+      } else if (skin === 'arcBands') {
+        for (let i = 0; i < 6; i++) {
+          ctx.strokeStyle = rgba([ne, east, se, sw, west, nw][i], 0.82);
+          ctx.lineWidth = Math.max(1, r * 0.16);
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * 0.64, -Math.PI / 2 + i * Math.PI / 3, -Math.PI / 2 + (i + 0.72) * Math.PI / 3);
+          ctx.stroke();
+        }
+      } else if (skin === 'caps') {
+        fillPoly([[cx - r, cy - r], [cx + r, cy - r], [cx, cy]], north, 0.36);
+        fillPoly([[cx - r, cy + r], [cx + r, cy + r], [cx, cy]], south, 0.36);
+      } else if (skin === 'iris') {
+        for (let i = 0; i < 6; i++) {
+          const a = -Math.PI / 2 + i * Math.PI / 3;
+          const color = [ne, east, se, sw, west, nw][i];
+          fillPoly([[cx, cy], [cx + Math.cos(a) * r, cy + Math.sin(a) * r], [cx + Math.cos(a + Math.PI / 3) * r, cy + Math.sin(a + Math.PI / 3) * r]], color, 0.62);
+        }
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.72);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.32, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (skin === 'hexFan') {
+        for (let i = 0; i < 6; i += 2) {
+          const a0 = -Math.PI / 2 + i * Math.PI / 3;
+          ctx.fillStyle = rgba([ne, se, west][i / 2], 0.62);
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.arc(cx, cy, r, a0, a0 + Math.PI * 2 / 3);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.72);
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.58, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawParallelogramTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
+      const w = size * 1.24;
+      const skew = size * 0.46;
+      const x = col * w + row * skew - H * 0.62 - size * 6;
+      const y = row * size - size * 6;
+      const points: Array<[number, number]> = [[x, y], [x + w, y], [x + w + skew, y + size], [x + skew, y + size]];
+      const center: [number, number] = [x + w * 0.5 + skew * 0.5, y + size * 0.5];
+      const { north, east, south, west } = squareColors(tile, palette);
+      if (skin === 'blocks') {
+        fillPoly(points, mix(north, south, 0.45), 0.94);
+        fillPoly([points[0], points[1], center], north, 0.55);
+        fillPoly([points[1], points[2], center], east, 0.55);
+        fillPoly([points[2], points[3], center], south, 0.55);
+        fillPoly([points[3], points[0], center], west, 0.55);
+      } else if (skin === 'diagonalBars') {
+        fillPoly(points, mix(north, south, 0.45), 0.90);
+        fillPoly([points[0], points[1], center], north, 0.62);
+        fillPoly([points[2], points[3], center], south, 0.62);
+      } else if (skin === 'strata') {
+        fillPoly(points, mix(west, east, 0.50), 0.90);
+        fillPoly([points[0], points[1], [center[0] + skew * 0.3, center[1]]], north, 0.44);
+        fillPoly([points[2], points[3], [center[0] - skew * 0.3, center[1]]], south, 0.44);
+      } else if (skin === 'crosshatch') {
+        fillPoly(points, mix(north, south, 0.45), 0.88);
+        fillPoly([points[0], points[1], points[2], center], east, 0.36);
+        fillPoly([points[2], points[3], points[0], center], west, 0.36);
+      } else if (skin === 'splitBands') {
+        fillPoly([points[0], points[1], points[2], center], mix(north, east, 0.50), 0.82);
+        fillPoly([points[2], points[3], points[0], center], mix(south, west, 0.50), 0.82);
+      } else if (skin === 'shards') {
+        fillPoly(points, mix(north, south, 0.45), 0.88);
+        fillPoly([points[0], points[1], points[3]], west, 0.34);
+        fillPoly([points[1], points[2], points[3]], east, 0.34);
+      } else if (skin === 'slats') {
+        fillPoly(points, mix(east, west, 0.50), 0.86);
+        fillPoly([points[0], points[1], center], north, 0.46);
+        fillPoly([points[2], points[3], center], south, 0.46);
+      } else if (skin === 'steps') {
+        fillPoly(points, mix(north, south, 0.45), 0.86);
+        fillPoly([points[0], [center[0], points[0][1]], center, points[3]], west, 0.44);
+        fillPoly([[center[0], points[1][1]], points[1], points[2], center], east, 0.44);
+      } else if (skin === 'frame') {
+        fillPoly(points, mix(north, south, 0.45), 0.84);
+        fillPoly([points[0], points[1], center], north, 0.36);
+        fillPoly([points[2], points[3], center], south, 0.36);
+      } else if (skin === 'splitDiag') {
+        fillPoly([points[0], points[1], points[2]], mix(north, east, 0.45), 0.88);
+        fillPoly([points[2], points[3], points[0]], mix(south, west, 0.45), 0.88);
+        fillPoly([points[1], points[2], center], east, 0.42);
+        fillPoly([points[3], points[0], center], west, 0.42);
+      } else if (skin === 'lanes') {
+        fillPoly(points, mix(north, south, 0.50), 0.86);
+        fillPoly([points[0], points[1], center], north, 0.44);
+        fillPoly([points[1], points[2], center], east, 0.44);
+        fillPoly([points[2], points[3], center], south, 0.44);
+        fillPoly([points[3], points[0], center], west, 0.44);
+      } else {
+        fillPoly([points[0], points[1], center], north, 0.90);
+        fillPoly([points[1], points[2], center], east, 0.86);
+        fillPoly([points[2], points[3], center], south, 0.90);
+        fillPoly([points[3], points[0], center], west, 0.86);
+      }
+    }
+
+    function drawRectangleTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
+      const w = size * 1.55;
+      const h = size * 0.72;
+      const offset = skin === 'brickwork' && (row & 1) ? w * 0.5 : 0;
+      const x = col * w - offset - w * 3;
+      const y = row * h - h * 3;
+      const x2 = x + w;
+      const y2 = y + h;
+      const cx = x + w * 0.5;
+      const cy = y + h * 0.5;
+      const { north, east, south, west } = squareColors(tile, palette);
+      if (skin === 'bands') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.88);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(west, 0.76);
+        fillRectBleed(x, y, Math.max(2, w * 0.18), h);
+        ctx.fillStyle = rgba(east, 0.76);
+        fillRectBleed(x2 - Math.max(2, w * 0.18), y, Math.max(2, w * 0.18), h);
+      } else if (skin === 'brickwork') {
+        ctx.fillStyle = rgba(mix(north, east, 0.45), 0.92);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(south, 0.52);
+        fillRectBleed(x, y2 - Math.max(1, h * 0.24), w, Math.max(1, h * 0.24));
+      } else if (skin === 'splitBands') {
+        ctx.fillStyle = rgba(mix(north, west, 0.45), 0.86);
+        fillRectBleed(x, y, w * 0.5, h);
+        ctx.fillStyle = rgba(mix(south, east, 0.45), 0.86);
+        fillRectBleed(cx, y, w * 0.5, h);
+      } else if (skin === 'checker') {
+        ctx.fillStyle = rgba(north, 0.84);
+        fillRectBleed(x, y, w * 0.5, h * 0.5);
+        ctx.fillStyle = rgba(east, 0.84);
+        fillRectBleed(cx, y, w * 0.5, h * 0.5);
+        ctx.fillStyle = rgba(west, 0.84);
+        fillRectBleed(x, cy, w * 0.5, h * 0.5);
+        ctx.fillStyle = rgba(south, 0.84);
+        fillRectBleed(cx, cy, w * 0.5, h * 0.5);
+      } else if (skin === 'crosshatch') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.86);
+        fillRectBleed(x, y, w, h);
+        fillPoly([[x, y], [x2, y], [x, y2]], east, 0.34);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], west, 0.34);
+      } else if (skin === 'nestedBox') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.86);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(mix(east, west, 0.5), 0.62);
+        fillRectBleed(x + w * 0.24, y + h * 0.22, w * 0.52, h * 0.56);
+      } else if (skin === 'slats') {
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.86);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(north, 0.38);
+        fillRectBleed(x, y, w, h * 0.34);
+        ctx.fillStyle = rgba(south, 0.38);
+        fillRectBleed(x, y2 - h * 0.34, w, h * 0.34);
+      } else if (skin === 'steps') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.84);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(west, 0.46);
+        fillRectBleed(x, y, w * 0.55, h * 0.55);
+        ctx.fillStyle = rgba(east, 0.46);
+        fillRectBleed(x + w * 0.45, y + h * 0.45, w * 0.55, h * 0.55);
+      } else if (skin === 'frame') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.84);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.48);
+        fillRectBleed(x + w * 0.18, y + h * 0.22, w * 0.64, h * 0.56);
+      } else if (skin === 'caps') {
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.84);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(north, 0.52);
+        fillRectBleed(x, y, w, h * 0.28);
+        ctx.fillStyle = rgba(south, 0.52);
+        fillRectBleed(x, y2 - h * 0.28, w, h * 0.28);
+      } else if (skin === 'splitDiag') {
+        fillPoly([[x, y], [x2, y], [x, y2]], mix(north, west, 0.45), 0.86);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], mix(east, south, 0.45), 0.86);
+      } else if (skin === 'edgeCorners') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.82);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(north, 0.48);
+        fillRectBleed(x, y, w, h * 0.24);
+        ctx.fillStyle = rgba(east, 0.48);
+        fillRectBleed(x2 - w * 0.22, y, w * 0.22, h);
+      } else if (skin === 'lanes') {
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.82);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(north, 0.36);
+        fillRectBleed(x, y, w, h * 0.22);
+        ctx.fillStyle = rgba(south, 0.36);
+        fillRectBleed(x, y2 - h * 0.22, w, h * 0.22);
+      } else {
+        fillPoly([[x, y], [x2, y], [cx, cy]], north, 0.82);
+        fillPoly([[x2, y], [x2, y2], [cx, cy]], east, 0.82);
+        fillPoly([[x2, y2], [x, y2], [cx, cy]], south, 0.82);
+        fillPoly([[x, y2], [x, y], [cx, cy]], west, 0.82);
+      }
+    }
+
+    function drawTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], shape: ShapeKind, skin: VisualSkin) {
+      if (shape === 'triangle') {
+        drawTriangleLattice(tile, col, row, size, palette, skin);
+        return;
+      }
+      if (shape === 'hexagon') {
+        drawHexLattice(tile, col, row, size, palette, skin);
+        return;
+      }
+      if (shape === 'circle') {
+        drawCirclePacking(tile, col, row, size, palette, skin);
+        return;
+      }
+      if (shape === 'parallelogram') {
+        drawParallelogramTile(tile, col, row, size, palette, skin);
+        return;
+      }
+      if (shape === 'rectangle') {
+        drawRectangleTile(tile, col, row, size, palette, skin);
+        return;
+      }
+      const x = col * size;
+      const y = row * size;
+      const x2 = x + size;
+      const y2 = y + size;
+      const cx = x + size / 2;
+      const cy = y + size / 2;
+      const { north, east, south, west } = squareColors(tile, palette);
+      const dark = mix(paper, palette[0], 0.10);
+      ctx.fillStyle = rgb(dark);
+      fillRectBleed(x, y, size, size);
+
+      if (skin === 'triangles') {
+        fillPoly([[x, y], [x2, y], [cx, cy]], north, 0.96);
+        fillPoly([[x2, y], [x2, y2], [cx, cy]], east, 0.96);
+        fillPoly([[x2, y2], [x, y2], [cx, cy]], south, 0.96);
+        fillPoly([[x, y2], [x, y], [cx, cy]], west, 0.96);
+      } else if (skin === 'edgeBands') {
+        const band = Math.max(2, Math.floor(size * 0.24));
+        ctx.fillStyle = rgba(north, 0.95);
+        fillRectBleed(x, y, size, band);
+        ctx.fillStyle = rgba(east, 0.95);
+        fillRectBleed(x2 - band, y, band, size);
+        ctx.fillStyle = rgba(south, 0.95);
+        fillRectBleed(x, y2 - band, size, band);
+        ctx.fillStyle = rgba(west, 0.95);
+        fillRectBleed(x, y, band, size);
+        ctx.fillStyle = rgba(mix(palette[(tile.edges[0] + tile.edges[2]) % palette.length], paper, 0.35), 0.78);
+        ctx.fillRect(Math.round(cx) - 1, Math.round(cy) - 1, 3, 3);
+      } else if (skin === 'cornerCuts') {
+        fillPoly([[x, y], [x2, y], [x2, cy], [cx, cy]], north, 0.86);
+        fillPoly([[x2, y], [x2, y2], [cx, y2], [cx, cy]], east, 0.86);
+        fillPoly([[x2, y2], [x, y2], [x, cy], [cx, cy]], south, 0.86);
+        fillPoly([[x, y2], [x, y], [cx, y], [cx, cy]], west, 0.86);
+      } else if (skin === 'centerGlyphs') {
+        fillPoly([[x, y], [x2, y], [cx, cy]], north, 0.70);
+        fillPoly([[x2, y], [x2, y2], [cx, cy]], east, 0.70);
+        fillPoly([[x2, y2], [x, y2], [cx, cy]], south, 0.70);
+        fillPoly([[x, y2], [x, y], [cx, cy]], west, 0.70);
+        ctx.fillStyle = rgba(mix(palette[(tile.edges[1] + tile.edges[3]) % palette.length], paper, 0.18), 0.95);
+        const dot = Math.max(2, Math.floor(size * 0.22));
+        ctx.fillRect(Math.round(cx - dot / 2), Math.round(cy - dot / 2), dot, dot);
+      } else if (skin === 'diamondWeave') {
+        const q = size * 0.26;
+        fillPoly([[x, y], [cx, y], [x + q, cy], [x, cy]], west, 0.90);
+        fillPoly([[cx, y], [x2, y], [x2, cy], [x2 - q, cy]], north, 0.90);
+        fillPoly([[x2, cy], [x2, y2], [cx, y2], [x2 - q, cy]], east, 0.90);
+        fillPoly([[x, cy], [x + q, cy], [cx, y2], [x, y2]], south, 0.90);
+        fillPoly([[cx, y], [x2 - q, cy], [cx, y2], [x + q, cy]], mix(north, south, 0.50), 0.78);
+      } else if (skin === 'isometric') {
+        fillPoly([[x, y], [x2, y], [cx, cy]], mix(north, east, 0.35), 0.88);
+        fillPoly([[x2, y], [x2, y2], [cx, cy]], mix(east, south, 0.35), 0.88);
+        fillPoly([[x2, y2], [x, y2], [cx, cy]], mix(south, west, 0.35), 0.88);
+        fillPoly([[x, y2], [x, y], [cx, cy]], mix(west, north, 0.35), 0.88);
+        const rib = Math.max(1, Math.floor(size * 0.10));
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.42);
+        ctx.fillRect(Math.round(cx - rib / 2), y, rib, size);
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.34);
+        ctx.fillRect(x, Math.round(cy - rib / 2), size, rib);
+      } else if (skin === 'lozenges') {
+        fillPoly([[cx, y], [x2, cy], [cx, y2], [x, cy]], mix(north, south, 0.35), 0.96);
+        fillPoly([[x, cy], [cx, y], [cx, cy]], west, 0.72);
+        fillPoly([[cx, y], [x2, cy], [cx, cy]], north, 0.72);
+        fillPoly([[x2, cy], [cx, y2], [cx, cy]], east, 0.72);
+        fillPoly([[cx, y2], [x, cy], [cx, cy]], south, 0.72);
+      } else if (skin === 'beads') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.84);
+        ctx.beginPath();
+        ctx.arc(cx, cy, size * 0.48, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = rgba(west, 0.92);
+        ctx.fillRect(x, Math.round(cy - 1), Math.ceil(size * 0.42), 2);
+        ctx.fillStyle = rgba(east, 0.92);
+        ctx.fillRect(Math.floor(x2 - size * 0.42), Math.round(cy - 1), Math.ceil(size * 0.42), 2);
+        ctx.fillStyle = rgba(north, 0.92);
+        ctx.fillRect(Math.round(cx - 1), y, 2, Math.ceil(size * 0.42));
+      } else if (skin === 'scales') {
+        fillPoly([[x, y2], [cx, y], [x2, y2]], mix(north, east, 0.45), 0.90);
+        fillPoly([[x, y2], [cx, cy], [cx, y], [x, y]], west, 0.50);
+        fillPoly([[x2, y2], [cx, cy], [cx, y], [x2, y]], east, 0.50);
+        fillPoly([[x, y2], [cx, cy], [x2, y2]], south, 0.64);
+      } else if (skin === 'chevrons') {
+        fillPoly([[x, y], [cx, cy], [x, y2]], west, 0.88);
+        fillPoly([[x2, y], [cx, cy], [x2, y2]], east, 0.88);
+        fillPoly([[x, y], [cx, cy], [x2, y]], north, 0.62);
+        fillPoly([[x, y2], [cx, cy], [x2, y2]], south, 0.62);
+      } else if (skin === 'diagonalBars') {
+        fillPoly([[x, y], [x2, y], [x, y2]], mix(north, west, 0.45), 0.88);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], mix(east, south, 0.45), 0.88);
+        fillPoly([[x + size * 0.24, y], [x2, y], [x2, y + size * 0.24], [x + size * 0.24, y2], [x, y2], [x, y2 - size * 0.24]], mix(north, south, 0.50), 0.46);
+      } else if (skin === 'checker') {
+        ctx.fillStyle = rgba(north, 0.84);
+        fillRectBleed(x, y, size * 0.5, size * 0.5);
+        ctx.fillStyle = rgba(east, 0.84);
+        fillRectBleed(cx, y, size * 0.5, size * 0.5);
+        ctx.fillStyle = rgba(west, 0.84);
+        fillRectBleed(x, cy, size * 0.5, size * 0.5);
+        ctx.fillStyle = rgba(south, 0.84);
+        fillRectBleed(cx, cy, size * 0.5, size * 0.5);
+      } else if (skin === 'orbit') {
+        fillPoly([[x, y], [x2, y], [x2, y2], [x, y2]], mix(east, west, 0.50), 0.78);
+        ctx.strokeStyle = rgba(north, 0.72);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, size * 0.34, size * 0.18, Math.PI * 0.25, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = rgba(south, 0.62);
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, size * 0.34, size * 0.18, -Math.PI * 0.25, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (skin === 'splitBands') {
+        ctx.fillStyle = rgba(mix(north, west, 0.45), 0.86);
+        fillRectBleed(x, y, size * 0.5, size);
+        ctx.fillStyle = rgba(mix(south, east, 0.45), 0.86);
+        fillRectBleed(cx, y, size * 0.5, size);
+      } else if (skin === 'pinwheel') {
+        fillPoly([[x, y], [x2, y], [cx, cy]], north, 0.84);
+        fillPoly([[x2, y], [x2, y2], [cx, cy]], east, 0.74);
+        fillPoly([[x2, y2], [x, y2], [cx, cy]], south, 0.84);
+        fillPoly([[x, y2], [x, y], [cx, cy]], west, 0.74);
+      } else if (skin === 'crosshatch') {
+        fillPoly([[x, y], [x2, y], [x2, y2], [x, y2]], mix(north, south, 0.50), 0.82);
+        fillPoly([[x, y], [x2, y], [x, y2]], east, 0.30);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], west, 0.30);
+      } else if (skin === 'plusGlyph') {
+        fillPoly([[x, y], [x2, y], [x2, y2], [x, y2]], mix(north, south, 0.50), 0.82);
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.72);
+        fillRectBleed(cx - size * 0.11, y, size * 0.22, size);
+        fillRectBleed(x, cy - size * 0.11, size, size * 0.22);
+      } else if (skin === 'nestedBox') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(mix(east, west, 0.5), 0.60);
+        fillRectBleed(x + size * 0.24, y + size * 0.24, size * 0.52, size * 0.52);
+      } else if (skin === 'shards') {
+        fillPoly([[x, y], [x2, y], [x, y2]], mix(north, west, 0.45), 0.84);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], mix(east, south, 0.45), 0.84);
+        fillPoly([[x, y], [cx, cy], [x2, y]], north, 0.36);
+        fillPoly([[x, y2], [cx, cy], [x2, y2]], south, 0.36);
+      } else if (skin === 'caps') {
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(north, 0.50);
+        fillRectBleed(x, y, size, size * 0.25);
+        ctx.fillStyle = rgba(south, 0.50);
+        fillRectBleed(x, y2 - size * 0.25, size, size * 0.25);
+      } else if (skin === 'slats') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(west, 0.42);
+        fillRectBleed(x, y, size * 0.34, size);
+        ctx.fillStyle = rgba(east, 0.42);
+        fillRectBleed(x2 - size * 0.34, y, size * 0.34, size);
+      } else if (skin === 'steps') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(west, 0.44);
+        fillRectBleed(x, y, size * 0.55, size * 0.55);
+        ctx.fillStyle = rgba(east, 0.44);
+        fillRectBleed(x + size * 0.45, y + size * 0.45, size * 0.55, size * 0.55);
+      } else if (skin === 'frame') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.54);
+        fillRectBleed(x + size * 0.22, y + size * 0.22, size * 0.56, size * 0.56);
+      } else if (skin === 'splitDiag') {
+        fillPoly([[x, y], [x2, y], [x, y2]], mix(north, west, 0.45), 0.88);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], mix(east, south, 0.45), 0.88);
+        fillPoly([[x, y], [cx, cy], [x2, y]], north, 0.34);
+        fillPoly([[x2, y], [cx, cy], [x2, y2]], east, 0.34);
+      } else if (skin === 'edgeCorners') {
+        fillPoly([[x, y], [x2, y], [x2, y2], [x, y2]], mix(north, south, 0.50), 0.78);
+        fillPoly([[x, y], [cx, y], [x, cy]], north, 0.58);
+        fillPoly([[x2, y], [x2, cy], [cx, y]], east, 0.58);
+        fillPoly([[x2, y2], [cx, y2], [x2, cy]], south, 0.58);
+        fillPoly([[x, y2], [x, cy], [cx, y2]], west, 0.58);
+      } else if (skin === 'lanes') {
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(north, 0.40);
+        fillRectBleed(x, y, size, size * 0.24);
+        ctx.fillStyle = rgba(south, 0.40);
+        fillRectBleed(x, y2 - size * 0.24, size, size * 0.24);
+      } else if (skin === 'insetDiamonds') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.82);
+        fillRectBleed(x, y, size, size);
+        fillPoly([[cx, y + 1], [x2 - 1, cy], [cx, y2 - 1], [x + 1, cy]], mix(east, west, 0.5), 0.92);
+      } else if (skin === 'pixelGlyphs') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.80);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(west, 0.95);
+        ctx.fillRect(x + 1, y + 1, Math.max(1, size * 0.22), Math.max(1, size * 0.22));
+        ctx.fillStyle = rgba(east, 0.95);
+        ctx.fillRect(x2 - Math.max(2, size * 0.28), y2 - Math.max(2, size * 0.28), Math.max(1, size * 0.22), Math.max(1, size * 0.22));
+      } else if (skin === 'quarterArcs') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.86);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(east, 0.55);
+        ctx.beginPath();
+        ctx.arc(x2, y, size * 0.82, Math.PI * 0.5, Math.PI, false);
+        ctx.lineTo(x2, y);
+        ctx.fill();
+        ctx.fillStyle = rgba(west, 0.55);
+        ctx.beginPath();
+        ctx.arc(x, y2, size * 0.82, -Math.PI * 0.5, 0, false);
+        ctx.lineTo(x, y2);
+        ctx.fill();
+      } else {
+        const band = Math.max(2, Math.floor(size * 0.20));
+        fillPoly([[x, y], [x2, y], [x, y2]], north, 0.78);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], south, 0.78);
+        ctx.fillStyle = rgba(west, 0.66);
+        fillRectBleed(x, y, band, size);
+        ctx.fillStyle = rgba(east, 0.66);
+        fillRectBleed(x2 - band, y, band, size);
+      }
     }
 
     function draw() {
+      if (!cycle) return;
       ctx.fillStyle = rgb(paper);
       ctx.fillRect(0, 0, W, H);
-      ctx.lineCap = 'square';
-
-      for (const edge of edges) {
-        const a = nodes[edge.a];
-        const b = nodes[edge.b];
-        const ax = a.x;
-        const ay = a.y;
-        const bx = b.x;
-        const by = b.y;
-        drawLine(ax, ay, bx, by, edge.color, edge.shortcut ? 0.034 : 0.024, 1);
-        if (edge.trail > 0.015) {
-          drawLine(ax, ay, bx, by, edge.color, Math.min(0.36, edge.trail * 0.30), 1);
-        }
+      for (let pos = 0; pos < cycle.visible.length; pos++) {
+        if (!cycle.visible[pos]) continue;
+        const tileIdx = cycle.grid[pos];
+        if (tileIdx < 0) continue;
+        const col = pos % cycle.cols;
+        const row = Math.floor(pos / cycle.cols);
+        drawTile(cycle.tileset.tiles[tileIdx], col, row, cycle.tileSize, cycle.palette, cycle.shape, cycle.skin);
       }
+    }
 
-      for (const pulse of pulses) {
-        const edge = edges[pulse.edge];
-        const a = nodes[pulse.from];
-        const b = nodes[pulse.to];
-        const ax = a.x;
-        const ay = a.y;
-        const bx = b.x;
-        const by = b.y;
-        const x = ax + (bx - ax) * pulse.t;
-        const y = ay + (by - ay) * pulse.t;
-        const tailT = Math.max(0, pulse.t - 0.10);
-        drawLine(
-          ax + (bx - ax) * tailT,
-          ay + (by - ay) * tailT,
-          x,
-          y,
-          pulse.color,
-          Math.min(0.54, pulse.strength * 0.48),
-          1,
-        );
-        ctx.fillStyle = rgba(pulse.color, Math.min(0.76, pulse.strength * 0.80));
-        ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
-      }
-
-      for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i];
-        const a = Math.min(1, node.activity + node.flash);
-        const x = Math.round(node.x);
-        const y = Math.round(node.y);
-        const glow = node.hub ? (routeGlow[attractors.indexOf(i)] ?? 0) : 0;
-        const base = node.hub ? 0.15 + glow * 0.18 : node.refractory > 0 ? 0.08 : 0.040;
-        ctx.fillStyle = rgba(node.color, base + a * 0.42);
-        const size = node.hub ? (a > 0.50 || glow > 0.20 ? 4 : 3) : a > 0.55 ? 3 : a > 0.16 ? 2 : 1;
-        ctx.fillRect(x - (size >> 1), y - (size >> 1), size, size);
-        if (node.hub) {
-          ctx.fillStyle = rgba(mix(node.color, cycleStops[cycleStops.length - 1], 0.28), 0.08 + glow * 0.36 + a * 0.18);
-          ctx.fillRect(x - 4, y, 9, 1);
-          ctx.fillRect(x, y - 4, 1, 9);
-        } else if (a > 0.55) {
-          ctx.fillStyle = rgba(mix(node.color, cycleStops[cycleStops.length - 1], 0.45), 0.24);
-          ctx.fillRect(x - 2, y, 5, 1);
-          ctx.fillRect(x, y - 2, 1, 5);
+    function step() {
+      if (!cycle) return;
+      const total = cycle.cols * cycle.rows;
+      const amount = cycle.revealStep * playbackSpeed;
+      if (cycle.blackHold > 0) {
+        cycle.blackHold--;
+      } else if (playbackDirection < 0) {
+        if (cycle.revealed > 0) {
+          const next = Math.max(0, cycle.revealed - amount);
+          for (let i = next; i < cycle.revealed; i++) cycle.visible[cycle.order[i]] = 0;
+          cycle.revealed = next;
+          cycle.hold = 0;
         }
+      } else if (cycle.revealed < total) {
+        const next = Math.min(total, cycle.revealed + amount);
+        for (let i = cycle.revealed; i < next; i++) cycle.visible[cycle.order[i]] = 1;
+        cycle.revealed = next;
+        cycle.hold = 0;
+      } else if (++cycle.hold > HOLD_FRAMES) {
+        makeCycle();
       }
     }
 
@@ -613,25 +1429,17 @@ import Base from '../layouts/Base.astro';
       H = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
       canvas.width = W;
       canvas.height = H;
-      rerollNetwork();
-    }
-
-    function setPointerFromEvent(e: PointerEvent) {
-      const rect = canvas.getBoundingClientRect();
-      pointerX = ((e.clientX - rect.left) / rect.width) * W;
-      pointerY = ((e.clientY - rect.top) / rect.height) * H;
-    }
-
-    resize();
-    if (reduce) {
-      seedAt(W * 0.5, H * 0.5, true);
-      for (let i = 0; i < 140; i++) step();
+      ctx.imageSmoothingEnabled = false;
+      makeCycle();
       draw();
-    } else {
+    }
+
+    setupSelectors();
+    resize();
+    if (!reduce) {
       let last = 0;
-      const targetMs = 33;
       const loop = (now: number) => {
-        if (now - last >= targetMs) {
+        if (now - last >= 33) {
           step();
           draw();
           last = now;
@@ -641,15 +1449,22 @@ import Base from '../layouts/Base.astro';
       requestAnimationFrame(loop);
     }
     window.addEventListener('resize', resize);
-    window.addEventListener('pointermove', setPointerFromEvent);
-    window.addEventListener('pointerdown', (e) => {
-      setPointerFromEvent(e);
-      seedAt(pointerX, pointerY, true);
-      resetSeedTimer();
+    resetButton?.addEventListener('click', () => {
+      makeCycle();
+      draw();
     });
-    window.addEventListener('pointerleave', () => { pointerX = -1; pointerY = -1; });
-    window.addEventListener('pointerout', (e) => {
-      if (!e.relatedTarget) { pointerX = -1; pointerY = -1; }
+    document.addEventListener('pointerdown', (event) => {
+      const target = event.target as Element | null;
+      if (target?.closest('a, button, dialog')) return;
+      setPlayback(event.clientX < window.innerWidth / 2 ? -1 : 1, true);
+    });
+    window.addEventListener('pointerup', () => setPlayback(1, false));
+    window.addEventListener('pointercancel', () => setPlayback(1, false));
+    window.addEventListener('blur', () => setPlayback(1, false));
+    infoButton?.addEventListener('click', () => aboutDialog?.showModal());
+    aboutClose?.addEventListener('click', () => aboutDialog?.close());
+    aboutDialog?.addEventListener('click', (event) => {
+      if (event.target === aboutDialog) aboutDialog.close();
     });
   }
 </script>
