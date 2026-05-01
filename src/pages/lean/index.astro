@@ -503,11 +503,14 @@ import Base from '../../layouts/Base.astro';
     let W = 0;
     let H = 0;
     let cycle: Cycle | null = null;
-    let speedBoost = 1;
+    let playbackDirection = 1;
+    let playbackSpeed = 1;
 
-    function setSpeedBoost(active: boolean) {
-      speedBoost = active ? 4 : 1;
-      boostIndicator?.classList.toggle('is-active', active);
+    function setPlayback(direction: -1 | 1, boosted: boolean) {
+      playbackDirection = direction;
+      playbackSpeed = boosted ? 4 : 1;
+      boostIndicator?.classList.toggle('is-active', boosted);
+      boostIndicator?.classList.toggle('is-reverse', boosted && direction < 0);
     }
 
     function makeCycle() {
@@ -1257,10 +1260,19 @@ import Base from '../../layouts/Base.astro';
     function step() {
       if (!cycle) return;
       const total = cycle.cols * cycle.rows;
-      if (cycle.revealed < total) {
-        const next = Math.min(total, cycle.revealed + cycle.revealStep * speedBoost);
+      const amount = cycle.revealStep * playbackSpeed;
+      if (playbackDirection < 0) {
+        if (cycle.revealed > 0) {
+          const next = Math.max(0, cycle.revealed - amount);
+          for (let i = next; i < cycle.revealed; i++) cycle.visible[cycle.order[i]] = 0;
+          cycle.revealed = next;
+          cycle.hold = 0;
+        }
+      } else if (cycle.revealed < total) {
+        const next = Math.min(total, cycle.revealed + amount);
         for (let i = cycle.revealed; i < next; i++) cycle.visible[cycle.order[i]] = 1;
         cycle.revealed = next;
+        cycle.hold = 0;
       } else if (++cycle.hold > HOLD_FRAMES) {
         makeCycle();
       }
@@ -1297,11 +1309,11 @@ import Base from '../../layouts/Base.astro';
     document.addEventListener('pointerdown', (event) => {
       const target = event.target as Element | null;
       if (target?.closest('a, button, dialog')) return;
-      setSpeedBoost(true);
+      setPlayback(event.clientX < window.innerWidth / 2 ? -1 : 1, true);
     });
-    window.addEventListener('pointerup', () => setSpeedBoost(false));
-    window.addEventListener('pointercancel', () => setSpeedBoost(false));
-    window.addEventListener('blur', () => setSpeedBoost(false));
+    window.addEventListener('pointerup', () => setPlayback(1, false));
+    window.addEventListener('pointercancel', () => setPlayback(1, false));
+    window.addEventListener('blur', () => setPlayback(1, false));
     infoButton?.addEventListener('click', () => aboutDialog?.showModal());
     aboutClose?.addEventListener('click', () => aboutDialog?.close());
     aboutDialog?.addEventListener('click', (event) => {

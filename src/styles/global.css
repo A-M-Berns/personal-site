@@ -408,6 +408,11 @@ a:focus-visible {
   opacity: 1;
   transform: translateY(0);
 }
+.wang-boost.is-reverse {
+  right: auto;
+  left: 1rem;
+  transform: translateY(0) rotate(180deg);
+}
 .wang-boost span {
   display: block;
   width: 0;
