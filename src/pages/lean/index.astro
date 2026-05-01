@@ -419,6 +419,22 @@ import Base from '../../layouts/Base.astro';
       return grid;
     }
 
+    function validatePatch(shape: ShapeKind, tileset: TileSet, grid: Int16Array, cols: number, rows: number): boolean {
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const idx = y * cols + x;
+          const tile = tileset.tiles[grid[idx]];
+          if (!tile || tile.edges.length !== tileset.edgeCount) return false;
+          const constraints = previousConstraints(shape, x, y, cols);
+          for (const { edge, neighbor, neighborEdge } of constraints) {
+            const neighborTile = tileset.tiles[grid[neighbor]];
+            if (!neighborTile || tile.edges[edge] !== neighborTile.edges[neighborEdge]) return false;
+          }
+        }
+      }
+      return true;
+    }
+
     function makeOrganicOrder(cols: number, rows: number, growth: GrowthMode, rng: () => number): number[] {
       const total = cols * rows;
       const order = Array.from({ length: total }, (_, i) => i);
@@ -560,11 +576,13 @@ import Base from '../../layouts/Base.astro';
       let grid: Int16Array | null = null;
       for (let tries = 0; tries < 8 && !grid; tries++) {
         grid = solvePatch(shape, tileset, cols, rows, rng);
+        if (grid && !validatePatch(shape, tileset, grid, cols, rows)) grid = null;
         if (!grid) tileset = pick(candidateTileSets, rng);
       }
       if (!grid) {
         tileset = candidateTileSets[0];
         grid = solvePatch(shape, tileset, cols, rows, rng)!;
+        if (!validatePatch(shape, tileset, grid, cols, rows)) throw new Error(`Invalid ${shape} tile patch`);
       }
       cycle = {
         seed,
