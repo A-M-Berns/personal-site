@@ -30,7 +30,7 @@ import Base from '../../layouts/Base.astro';
       <button class="wang-about-close" type="button" aria-label="Close">×</button>
       <h2 id="wang-about-title">About this animation</h2>
       <p>
-        A seeded Wang-tile generator fills a finite grid with square tiles whose touching edge labels always match. Each cycle chooses a mathematical tileset, a visual skin, an organic growth order, a reveal speed, and a small palette from the site's master color pool.
+        A seeded tile generator fills a finite lattice with shape-native matching rules: four labels for square-like tiles, three for triangles, and six for hexagonal or circle-packed tiles. Touching sides always share the same label. Each cycle chooses a mathematical tileset, a visual skin, an organic growth order, a reveal speed, and a small palette from the site's master color pool.
       </p>
       <p>
         The label shows the active tileset, skin, growth mode, speed, tile size, seed, and palette so variants can be compared while tuning.
@@ -57,10 +57,10 @@ import Base from '../../layouts/Base.astro';
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     type RGB = [number, number, number];
-    type WangTile = { n: number; e: number; s: number; w: number };
-    type TileSet = { name: string; colors: number; tiles: WangTile[] };
     type ShapeKind = 'square' | 'triangle' | 'hexagon' | 'circle' | 'parallelogram' | 'rectangle';
-    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'hexCells' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork' | 'diagonalBars' | 'checker' | 'orbit' | 'splitBands' | 'pinwheel' | 'crosshatch' | 'plusGlyph' | 'nestedBox' | 'strata' | 'zigzag' | 'wedges' | 'petals' | 'target';
+    type WangTile = { edges: number[] };
+    type TileSet = { name: string; colors: number; edgeCount: number; tiles: WangTile[] };
+    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'hexCells' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork' | 'diagonalBars' | 'checker' | 'orbit' | 'splitBands' | 'pinwheel' | 'crosshatch' | 'plusGlyph' | 'nestedBox' | 'strata' | 'zigzag' | 'wedges' | 'petals' | 'target' | 'shards' | 'caps' | 'spokes' | 'rays' | 'slats' | 'steps' | 'frame' | 'arcBands';
     type GrowthMode = 'spores' | 'tendrils' | 'river' | 'rings' | 'islands' | 'lightning' | 'roots' | 'vortex' | 'contours' | 'maze' | 'faults' | 'braid' | 'nebula';
     type SpeedMode = { name: string; divisor: number; minStep: number };
     type Cycle = {
@@ -168,12 +168,16 @@ import Base from '../../layouts/Base.astro';
       return stops;
     }
 
+    function makeTile(edges: number[]): WangTile {
+      return { edges };
+    }
+
     function allWang(colors: number): WangTile[] {
       const tiles: WangTile[] = [];
       for (let n = 0; n < colors; n++) {
         for (let e = 0; e < colors; e++) {
           for (let s = 0; s < colors; s++) {
-            for (let w = 0; w < colors; w++) tiles.push({ n, e, s, w });
+            for (let w = 0; w < colors; w++) tiles.push(makeTile([n, e, s, w]));
           }
         }
       }
@@ -184,7 +188,7 @@ import Base from '../../layouts/Base.astro';
       const tiles: WangTile[] = [];
       for (let n = 0; n < 4; n++) {
         for (let w = 0; w < 4; w++) {
-          tiles.push({ n, w, e: (n + w + 1) % 4, s: (n + 2 * w + 1) % 4 });
+          tiles.push(makeTile([n, (n + w + 1) % 4, (n + 2 * w + 1) % 4, w]));
         }
       }
       return tiles;
@@ -194,7 +198,7 @@ import Base from '../../layouts/Base.astro';
       const tiles: WangTile[] = [];
       for (let n = 0; n < colors; n++) {
         for (let w = 0; w < colors; w++) {
-          tiles.push({ n, w, e: (a * n + b * w + 1) % colors, s: (c * n + d * w + 2) % colors });
+          tiles.push(makeTile([n, (a * n + b * w + 1) % colors, (c * n + d * w + 2) % colors, w]));
         }
       }
       return tiles;
@@ -204,126 +208,215 @@ import Base from '../../layouts/Base.astro';
       const tiles: WangTile[] = [];
       for (let a = 0; a < colors; a++) {
         for (let b = 0; b < colors; b++) {
-          tiles.push({ n: a, e: b, s: a, w: b });
-          tiles.push({ n: a, e: (a + b + 1) % colors, s: (a + 1) % colors, w: b });
+          tiles.push(makeTile([a, b, a, b]));
+          tiles.push(makeTile([a, (a + b + 1) % colors, (a + 1) % colors, b]));
         }
       }
       return tiles;
     }
 
-    const tileSets: TileSet[] = [
+    function allTriangle(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let a = 0; a < colors; a++) {
+        for (let b = 0; b < colors; b++) {
+          for (let c = 0; c < colors; c++) tiles.push(makeTile([a, b, c]));
+        }
+      }
+      return tiles;
+    }
+
+    function allHex(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let ne = 0; ne < colors; ne++) {
+        for (let e = 0; e < colors; e++) {
+          for (let se = 0; se < colors; se++) {
+            for (let sw = 0; sw < colors; sw++) {
+              for (let w = 0; w < colors; w++) {
+                for (let nw = 0; nw < colors; nw++) tiles.push(makeTile([ne, e, se, sw, w, nw]));
+              }
+            }
+          }
+        }
+      }
+      return tiles;
+    }
+
+    function triangleFlow(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let left = 0; left < colors; left++) {
+        for (let base = 0; base < colors; base++) {
+          tiles.push(makeTile([left, (left + base + 1) % colors, base]));
+        }
+      }
+      return tiles;
+    }
+
+    function hexFlow(colors: number, twist = 1): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let w = 0; w < colors; w++) {
+        for (let nw = 0; nw < colors; nw++) {
+          const ne = (w + nw + twist) % colors;
+          const e = (2 * w + nw + 1) % colors;
+          const se = (w + 2 * nw + twist + 1) % colors;
+          const sw = (w + 3 * nw + 2) % colors;
+          tiles.push(makeTile([ne, e, se, sw, w, nw]));
+        }
+      }
+      return tiles;
+    }
+
+    function hexBand(colors: number): WangTile[] {
+      const tiles: WangTile[] = [];
+      for (let a = 0; a < colors; a++) {
+        for (let b = 0; b < colors; b++) {
+          for (let c = 0; c < colors; c++) tiles.push(makeTile([a, b, c, a, b, c]));
+        }
+      }
+      return tiles;
+    }
+
+    const squareTileSets: TileSet[] = [
       {
         name: 'binary16',
         colors: 2,
+        edgeCount: 4,
         tiles: allWang(2),
       },
       {
         name: 'ternary81',
         colors: 3,
+        edgeCount: 4,
         tiles: allWang(3),
       },
       {
         name: 'flow16',
         colors: 4,
+        edgeCount: 4,
         tiles: flow16(),
       },
       {
         name: 'modulo25',
         colors: 5,
+        edgeCount: 4,
         tiles: productSet(5, 2, 1, 1, 3),
       },
       {
         name: 'skew36',
         colors: 6,
+        edgeCount: 4,
         tiles: productSet(6, 1, 5, 4, 1),
       },
       {
         name: 'bands18',
         colors: 3,
+        edgeCount: 4,
         tiles: bandSet(3),
       },
       {
         name: 'jeandelRao11',
         colors: 4,
+        edgeCount: 4,
         tiles: [
-          { n: 0, e: 0, s: 1, w: 0 },
-          { n: 1, e: 2, s: 3, w: 0 },
-          { n: 3, e: 0, s: 3, w: 1 },
-          { n: 3, e: 1, s: 0, w: 1 },
-          { n: 2, e: 2, s: 3, w: 1 },
-          { n: 1, e: 0, s: 1, w: 2 },
-          { n: 3, e: 1, s: 3, w: 2 },
-          { n: 1, e: 2, s: 2, w: 2 },
-          { n: 0, e: 3, s: 1, w: 3 },
-          { n: 3, e: 3, s: 0, w: 3 },
-          { n: 1, e: 1, s: 1, w: 2 },
+          makeTile([0, 0, 1, 0]),
+          makeTile([1, 2, 3, 0]),
+          makeTile([3, 0, 3, 1]),
+          makeTile([3, 1, 0, 1]),
+          makeTile([2, 2, 3, 1]),
+          makeTile([1, 0, 1, 2]),
+          makeTile([3, 1, 3, 2]),
+          makeTile([1, 2, 2, 2]),
+          makeTile([0, 3, 1, 3]),
+          makeTile([3, 3, 0, 3]),
+          makeTile([1, 1, 1, 2]),
         ],
       },
       {
         name: 'machine13',
         colors: 5,
+        edgeCount: 4,
         tiles: [
-          { n: 0, e: 1, s: 0, w: 0 },
-          { n: 0, e: 2, s: 1, w: 1 },
-          { n: 0, e: 3, s: 2, w: 2 },
-          { n: 0, e: 4, s: 3, w: 3 },
-          { n: 1, e: 1, s: 2, w: 0 },
-          { n: 1, e: 3, s: 3, w: 1 },
-          { n: 1, e: 4, s: 4, w: 2 },
-          { n: 2, e: 0, s: 1, w: 3 },
-          { n: 2, e: 2, s: 4, w: 4 },
-          { n: 2, e: 4, s: 0, w: 1 },
-          { n: 3, e: 0, s: 3, w: 2 },
-          { n: 3, e: 2, s: 0, w: 3 },
-          { n: 4, e: 1, s: 4, w: 4 },
+          makeTile([0, 1, 0, 0]),
+          makeTile([0, 2, 1, 1]),
+          makeTile([0, 3, 2, 2]),
+          makeTile([0, 4, 3, 3]),
+          makeTile([1, 1, 2, 0]),
+          makeTile([1, 3, 3, 1]),
+          makeTile([1, 4, 4, 2]),
+          makeTile([2, 0, 1, 3]),
+          makeTile([2, 2, 4, 4]),
+          makeTile([2, 4, 0, 1]),
+          makeTile([3, 0, 3, 2]),
+          makeTile([3, 2, 0, 3]),
+          makeTile([4, 1, 4, 4]),
         ],
       },
     ];
 
-    function legalTiles(tileset: TileSet, north: number | null, west: number | null): WangTile[] {
-      return tileset.tiles.filter((tile) =>
-        (north === null || tile.n === north) &&
-        (west === null || tile.w === west)
-      );
+    const triangleTileSets: TileSet[] = [
+      { name: 'tri27', colors: 3, edgeCount: 3, tiles: allTriangle(3) },
+      { name: 'triFlow16', colors: 4, edgeCount: 3, tiles: triangleFlow(4) },
+      { name: 'triFlow25', colors: 5, edgeCount: 3, tiles: triangleFlow(5) },
+    ];
+
+    const hexTileSets: TileSet[] = [
+      { name: 'hex729', colors: 3, edgeCount: 6, tiles: allHex(3) },
+      { name: 'hexFlow16', colors: 4, edgeCount: 6, tiles: hexFlow(4, 1) },
+      { name: 'hexFlow25', colors: 5, edgeCount: 6, tiles: hexFlow(5, 2) },
+      { name: 'hexBands27', colors: 3, edgeCount: 6, tiles: hexBand(3) },
+    ];
+
+    function tileSetsFor(shape: ShapeKind): TileSet[] {
+      if (shape === 'triangle') return triangleTileSets;
+      if (shape === 'hexagon' || shape === 'circle') return hexTileSets;
+      return squareTileSets;
     }
 
-    function hasContinuation(tileset: TileSet, tile: WangTile, x: number, y: number, cols: number, rows: number) {
-      const rightOk = x === cols - 1 || tileset.tiles.some((next) => next.w === tile.e);
-      const downOk = y === rows - 1 || tileset.tiles.some((next) => next.n === tile.s);
-      return rightOk && downOk;
+    function previousConstraints(shape: ShapeKind, x: number, y: number, cols: number): Array<{ edge: number; neighbor: number; neighborEdge: number }> {
+      if (shape === 'triangle') {
+        const up = ((x + y) & 1) === 0;
+        const constraints: Array<{ edge: number; neighbor: number; neighborEdge: number }> = [];
+        if (x > 0) constraints.push({ edge: 0, neighbor: y * cols + x - 1, neighborEdge: 1 });
+        if (!up && y > 0) constraints.push({ edge: 2, neighbor: (y - 1) * cols + x, neighborEdge: 2 });
+        return constraints;
+      }
+      if (shape === 'hexagon' || shape === 'circle') {
+        const constraints: Array<{ edge: number; neighbor: number; neighborEdge: number }> = [];
+        if (x > 0) constraints.push({ edge: 4, neighbor: y * cols + x - 1, neighborEdge: 1 });
+        if (y > 0) {
+          if (y & 1) {
+            constraints.push({ edge: 5, neighbor: (y - 1) * cols + x, neighborEdge: 2 });
+            if (x < cols - 1) constraints.push({ edge: 0, neighbor: (y - 1) * cols + x + 1, neighborEdge: 3 });
+          } else {
+            if (x > 0) constraints.push({ edge: 5, neighbor: (y - 1) * cols + x - 1, neighborEdge: 2 });
+            constraints.push({ edge: 0, neighbor: (y - 1) * cols + x, neighborEdge: 3 });
+          }
+        }
+        return constraints;
+      }
+      const constraints: Array<{ edge: number; neighbor: number; neighborEdge: number }> = [];
+      if (y > 0) constraints.push({ edge: 0, neighbor: (y - 1) * cols + x, neighborEdge: 2 });
+      if (x > 0) constraints.push({ edge: 3, neighbor: y * cols + x - 1, neighborEdge: 1 });
+      return constraints;
     }
 
-    function solvePatch(tileset: TileSet, cols: number, rows: number, rng: () => number): Int16Array | null {
+    function solvePatch(shape: ShapeKind, tileset: TileSet, cols: number, rows: number, rng: () => number): Int16Array | null {
       const total = cols * rows;
       const grid = new Int16Array(total);
       grid.fill(-1);
-      const stacks: Array<number[] | null> = new Array(total).fill(null);
-      let pos = 0;
-      let guard = 0;
-      while (pos >= 0 && pos < total && guard++ < total * 180) {
+      for (let pos = 0; pos < total; pos++) {
         const x = pos % cols;
         const y = Math.floor(pos / cols);
-        if (!stacks[pos]) {
-          const north = y > 0 ? tileset.tiles[grid[pos - cols]]?.s : null;
-          const west = x > 0 ? tileset.tiles[grid[pos - 1]]?.e : null;
-          const candidates = legalTiles(tileset, north, west)
-            .map((tile) => tileset.tiles.indexOf(tile))
-            .filter((idx) => hasContinuation(tileset, tileset.tiles[idx], x, y, cols, rows));
-          stacks[pos] = shuffle(candidates, rng);
-        }
-        const stack = stacks[pos]!;
-        const next = stack.pop();
-        if (next === undefined) {
-          stacks[pos] = null;
-          grid[pos] = -1;
-          pos--;
-          if (pos >= 0) grid[pos] = -1;
-          continue;
-        }
-        grid[pos] = next;
-        pos++;
+        const constraints = previousConstraints(shape, x, y, cols);
+        const candidates = tileset.tiles
+          .map((tile, idx) => ({ tile, idx }))
+          .filter(({ tile }) => constraints.every(({ edge, neighbor, neighborEdge }) =>
+            grid[neighbor] >= 0 && tile.edges[edge] === tileset.tiles[grid[neighbor]].edges[neighborEdge]
+          ))
+          .map(({ idx }) => idx);
+        if (!candidates.length) return null;
+        grid[pos] = candidates[Math.floor(rng() * candidates.length)];
       }
-      return pos === total ? grid : null;
+      return grid;
     }
 
     function makeOrganicOrder(cols: number, rows: number, growth: GrowthMode, rng: () => number): number[] {
@@ -422,12 +515,12 @@ import Base from '../../layouts/Base.astro';
       const rng = mulberry32(seed);
       const shapes: ShapeKind[] = ['square', 'triangle', 'hexagon', 'circle', 'parallelogram', 'rectangle'];
       const skinsByShape: Record<ShapeKind, VisualSkin[]> = {
-        square: ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'beads', 'scales', 'ribbons', 'chevrons', 'insetDiamonds', 'pixelGlyphs', 'quarterArcs', 'ladder', 'diagonalBars', 'checker', 'orbit', 'splitBands', 'pinwheel', 'crosshatch', 'plusGlyph', 'nestedBox'],
-        triangle: ['facets', 'kite', 'bands', 'mesh', 'strata', 'zigzag', 'splitBands', 'pinwheel'],
-        hexagon: ['facets', 'bands', 'mosaic', 'beads', 'wedges', 'orbit', 'petals', 'splitBands'],
-        circle: ['beads', 'bands', 'mosaic', 'facets', 'orbit', 'petals', 'splitBands', 'target'],
-        parallelogram: ['facets', 'blocks', 'bands', 'ribbons', 'diagonalBars', 'strata', 'crosshatch', 'splitBands'],
-        rectangle: ['bands', 'brickwork', 'mosaic', 'edgeBands', 'splitBands', 'checker', 'crosshatch', 'nestedBox'],
+        square: ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'beads', 'scales', 'ribbons', 'chevrons', 'insetDiamonds', 'pixelGlyphs', 'quarterArcs', 'ladder', 'diagonalBars', 'checker', 'orbit', 'splitBands', 'pinwheel', 'crosshatch', 'plusGlyph', 'nestedBox', 'shards', 'caps', 'slats', 'steps', 'frame'],
+        triangle: ['facets', 'kite', 'bands', 'mesh', 'strata', 'zigzag', 'splitBands', 'pinwheel', 'shards', 'caps', 'rays', 'slats'],
+        hexagon: ['facets', 'bands', 'mosaic', 'beads', 'wedges', 'orbit', 'petals', 'splitBands', 'shards', 'spokes', 'rays', 'caps'],
+        circle: ['beads', 'bands', 'mosaic', 'facets', 'orbit', 'petals', 'splitBands', 'target', 'spokes', 'rays', 'arcBands', 'caps'],
+        parallelogram: ['facets', 'blocks', 'bands', 'ribbons', 'diagonalBars', 'strata', 'crosshatch', 'splitBands', 'shards', 'slats', 'steps', 'frame'],
+        rectangle: ['bands', 'brickwork', 'mosaic', 'edgeBands', 'splitBands', 'checker', 'crosshatch', 'nestedBox', 'slats', 'steps', 'frame', 'caps'],
       };
       const growthModes: GrowthMode[] = ['spores', 'tendrils', 'river', 'rings', 'islands', 'lightning', 'roots', 'vortex', 'contours', 'maze', 'faults', 'braid', 'nebula'];
       const speeds: SpeedMode[] = [
@@ -459,15 +552,16 @@ import Base from '../../layouts/Base.astro';
           : Math.ceil(H / tileSize) + (hexShape || circleShape ? 10 : 1);
       const growth = pick(growthModes, rng);
       const speed = pick(speeds, rng);
-      let tileset = pick(tileSets, rng);
+      const candidateTileSets = tileSetsFor(shape);
+      let tileset = pick(candidateTileSets, rng);
       let grid: Int16Array | null = null;
       for (let tries = 0; tries < 8 && !grid; tries++) {
-        grid = solvePatch(tileset, cols, rows, rng);
-        if (!grid) tileset = pick(tileSets, rng);
+        grid = solvePatch(shape, tileset, cols, rows, rng);
+        if (!grid) tileset = pick(candidateTileSets, rng);
       }
       if (!grid) {
-        tileset = tileSets[1];
-        grid = solvePatch(tileset, cols, rows, rng)!;
+        tileset = candidateTileSets[0];
+        grid = solvePatch(shape, tileset, cols, rows, rng)!;
       }
       cycle = {
         seed,
@@ -500,6 +594,7 @@ import Base from '../../layouts/Base.astro';
       label.innerHTML = `
         <span>tileset: ${cycle.tileset.name}</span>
         <span>shape: ${cycle.shape}</span>
+        <span>edges: ${cycle.tileset.edgeCount}</span>
         <span>skin: ${cycle.skin}</span>
         <span>growth: ${cycle.growth}</span>
         <span>speed: ${cycle.speed.name}</span>
@@ -511,6 +606,15 @@ import Base from '../../layouts/Base.astro';
 
     function colorFor(label: number, palette: RGB[]): RGB {
       return palette[label % palette.length];
+    }
+
+    function edgeColors(tile: WangTile, palette: RGB[]): RGB[] {
+      return tile.edges.map((edge) => colorFor(edge, palette));
+    }
+
+    function squareColors(tile: WangTile, palette: RGB[]) {
+      const colors = edgeColors(tile, palette);
+      return { north: colors[0], east: colors[1], south: colors[2], west: colors[3] };
     }
 
     function fillPoly(points: Array<[number, number]>, color: RGB, alpha = 1) {
@@ -548,10 +652,9 @@ import Base from '../../layouts/Base.astro';
         (points[0][0] + points[1][0] + points[2][0]) / 3,
         (points[0][1] + points[1][1] + points[2][1]) / 3,
       ];
-      const north = colorFor(tile.n, palette);
-      const east = colorFor(tile.e, palette);
-      const south = colorFor(tile.s, palette);
-      const west = colorFor(tile.w, palette);
+      const [west, east, base] = edgeColors(tile, palette);
+      const north = base;
+      const south = base;
       if (skin === 'kite') {
         fillPoly([points[0], center, points[2]], mix(west, north, 0.45), 0.94);
         fillPoly([points[2], center, points[1]], mix(north, east, 0.45), 0.94);
@@ -576,6 +679,21 @@ import Base from '../../layouts/Base.astro';
         fillPoly([points[0], center, points[2]], north, 0.84);
         fillPoly([points[2], center, points[1]], east, 0.74);
         fillPoly([points[1], center, points[0]], south, 0.64);
+      } else if (skin === 'shards') {
+        fillPoly(points, mix(west, east, 0.50), 0.82);
+        fillPoly([points[0], center, points[1]], base, 0.50);
+        fillPoly([points[1], center, points[2]], east, 0.58);
+      } else if (skin === 'caps') {
+        fillPoly(points, mix(base, west, 0.45), 0.82);
+        fillPoly([points[0], points[1], center], base, 0.60);
+      } else if (skin === 'rays') {
+        fillPoly([points[0], center, points[1]], base, 0.78);
+        fillPoly([points[1], center, points[2]], east, 0.58);
+        fillPoly([points[2], center, points[0]], west, 0.58);
+      } else if (skin === 'slats') {
+        fillPoly(points, mix(base, east, 0.45), 0.84);
+        fillPoly([points[0], points[2], center], west, 0.42);
+        fillPoly([points[1], points[2], center], east, 0.42);
       } else {
         fillPoly([points[0], points[1], center], up ? south : north, 0.96);
         fillPoly([points[1], points[2], center], east, 0.88);
@@ -594,10 +712,9 @@ import Base from '../../layouts/Base.astro';
         const angle = -Math.PI / 2 + i * Math.PI / 3;
         points.push([cx + Math.cos(angle) * r, cy + Math.sin(angle) * r]);
       }
-      const north = colorFor(tile.n, palette);
-      const east = colorFor(tile.e, palette);
-      const south = colorFor(tile.s, palette);
-      const west = colorFor(tile.w, palette);
+      const [ne, east, se, sw, west, nw] = edgeColors(tile, palette);
+      const north = mix(nw, ne, 0.50);
+      const south = mix(sw, se, 0.50);
       fillPoly(points, mix(north, south, 0.50), 0.92);
       ctx.save();
       ctx.beginPath();
@@ -606,14 +723,13 @@ import Base from '../../layouts/Base.astro';
       ctx.closePath();
       ctx.clip();
       if (skin === 'bands') {
-        fillPoly([points[5], points[0], points[1], [cx, cy]], north, 0.58);
-        fillPoly([points[2], points[3], points[4], [cx, cy]], south, 0.58);
+        for (let i = 0; i < 6; i++) fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [ne, east, se, sw, west, nw][i], i % 2 ? 0.54 : 0.70);
       } else if (skin === 'mosaic') {
-        fillPoly([points[5], points[0], [cx, cy]], north, 0.92);
-        fillPoly([points[0], points[1], [cx, cy]], mix(north, east, 0.50), 0.88);
+        fillPoly([points[5], points[0], [cx, cy]], nw, 0.92);
+        fillPoly([points[0], points[1], [cx, cy]], ne, 0.88);
         fillPoly([points[1], points[2], [cx, cy]], east, 0.88);
-        fillPoly([points[2], points[3], [cx, cy]], south, 0.92);
-        fillPoly([points[3], points[4], [cx, cy]], mix(south, west, 0.50), 0.88);
+        fillPoly([points[2], points[3], [cx, cy]], se, 0.92);
+        fillPoly([points[3], points[4], [cx, cy]], sw, 0.88);
         fillPoly([points[4], points[5], [cx, cy]], west, 0.88);
       } else if (skin === 'beads') {
         fillPoly(points, mix(east, west, 0.50), 0.82);
@@ -623,11 +739,11 @@ import Base from '../../layouts/Base.astro';
         ctx.fill();
       } else if (skin === 'wedges') {
         for (let i = 0; i < 6; i++) {
-          fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [north, east, south, west, mix(north, east, 0.5), mix(south, west, 0.5)][i], 0.76);
+          fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [ne, east, se, sw, west, nw][i], 0.76);
         }
       } else if (skin === 'orbit') {
-        fillPoly([points[0], points[1], points[2], [cx, cy]], mix(north, east, 0.45), 0.58);
-        fillPoly([points[3], points[4], points[5], [cx, cy]], mix(south, west, 0.45), 0.58);
+        fillPoly([points[0], points[1], points[2], [cx, cy]], mix(ne, east, 0.45), 0.58);
+        fillPoly([points[3], points[4], points[5], [cx, cy]], mix(sw, west, 0.45), 0.58);
         ctx.strokeStyle = rgba(mix(east, west, 0.50), 0.62);
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -635,11 +751,21 @@ import Base from '../../layouts/Base.astro';
         ctx.stroke();
       } else if (skin === 'petals') {
         for (let i = 0; i < 3; i++) {
-          fillPoly([points[i], points[(i + 1) % 6], points[(i + 3) % 6], points[(i + 4) % 6]], [north, east, south][i], 0.42);
+          fillPoly([points[i], points[(i + 1) % 6], points[(i + 3) % 6], points[(i + 4) % 6]], [ne, east, se][i], 0.42);
         }
       } else if (skin === 'splitBands') {
-        fillPoly([points[5], points[0], points[1], points[2], [cx, cy]], mix(north, east, 0.45), 0.58);
-        fillPoly([points[2], points[3], points[4], points[5], [cx, cy]], mix(south, west, 0.45), 0.58);
+        fillPoly([points[5], points[0], points[1], points[2], [cx, cy]], mix(nw, east, 0.45), 0.58);
+        fillPoly([points[2], points[3], points[4], points[5], [cx, cy]], mix(se, west, 0.45), 0.58);
+      } else if (skin === 'shards') {
+        fillPoly([points[5], points[0], points[2], [cx, cy]], mix(nw, east, 0.45), 0.66);
+        fillPoly([points[2], points[3], points[5], [cx, cy]], mix(se, west, 0.45), 0.58);
+      } else if (skin === 'spokes') {
+        for (let i = 0; i < 6; i += 2) fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [ne, se, west][i / 2], 0.70);
+      } else if (skin === 'rays') {
+        for (let i = 0; i < 6; i++) fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [ne, east, se, sw, west, nw][i], 0.48 + (i % 2) * 0.22);
+      } else if (skin === 'caps') {
+        fillPoly([points[5], points[0], points[1], [cx, cy]], mix(nw, ne, 0.50), 0.64);
+        fillPoly([points[2], points[3], points[4], [cx, cy]], mix(se, sw, 0.50), 0.64);
       } else {
         fillPoly([points[0], points[1], points[2], [cx, cy]], east, 0.48);
         fillPoly([points[3], points[4], points[5], [cx, cy]], west, 0.48);
@@ -653,10 +779,9 @@ import Base from '../../layouts/Base.astro';
       const h = Math.sqrt(3) * (r + gap);
       const cx = col * (r + gap) * 1.5 - r * 2;
       const cy = row * h + (col & 1 ? h * 0.5 : 0) - h * 2;
-      const north = colorFor(tile.n, palette);
-      const east = colorFor(tile.e, palette);
-      const south = colorFor(tile.s, palette);
-      const west = colorFor(tile.w, palette);
+      const [ne, east, se, sw, west, nw] = edgeColors(tile, palette);
+      const north = mix(nw, ne, 0.50);
+      const south = mix(sw, se, 0.50);
       ctx.save();
       ctx.beginPath();
       ctx.arc(cx, cy, r + 0.25, 0, Math.PI * 2);
@@ -665,14 +790,24 @@ import Base from '../../layouts/Base.astro';
       ctx.beginPath();
       ctx.arc(cx, cy, r + 0.25, 0, Math.PI * 2);
       ctx.fill();
+      for (let i = 0; i < 6; i++) {
+        const a0 = -Math.PI / 2 + i * Math.PI / 3;
+        const a1 = a0 + Math.PI / 3;
+        ctx.fillStyle = rgba([ne, east, se, sw, west, nw][i], 0.66);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, r, a0, a1);
+        ctx.closePath();
+        ctx.fill();
+      }
       if (skin === 'bands') {
-        fillPoly([[cx - r, cy - r * 0.12], [cx + r, cy - r * 0.12], [cx + r, cy - r], [cx - r, cy - r]], north, 0.54);
-        fillPoly([[cx - r, cy + r * 0.12], [cx + r, cy + r * 0.12], [cx + r, cy + r], [cx - r, cy + r]], south, 0.54);
+        fillPoly([[cx - r, cy - r * 0.12], [cx + r, cy - r * 0.12], [cx + r, cy - r], [cx - r, cy - r]], north, 0.34);
+        fillPoly([[cx - r, cy + r * 0.12], [cx + r, cy + r * 0.12], [cx + r, cy + r], [cx - r, cy + r]], south, 0.34);
       } else if (skin === 'mosaic') {
-        for (let i = 0; i < 4; i++) {
-          const a0 = -Math.PI / 2 + i * Math.PI / 2;
-          const a1 = a0 + Math.PI / 2;
-          const color = [north, east, south, west][i];
+        for (let i = 0; i < 6; i++) {
+          const a0 = -Math.PI / 2 + i * Math.PI / 3;
+          const a1 = a0 + Math.PI / 3;
+          const color = [ne, east, se, sw, west, nw][i];
           ctx.fillStyle = rgba(color, 0.58);
           ctx.beginPath();
           ctx.moveTo(cx, cy);
@@ -691,9 +826,9 @@ import Base from '../../layouts/Base.astro';
         ctx.ellipse(cx, cy, r * 0.76, r * 0.34, -Math.PI * 0.18, 0, Math.PI * 2);
         ctx.stroke();
       } else if (skin === 'petals') {
-        for (let i = 0; i < 4; i++) {
-          const a = i * Math.PI * 0.5;
-          ctx.fillStyle = rgba([north, east, south, west][i], 0.52);
+        for (let i = 0; i < 6; i++) {
+          const a = -Math.PI / 2 + i * Math.PI / 3;
+          ctx.fillStyle = rgba([ne, east, se, sw, west, nw][i], 0.46);
           ctx.beginPath();
           ctx.ellipse(cx + Math.cos(a) * r * 0.25, cy + Math.sin(a) * r * 0.25, r * 0.42, r * 0.18, a, 0, Math.PI * 2);
           ctx.fill();
@@ -703,12 +838,38 @@ import Base from '../../layouts/Base.astro';
         fillPoly([[cx, cy - r], [cx + r, cy - r], [cx + r, cy + r], [cx, cy + r]], east, 0.42);
       } else if (skin === 'target') {
         for (let i = 0; i < 3; i++) {
-          ctx.strokeStyle = rgba([north, east, south][i], 0.56);
+          ctx.strokeStyle = rgba([ne, se, west][i], 0.56);
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.arc(cx, cy, r * (0.32 + i * 0.2), 0, Math.PI * 2);
           ctx.stroke();
         }
+      } else if (skin === 'spokes') {
+        for (let i = 0; i < 6; i++) {
+          const a = -Math.PI / 3 + i * Math.PI / 3;
+          ctx.strokeStyle = rgba([ne, east, se, sw, west, nw][i], 0.72);
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+          ctx.stroke();
+        }
+      } else if (skin === 'rays') {
+        for (let i = 0; i < 6; i++) {
+          const a0 = -Math.PI / 2 + i * Math.PI / 3;
+          fillPoly([[cx, cy], [cx + Math.cos(a0) * r, cy + Math.sin(a0) * r], [cx + Math.cos(a0 + 0.34) * r, cy + Math.sin(a0 + 0.34) * r]], [ne, east, se, sw, west, nw][i], 0.54);
+        }
+      } else if (skin === 'arcBands') {
+        for (let i = 0; i < 6; i++) {
+          ctx.strokeStyle = rgba([ne, east, se, sw, west, nw][i], 0.82);
+          ctx.lineWidth = Math.max(1, r * 0.16);
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * 0.64, -Math.PI / 2 + i * Math.PI / 3, -Math.PI / 2 + (i + 0.72) * Math.PI / 3);
+          ctx.stroke();
+        }
+      } else if (skin === 'caps') {
+        fillPoly([[cx - r, cy - r], [cx + r, cy - r], [cx, cy]], north, 0.36);
+        fillPoly([[cx - r, cy + r], [cx + r, cy + r], [cx, cy]], south, 0.36);
       } else {
         ctx.fillStyle = rgba(mix(north, south, 0.50), 0.72);
         ctx.beginPath();
@@ -725,10 +886,7 @@ import Base from '../../layouts/Base.astro';
       const y = row * size - size * 6;
       const points: Array<[number, number]> = [[x, y], [x + w, y], [x + w + skew, y + size], [x + skew, y + size]];
       const center: [number, number] = [x + w * 0.5 + skew * 0.5, y + size * 0.5];
-      const north = colorFor(tile.n, palette);
-      const east = colorFor(tile.e, palette);
-      const south = colorFor(tile.s, palette);
-      const west = colorFor(tile.w, palette);
+      const { north, east, south, west } = squareColors(tile, palette);
       if (skin === 'blocks') {
         fillPoly(points, mix(north, south, 0.45), 0.94);
         fillPoly([points[0], points[1], center], north, 0.55);
@@ -750,6 +908,22 @@ import Base from '../../layouts/Base.astro';
       } else if (skin === 'splitBands') {
         fillPoly([points[0], points[1], points[2], center], mix(north, east, 0.50), 0.82);
         fillPoly([points[2], points[3], points[0], center], mix(south, west, 0.50), 0.82);
+      } else if (skin === 'shards') {
+        fillPoly(points, mix(north, south, 0.45), 0.88);
+        fillPoly([points[0], points[1], points[3]], west, 0.34);
+        fillPoly([points[1], points[2], points[3]], east, 0.34);
+      } else if (skin === 'slats') {
+        fillPoly(points, mix(east, west, 0.50), 0.86);
+        fillPoly([points[0], points[1], center], north, 0.46);
+        fillPoly([points[2], points[3], center], south, 0.46);
+      } else if (skin === 'steps') {
+        fillPoly(points, mix(north, south, 0.45), 0.86);
+        fillPoly([points[0], [center[0], points[0][1]], center, points[3]], west, 0.44);
+        fillPoly([[center[0], points[1][1]], points[1], points[2], center], east, 0.44);
+      } else if (skin === 'frame') {
+        fillPoly(points, mix(north, south, 0.45), 0.84);
+        fillPoly([points[0], points[1], center], north, 0.36);
+        fillPoly([points[2], points[3], center], south, 0.36);
       } else {
         fillPoly([points[0], points[1], center], north, 0.90);
         fillPoly([points[1], points[2], center], east, 0.86);
@@ -768,10 +942,7 @@ import Base from '../../layouts/Base.astro';
       const y2 = y + h;
       const cx = x + w * 0.5;
       const cy = y + h * 0.5;
-      const north = colorFor(tile.n, palette);
-      const east = colorFor(tile.e, palette);
-      const south = colorFor(tile.s, palette);
-      const west = colorFor(tile.w, palette);
+      const { north, east, south, west } = squareColors(tile, palette);
       if (skin === 'bands') {
         ctx.fillStyle = rgba(mix(north, south, 0.5), 0.88);
         fillRectBleed(x, y, w, h);
@@ -808,6 +979,32 @@ import Base from '../../layouts/Base.astro';
         fillRectBleed(x, y, w, h);
         ctx.fillStyle = rgba(mix(east, west, 0.5), 0.62);
         fillRectBleed(x + w * 0.24, y + h * 0.22, w * 0.52, h * 0.56);
+      } else if (skin === 'slats') {
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.86);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(north, 0.38);
+        fillRectBleed(x, y, w, h * 0.34);
+        ctx.fillStyle = rgba(south, 0.38);
+        fillRectBleed(x, y2 - h * 0.34, w, h * 0.34);
+      } else if (skin === 'steps') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.84);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(west, 0.46);
+        fillRectBleed(x, y, w * 0.55, h * 0.55);
+        ctx.fillStyle = rgba(east, 0.46);
+        fillRectBleed(x + w * 0.45, y + h * 0.45, w * 0.55, h * 0.55);
+      } else if (skin === 'frame') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.84);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.48);
+        fillRectBleed(x + w * 0.18, y + h * 0.22, w * 0.64, h * 0.56);
+      } else if (skin === 'caps') {
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.84);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(north, 0.52);
+        fillRectBleed(x, y, w, h * 0.28);
+        ctx.fillStyle = rgba(south, 0.52);
+        fillRectBleed(x, y2 - h * 0.28, w, h * 0.28);
       } else {
         fillPoly([[x, y], [x2, y], [cx, cy]], north, 0.82);
         fillPoly([[x2, y], [x2, y2], [cx, cy]], east, 0.82);
@@ -843,10 +1040,7 @@ import Base from '../../layouts/Base.astro';
       const y2 = y + size;
       const cx = x + size / 2;
       const cy = y + size / 2;
-      const north = colorFor(tile.n, palette);
-      const east = colorFor(tile.e, palette);
-      const south = colorFor(tile.s, palette);
-      const west = colorFor(tile.w, palette);
+      const { north, east, south, west } = squareColors(tile, palette);
       const dark = mix(paper, palette[0], 0.10);
       ctx.fillStyle = rgb(dark);
       fillRectBleed(x, y, size, size);
@@ -866,7 +1060,7 @@ import Base from '../../layouts/Base.astro';
         fillRectBleed(x, y2 - band, size, band);
         ctx.fillStyle = rgba(west, 0.95);
         fillRectBleed(x, y, band, size);
-        ctx.fillStyle = rgba(mix(palette[(tile.n + tile.s) % palette.length], paper, 0.35), 0.78);
+        ctx.fillStyle = rgba(mix(palette[(tile.edges[0] + tile.edges[2]) % palette.length], paper, 0.35), 0.78);
         ctx.fillRect(Math.round(cx) - 1, Math.round(cy) - 1, 3, 3);
       } else if (skin === 'cornerCuts') {
         fillPoly([[x, y], [x2, y], [x2, cy], [cx, cy]], north, 0.86);
@@ -878,7 +1072,7 @@ import Base from '../../layouts/Base.astro';
         fillPoly([[x2, y], [x2, y2], [cx, cy]], east, 0.70);
         fillPoly([[x2, y2], [x, y2], [cx, cy]], south, 0.70);
         fillPoly([[x, y2], [x, y], [cx, cy]], west, 0.70);
-        ctx.fillStyle = rgba(mix(palette[(tile.e + tile.w) % palette.length], paper, 0.18), 0.95);
+        ctx.fillStyle = rgba(mix(palette[(tile.edges[1] + tile.edges[3]) % palette.length], paper, 0.18), 0.95);
         const dot = Math.max(2, Math.floor(size * 0.22));
         ctx.fillRect(Math.round(cx - dot / 2), Math.round(cy - dot / 2), dot, dot);
       } else if (skin === 'diamondWeave') {
@@ -980,6 +1174,37 @@ import Base from '../../layouts/Base.astro';
         fillRectBleed(x, y, size, size);
         ctx.fillStyle = rgba(mix(east, west, 0.5), 0.60);
         fillRectBleed(x + size * 0.24, y + size * 0.24, size * 0.52, size * 0.52);
+      } else if (skin === 'shards') {
+        fillPoly([[x, y], [x2, y], [x, y2]], mix(north, west, 0.45), 0.84);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], mix(east, south, 0.45), 0.84);
+        fillPoly([[x, y], [cx, cy], [x2, y]], north, 0.36);
+        fillPoly([[x, y2], [cx, cy], [x2, y2]], south, 0.36);
+      } else if (skin === 'caps') {
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(north, 0.50);
+        fillRectBleed(x, y, size, size * 0.25);
+        ctx.fillStyle = rgba(south, 0.50);
+        fillRectBleed(x, y2 - size * 0.25, size, size * 0.25);
+      } else if (skin === 'slats') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(west, 0.42);
+        fillRectBleed(x, y, size * 0.34, size);
+        ctx.fillStyle = rgba(east, 0.42);
+        fillRectBleed(x2 - size * 0.34, y, size * 0.34, size);
+      } else if (skin === 'steps') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(west, 0.44);
+        fillRectBleed(x, y, size * 0.55, size * 0.55);
+        ctx.fillStyle = rgba(east, 0.44);
+        fillRectBleed(x + size * 0.45, y + size * 0.45, size * 0.55, size * 0.55);
+      } else if (skin === 'frame') {
+        ctx.fillStyle = rgba(mix(north, south, 0.50), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.54);
+        fillRectBleed(x + size * 0.22, y + size * 0.22, size * 0.56, size * 0.56);
       } else if (skin === 'insetDiamonds') {
         ctx.fillStyle = rgba(mix(north, south, 0.5), 0.82);
         fillRectBleed(x, y, size, size);
