@@ -54,6 +54,7 @@ import Base from '../../layouts/Base.astro';
     const MIN_TILE = 5;
     const MAX_TILE = 15;
     const HOLD_FRAMES = 60;
+    const BLACK_FRAMES = 5;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     type RGB = [number, number, number];
@@ -80,6 +81,7 @@ import Base from '../../layouts/Base.astro';
       revealed: number;
       visible: Uint8Array;
       hold: number;
+      blackHold: number;
       palette: RGB[];
     };
 
@@ -601,6 +603,7 @@ import Base from '../../layouts/Base.astro';
         revealed: reduce ? cols * rows : 0,
         visible: new Uint8Array(cols * rows),
         hold: 0,
+        blackHold: reduce ? 0 : BLACK_FRAMES,
         palette: pickPalette(Math.max(3, Math.min(5, tileset.colors)), rng),
       };
       if (reduce) cycle.visible.fill(1);
@@ -1366,7 +1369,9 @@ import Base from '../../layouts/Base.astro';
       if (!cycle) return;
       const total = cycle.cols * cycle.rows;
       const amount = cycle.revealStep * playbackSpeed;
-      if (playbackDirection < 0) {
+      if (cycle.blackHold > 0) {
+        cycle.blackHold--;
+      } else if (playbackDirection < 0) {
         if (cycle.revealed > 0) {
           const next = Math.max(0, cycle.revealed - amount);
           for (let i = next; i < cycle.revealed; i++) cycle.visible[cycle.order[i]] = 0;
