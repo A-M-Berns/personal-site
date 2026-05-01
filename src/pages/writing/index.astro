@@ -111,11 +111,11 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
 </Base>
 
 <script define:vars={{ markovModel }}>
-  const canvas = document.getElementById('markov-text') as HTMLCanvasElement | null;
+  const canvas = document.getElementById('markov-text');
   if (canvas) {
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-    const model = markovModel as Record<string, string>;
+    const model = markovModel;
     const states = Object.keys(model);
     const ORDER = 4;
     const PIXEL = 2;
@@ -126,9 +126,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     const HOLD_FRAMES = 90;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    type RGB = [number, number, number];
-
-    const FONT: Record<string, string[]> = {
+    const FONT = {
       A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
       B: ['11110', '10001', '10001', '11110', '10001', '10001', '11110'],
       C: ['01111', '10000', '10000', '10000', '10000', '10000', '01111'],
@@ -196,18 +194,18 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     let rng = mulberry32(1);
     let textColor = ink;
 
-    function parseHex(h: string): RGB {
+    function parseHex(h) {
       const s = h.trim().replace('#', '');
       const full = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
       const n = parseInt(full, 16);
       return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
     }
 
-    function rgb(c: RGB): string {
+    function rgb(c) {
       return `rgb(${c[0]} ${c[1]} ${c[2]})`;
     }
 
-    function mix(a: RGB, b: RGB, t: number): RGB {
+    function mix(a, b, t) {
       return [
         Math.round(a[0] + (b[0] - a[0]) * t),
         Math.round(a[1] + (b[1] - a[1]) * t),
@@ -215,7 +213,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       ];
     }
 
-    function hashString(s: string): number {
+    function hashString(s) {
       let h = 2166136261;
       for (let i = 0; i < s.length; i++) {
         h ^= s.charCodeAt(i);
@@ -224,7 +222,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       return h >>> 0;
     }
 
-    function mulberry32(seed: number) {
+    function mulberry32(seed) {
       let t = seed >>> 0;
       return () => {
         t += 0x6D2B79F5;
@@ -246,7 +244,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       ctx.fillRect(0, 0, W, H);
     }
 
-    function nextChar(): string {
+    function nextChar() {
       const choices = model[state] ?? model[states[Math.floor(rng() * states.length)]];
       const char = choices[Math.floor(rng() * choices.length)] ?? ' ';
       state = `${state.slice(1)}${char}`;
@@ -254,7 +252,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       return char;
     }
 
-    function drawChar(char: string, col: number, row: number) {
+    function drawChar(char, col, row) {
       const glyph = FONT[char] ?? FONT[char.toUpperCase()] ?? FONT['?'];
       const ox = col * (GLYPH_W + LETTER_GAP) * PIXEL;
       const oy = row * (GLYPH_H + LINE_GAP) * PIXEL;
@@ -266,7 +264,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       }
     }
 
-    function typeStep(count: number) {
+    function typeStep(count) {
       for (let i = 0; i < count; i++) {
         if (y >= rows) {
           if (++hold > HOLD_FRAMES) startCycle();
@@ -302,7 +300,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     resize();
     if (!reduce) {
       let last = 0;
-      const loop = (now: number) => {
+      const loop = (now) => {
         if (now - last >= 34) {
           typeStep(7);
           last = now;
