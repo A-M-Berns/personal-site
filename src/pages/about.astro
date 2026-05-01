@@ -579,8 +579,9 @@ import Base from '../layouts/Base.astro';
     function setPlayback(direction: -1 | 1, boosted: boolean) {
       playbackDirection = direction;
       playbackSpeed = boosted ? 4 : 1;
-      boostIndicator?.classList.toggle('is-reverse', boosted && direction < 0);
-      boostIndicator?.classList.toggle('is-active', boosted);
+      if (boostIndicator) {
+        boostIndicator.className = `wang-boost${boosted ? ' is-active' : ''}${boosted && direction < 0 ? ' is-reverse' : ''}`;
+      }
     }
 
     function inRewindZone(clientX: number): boolean {

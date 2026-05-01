@@ -391,7 +391,7 @@ a:focus-visible {
   padding: 0.52rem 0.58rem;
   opacity: 0;
   transform: none;
-  transition: opacity 100ms ease;
+  transition: none;
   pointer-events: none;
 }
 .wang-boost.is-active {
