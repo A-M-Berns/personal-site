@@ -2,7 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import https from 'node:https';
 
 const ORDER = 4;
-const TARGET_BYTES = 190_000;
+const TARGET_BYTES = 2_000_000;
 const OUT = new URL('../src/data/markov_model.json', import.meta.url);
 
 const SOURCES = [
@@ -64,19 +64,40 @@ function addCounts(counts, text) {
   }
 }
 
-function toFrequencyString(bucket) {
+function toFrequencyString(bucket, maxValueLength) {
+  const entries = [...bucket.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const maxCount = entries[0]?.[1] ?? 1;
+  const scaled = entries.map(([char, count]) => {
+    const weight = Math.max(1, Math.round((Math.sqrt(count) / Math.sqrt(maxCount)) * 10));
+    return [char, weight];
+  });
+  let value = scaled.map(([char, count]) => char.repeat(count)).join('');
+  while (value.length > maxValueLength && scaled.some(([, count]) => count > 1)) {
+    for (const item of scaled) {
+      if (item[1] > 1) item[1]--;
+      value = scaled.map(([char, count]) => char.repeat(count)).join('');
+      if (value.length <= maxValueLength) break;
+    }
+  }
+  if (value.length > maxValueLength) value = value.slice(0, maxValueLength);
+  return value;
+}
+
+function transitionDiversity(bucket) {
+  return bucket.size;
+}
+
+function totalCount(bucket) {
   return [...bucket.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([char, count]) => char.repeat(count))
-    .join('');
+    .reduce((sum, [, count]) => sum + count, 0);
 }
 
 function materialize(counts, minCount, maxValueLength) {
   const model = {};
   for (const [key, bucket] of counts) {
-    const total = [...bucket.values()].reduce((sum, n) => sum + n, 0);
+    const total = totalCount(bucket);
     if (total < minCount) continue;
-    const value = toFrequencyString(bucket).slice(0, maxValueLength);
+    const value = toFrequencyString(bucket, Math.max(maxValueLength, transitionDiversity(bucket)));
     if (value.length > 1) model[key] = value;
   }
   return model;
@@ -89,12 +110,12 @@ async function main() {
   }
 
   let minCount = 2;
-  let maxValueLength = 96;
+  let maxValueLength = 64;
   let model = materialize(counts, minCount, maxValueLength);
   let json = JSON.stringify(model);
   while (Buffer.byteLength(json) > TARGET_BYTES && minCount < 240) {
     minCount++;
-    if (minCount % 8 === 0) maxValueLength = Math.max(18, maxValueLength - 2);
+    if (minCount % 8 === 0) maxValueLength = Math.max(24, maxValueLength - 2);
     model = materialize(counts, minCount, maxValueLength);
     json = JSON.stringify(model);
   }

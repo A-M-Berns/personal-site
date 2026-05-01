@@ -245,8 +245,18 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     }
 
     function nextChar() {
-      const choices = model[state] ?? model[states[Math.floor(rng() * states.length)]];
-      const char = choices[Math.floor(rng() * choices.length)] ?? ' ';
+      let choices = model[state];
+      if (!choices) {
+        state = states[Math.floor(rng() * states.length)];
+        choices = model[state];
+      }
+      const viable = [];
+      for (let i = 0; i < choices.length; i++) {
+        const candidate = choices[i];
+        if (model[`${state.slice(1)}${candidate}`]) viable.push(candidate);
+      }
+      const pool = viable.length ? viable : choices;
+      const char = pool[Math.floor(rng() * pool.length)] ?? ' ';
       state = `${state.slice(1)}${char}`;
       if (!model[state]) state = states[Math.floor(rng() * states.length)];
       return char;
