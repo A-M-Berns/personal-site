@@ -579,8 +579,13 @@ import Base from '../layouts/Base.astro';
     function setPlayback(direction: -1 | 1, boosted: boolean) {
       playbackDirection = direction;
       playbackSpeed = boosted ? 4 : 1;
-      boostIndicator?.classList.toggle('is-active', boosted);
       boostIndicator?.classList.toggle('is-reverse', boosted && direction < 0);
+      boostIndicator?.classList.toggle('is-active', boosted);
+    }
+
+    function inRewindZone(clientX: number): boolean {
+      const textLeft = document.querySelector('.about-shell > .section-head')?.getBoundingClientRect().left ?? window.innerWidth * 0.18;
+      return clientX < Math.max(56, textLeft - 12);
     }
 
     function makeCycle() {
@@ -593,7 +598,8 @@ import Base from '../layouts/Base.astro';
         { name: 'quick', divisor: 230, minStep: 3 },
       ];
       const tileSize = MIN_TILE + Math.floor(rng() * (MAX_TILE - MIN_TILE + 1));
-      const shape = selectedShape === 'random' ? pick(shapes, rng) : selectedShape;
+      const randomShapes = shapes.filter((shape) => shape !== cycle?.shape);
+      const shape = selectedShape === 'random' ? pick(randomShapes.length ? randomShapes : shapes, rng) : selectedShape;
       const skin = selectedSkin === 'random' ? pick(skinsByShape[shape], rng) : selectedSkin;
       const triangleShape = shape === 'triangle';
       const hexShape = shape === 'hexagon';
@@ -1456,7 +1462,7 @@ import Base from '../layouts/Base.astro';
     document.addEventListener('pointerdown', (event) => {
       const target = event.target as Element | null;
       if (target?.closest('a, button, dialog')) return;
-      setPlayback(event.clientX < window.innerWidth / 2 ? -1 : 1, true);
+      setPlayback(inRewindZone(event.clientX) ? -1 : 1, true);
     });
     window.addEventListener('pointerup', () => setPlayback(1, false));
     window.addEventListener('pointercancel', () => setPlayback(1, false));

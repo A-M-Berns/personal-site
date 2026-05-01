@@ -383,6 +383,7 @@ a:focus-visible {
   position: fixed;
   top: 1rem;
   right: 1rem;
+  left: auto;
   z-index: 4;
   display: flex;
   gap: 0.24rem;
