@@ -39,6 +39,9 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
 <Base title="Writing — A. M. Berns" description="Notes, essays, and cross-posts.">
   <div class="writing-shell">
     <canvas id="markov-text" class="markov-text" aria-hidden="true"></canvas>
+    <div class="writing-controls" aria-label="Writing animation controls">
+      <button id="writing-reset" type="button" aria-label="Reset Writing animation">Reset</button>
+    </div>
     <header class="section-head">
       <h1>Writing</h1>
     </header>
@@ -112,12 +115,14 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
 
 <script define:vars={{ markovModel }}>
   const canvas = document.getElementById('markov-text');
+  const resetButton = document.getElementById('writing-reset');
   if (canvas) {
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-    const model = markovModel;
+    const model = markovModel.states ?? markovModel;
     const states = Object.keys(model);
-    const ORDER = 6;
+    const ORDER = markovModel.order ?? 3;
+    const TEMPERATURE = 0.58;
     const PIXEL = 2;
     const GLYPH_W = 5;
     const GLYPH_H = 7;
@@ -194,7 +199,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     let x = 0;
     let y = 0;
     let hold = 0;
-    let state = '';
+    let stateWords = [];
     let seed = 0;
     let rng = mulberry32(1);
     let palette = [ink];
@@ -250,7 +255,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     function startCycle() {
       seed = hashString(`${Date.now()}:${Math.random()}`);
       rng = mulberry32(seed);
-      state = states[Math.floor(rng() * states.length)];
+      stateWords = states[Math.floor(rng() * states.length)].split('\t');
       x = 0;
       y = 0;
       hold = 0;
@@ -259,31 +264,44 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       ctx.fillRect(0, 0, W, H);
     }
 
-    function nextChar() {
-      let choices = model[state];
+    function stateKey(words) {
+      return words.join('\t');
+    }
+
+    function nextWord() {
+      let choices = model[stateKey(stateWords)];
       if (!choices) {
-        state = states[Math.floor(rng() * states.length)];
-        choices = model[state];
+        stateWords = states[Math.floor(rng() * states.length)].split('\t');
+        choices = model[stateKey(stateWords)];
       }
       const viable = [];
       for (let i = 0; i < choices.length; i++) {
-        const candidate = choices[i];
-        if (model[`${state.slice(1)}${candidate}`]) viable.push(candidate);
+        const candidate = choices[i][0];
+        if (model[stateKey([...stateWords.slice(1), candidate])]) viable.push(choices[i]);
       }
       const pool = viable.length ? viable : choices;
-      const char = pool[Math.floor(rng() * pool.length)] ?? ' ';
-      const probability = countChar(pool, char) / pool.length;
-      state = `${state.slice(1)}${char}`;
-      if (!model[state]) state = states[Math.floor(rng() * states.length)];
-      return { char, probability };
+      const next = sampleWeighted(pool);
+      const word = next?.word ?? '';
+      stateWords = [...stateWords.slice(1), word];
+      if (!model[stateKey(stateWords)]) stateWords = states[Math.floor(rng() * states.length)].split('\t');
+      return { word, probability: next?.probability ?? 0 };
     }
 
-    function countChar(text, char) {
-      let count = 0;
-      for (let i = 0; i < text.length; i++) {
-        if (text[i] === char) count++;
+    function sampleWeighted(pool) {
+      const totalCount = pool.reduce((sum, entry) => sum + entry[1], 0);
+      let totalWeight = 0;
+      const weighted = pool.map(([word, count]) => {
+        const probability = count / totalCount;
+        const weight = Math.pow(probability, 1 / TEMPERATURE);
+        totalWeight += weight;
+        return { word, probability, weight };
+      });
+      let roll = rng() * totalWeight;
+      for (const entry of weighted) {
+        roll -= entry.weight;
+        if (roll <= 0) return entry;
       }
-      return count;
+      return weighted[weighted.length - 1];
     }
 
     function pickPalette(count) {
@@ -315,17 +333,26 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       }
     }
 
+    function drawWord(word, col, row, probability) {
+      for (let i = 0; i < word.length; i++) drawChar(word[i], col + i, row, probability);
+    }
+
     function typeStep(count) {
       for (let i = 0; i < count; i++) {
         if (y >= rows) {
           if (++hold > HOLD_FRAMES) startCycle();
           return;
         }
-        const next = nextChar();
-        let char = next.char;
-        if (char === '\n') char = ' ';
-        drawChar(char, x, y, next.probability);
-        x++;
+        const next = nextWord();
+        const word = next.word.replace(/\s+/g, ' ');
+        const width = Math.min(cols, Math.max(1, word.length));
+        if (x > 0 && x + width > cols) {
+          x = 0;
+          y++;
+          if (y >= rows) return;
+        }
+        drawWord(word.slice(0, cols), x, y, next.probability);
+        x += width + 1;
         if (x >= cols) {
           x = 0;
           y++;
@@ -350,11 +377,12 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     }
 
     resize();
+    resetButton?.addEventListener('click', startCycle);
     if (!reduce) {
       let last = 0;
       const loop = (now) => {
         if (now - last >= 42) {
-          typeStep(5);
+          typeStep(2);
           last = now;
         }
         requestAnimationFrame(loop);

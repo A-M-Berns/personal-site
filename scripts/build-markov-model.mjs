@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import https from 'node:https';
 
-const ORDER = 6;
-const TARGET_BYTES = 5_000_000;
+const ORDER = 3;
+const TARGET_BYTES = 8_000_000;
 const OUT = new URL('../src/data/markov_model.json', import.meta.url);
 
 const SOURCES = [
@@ -31,6 +31,14 @@ function stripGutenberg(text) {
     .trim();
 }
 
+function tokenize(text) {
+  return text.match(/[A-Za-z0-9]+(?:['-][A-Za-z0-9]+)*(?:[.,;:!?]+)?|["()]/g) ?? [];
+}
+
+function keyFor(tokens, index) {
+  return tokens.slice(index, index + ORDER).join('\t');
+}
+
 function fetchText(url, redirects = 0) {
   return new Promise((resolve, reject) => {
     https.get(url, { family: 4, timeout: 30_000 }, (res) => {
@@ -55,52 +63,27 @@ function fetchText(url, redirects = 0) {
 }
 
 function addCounts(counts, text) {
-  for (let i = 0; i < text.length - ORDER; i++) {
-    const key = text.slice(i, i + ORDER);
-    const next = text[i + ORDER];
+  const tokens = tokenize(text);
+  for (let i = 0; i < tokens.length - ORDER; i++) {
+    const key = keyFor(tokens, i);
+    const next = tokens[i + ORDER];
     const bucket = counts.get(key) ?? new Map();
     bucket.set(next, (bucket.get(next) ?? 0) + 1);
     counts.set(key, bucket);
   }
 }
 
-function toFrequencyString(bucket, maxValueLength) {
-  const entries = [...bucket.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
-  const maxCount = entries[0]?.[1] ?? 1;
-  const scaled = entries.map(([char, count]) => {
-    const weight = Math.max(1, Math.round(Math.pow(count / maxCount, 0.72) * 24));
-    return [char, weight];
-  });
-  let value = scaled.map(([char, count]) => char.repeat(count)).join('');
-  while (value.length > maxValueLength && scaled.some(([, count]) => count > 1)) {
-    for (const item of scaled) {
-      if (item[1] > 1) item[1]--;
-      value = scaled.map(([char, count]) => char.repeat(count)).join('');
-      if (value.length <= maxValueLength) break;
-    }
-  }
-  if (value.length > maxValueLength) value = value.slice(0, maxValueLength);
-  return value;
-}
-
-function transitionDiversity(bucket) {
-  return bucket.size;
-}
-
-function totalCount(bucket) {
-  return [...bucket.entries()]
-    .reduce((sum, [, count]) => sum + count, 0);
-}
-
-function materialize(counts, minCount, maxValueLength) {
-  const model = {};
+function materialize(counts, minCount, maxTransitions) {
+  const states = {};
   for (const [key, bucket] of counts) {
-    const total = totalCount(bucket);
+    const entries = [...bucket.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, maxTransitions);
+    const total = entries.reduce((sum, [, count]) => sum + count, 0);
     if (total < minCount) continue;
-    const value = toFrequencyString(bucket, Math.max(maxValueLength, transitionDiversity(bucket)));
-    if (value.length > 1) model[key] = value;
+    states[key] = entries;
   }
-  return model;
+  return { order: ORDER, states };
 }
 
 async function main() {
@@ -109,20 +92,22 @@ async function main() {
     addCounts(counts, stripGutenberg(await fetchText(url)));
   }
 
-  let minCount = 2;
-  let maxValueLength = 96;
-  let model = materialize(counts, minCount, maxValueLength);
+  let minCount = 1;
+  let maxTransitions = 18;
+  let model = materialize(counts, minCount, maxTransitions);
   let json = JSON.stringify(model);
-  while (Buffer.byteLength(json) > TARGET_BYTES && minCount < 240) {
+  while (Buffer.byteLength(json) > TARGET_BYTES && minCount < 80) {
     minCount++;
-    if (minCount % 8 === 0) maxValueLength = Math.max(36, maxValueLength - 2);
-    model = materialize(counts, minCount, maxValueLength);
+    if (minCount % 8 === 0) maxTransitions = Math.max(8, maxTransitions - 1);
+    model = materialize(counts, minCount, maxTransitions);
     json = JSON.stringify(model);
   }
 
   await mkdir(new URL('../src/data/', import.meta.url), { recursive: true });
   await writeFile(OUT, `${JSON.stringify(model, null, 0)}\n`);
-  console.log(`states=${Object.keys(model).length} bytes=${Buffer.byteLength(json)} minCount=${minCount} maxValueLength=${maxValueLength}`);
+  console.log(
+    `order=${ORDER} states=${Object.keys(model.states).length} bytes=${Buffer.byteLength(json)} minCount=${minCount} maxTransitions=${maxTransitions}`,
+  );
 }
 
 main().catch((err) => {
