@@ -117,7 +117,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     ctx.imageSmoothingEnabled = false;
     const model = markovModel;
     const states = Object.keys(model);
-    const ORDER = 4;
+    const ORDER = 6;
     const PIXEL = 2;
     const GLYPH_W = 5;
     const GLYPH_H = 7;
@@ -180,8 +180,13 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     const styles = getComputedStyle(document.documentElement);
     const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
     const ink = parseHex(styles.getPropertyValue('--ink').trim() || '#ececec');
-    const muted = parseHex(styles.getPropertyValue('--muted').trim() || '#8e8e88');
-    const accent = parseHex(styles.getPropertyValue('--accent').trim() || '#c8c4ba');
+    const colorPool = [
+      '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
+      '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
+      '#fff0b8', '#d6ff5a', '#6ad84a', '#3ad48a', '#0fbfa8',
+      '#2cc7e0', '#4ad6ff', '#2a6fd6', '#1d3a8a', '#6a1a9a',
+      '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
+    ].map(parseHex).sort((a, b) => luma(a) - luma(b));
     let W = 0;
     let H = 0;
     let cols = 0;
@@ -192,7 +197,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     let state = '';
     let seed = 0;
     let rng = mulberry32(1);
-    let textColor = ink;
+    let palette = [ink];
 
     function parseHex(h) {
       const s = h.trim().replace('#', '');
@@ -211,6 +216,16 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
         Math.round(a[1] + (b[1] - a[1]) * t),
         Math.round(a[2] + (b[2] - a[2]) * t),
       ];
+    }
+
+    function luma(c) {
+      return c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722;
+    }
+
+    function liftColor(c) {
+      let out = c;
+      while (luma(out) < 150) out = mix(out, ink, 0.18);
+      return out;
     }
 
     function hashString(s) {
@@ -239,7 +254,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       x = 0;
       y = 0;
       hold = 0;
-      textColor = mix(muted, rng() > 0.5 ? accent : ink, 0.45 + rng() * 0.35);
+      palette = pickPalette(5);
       ctx.fillStyle = rgb(paper);
       ctx.fillRect(0, 0, W, H);
     }
@@ -257,16 +272,42 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       }
       const pool = viable.length ? viable : choices;
       const char = pool[Math.floor(rng() * pool.length)] ?? ' ';
+      const probability = countChar(pool, char) / pool.length;
       state = `${state.slice(1)}${char}`;
       if (!model[state]) state = states[Math.floor(rng() * states.length)];
-      return char;
+      return { char, probability };
     }
 
-    function drawChar(char, col, row) {
+    function countChar(text, char) {
+      let count = 0;
+      for (let i = 0; i < text.length; i++) {
+        if (text[i] === char) count++;
+      }
+      return count;
+    }
+
+    function pickPalette(count) {
+      const stops = [];
+      for (let i = 0; i < count; i++) {
+        const lo = Math.floor((i * colorPool.length) / count);
+        const hi = Math.floor(((i + 1) * colorPool.length) / count);
+        const color = colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))];
+        stops.push(liftColor(mix(paper, color, 0.9)));
+      }
+      return stops;
+    }
+
+    function colorForProbability(probability) {
+      const certainty = Math.min(1, Math.max(0, Math.pow(probability, 0.42)));
+      const idx = Math.min(palette.length - 1, Math.floor((1 - certainty) * palette.length));
+      return palette[idx];
+    }
+
+    function drawChar(char, col, row, probability) {
       const glyph = FONT[char] ?? FONT[char.toUpperCase()] ?? FONT['?'];
       const ox = col * (GLYPH_W + LETTER_GAP) * PIXEL;
       const oy = row * (GLYPH_H + LINE_GAP) * PIXEL;
-      ctx.fillStyle = rgb(textColor);
+      ctx.fillStyle = rgb(colorForProbability(probability));
       for (let gy = 0; gy < GLYPH_H; gy++) {
         for (let gx = 0; gx < GLYPH_W; gx++) {
           if (glyph[gy][gx] === '1') ctx.fillRect(ox + gx * PIXEL, oy + gy * PIXEL, PIXEL, PIXEL);
@@ -280,11 +321,12 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
           if (++hold > HOLD_FRAMES) startCycle();
           return;
         }
-        let char = nextChar();
+        const next = nextChar();
+        let char = next.char;
         if (char === '\n') char = ' ';
-        drawChar(char, x, y);
+        drawChar(char, x, y, next.probability);
         x++;
-        if (x >= cols || (char === ' ' && x > cols * 0.86 && rng() < 0.7)) {
+        if (x >= cols) {
           x = 0;
           y++;
         }
@@ -301,8 +343,8 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       canvas.style.height = `${H}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.imageSmoothingEnabled = false;
-      cols = Math.max(1, Math.floor(W / ((GLYPH_W + LETTER_GAP) * PIXEL)));
-      rows = Math.max(1, Math.floor(H / ((GLYPH_H + LINE_GAP) * PIXEL)));
+      cols = Math.max(1, Math.ceil(W / ((GLYPH_W + LETTER_GAP) * PIXEL)) + 1);
+      rows = Math.max(1, Math.ceil(H / ((GLYPH_H + LINE_GAP) * PIXEL)) + 1);
       startCycle();
       if (reduce) typeStep(cols * rows);
     }
@@ -311,8 +353,8 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     if (!reduce) {
       let last = 0;
       const loop = (now) => {
-        if (now - last >= 34) {
-          typeStep(7);
+        if (now - last >= 42) {
+          typeStep(5);
           last = now;
         }
         requestAnimationFrame(loop);

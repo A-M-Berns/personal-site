@@ -641,11 +641,21 @@ a:focus-visible {
   position: relative;
   z-index: 1;
 }
+.writing-shell .section-head h1 {
+  background-color: #000;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding: 0.04em 0.28em;
+}
 .writing-panes {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2.5rem 3rem;
   align-items: start;
+}
+.writing-pane {
+  background: #000;
+  padding: 0.85rem 0.95rem 0.95rem;
 }
 .writing-pane h2 {
   font-family: var(--display);

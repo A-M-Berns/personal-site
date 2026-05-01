@@ -1,8 +1,8 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import https from 'node:https';
 
-const ORDER = 4;
-const TARGET_BYTES = 2_000_000;
+const ORDER = 6;
+const TARGET_BYTES = 5_000_000;
 const OUT = new URL('../src/data/markov_model.json', import.meta.url);
 
 const SOURCES = [
@@ -68,7 +68,7 @@ function toFrequencyString(bucket, maxValueLength) {
   const entries = [...bucket.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const maxCount = entries[0]?.[1] ?? 1;
   const scaled = entries.map(([char, count]) => {
-    const weight = Math.max(1, Math.round((Math.sqrt(count) / Math.sqrt(maxCount)) * 10));
+    const weight = Math.max(1, Math.round(Math.pow(count / maxCount, 0.72) * 24));
     return [char, weight];
   });
   let value = scaled.map(([char, count]) => char.repeat(count)).join('');
@@ -110,12 +110,12 @@ async function main() {
   }
 
   let minCount = 2;
-  let maxValueLength = 64;
+  let maxValueLength = 96;
   let model = materialize(counts, minCount, maxValueLength);
   let json = JSON.stringify(model);
   while (Buffer.byteLength(json) > TARGET_BYTES && minCount < 240) {
     minCount++;
-    if (minCount % 8 === 0) maxValueLength = Math.max(24, maxValueLength - 2);
+    if (minCount % 8 === 0) maxValueLength = Math.max(36, maxValueLength - 2);
     model = materialize(counts, minCount, maxValueLength);
     json = JSON.stringify(model);
   }
