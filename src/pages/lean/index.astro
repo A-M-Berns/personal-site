@@ -23,6 +23,14 @@ import Base from '../../layouts/Base.astro';
       <span></span><span></span>
     </div>
     <div class="wang-controls">
+      <label>
+        <span>Shape</span>
+        <select id="wang-shape" aria-label="Select tiling shape"></select>
+      </label>
+      <label>
+        <span>Skin</span>
+        <select id="wang-skin" aria-label="Select visual skin"></select>
+      </label>
       <button id="wang-info" type="button" aria-label="About this animation">About this animation</button>
       <button id="wang-reset" type="button" aria-label="Reset Wang tiling">Reset</button>
     </div>
@@ -45,6 +53,8 @@ import Base from '../../layouts/Base.astro';
     const label = document.getElementById('wang-label');
     const boostIndicator = document.getElementById('wang-boost');
     const resetButton = document.getElementById('wang-reset') as HTMLButtonElement | null;
+    const shapeSelect = document.getElementById('wang-shape') as HTMLSelectElement | null;
+    const skinSelect = document.getElementById('wang-skin') as HTMLSelectElement | null;
     const infoButton = document.getElementById('wang-info') as HTMLButtonElement | null;
     const aboutDialog = document.getElementById('wang-about') as HTMLDialogElement | null;
     const aboutClose = aboutDialog?.querySelector('.wang-about-close') as HTMLButtonElement | null;
@@ -61,7 +71,7 @@ import Base from '../../layouts/Base.astro';
     type ShapeKind = 'square' | 'triangle' | 'hexagon' | 'circle' | 'parallelogram' | 'rectangle';
     type WangTile = { edges: number[] };
     type TileSet = { name: string; colors: number; edgeCount: number; tiles: WangTile[] };
-    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'hexCells' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork' | 'diagonalBars' | 'checker' | 'orbit' | 'splitBands' | 'pinwheel' | 'crosshatch' | 'plusGlyph' | 'nestedBox' | 'strata' | 'zigzag' | 'wedges' | 'petals' | 'target' | 'shards' | 'caps' | 'spokes' | 'rays' | 'slats' | 'steps' | 'frame' | 'arcBands' | 'splitDiag' | 'edgeCorners' | 'iris' | 'triad' | 'hexFan' | 'lanes';
+    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork' | 'diagonalBars' | 'checker' | 'orbit' | 'splitBands' | 'pinwheel' | 'crosshatch' | 'plusGlyph' | 'nestedBox' | 'strata' | 'zigzag' | 'wedges' | 'petals' | 'target' | 'shards' | 'caps' | 'spokes' | 'rays' | 'slats' | 'steps' | 'frame' | 'arcBands' | 'splitDiag' | 'edgeCorners' | 'iris' | 'triad' | 'hexFan' | 'lanes';
     type GrowthMode = 'spores' | 'tendrils' | 'river' | 'rings' | 'islands' | 'lightning' | 'roots' | 'vortex' | 'contours' | 'maze' | 'faults' | 'braid' | 'nebula';
     type SpeedMode = { name: string; divisor: number; minStep: number };
     type Cycle = {
@@ -523,6 +533,55 @@ import Base from '../../layouts/Base.astro';
     let cycle: Cycle | null = null;
     let playbackDirection = 1;
     let playbackSpeed = 1;
+    let selectedShape: ShapeKind | 'random' = 'random';
+    let selectedSkin: VisualSkin | 'random' = 'random';
+
+    const shapes: ShapeKind[] = ['square', 'triangle', 'hexagon', 'circle', 'parallelogram', 'rectangle'];
+    const skinsByShape: Record<ShapeKind, VisualSkin[]> = {
+      square: ['triangles', 'edgeBands', 'cornerCuts', 'diamondWeave', 'isometric', 'lozenges', 'scales', 'chevrons', 'insetDiamonds', 'diagonalBars', 'checker', 'splitBands', 'pinwheel', 'crosshatch', 'shards', 'caps', 'slats', 'steps', 'splitDiag', 'edgeCorners', 'lanes'],
+      triangle: ['facets', 'kite', 'bands', 'strata', 'zigzag', 'splitBands', 'pinwheel', 'shards', 'rays', 'triad', 'lanes'],
+      hexagon: ['facets', 'bands', 'mosaic', 'wedges', 'splitBands', 'shards', 'spokes', 'rays', 'hexFan', 'edgeCorners'],
+      circle: ['bands', 'mosaic', 'facets', 'splitBands', 'spokes', 'rays', 'arcBands', 'caps', 'iris', 'hexFan'],
+      parallelogram: ['facets', 'blocks', 'bands', 'ribbons', 'diagonalBars', 'strata', 'splitBands', 'shards', 'slats', 'steps', 'splitDiag', 'lanes'],
+      rectangle: ['bands', 'brickwork', 'mosaic', 'edgeBands', 'splitBands', 'checker', 'crosshatch', 'slats', 'steps', 'caps', 'splitDiag', 'edgeCorners', 'lanes'],
+    };
+
+    function option(label: string, value: string): HTMLOptionElement {
+      const item = document.createElement('option');
+      item.value = value;
+      item.textContent = label;
+      return item;
+    }
+
+    function syncSkinOptions() {
+      if (!skinSelect) return;
+      const current = skinSelect.value as VisualSkin | 'random';
+      skinSelect.replaceChildren(option('Random', 'random'));
+      const available = selectedShape === 'random' ? [] : skinsByShape[selectedShape];
+      for (const skin of available) skinSelect.append(option(skin, skin));
+      selectedSkin = current !== 'random' && available.includes(current as VisualSkin) ? current : 'random';
+      skinSelect.value = selectedSkin;
+      skinSelect.disabled = selectedShape === 'random';
+    }
+
+    function setupSelectors() {
+      if (!shapeSelect || !skinSelect) return;
+      shapeSelect.replaceChildren(option('Random', 'random'));
+      for (const shape of shapes) shapeSelect.append(option(shape, shape));
+      shapeSelect.value = selectedShape;
+      syncSkinOptions();
+      shapeSelect.addEventListener('change', () => {
+        selectedShape = shapeSelect.value as ShapeKind | 'random';
+        syncSkinOptions();
+        makeCycle();
+        draw();
+      });
+      skinSelect.addEventListener('change', () => {
+        selectedSkin = skinSelect.value as VisualSkin | 'random';
+        makeCycle();
+        draw();
+      });
+    }
 
     function setPlayback(direction: -1 | 1, boosted: boolean) {
       playbackDirection = direction;
@@ -534,15 +593,6 @@ import Base from '../../layouts/Base.astro';
     function makeCycle() {
       const seed = hashString(`${Date.now()}:${Math.random()}`);
       const rng = mulberry32(seed);
-      const shapes: ShapeKind[] = ['square', 'triangle', 'hexagon', 'circle', 'parallelogram', 'rectangle'];
-      const skinsByShape: Record<ShapeKind, VisualSkin[]> = {
-        square: ['triangles', 'edgeBands', 'cornerCuts', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'scales', 'chevrons', 'insetDiamonds', 'diagonalBars', 'checker', 'splitBands', 'pinwheel', 'crosshatch', 'shards', 'caps', 'slats', 'steps', 'splitDiag', 'edgeCorners', 'lanes'],
-        triangle: ['facets', 'kite', 'bands', 'strata', 'zigzag', 'splitBands', 'pinwheel', 'shards', 'rays', 'triad', 'lanes'],
-        hexagon: ['facets', 'bands', 'mosaic', 'wedges', 'splitBands', 'shards', 'spokes', 'rays', 'caps', 'hexFan', 'edgeCorners'],
-        circle: ['bands', 'mosaic', 'facets', 'splitBands', 'spokes', 'rays', 'arcBands', 'caps', 'iris', 'hexFan'],
-        parallelogram: ['facets', 'blocks', 'bands', 'ribbons', 'diagonalBars', 'strata', 'splitBands', 'shards', 'slats', 'steps', 'splitDiag', 'lanes'],
-        rectangle: ['bands', 'brickwork', 'mosaic', 'edgeBands', 'splitBands', 'checker', 'crosshatch', 'slats', 'steps', 'caps', 'splitDiag', 'edgeCorners', 'lanes'],
-      };
       const growthModes: GrowthMode[] = ['spores', 'tendrils', 'river', 'rings', 'islands', 'lightning', 'roots', 'vortex', 'contours', 'maze', 'faults', 'braid', 'nebula'];
       const speeds: SpeedMode[] = [
         { name: 'slow', divisor: 480, minStep: 1 },
@@ -550,8 +600,8 @@ import Base from '../../layouts/Base.astro';
         { name: 'quick', divisor: 230, minStep: 3 },
       ];
       const tileSize = MIN_TILE + Math.floor(rng() * (MAX_TILE - MIN_TILE + 1));
-      const shape = pick(shapes, rng);
-      const skin = pick(skinsByShape[shape], rng);
+      const shape = selectedShape === 'random' ? pick(shapes, rng) : selectedShape;
+      const skin = selectedSkin === 'random' ? pick(skinsByShape[shape], rng) : selectedSkin;
       const triangleShape = shape === 'triangle';
       const hexShape = shape === 'hexagon';
       const circleShape = shape === 'circle';
@@ -1191,13 +1241,6 @@ import Base from '../../layouts/Base.astro';
         fillPoly([[cx, y], [x2, cy], [cx, cy]], north, 0.72);
         fillPoly([[x2, cy], [cx, y2], [cx, cy]], east, 0.72);
         fillPoly([[cx, y2], [x, cy], [cx, cy]], south, 0.72);
-      } else if (skin === 'hexCells') {
-        const q = size * 0.22;
-        fillPoly([[x + q, y], [x2 - q, y], [x2, cy], [x2 - q, y2], [x + q, y2], [x, cy]], mix(north, south, 0.50), 0.94);
-        fillPoly([[x + q, y], [x2 - q, y], [cx, cy]], north, 0.60);
-        fillPoly([[x2 - q, y], [x2, cy], [cx, cy]], east, 0.60);
-        fillPoly([[x2, cy], [x2 - q, y2], [cx, cy]], south, 0.60);
-        fillPoly([[x + q, y2], [x, cy], [cx, cy]], west, 0.60);
       } else if (skin === 'beads') {
         ctx.fillStyle = rgba(mix(north, south, 0.50), 0.84);
         ctx.beginPath();
@@ -1398,6 +1441,7 @@ import Base from '../../layouts/Base.astro';
       draw();
     }
 
+    setupSelectors();
     resize();
     if (!reduce) {
       let last = 0;
