@@ -625,6 +625,17 @@ a:focus-visible {
   position: relative;
   isolation: isolate;
 }
+.markov-text {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  opacity: 0.42;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
 .writing-shell > .section-head,
 .writing-panes {
   position: relative;
