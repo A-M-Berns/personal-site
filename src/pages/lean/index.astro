@@ -51,8 +51,8 @@ import Base from '../../layouts/Base.astro';
     const ctx = canvas.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
     const CELL_PX = 2;
-    const MIN_TILE = 7;
-    const MAX_TILE = 11;
+    const MIN_TILE = 5;
+    const MAX_TILE = 15;
     const HOLD_FRAMES = 90;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -60,7 +60,7 @@ import Base from '../../layouts/Base.astro';
     type WangTile = { n: number; e: number; s: number; w: number };
     type TileSet = { name: string; colors: number; tiles: WangTile[] };
     type ShapeKind = 'square' | 'triangle' | 'hexagon' | 'circle' | 'parallelogram' | 'rectangle';
-    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'hexCells' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork';
+    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'hexCells' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork' | 'diagonalBars' | 'checker' | 'orbit' | 'splitBands' | 'pinwheel' | 'crosshatch' | 'plusGlyph' | 'nestedBox' | 'strata' | 'zigzag' | 'wedges' | 'petals' | 'target';
     type GrowthMode = 'spores' | 'tendrils' | 'river' | 'rings' | 'islands' | 'lightning' | 'roots' | 'vortex' | 'contours' | 'maze' | 'faults' | 'braid' | 'nebula';
     type SpeedMode = { name: string; divisor: number; minStep: number };
     type Cycle = {
@@ -422,12 +422,12 @@ import Base from '../../layouts/Base.astro';
       const rng = mulberry32(seed);
       const shapes: ShapeKind[] = ['square', 'triangle', 'hexagon', 'circle', 'parallelogram', 'rectangle'];
       const skinsByShape: Record<ShapeKind, VisualSkin[]> = {
-        square: ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'beads', 'scales', 'ribbons', 'chevrons', 'insetDiamonds', 'pixelGlyphs', 'quarterArcs', 'ladder'],
-        triangle: ['facets', 'kite', 'bands', 'mesh'],
-        hexagon: ['facets', 'bands', 'mosaic', 'beads'],
-        circle: ['beads', 'bands', 'mosaic', 'facets'],
-        parallelogram: ['facets', 'blocks', 'bands', 'ribbons'],
-        rectangle: ['bands', 'brickwork', 'mosaic', 'edgeBands'],
+        square: ['triangles', 'edgeBands', 'cornerCuts', 'centerGlyphs', 'diamondWeave', 'isometric', 'lozenges', 'hexCells', 'beads', 'scales', 'ribbons', 'chevrons', 'insetDiamonds', 'pixelGlyphs', 'quarterArcs', 'ladder', 'diagonalBars', 'checker', 'orbit', 'splitBands', 'pinwheel', 'crosshatch', 'plusGlyph', 'nestedBox'],
+        triangle: ['facets', 'kite', 'bands', 'mesh', 'strata', 'zigzag', 'splitBands', 'pinwheel'],
+        hexagon: ['facets', 'bands', 'mosaic', 'beads', 'wedges', 'orbit', 'petals', 'splitBands'],
+        circle: ['beads', 'bands', 'mosaic', 'facets', 'orbit', 'petals', 'splitBands', 'target'],
+        parallelogram: ['facets', 'blocks', 'bands', 'ribbons', 'diagonalBars', 'strata', 'crosshatch', 'splitBands'],
+        rectangle: ['bands', 'brickwork', 'mosaic', 'edgeBands', 'splitBands', 'checker', 'crosshatch', 'nestedBox'],
       };
       const growthModes: GrowthMode[] = ['spores', 'tendrils', 'river', 'rings', 'islands', 'lightning', 'roots', 'vortex', 'contours', 'maze', 'faults', 'braid', 'nebula'];
       const speeds: SpeedMode[] = [
@@ -560,6 +560,22 @@ import Base from '../../layouts/Base.astro';
         fillPoly([points[0], points[1], center], mix(north, south, 0.50), 0.90);
         fillPoly([points[1], points[2], center], east, 0.72);
         fillPoly([points[2], points[0], center], west, 0.72);
+      } else if (skin === 'strata') {
+        fillPoly(points, mix(north, south, 0.50), 0.88);
+        fillPoly([points[0], points[1], center], north, 0.42);
+        fillPoly([points[1], points[2], center], mix(east, south, 0.45), 0.55);
+      } else if (skin === 'zigzag') {
+        fillPoly([points[0], points[1], center], mix(west, east, 0.50), 0.82);
+        fillPoly([points[1], points[2], center], north, 0.68);
+        fillPoly([points[2], points[0], center], south, 0.68);
+      } else if (skin === 'splitBands') {
+        fillPoly(points, mix(north, south, 0.50), 0.86);
+        fillPoly([points[0], center, points[2]], west, 0.48);
+        fillPoly([points[1], center, points[2]], east, 0.48);
+      } else if (skin === 'pinwheel') {
+        fillPoly([points[0], center, points[2]], north, 0.84);
+        fillPoly([points[2], center, points[1]], east, 0.74);
+        fillPoly([points[1], center, points[0]], south, 0.64);
       } else {
         fillPoly([points[0], points[1], center], up ? south : north, 0.96);
         fillPoly([points[1], points[2], center], east, 0.88);
@@ -568,21 +584,28 @@ import Base from '../../layouts/Base.astro';
     }
 
     function drawHexLattice(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
-      const r = size * 0.92;
-      const h = Math.sqrt(3) * r;
-      const cx = col * r * 1.5 - r * 2;
-      const cy = row * h + (col & 1 ? h * 0.5 : 0) - h * 2;
+      const r = size * 1.02;
+      const stepX = Math.sqrt(3) * r;
+      const stepY = 1.5 * r;
+      const cx = col * stepX + (row & 1 ? stepX * 0.5 : 0) - stepX * 2;
+      const cy = row * stepY - stepY * 2;
       const points: Array<[number, number]> = [];
       for (let i = 0; i < 6; i++) {
-        const a = Math.PI / 6 + i * Math.PI / 3;
-        points.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+        const angle = -Math.PI / 2 + i * Math.PI / 3;
+        points.push([cx + Math.cos(angle) * r, cy + Math.sin(angle) * r]);
       }
       const north = colorFor(tile.n, palette);
       const east = colorFor(tile.e, palette);
       const south = colorFor(tile.s, palette);
       const west = colorFor(tile.w, palette);
+      fillPoly(points, mix(north, south, 0.50), 0.92);
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], points[0][1]);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i][0], points[i][1]);
+      ctx.closePath();
+      ctx.clip();
       if (skin === 'bands') {
-        fillPoly(points, mix(north, south, 0.50), 0.88);
         fillPoly([points[5], points[0], points[1], [cx, cy]], north, 0.58);
         fillPoly([points[2], points[3], points[4], [cx, cy]], south, 0.58);
       } else if (skin === 'mosaic') {
@@ -598,11 +621,30 @@ import Base from '../../layouts/Base.astro';
         ctx.beginPath();
         ctx.arc(cx, cy, r * 0.42, 0, Math.PI * 2);
         ctx.fill();
+      } else if (skin === 'wedges') {
+        for (let i = 0; i < 6; i++) {
+          fillPoly([points[i], points[(i + 1) % 6], [cx, cy]], [north, east, south, west, mix(north, east, 0.5), mix(south, west, 0.5)][i], 0.76);
+        }
+      } else if (skin === 'orbit') {
+        fillPoly([points[0], points[1], points[2], [cx, cy]], mix(north, east, 0.45), 0.58);
+        fillPoly([points[3], points[4], points[5], [cx, cy]], mix(south, west, 0.45), 0.58);
+        ctx.strokeStyle = rgba(mix(east, west, 0.50), 0.62);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.48, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (skin === 'petals') {
+        for (let i = 0; i < 3; i++) {
+          fillPoly([points[i], points[(i + 1) % 6], points[(i + 3) % 6], points[(i + 4) % 6]], [north, east, south][i], 0.42);
+        }
+      } else if (skin === 'splitBands') {
+        fillPoly([points[5], points[0], points[1], points[2], [cx, cy]], mix(north, east, 0.45), 0.58);
+        fillPoly([points[2], points[3], points[4], points[5], [cx, cy]], mix(south, west, 0.45), 0.58);
       } else {
-        fillPoly(points, mix(north, south, 0.50), 0.90);
         fillPoly([points[0], points[1], points[2], [cx, cy]], east, 0.48);
         fillPoly([points[3], points[4], points[5], [cx, cy]], west, 0.48);
       }
+      ctx.restore();
     }
 
     function drawCirclePacking(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
@@ -638,6 +680,35 @@ import Base from '../../layouts/Base.astro';
           ctx.closePath();
           ctx.fill();
         }
+      } else if (skin === 'orbit') {
+        ctx.strokeStyle = rgba(north, 0.76);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r * 0.76, r * 0.34, Math.PI * 0.18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = rgba(south, 0.64);
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, r * 0.76, r * 0.34, -Math.PI * 0.18, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (skin === 'petals') {
+        for (let i = 0; i < 4; i++) {
+          const a = i * Math.PI * 0.5;
+          ctx.fillStyle = rgba([north, east, south, west][i], 0.52);
+          ctx.beginPath();
+          ctx.ellipse(cx + Math.cos(a) * r * 0.25, cy + Math.sin(a) * r * 0.25, r * 0.42, r * 0.18, a, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (skin === 'splitBands') {
+        fillPoly([[cx - r, cy - r], [cx, cy - r], [cx, cy + r], [cx - r, cy + r]], west, 0.42);
+        fillPoly([[cx, cy - r], [cx + r, cy - r], [cx + r, cy + r], [cx, cy + r]], east, 0.42);
+      } else if (skin === 'target') {
+        for (let i = 0; i < 3; i++) {
+          ctx.strokeStyle = rgba([north, east, south][i], 0.56);
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * (0.32 + i * 0.2), 0, Math.PI * 2);
+          ctx.stroke();
+        }
       } else {
         ctx.fillStyle = rgba(mix(north, south, 0.50), 0.72);
         ctx.beginPath();
@@ -664,6 +735,21 @@ import Base from '../../layouts/Base.astro';
         fillPoly([points[1], points[2], center], east, 0.55);
         fillPoly([points[2], points[3], center], south, 0.55);
         fillPoly([points[3], points[0], center], west, 0.55);
+      } else if (skin === 'diagonalBars') {
+        fillPoly(points, mix(north, south, 0.45), 0.90);
+        fillPoly([points[0], points[1], center], north, 0.62);
+        fillPoly([points[2], points[3], center], south, 0.62);
+      } else if (skin === 'strata') {
+        fillPoly(points, mix(west, east, 0.50), 0.90);
+        fillPoly([points[0], points[1], [center[0] + skew * 0.3, center[1]]], north, 0.44);
+        fillPoly([points[2], points[3], [center[0] - skew * 0.3, center[1]]], south, 0.44);
+      } else if (skin === 'crosshatch') {
+        fillPoly(points, mix(north, south, 0.45), 0.88);
+        fillPoly([points[0], points[1], points[2], center], east, 0.36);
+        fillPoly([points[2], points[3], points[0], center], west, 0.36);
+      } else if (skin === 'splitBands') {
+        fillPoly([points[0], points[1], points[2], center], mix(north, east, 0.50), 0.82);
+        fillPoly([points[2], points[3], points[0], center], mix(south, west, 0.50), 0.82);
       } else {
         fillPoly([points[0], points[1], center], north, 0.90);
         fillPoly([points[1], points[2], center], east, 0.86);
@@ -698,6 +784,30 @@ import Base from '../../layouts/Base.astro';
         fillRectBleed(x, y, w, h);
         ctx.fillStyle = rgba(south, 0.52);
         fillRectBleed(x, y2 - Math.max(1, h * 0.24), w, Math.max(1, h * 0.24));
+      } else if (skin === 'splitBands') {
+        ctx.fillStyle = rgba(mix(north, west, 0.45), 0.86);
+        fillRectBleed(x, y, w * 0.5, h);
+        ctx.fillStyle = rgba(mix(south, east, 0.45), 0.86);
+        fillRectBleed(cx, y, w * 0.5, h);
+      } else if (skin === 'checker') {
+        ctx.fillStyle = rgba(north, 0.84);
+        fillRectBleed(x, y, w * 0.5, h * 0.5);
+        ctx.fillStyle = rgba(east, 0.84);
+        fillRectBleed(cx, y, w * 0.5, h * 0.5);
+        ctx.fillStyle = rgba(west, 0.84);
+        fillRectBleed(x, cy, w * 0.5, h * 0.5);
+        ctx.fillStyle = rgba(south, 0.84);
+        fillRectBleed(cx, cy, w * 0.5, h * 0.5);
+      } else if (skin === 'crosshatch') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.86);
+        fillRectBleed(x, y, w, h);
+        fillPoly([[x, y], [x2, y], [x, y2]], east, 0.34);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], west, 0.34);
+      } else if (skin === 'nestedBox') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.86);
+        fillRectBleed(x, y, w, h);
+        ctx.fillStyle = rgba(mix(east, west, 0.5), 0.62);
+        fillRectBleed(x + w * 0.24, y + h * 0.22, w * 0.52, h * 0.56);
       } else {
         fillPoly([[x, y], [x2, y], [cx, cy]], north, 0.82);
         fillPoly([[x2, y], [x2, y2], [cx, cy]], east, 0.82);
@@ -822,6 +932,54 @@ import Base from '../../layouts/Base.astro';
         fillPoly([[x2, y], [cx, cy], [x2, y2]], east, 0.88);
         fillPoly([[x, y], [cx, cy], [x2, y]], north, 0.62);
         fillPoly([[x, y2], [cx, cy], [x2, y2]], south, 0.62);
+      } else if (skin === 'diagonalBars') {
+        fillPoly([[x, y], [x2, y], [x, y2]], mix(north, west, 0.45), 0.88);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], mix(east, south, 0.45), 0.88);
+        fillPoly([[x + size * 0.24, y], [x2, y], [x2, y + size * 0.24], [x + size * 0.24, y2], [x, y2], [x, y2 - size * 0.24]], mix(north, south, 0.50), 0.46);
+      } else if (skin === 'checker') {
+        ctx.fillStyle = rgba(north, 0.84);
+        fillRectBleed(x, y, size * 0.5, size * 0.5);
+        ctx.fillStyle = rgba(east, 0.84);
+        fillRectBleed(cx, y, size * 0.5, size * 0.5);
+        ctx.fillStyle = rgba(west, 0.84);
+        fillRectBleed(x, cy, size * 0.5, size * 0.5);
+        ctx.fillStyle = rgba(south, 0.84);
+        fillRectBleed(cx, cy, size * 0.5, size * 0.5);
+      } else if (skin === 'orbit') {
+        fillPoly([[x, y], [x2, y], [x2, y2], [x, y2]], mix(east, west, 0.50), 0.78);
+        ctx.strokeStyle = rgba(north, 0.72);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, size * 0.34, size * 0.18, Math.PI * 0.25, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = rgba(south, 0.62);
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, size * 0.34, size * 0.18, -Math.PI * 0.25, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (skin === 'splitBands') {
+        ctx.fillStyle = rgba(mix(north, west, 0.45), 0.86);
+        fillRectBleed(x, y, size * 0.5, size);
+        ctx.fillStyle = rgba(mix(south, east, 0.45), 0.86);
+        fillRectBleed(cx, y, size * 0.5, size);
+      } else if (skin === 'pinwheel') {
+        fillPoly([[x, y], [x2, y], [cx, cy]], north, 0.84);
+        fillPoly([[x2, y], [x2, y2], [cx, cy]], east, 0.74);
+        fillPoly([[x2, y2], [x, y2], [cx, cy]], south, 0.84);
+        fillPoly([[x, y2], [x, y], [cx, cy]], west, 0.74);
+      } else if (skin === 'crosshatch') {
+        fillPoly([[x, y], [x2, y], [x2, y2], [x, y2]], mix(north, south, 0.50), 0.82);
+        fillPoly([[x, y], [x2, y], [x, y2]], east, 0.30);
+        fillPoly([[x2, y], [x2, y2], [x, y2]], west, 0.30);
+      } else if (skin === 'plusGlyph') {
+        fillPoly([[x, y], [x2, y], [x2, y2], [x, y2]], mix(north, south, 0.50), 0.82);
+        ctx.fillStyle = rgba(mix(east, west, 0.50), 0.72);
+        fillRectBleed(cx - size * 0.11, y, size * 0.22, size);
+        fillRectBleed(x, cy - size * 0.11, size, size * 0.22);
+      } else if (skin === 'nestedBox') {
+        ctx.fillStyle = rgba(mix(north, south, 0.5), 0.82);
+        fillRectBleed(x, y, size, size);
+        ctx.fillStyle = rgba(mix(east, west, 0.5), 0.60);
+        fillRectBleed(x + size * 0.24, y + size * 0.24, size * 0.52, size * 0.52);
       } else if (skin === 'insetDiamonds') {
         ctx.fillStyle = rgba(mix(north, south, 0.5), 0.82);
         fillRectBleed(x, y, size, size);
