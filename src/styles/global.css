@@ -384,6 +384,15 @@ a:focus-visible {
   color: var(--ink);
   border-color: var(--muted);
 }
+.sandpile-toggle {
+  width: 100%;
+  margin: 0.25rem 0 0.35rem;
+  text-align: center;
+}
+.sandpile-toggle[aria-pressed="true"] {
+  color: var(--ink);
+  border-color: rgba(236, 236, 236, 0.28);
+}
 .sandpile-panel-row {
   display: grid;
   grid-template-columns: 4.3rem 1fr;

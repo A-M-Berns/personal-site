@@ -33,6 +33,7 @@ import Base from '../../layouts/Base.astro';
         <input id="sandpile-drops" type="range" min="0" max="16" step="1" value="6" />
         <span id="sandpile-drops-value">6</span>
       </div>
+      <button id="sandpile-topple-toggle" class="sandpile-toggle" type="button" aria-pressed="true">Toppling animation on</button>
       <dl class="sandpile-stats">
         <div><dt>seed</dt><dd id="sandpile-seed">-</dd></div>
         <div><dt>grid</dt><dd id="sandpile-grid">-</dd></div>
@@ -54,6 +55,7 @@ import Base from '../../layouts/Base.astro';
     const resetButton = document.getElementById('sandpile-reset') as HTMLButtonElement | null;
     const passesInput = document.getElementById('sandpile-passes') as HTMLInputElement | null;
     const dropsInput = document.getElementById('sandpile-drops') as HTMLInputElement | null;
+    const toppleToggle = document.getElementById('sandpile-topple-toggle') as HTMLButtonElement | null;
     const seederLabel = document.getElementById('sandpile-seeder');
     const passesValue = document.getElementById('sandpile-passes-value');
     const dropsValue = document.getElementById('sandpile-drops-value');
@@ -92,6 +94,7 @@ import Base from '../../layouts/Base.astro';
     let topplesThisFrame = 0;
     let topplePassesPerFrame = Number(passesInput?.value ?? 8);
     let dropsPerFrame = Number(dropsInput?.value ?? 6);
+    let showToppling = true;
     let seederName = '';
     let palette: number[][] = [];
 
@@ -411,14 +414,14 @@ import Base from '../../layouts/Base.astro';
       const data = image.data;
       for (let i = 0; i < grains.length; i++) {
         const h = Math.min(3, grains[i]);
-        const flash = active[i] / 255;
+        const flash = showToppling ? active[i] / 255 : 0;
         const base = palette[h];
-        const color = base;
+        const color = flash > 0 ? mix(base, palette[4], 0.45 + flash * 0.55) : base;
         const o = i * 4;
         data[o] = color[0];
         data[o + 1] = color[1];
         data[o + 2] = color[2];
-        data[o + 3] = h === 0 ? 150 : 190;
+        data[o + 3] = h === 0 && flash === 0 ? 150 : 255;
       }
       ctx.putImageData(image, 0, 0);
     }
@@ -461,6 +464,12 @@ import Base from '../../layouts/Base.astro';
     dropsInput?.addEventListener('input', () => {
       dropsPerFrame = Number(dropsInput.value);
       if (dropsValue) dropsValue.textContent = dropsInput.value;
+    });
+    toppleToggle?.addEventListener('click', () => {
+      showToppling = !showToppling;
+      toppleToggle.setAttribute('aria-pressed', String(showToppling));
+      toppleToggle.textContent = showToppling ? 'Toppling animation on' : 'Toppling animation off';
+      draw();
     });
   }
 </script>
