@@ -1,0 +1,25 @@
+---
+import Base from '../../layouts/Base.astro';
+
+const animations = [
+  { title: 'Home', href: '/?animation=1' },
+  { title: 'About', href: '/about/?animation=1' },
+  { title: 'Writing', href: '/writing/?animation=1' },
+  { title: 'Formalization', href: '/formalization/?animation=1' },
+  { title: 'Music', href: '/music/?animation=1' },
+];
+---
+<Base title="Animations — A. M. Berns" description="Textless animation views.">
+  <header class="section-head">
+    <h1><span class="hl">Animations</span></h1>
+    <p><span class="hl">The site's current animations without page text over them.</span></p>
+  </header>
+  <div class="animation-grid">
+    {animations.map((animation) => (
+      <a class="animation-card" href={animation.href}>
+        <iframe title={`${animation.title} animation`} src={animation.href} loading="lazy"></iframe>
+        <span>{animation.title}</span>
+      </a>
+    ))}
+  </div>
+</Base>

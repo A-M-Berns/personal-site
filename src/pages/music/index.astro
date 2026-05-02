@@ -1,38 +1,1592 @@
 ---
 import Base from '../../layouts/Base.astro';
-
-const spotifyArtistUrl = 'https://open.spotify.com/artist/3dS0px84EtOAKKdgoaNd2c';
-const spotifyEmbedUrl = 'https://open.spotify.com/embed/artist/3dS0px84EtOAKKdgoaNd2c?utm_source=generator&theme=0';
 ---
 <Base title="Music — A. M. Berns" description="Music by Anson Berns.">
-  <header class="section-head">
-    <h1>Music</h1>
-    <p>Released music and site-only recordings.</p>
-  </header>
+  <div class="other-shell">
+    <canvas id="lenia-sim" class="lenia-sim" aria-hidden="true"></canvas>
+    <header class="section-head">
+      <h1><span class="hl">Music</span></h1>
+      <p><span class="hl">Released music and site-only recordings.</span></p>
+    </header>
+    <article class="note">
+      <p><span class="hl"><a href="https://open.spotify.com/artist/3dS0px84EtOAKKdgoaNd2c">Anson Berns on Spotify</a></span></p>
+      <p><span class="hl">Site-only: <audio controls preload="metadata" src="/music/gbr-project.wav"></audio></span></p>
+    </article>
 
-  <article class="note music-page">
-    <section class="music-section">
-      <h2>Streaming</h2>
-      <p><a href={spotifyArtistUrl}>Anson Berns on Spotify</a></p>
-      <div class="spotify-embed">
-        <iframe
-          title="Anson Berns on Spotify"
-          src={spotifyEmbedUrl}
-          width="100%"
-          height="352"
-          frameborder="0"
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"
-        ></iframe>
+    <aside id="tune-panel" class="tune-panel" aria-label="Particle Lenia parameters">
+      <h3>Tune</h3>
+      <p class="tune-seeder">seeder: <span id="seeder-label">—</span></p>
+      <div class="tune-row">
+        <label for="s-t">t</label>
+        <input type="range" id="s-t" min="0" max="1" step="0.005" />
+        <span class="val" id="v-t"></span>
       </div>
-    </section>
-
-    <section class="music-section">
-      <h2>Site-only</h2>
-      <div class="music-track">
-        <h3>GBR Project</h3>
-        <audio controls preload="metadata" src="/music/gbr-project.wav"></audio>
+      <div class="tune-row tune-row--readonly">
+        <label for="s-muK">μK</label>
+        <input type="range" id="s-muK" min="3.0" max="5.0" step="0.01" disabled />
+        <span class="val" id="v-muK"></span>
       </div>
-    </section>
-  </article>
+      <div class="tune-row tune-row--readonly">
+        <label for="s-sigmaK">σK</label>
+        <input type="range" id="s-sigmaK" min="0.5" max="1.3" step="0.01" disabled />
+        <span class="val" id="v-sigmaK"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-wK">wK</label>
+        <input type="range" id="s-wK" min="0.035" max="0.060" step="0.0005" />
+        <span class="val" id="v-wK"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-muG">μG</label>
+        <input type="range" id="s-muG" min="0.20" max="1.60" step="0.005" />
+        <span class="val" id="v-muG"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-cRep">cRep</label>
+        <input type="range" id="s-cRep" min="0.2" max="3.0" step="0.02" />
+        <span class="val" id="v-cRep"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-noise">noise</label>
+        <input type="range" id="s-noise" min="0" max="0.04" step="0.001" />
+        <span class="val" id="v-noise"></span>
+      </div>
+      <div class="tune-row">
+        <label for="s-flow">flow</label>
+        <input type="range" id="s-flow" min="0" max="0.30" step="0.005" />
+        <span class="val" id="v-flow"></span>
+      </div>
+      <button id="reset-btn" type="button">Reset</button>
+      <p class="tune-hint">Click on the background to nudge particles.</p>
+    </aside>
+  </div>
 </Base>
+
+<style>
+  .tune-panel {
+    position: fixed;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 3;
+    width: 16.5rem;
+    background: rgba(14, 14, 16, 0.92);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.85rem 1rem 0.9rem;
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.78rem;
+    color: var(--muted);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .tune-panel h3 {
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin: 0 0 0.4rem;
+    color: var(--ink);
+  }
+  .tune-seeder {
+    margin: 0 0 0.55rem;
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .tune-seeder span {
+    color: var(--ink);
+  }
+  .tune-row {
+    display: grid;
+    grid-template-columns: 3.5ch 1fr 4.5ch;
+    gap: 0.55rem;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+  .tune-row label {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .tune-row input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+    margin: 0;
+  }
+  .tune-row .val {
+    font-size: 0.7rem;
+    color: var(--ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .tune-row--readonly label,
+  .tune-row--readonly .val {
+    color: rgba(142, 142, 136, 0.6);
+  }
+  .tune-row--readonly input[type="range"] {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .tune-panel button {
+    margin-top: 0.6rem;
+    width: 100%;
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.4rem 0.7rem;
+    cursor: pointer;
+    transition: color 120ms ease, border-color 120ms ease;
+  }
+  .tune-panel button:hover {
+    color: var(--ink);
+    border-color: var(--muted);
+  }
+  .tune-hint {
+    margin: 0.6rem 0 0;
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+  @media (max-width: 600px) {
+    .tune-panel {
+      bottom: 0.5rem;
+      right: 0.5rem;
+      left: 0.5rem;
+      width: auto;
+    }
+  }
+</style>
+
+<script>
+  // Particle Lenia (Mordvintsev, Niklasson, Randazzo, Chan).
+  // Each particle is a point in 2D world space. The continuous field U(x) is
+  // a sum of bell-ring kernels K(|x − p_j|) over all particles, and each
+  // particle's energy is R(p_i) − G(U(p_i)) where R is short-range repulsion
+  // and G is a Gaussian "growth" preference for the field strength near it.
+  // Particles flow along the negative gradient of total energy, producing
+  // self-propelled clusters that swim, divide, and dissolve.
+  //
+  // Rendered by splatting each particle's kernel onto a coarse pixel grid;
+  // the chunky pixel look matches the rest of the site's animations.
+  const canvas = document.getElementById('lenia-sim') as HTMLCanvasElement | null;
+  if (canvas) {
+    const ctx = canvas.getContext('2d')!;
+    const N_LEVELS = 8;
+    const CELL_PX = 4;          // display pixels per grid cell
+    const CELLS_PER_UNIT = 6;   // grid cells per world unit
+    const DT = 0.1;
+    const N_PARTICLES = 320;
+    const RESEED_AFTER = 2000;
+
+    // Parameter ranges sampled per cycle. muK and sigmaK are correlated
+    // inversely via a shared "type" parameter t ∈ [0, 1]: at t=0 the kernel
+    // is large-radius / sharp-ring (big μK, small σK); at t=1 it's
+    // small-radius / fat-ring (small μK, big σK), with a small jitter per
+    // axis so the relation isn't perfectly tight.
+    const PARAM_RANGES = {
+      muK:    [3.0, 5.0],     // kernel peak (creature radius)
+      sigmaK: [0.5, 1.3],     // kernel ring width
+      wK:     [0.035, 0.060], // per-particle field weight
+      muG:    [0.50, 1.10],   // growth target field strength
+      cRep:   [0.6, 1.7],     // close-range repulsion strength
+      noise:  [0.001, 0.014], // Brownian jitter strength
+      flow:   [0.025, 0.16],  // ambient curl-flow strength
+    } as const;
+    const SIGMA_G_FIXED = 0.5;
+
+    // muK ↔ sigmaK are now strictly coupled through a single "type" t ∈ [0,1].
+    // The user-exposed `t` slider drives both inversely; the muK and sigmaK
+    // sliders display the derived values but stay disabled (read-only).
+    function deriveMuKFromT(t: number) {
+      return mix(PARAM_RANGES.muK[1], PARAM_RANGES.muK[0], t);
+    }
+    function deriveSigmaKFromT(t: number) {
+      return mix(PARAM_RANGES.sigmaK[0], PARAM_RANGES.sigmaK[1], t);
+    }
+
+    // Slider bounds. The displayed muK / sigmaK sliders can't be moved by
+    // the user, so HASH_CELL_SIZE only needs to cover the t-curve extremes.
+    const SLIDER_MAX_MU_K = PARAM_RANGES.muK[1];
+    const SLIDER_MAX_SIGMA_K = PARAM_RANGES.sigmaK[1];
+    const MAX_KERNEL_RANGE = SLIDER_MAX_MU_K + 3 * SLIDER_MAX_SIGMA_K;
+    const HASH_CELL_SIZE = MAX_KERNEL_RANGE;
+
+    type Params = {
+      t: number;
+      muK: number; sigmaK: number; wK: number;
+      muG: number; sigmaG: number; cRep: number;
+      noise: number; flow: number;
+      kernelRange: number; kernelRangeSq: number;
+      renderRangeCells: number;
+      sigmaK2: number; sigmaG2: number;
+    };
+
+    function lerp(lo: number, hi: number) {
+      return lo + Math.random() * (hi - lo);
+    }
+
+    function mix(a: number, b: number, t: number) {
+      return a + (b - a) * t;
+    }
+
+    function clamp(v: number, lo: number, hi: number) {
+      return v < lo ? lo : v > hi ? hi : v;
+    }
+
+    function recompute(p: Params) {
+      p.kernelRange = p.muK + 3 * p.sigmaK;
+      p.kernelRangeSq = p.kernelRange * p.kernelRange;
+      p.renderRangeCells = Math.ceil(p.kernelRange * CELLS_PER_UNIT);
+      p.sigmaK2 = p.sigmaK * p.sigmaK;
+      p.sigmaG2 = p.sigmaG * p.sigmaG;
+    }
+
+    function pickParams(): Params {
+      // t ∈ [0, 1] inversely couples muK and sigmaK:
+      //   t=0 → big muK + small sigmaK (large radius, sharp ring)
+      //   t=1 → small muK + big sigmaK (small radius, fat ring)
+      const t = Math.random();
+      const p: Params = {
+        t,
+        muK:    deriveMuKFromT(t),
+        sigmaK: deriveSigmaKFromT(t),
+        wK:     lerp(PARAM_RANGES.wK[0],     PARAM_RANGES.wK[1]),
+        muG:    lerp(PARAM_RANGES.muG[0],    PARAM_RANGES.muG[1]),
+        sigmaG: SIGMA_G_FIXED,
+        cRep:   lerp(PARAM_RANGES.cRep[0],   PARAM_RANGES.cRep[1]),
+        noise:  lerp(PARAM_RANGES.noise[0],  PARAM_RANGES.noise[1]),
+        flow:   lerp(PARAM_RANGES.flow[0],   PARAM_RANGES.flow[1]),
+        kernelRange: 0, kernelRangeSq: 0, renderRangeCells: 0,
+        sigmaK2: 0, sigmaG2: 0,
+      };
+      recompute(p);
+      return p;
+    }
+
+    let params: Params = pickParams();
+
+    type FlowWave = {
+      dx: number;
+      dy: number;
+      k: number;
+      phase: number;
+      speed: number;
+      amp: number;
+    };
+
+    let flowWaves: FlowWave[] = [];
+
+    function pickFlowWaves(): FlowWave[] {
+      const count = 2 + ((Math.random() * 3) | 0);
+      const span = Math.max(10, Math.min(W_world || 24, H_world || 24));
+      const baseAngle = Math.random() * Math.PI * 2;
+      const waves: FlowWave[] = [];
+      for (let i = 0; i < count; i++) {
+        const angle = baseAngle + (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.85;
+        const wavelength = span * (0.45 + Math.random() * 0.75);
+        waves.push({
+          dx: Math.cos(angle),
+          dy: Math.sin(angle),
+          k: (Math.PI * 2) / wavelength,
+          phase: Math.random() * Math.PI * 2,
+          speed: (Math.random() < 0.5 ? -1 : 1) * (0.04 + Math.random() * 0.20),
+          amp: 0.45 + Math.random() * 0.80,
+        });
+      }
+      return waves;
+    }
+
+    const styles = getComputedStyle(document.documentElement);
+    const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    type RGB = [number, number, number];
+
+    function parseHex(h: string): RGB {
+      const s = h.trim().replace('#', '');
+      const full = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
+      const n = parseInt(full, 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+
+    function luma(c: RGB): number {
+      return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+    }
+
+    const paper = parseHex(paperHex);
+    const colorPool = [
+      '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
+      '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
+      '#fff0b8', '#d6ff5a', '#6ad84a', '#3ad48a', '#0fbfa8',
+      '#2cc7e0', '#4ad6ff', '#2a6fd6', '#1d3a8a', '#6a1a9a',
+      '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
+    ].map(parseHex).sort((a, b) => luma(a) - luma(b));
+
+    function pickStops(): RGB[] {
+      const stops: RGB[] = [];
+      for (let i = 0; i < N_LEVELS; i++) {
+        const lo = Math.floor((i * colorPool.length) / N_LEVELS);
+        const hi = Math.floor(((i + 1) * colorPool.length) / N_LEVELS);
+        stops.push(colorPool[lo + ((Math.random() * Math.max(1, hi - lo)) | 0)]);
+      }
+      return stops;
+    }
+
+    function buildPalette(stops: RGB[]): RGB[] {
+      const all = [paper, ...stops];
+      const out: RGB[] = [];
+      for (let i = 0; i < N_LEVELS; i++) {
+        const t = i / (N_LEVELS - 1);
+        const segF = t * (all.length - 1);
+        const seg = Math.min(Math.floor(segF), all.length - 2);
+        const lt = segF - seg;
+        const a = all[seg];
+        const b = all[seg + 1];
+        out.push([
+          Math.round(a[0] + (b[0] - a[0]) * lt),
+          Math.round(a[1] + (b[1] - a[1]) * lt),
+          Math.round(a[2] + (b[2] - a[2]) * lt),
+        ]);
+      }
+      return out;
+    }
+
+    function wrap(d: number, size: number): number {
+      if (d > size * 0.5) return d - size;
+      if (d < -size * 0.5) return d + size;
+      return d;
+    }
+
+    let W_grid = 0, H_grid = 0;
+    let W_world = 0, H_world = 0;
+    let hashW = 0, hashH = 0;
+
+    let positions = new Float32Array(0);
+    let U = new Float32Array(0);
+    let Gp = new Float32Array(0);
+    let F = new Float32Array(0);
+    // Per-particle velocity. Adds light momentum so the integrator low-passes
+    // both random noise and the gradient flow — visibly smooths the per-step
+    // twitchiness without departing too far from overdamped Lenia dynamics.
+    let velocities = new Float32Array(0);
+    const DAMPING = 0.55;
+    let field = new Float32Array(0);
+    let prevField = new Float32Array(0);
+    // Per-frame blend with previous frame's field. Higher value = more
+    // temporal smoothing at the cost of motion blur.
+    const FIELD_SMOOTH = 0.8;
+    let kernelLUT = new Float32Array(0);
+    let img: ImageData | null = null;
+    let palette: RGB[] = buildPalette(pickStops());
+    let stepCount = 0;
+
+    // Cache the kernel splat as a 2D LUT keyed by integer cell offset. The
+    // inner draw loop becomes a flat array lookup instead of an exp() call —
+    // that's the dominant render cost. Rebuilt on every reseed and on
+    // muK / sigmaK / wK slider changes via syncDerivedKernel().
+    function buildKernelLUT() {
+      const r = params.renderRangeCells;
+      const sz = 2 * r + 1;
+      kernelLUT = new Float32Array(sz * sz);
+      const wK = params.wK;
+      const muK = params.muK;
+      const sigmaK2 = params.sigmaK2;
+      const kernelRangeSq = params.kernelRangeSq;
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          const ddx = dx / CELLS_PER_UNIT;
+          const ddy = dy / CELLS_PER_UNIT;
+          const d2 = ddx * ddx + ddy * ddy;
+          if (d2 > kernelRangeSq) continue;
+          const rd = Math.sqrt(d2);
+          const dk = rd - muK;
+          const w = wK * Math.exp(-(dk * dk) / sigmaK2);
+          if (w < 1e-4) continue;
+          kernelLUT[(dy + r) * sz + (dx + r)] = w;
+        }
+      }
+    }
+
+    // Spatial hash, linked-list per cell. hashHead[c] is the first particle
+    // in cell c (or −1 if empty); hashNext[i] is the next particle after i.
+    let hashHead = new Int32Array(0);
+    let hashNext = new Int32Array(0);
+
+    function rebuildHash() {
+      hashHead.fill(-1);
+      for (let i = 0; i < N_PARTICLES; i++) {
+        const x = positions[i * 2];
+        const y = positions[i * 2 + 1];
+        const hx = Math.floor(x / HASH_CELL_SIZE);
+        const hy = Math.floor(y / HASH_CELL_SIZE);
+        const cx = ((hx % hashW) + hashW) % hashW;
+        const cy = ((hy % hashH) + hashH) % hashH;
+        const slot = cy * hashW + cx;
+        hashNext[i] = hashHead[slot];
+        hashHead[slot] = i;
+      }
+    }
+
+    // Rejection sampler: place particles where a scalar field is high. The
+    // power exponent biases toward peaks (higher = stronger concentration).
+    // Falls back to uniform random for any unplaced slots.
+    function sampleByField(sampler: (wx: number, wy: number) => number, power = 2) {
+      let placed = 0;
+      let attempts = 0;
+      const maxAttempts = N_PARTICLES * 40;
+      while (placed < N_PARTICLES && attempts < maxAttempts) {
+        attempts++;
+        const px = Math.random() * W_world;
+        const py = Math.random() * H_world;
+        let v = sampler(px, py);
+        if (v < 0) v = 0;
+        else if (v > 1) v = 1;
+        if (Math.random() < Math.pow(v, power)) {
+          positions[placed * 2] = px;
+          positions[placed * 2 + 1] = py;
+          placed++;
+        }
+      }
+      while (placed < N_PARTICLES) {
+        positions[placed * 2] = Math.random() * W_world;
+        positions[placed * 2 + 1] = Math.random() * H_world;
+        placed++;
+      }
+    }
+
+    type Seeder = { name: string; fn: () => void };
+    const seeders: Seeder[] = [
+      {
+        name: 'clusters',
+        fn: () => {
+          const k = 6 + ((Math.random() * 8) | 0);
+          const cxs = new Float32Array(k);
+          const cys = new Float32Array(k);
+          for (let i = 0; i < k; i++) {
+            cxs[i] = Math.random() * W_world;
+            cys[i] = Math.random() * H_world;
+          }
+          const sigma = 2.5 + Math.random() * 2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const c = (Math.random() * k) | 0;
+            // Box–Muller for a 2D Gaussian offset.
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            const px = cxs[c] + Math.cos(ang) * mag;
+            const py = cys[c] + Math.sin(ang) * mag;
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'rings',
+        fn: () => {
+          const k = 3 + ((Math.random() * 4) | 0);
+          const perRing = Math.ceil(N_PARTICLES / k);
+          let idx = 0;
+          for (let ri = 0; ri < k && idx < N_PARTICLES; ri++) {
+            const cx = Math.random() * W_world;
+            const cy = Math.random() * H_world;
+            const radius = 4 + Math.random() * 6;
+            const count = Math.min(perRing, N_PARTICLES - idx);
+            const phase = Math.random() * Math.PI * 2;
+            for (let i = 0; i < count; i++) {
+              const theta = phase + (i / count) * Math.PI * 2;
+              const jitter = (Math.random() - 0.5) * 0.6;
+              const px = cx + Math.cos(theta) * (radius + jitter);
+              const py = cy + Math.sin(theta) * (radius + jitter);
+              positions[idx * 2] = ((px % W_world) + W_world) % W_world;
+              positions[idx * 2 + 1] = ((py % H_world) + H_world) % H_world;
+              idx++;
+            }
+          }
+          for (; idx < N_PARTICLES; idx++) {
+            positions[idx * 2] = Math.random() * W_world;
+            positions[idx * 2 + 1] = Math.random() * H_world;
+          }
+        },
+      },
+      {
+        name: 'donut',
+        fn: () => {
+          // Single annular ring centered on the world, hollow inside.
+          const cx = W_world / 2;
+          const cy = H_world / 2;
+          const span = Math.min(W_world, H_world);
+          const inner = span * (0.14 + Math.random() * 0.08);
+          const outer = span * (0.28 + Math.random() * 0.10);
+          const phase = Math.random() * Math.PI * 2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const a = phase + (i / N_PARTICLES) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+            const r = inner + Math.random() * (outer - inner);
+            positions[i * 2] = ((cx + r * Math.cos(a)) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((cy + r * Math.sin(a)) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'double-clusters',
+        fn: () => {
+          // Two dense Gaussian clusters on opposite sides of a random axis.
+          const angle = Math.random() * Math.PI * 2;
+          const sep = Math.min(W_world, H_world) * (0.20 + Math.random() * 0.12);
+          const cx0 = W_world * 0.5;
+          const cy0 = H_world * 0.5;
+          const ax = Math.cos(angle), ay = Math.sin(angle);
+          const c1x = cx0 + ax * sep, c1y = cy0 + ay * sep;
+          const c2x = cx0 - ax * sep, c2y = cy0 - ay * sep;
+          const sigma = 3 + Math.random() * 2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const cx = i < N_PARTICLES * 0.5 ? c1x : c2x;
+            const cy = i < N_PARTICLES * 0.5 ? c1y : c2y;
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            positions[i * 2] = ((cx + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((cy + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'spiral',
+        fn: () => {
+          // 1–3 logarithmic-ish spiral arms emanating from the center.
+          const arms = 1 + ((Math.random() * 3) | 0);
+          const cx = W_world / 2, cy = H_world / 2;
+          const turns = 1.2 + Math.random() * 1.6;
+          const maxR = Math.min(W_world, H_world) * 0.42;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const u = i / N_PARTICLES;
+            const arm = i % arms;
+            const r = u * maxR;
+            const a = u * turns * Math.PI * 2 + (arm / arms) * Math.PI * 2 +
+              (Math.random() - 0.5) * 0.5;
+            positions[i * 2] = ((cx + r * Math.cos(a)) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((cy + r * Math.sin(a)) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'wave',
+        fn: () => {
+          // Particles traced along a sinusoid spanning the world width.
+          const k = 1.5 + Math.random() * 2.5;          // wavenumber
+          const amp = H_world * (0.18 + Math.random() * 0.15);
+          const baseY = H_world / 2;
+          const phase = Math.random() * Math.PI * 2;
+          const thickness = 2 + Math.random() * 3;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const px = (i / N_PARTICLES) * W_world;
+            const py = baseY + amp * Math.sin(px / W_world * Math.PI * 2 * k + phase) +
+              (Math.random() - 0.5) * thickness;
+            positions[i * 2] = px;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'galaxy',
+        fn: () => {
+          // Dense bulge at the center plus a few diffuse trailing arms.
+          const cx = W_world / 2, cy = H_world / 2;
+          const bulgeFrac = 0.3 + Math.random() * 0.2;
+          const bulgeSigma = 3 + Math.random() * 1.5;
+          const arms = 2 + ((Math.random() * 3) | 0);
+          const turns = 1.0 + Math.random() * 1.0;
+          const maxR = Math.min(W_world, H_world) * 0.38;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * bulgeSigma;
+            const ang = 2 * Math.PI * u2;
+            let px: number, py: number;
+            if (i / N_PARTICLES < bulgeFrac) {
+              px = cx + Math.cos(ang) * mag;
+              py = cy + Math.sin(ang) * mag;
+            } else {
+              const u = (i / N_PARTICLES - bulgeFrac) / (1 - bulgeFrac);
+              const arm = i % arms;
+              const r = bulgeSigma * 1.5 + u * maxR;
+              const a = u * turns * Math.PI * 2 + (arm / arms) * Math.PI * 2 +
+                (Math.random() - 0.5) * 0.6;
+              px = cx + r * Math.cos(a);
+              py = cy + r * Math.sin(a);
+            }
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'streak',
+        fn: () => {
+          // Particles laid out along a random line, biased to seed cluster
+          // formation along a coherent direction.
+          const angle = Math.random() * Math.PI * 2;
+          const ax = Math.cos(angle);
+          const ay = Math.sin(angle);
+          const span = Math.min(W_world, H_world) * 0.45;
+          const cx0 = W_world * 0.5;
+          const cy0 = H_world * 0.5;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const t = (i / N_PARTICLES - 0.5) * span * 2;
+            const j = (Math.random() - 0.5) * 4;
+            const px = cx0 + ax * t - ay * j;
+            const py = cy0 + ay * t + ax * j;
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'chevron',
+        fn: () => {
+          // V-shape: particles arranged along two arms meeting at the apex.
+          const cy = H_world * (0.3 + Math.random() * 0.4);
+          const slope = (Math.random() < 0.5 ? 1 : -1) * (0.35 + Math.random() * 0.35);
+          const halfSpan = W_world * 0.42;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const t = (i / N_PARTICLES - 0.5) * 2;
+            const cx = W_world * 0.5 + t * halfSpan;
+            const offsetY = Math.abs(t) * halfSpan * slope;
+            const px = cx + (Math.random() - 0.5) * 4;
+            const py = cy + offsetY + (Math.random() - 0.5) * 4;
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'starburst',
+        fn: () => {
+          // Particles strung along 4–8 spokes radiating from the center.
+          const spokes = 4 + ((Math.random() * 5) | 0);
+          const cx = W_world / 2, cy = H_world / 2;
+          const maxR = Math.min(W_world, H_world) * 0.45;
+          const phase = Math.random() * Math.PI * 2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const spoke = i % spokes;
+            const a = phase + (spoke / spokes) * Math.PI * 2;
+            const r = Math.pow(Math.random(), 0.7) * maxR;
+            const aJit = (Math.random() - 0.5) * 0.18;
+            positions[i * 2] = ((cx + r * Math.cos(a + aJit)) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((cy + r * Math.sin(a + aJit)) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'constellations',
+        fn: () => {
+          // Many tiny dense clusters scattered uniformly — like a star field
+          // before clusters merge into creatures.
+          const k = 15 + ((Math.random() * 15) | 0);
+          const cxs = new Float32Array(k);
+          const cys = new Float32Array(k);
+          for (let i = 0; i < k; i++) {
+            cxs[i] = Math.random() * W_world;
+            cys[i] = Math.random() * H_world;
+          }
+          const sigma = 0.9 + Math.random() * 0.8;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const c = (Math.random() * k) | 0;
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            positions[i * 2] = ((cxs[c] + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((cys[c] + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'lattice-tilt',
+        fn: () => {
+          // Square grid rotated by a random angle, with mild jitter so the
+          // rotation isn't aliased by the world dimensions.
+          const angle = Math.random() * Math.PI / 4;
+          const ca = Math.cos(angle), sa = Math.sin(angle);
+          const cols = Math.max(2, Math.round(Math.sqrt(N_PARTICLES * W_world / H_world)));
+          const rows = Math.max(2, Math.ceil(N_PARTICLES / cols));
+          const dx = W_world / cols;
+          const dy = H_world / rows;
+          let idx = 0;
+          for (let r = 0; r < rows && idx < N_PARTICLES; r++) {
+            for (let c = 0; c < cols && idx < N_PARTICLES; c++) {
+              const lx = (c + 0.5) * dx - W_world / 2;
+              const ly = (r + 0.5) * dy - H_world / 2;
+              const px = ca * lx - sa * ly + W_world / 2 + (Math.random() - 0.5) * dx * 0.3;
+              const py = sa * lx + ca * ly + H_world / 2 + (Math.random() - 0.5) * dy * 0.3;
+              positions[idx * 2] = ((px % W_world) + W_world) % W_world;
+              positions[idx * 2 + 1] = ((py % H_world) + H_world) % H_world;
+              idx++;
+            }
+          }
+        },
+      },
+      {
+        name: 'nebula',
+        fn: () => {
+          // Big diffuse Gaussian halo plus a few tighter hotspots —
+          // simultaneously sparse and clumpy.
+          const cx0 = W_world * 0.5;
+          const cy0 = H_world * 0.5;
+          const bigSigma = Math.min(W_world, H_world) * 0.22;
+          const hotspots = 3 + ((Math.random() * 4) | 0);
+          const hots: Array<[number, number, number]> = [];
+          for (let i = 0; i < hotspots; i++) {
+            hots.push([
+              cx0 + (Math.random() - 0.5) * Math.min(W_world, H_world) * 0.45,
+              cy0 + (Math.random() - 0.5) * Math.min(W_world, H_world) * 0.45,
+              1.8 + Math.random() * 2.2,
+            ]);
+          }
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const useHot = Math.random() < 0.55;
+            const cx = useHot ? hots[(Math.random() * hots.length) | 0][0] : cx0;
+            const cy = useHot ? hots[(Math.random() * hots.length) | 0][1] : cy0;
+            const sigma = useHot ? hots[(Math.random() * hots.length) | 0][2] : bigSigma;
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            positions[i * 2] = ((cx + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((cy + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'comet',
+        fn: () => {
+          // Dense head with a tapering tail along a random direction.
+          const angle = Math.random() * Math.PI * 2;
+          const ax = Math.cos(angle), ay = Math.sin(angle);
+          const cx = W_world * 0.5, cy = H_world * 0.5;
+          const span = Math.min(W_world, H_world) * 0.42;
+          const headFrac = 0.35 + Math.random() * 0.2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            if (i / N_PARTICLES < headFrac) {
+              const u1 = Math.random() || 1e-9;
+              const u2 = Math.random();
+              const mag = Math.sqrt(-2 * Math.log(u1)) * 2.2;
+              const ang = 2 * Math.PI * u2;
+              positions[i * 2] = ((cx + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+              positions[i * 2 + 1] = ((cy + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+            } else {
+              const u = (i / N_PARTICLES - headFrac) / (1 - headFrac);
+              const along = u * span;
+              const widthAtU = (1 - u) * 6;
+              const perp = (Math.random() - 0.5) * widthAtU;
+              const px = cx - ax * along - ay * perp;
+              const py = cy - ay * along + ax * perp;
+              positions[i * 2] = ((px % W_world) + W_world) % W_world;
+              positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+            }
+          }
+        },
+      },
+      {
+        name: 'layered-rings',
+        fn: () => {
+          // Concentric rings with weighting so larger outer rings hold more
+          // particles. Different from `donut` (single ring) and `rings`
+          // (random independent rings).
+          const cx = W_world / 2, cy = H_world / 2;
+          const numRings = 3 + ((Math.random() * 3) | 0);
+          const radii: number[] = [];
+          const weights: number[] = [];
+          let totalW = 0;
+          for (let r = 0; r < numRings; r++) {
+            const radius = 3 + r * (Math.min(W_world, H_world) * 0.13);
+            radii.push(radius);
+            weights.push(radius);
+            totalW += radius;
+          }
+          let idx = 0;
+          for (let r = 0; r < numRings; r++) {
+            const count = Math.min(
+              Math.round(N_PARTICLES * weights[r] / totalW),
+              N_PARTICLES - idx,
+            );
+            const phase = Math.random() * Math.PI * 2;
+            for (let i = 0; i < count; i++) {
+              const a = phase + (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.2;
+              const rj = radii[r] + (Math.random() - 0.5) * 1.5;
+              positions[idx * 2] = ((cx + rj * Math.cos(a)) % W_world + W_world) % W_world;
+              positions[idx * 2 + 1] = ((cy + rj * Math.sin(a)) % H_world + H_world) % H_world;
+              idx++;
+            }
+          }
+          for (; idx < N_PARTICLES; idx++) {
+            positions[idx * 2] = Math.random() * W_world;
+            positions[idx * 2 + 1] = Math.random() * H_world;
+          }
+        },
+      },
+      {
+        name: 'gridded-dots',
+        fn: () => {
+          // Sparse dots on a coarse grid with each dot a tight Gaussian.
+          // Reads as a polka-dot field that the dynamics can connect or
+          // dissolve into creatures.
+          const cols = 5 + ((Math.random() * 4) | 0);
+          const rows = 3 + ((Math.random() * 3) | 0);
+          const cellW = W_world / cols;
+          const cellH = H_world / rows;
+          const points: Array<[number, number]> = [];
+          for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+              points.push([(c + 0.5) * cellW, (r + 0.5) * cellH]);
+            }
+          }
+          const sigma = 0.7;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const p = points[(Math.random() * points.length) | 0];
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            positions[i * 2] = ((p[0] + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((p[1] + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'value-noise',
+        fn: () => {
+          // Multi-octave bilinear value noise, cousin to the homepage CA's
+          // value-noise seed. Particles concentrate where the noise is high.
+          const octaves = 3;
+          type Layer = { vals: Float32Array; cw: number; block: number };
+          const layers: Layer[] = [];
+          for (let o = 0; o < octaves; o++) {
+            const block = Math.max(1, 8 >> o);
+            const lcw = Math.ceil(W_world / block) + 2;
+            const lch = Math.ceil(H_world / block) + 2;
+            const vals = new Float32Array(lcw * lch);
+            for (let i = 0; i < vals.length; i++) vals[i] = Math.random();
+            layers.push({ vals, cw: lcw, block });
+          }
+          let totalAmp = 0;
+          for (let o = 0; o < octaves; o++) totalAmp += 1 / (1 << o);
+          sampleByField((wx, wy) => {
+            let v = 0;
+            for (let o = 0; o < octaves; o++) {
+              const layer = layers[o];
+              const fx = wx / layer.block;
+              const fy = wy / layer.block;
+              const ix = Math.floor(fx);
+              const iy = Math.floor(fy);
+              const tx = fx - ix;
+              const ty = fy - iy;
+              const a = layer.vals[iy * layer.cw + ix];
+              const b = layer.vals[iy * layer.cw + ix + 1];
+              const c = layer.vals[(iy + 1) * layer.cw + ix];
+              const d = layer.vals[(iy + 1) * layer.cw + ix + 1];
+              const ab = a + (b - a) * tx;
+              const cd = c + (d - c) * tx;
+              v += (ab + (cd - ab) * ty) / (1 << o);
+            }
+            return v / totalAmp;
+          }, 2);
+        },
+      },
+      {
+        name: 'plasma',
+        fn: () => {
+          // Diamond-square / midpoint displacement noise — softer, more
+          // organic than value-noise's bilinear octaves.
+          let size = 1;
+          const need = Math.max(W_world, H_world) + 1;
+          while (size + 1 < need) size *= 2;
+          const stride = size + 1;
+          const buf = new Float32Array(stride * stride);
+          buf[0] = Math.random();
+          buf[size] = Math.random();
+          buf[size * stride] = Math.random();
+          buf[size * stride + size] = Math.random();
+          let step = size;
+          let scale = 0.5;
+          while (step > 1) {
+            const half = step >> 1;
+            for (let y = half; y < size; y += step) {
+              for (let x = half; x < size; x += step) {
+                const a = buf[(y - half) * stride + (x - half)];
+                const b = buf[(y - half) * stride + (x + half)];
+                const c = buf[(y + half) * stride + (x - half)];
+                const d = buf[(y + half) * stride + (x + half)];
+                buf[y * stride + x] = (a + b + c + d) / 4 + (Math.random() - 0.5) * scale;
+              }
+            }
+            for (let y = 0; y <= size; y += half) {
+              const xStart = ((y / half) & 1) === 0 ? half : 0;
+              for (let x = xStart; x <= size; x += step) {
+                let s = 0, n = 0;
+                if (y >= half) { s += buf[(y - half) * stride + x]; n++; }
+                if (y + half <= size) { s += buf[(y + half) * stride + x]; n++; }
+                if (x >= half) { s += buf[y * stride + (x - half)]; n++; }
+                if (x + half <= size) { s += buf[y * stride + (x + half)]; n++; }
+                buf[y * stride + x] = s / n + (Math.random() - 0.5) * scale;
+              }
+            }
+            step = half;
+            scale *= 0.55;
+          }
+          let lo = Infinity, hi = -Infinity;
+          for (let i = 0; i < buf.length; i++) {
+            if (buf[i] < lo) lo = buf[i];
+            if (buf[i] > hi) hi = buf[i];
+          }
+          const range = hi - lo || 1;
+          sampleByField((wx, wy) => {
+            const ix = Math.min(size, Math.max(0, Math.floor(wx)));
+            const iy = Math.min(size, Math.max(0, Math.floor(wy)));
+            return (buf[iy * stride + ix] - lo) / range;
+          }, 2);
+        },
+      },
+      {
+        name: 'moire',
+        fn: () => {
+          // Two close-frequency plane waves; particles cluster at the bright
+          // bands of constructive interference.
+          const a1 = Math.random() * Math.PI * 2;
+          const a2 = a1 + (Math.random() - 0.5) * 0.5;
+          const p1 = 5 + Math.random() * 6;
+          const p2 = p1 * (0.92 + Math.random() * 0.08);
+          const fx1 = Math.cos(a1), fy1 = Math.sin(a1);
+          const fx2 = Math.cos(a2), fy2 = Math.sin(a2);
+          sampleByField((wx, wy) => {
+            const v = Math.sin((wx * fx1 + wy * fy1) / p1 * Math.PI * 2)
+                    + Math.sin((wx * fx2 + wy * fy2) / p2 * Math.PI * 2);
+            return (v + 2) / 4;
+          }, 3);
+        },
+      },
+      {
+        name: 'interference',
+        fn: () => {
+          // Sum of 3 plane waves at random angles. Produces hex-ish cluster
+          // patterns where the wave peaks coincide.
+          const waves = 3;
+          const dirs: { fx: number; fy: number; period: number }[] = [];
+          for (let i = 0; i < waves; i++) {
+            const a = Math.random() * Math.PI * 2;
+            dirs.push({
+              fx: Math.cos(a),
+              fy: Math.sin(a),
+              period: 4 + Math.random() * 6,
+            });
+          }
+          sampleByField((wx, wy) => {
+            let v = 0;
+            for (let i = 0; i < waves; i++) {
+              const d = dirs[i];
+              v += Math.sin((wx * d.fx + wy * d.fy) / d.period * Math.PI * 2);
+            }
+            return (v / waves + 1) / 2;
+          }, 3);
+        },
+      },
+      {
+        name: 'stratified',
+        fn: () => {
+          // Horizontal strata, each with its own random plane-wave phase
+          // gradient. Reads as banded noise that the dynamics can knit
+          // together vertically over time.
+          const layers = 4 + ((Math.random() * 4) | 0);
+          type Dir = { fx: number; fy: number; period: number; offset: number };
+          const dirs: Dir[] = [];
+          for (let i = 0; i < layers; i++) {
+            const a = Math.random() * Math.PI * 2;
+            dirs.push({
+              fx: Math.cos(a),
+              fy: Math.sin(a),
+              period: 5 + Math.random() * 5,
+              offset: Math.random() * Math.PI * 2,
+            });
+          }
+          sampleByField((wx, wy) => {
+            const layer = Math.min(layers - 1, ((wy / H_world) * layers) | 0);
+            const d = dirs[layer];
+            const v = Math.sin((wx * d.fx + wy * d.fy) / d.period * Math.PI * 2 + d.offset);
+            return (v + 1) / 2;
+          }, 2);
+        },
+      },
+      {
+        name: 'phase-rings',
+        fn: () => {
+          // Concentric phase rings around 2–4 random centers — particles fall
+          // into the ring crests, giving spiral-prone seed states.
+          const k = 2 + ((Math.random() * 3) | 0);
+          const cxs = new Float32Array(k);
+          const cys = new Float32Array(k);
+          const periods = new Float32Array(k);
+          for (let i = 0; i < k; i++) {
+            cxs[i] = Math.random() * W_world;
+            cys[i] = Math.random() * H_world;
+            periods[i] = 3 + Math.random() * 4;
+          }
+          sampleByField((wx, wy) => {
+            let v = 0;
+            for (let i = 0; i < k; i++) {
+              const dx = wx - cxs[i];
+              const dy = wy - cys[i];
+              const r = Math.sqrt(dx * dx + dy * dy);
+              v += Math.sin(r / periods[i] * Math.PI * 2);
+            }
+            return (v / k + 1) / 2;
+          }, 3);
+        },
+      },
+      {
+        name: 'maze',
+        fn: () => {
+          // Two perpendicular plane waves give a square-tile lattice; particles
+          // fall on the lattice intersections.
+          const angle = Math.random() * Math.PI / 4;
+          const period = 4 + Math.random() * 4;
+          const fx1 = Math.cos(angle), fy1 = Math.sin(angle);
+          const fx2 = -Math.sin(angle), fy2 = Math.cos(angle);
+          sampleByField((wx, wy) => {
+            const v1 = Math.sin((wx * fx1 + wy * fy1) / period * Math.PI * 2);
+            const v2 = Math.sin((wx * fx2 + wy * fy2) / period * Math.PI * 2);
+            return (Math.max(v1, v2) + 1) / 2;
+          }, 4);
+        },
+      },
+      {
+        name: 'lissajous',
+        fn: () => {
+          // Particles arranged along a Lissajous curve sampled at evenly
+          // spaced parameter values. Self-intersecting paths in 2D.
+          const a = 1 + ((Math.random() * 4) | 0);
+          let b = a;
+          while (b === a) b = 1 + ((Math.random() * 4) | 0);
+          const phase = Math.random() * Math.PI * 2;
+          const cx = W_world / 2, cy = H_world / 2;
+          const ax = W_world * 0.42, ay = H_world * 0.42;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const t = (i / N_PARTICLES) * Math.PI * 2;
+            const px = cx + ax * Math.sin(a * t + phase) + (Math.random() - 0.5) * 1.5;
+            const py = cy + ay * Math.sin(b * t) + (Math.random() - 0.5) * 1.5;
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'honeycomb',
+        fn: () => {
+          // Triangular / hex lattice — different lattice symmetry than the
+          // square lattice-tilt seeder. Each lattice point is a tight cluster.
+          const spacing = 4 + Math.random() * 2;
+          const dx = spacing;
+          const dy = spacing * Math.sqrt(3) / 2;
+          const points: Array<[number, number]> = [];
+          for (let r = 0; r * dy < H_world; r++) {
+            const offset = (r % 2) * dx * 0.5;
+            for (let c = 0; c * dx + offset < W_world; c++) {
+              points.push([c * dx + offset, r * dy]);
+            }
+          }
+          const sigma = 0.6;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const p = points[(Math.random() * points.length) | 0];
+            const u1 = Math.random() || 1e-9;
+            const u2 = Math.random();
+            const mag = Math.sqrt(-2 * Math.log(u1)) * sigma;
+            const ang = 2 * Math.PI * u2;
+            positions[i * 2] = ((p[0] + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+            positions[i * 2 + 1] = ((p[1] + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'caustics',
+        fn: () => {
+          // Particles on Voronoi *edges* (not centers): for each candidate
+          // point, accept if its distance-difference between the two closest
+          // sites is small. Reads as a network of bright filaments.
+          const k = 10 + ((Math.random() * 10) | 0);
+          const sx = new Float32Array(k);
+          const sy = new Float32Array(k);
+          for (let i = 0; i < k; i++) {
+            sx[i] = Math.random() * W_world;
+            sy[i] = Math.random() * H_world;
+          }
+          const edgeWidth = 1.5;
+          let placed = 0, attempts = 0;
+          while (placed < N_PARTICLES && attempts < N_PARTICLES * 80) {
+            attempts++;
+            const px = Math.random() * W_world;
+            const py = Math.random() * H_world;
+            let best = Infinity, second = Infinity;
+            for (let i = 0; i < k; i++) {
+              const ddx = px - sx[i], ddy = py - sy[i];
+              const d2 = ddx * ddx + ddy * ddy;
+              if (d2 < best) { second = best; best = d2; }
+              else if (d2 < second) { second = d2; }
+            }
+            const diff = Math.sqrt(second) - Math.sqrt(best);
+            if (diff < edgeWidth) {
+              positions[placed * 2] = px;
+              positions[placed * 2 + 1] = py;
+              placed++;
+            }
+          }
+          while (placed < N_PARTICLES) {
+            positions[placed * 2] = Math.random() * W_world;
+            positions[placed * 2 + 1] = Math.random() * H_world;
+            placed++;
+          }
+        },
+      },
+      {
+        name: 'petals',
+        fn: () => {
+          // Rose curve: r(θ) = a · cos(k · θ) gives radial petals. Particles
+          // distributed along the curve.
+          const petals = 3 + ((Math.random() * 5) | 0);
+          const cx = W_world / 2, cy = H_world / 2;
+          const maxR = Math.min(W_world, H_world) * 0.40;
+          const phase = Math.random() * Math.PI * 2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            const t = (i / N_PARTICLES) * Math.PI * 2;
+            const rho = Math.abs(Math.cos(petals * t + phase)) * maxR;
+            const px = cx + rho * Math.cos(t) + (Math.random() - 0.5) * 1.4;
+            const py = cy + rho * Math.sin(t) + (Math.random() - 0.5) * 1.4;
+            positions[i * 2] = ((px % W_world) + W_world) % W_world;
+            positions[i * 2 + 1] = ((py % H_world) + H_world) % H_world;
+          }
+        },
+      },
+      {
+        name: 'shockwave',
+        fn: () => {
+          // Dense central cluster with several radial filaments shooting
+          // outward, like a frozen explosion.
+          const cx = W_world / 2, cy = H_world / 2;
+          const centerFrac = 0.3 + Math.random() * 0.15;
+          const arms = 5 + ((Math.random() * 5) | 0);
+          const armSpread = 0.18;
+          const maxR = Math.min(W_world, H_world) * 0.45;
+          const phase = Math.random() * Math.PI * 2;
+          for (let i = 0; i < N_PARTICLES; i++) {
+            if (i / N_PARTICLES < centerFrac) {
+              const u1 = Math.random() || 1e-9;
+              const u2 = Math.random();
+              const mag = Math.sqrt(-2 * Math.log(u1)) * 1.8;
+              const ang = 2 * Math.PI * u2;
+              positions[i * 2] = ((cx + Math.cos(ang) * mag) % W_world + W_world) % W_world;
+              positions[i * 2 + 1] = ((cy + Math.sin(ang) * mag) % H_world + H_world) % H_world;
+            } else {
+              const armIdx = i % arms;
+              const u = Math.random();
+              const r = Math.pow(u, 0.6) * maxR;
+              const a = phase + (armIdx / arms) * Math.PI * 2 + (Math.random() - 0.5) * armSpread;
+              positions[i * 2] = ((cx + r * Math.cos(a)) % W_world + W_world) % W_world;
+              positions[i * 2 + 1] = ((cy + r * Math.sin(a)) % H_world + H_world) % H_world;
+            }
+          }
+        },
+      },
+    ];
+
+    // Deterministic round-robin cycle through seeders[0..N-1] (temporary —
+    // makes it easy to verify each seeder by watching the label).
+    let lastSeeder = -1;
+    function nextSeeder(): number {
+      lastSeeder = (lastSeeder + 1) % seeders.length;
+      return lastSeeder;
+    }
+
+    function reseed() {
+      params = pickParams();
+      flowWaves = pickFlowWaves();
+      lastSeeder = nextSeeder();
+      seeders[lastSeeder].fn();
+      palette = buildPalette(pickStops());
+      stepCount = 0;
+      velocities.fill(0);
+      prevField.fill(0);
+      syncSliders();
+      buildKernelLUT();
+      const label = document.getElementById('seeder-label');
+      if (label) label.textContent = seeders[lastSeeder].name;
+    }
+
+    function resize() {
+      W_grid = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
+      H_grid = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
+      canvas.width = W_grid;
+      canvas.height = H_grid;
+      W_world = W_grid / CELLS_PER_UNIT;
+      H_world = H_grid / CELLS_PER_UNIT;
+      hashW = Math.max(1, Math.floor(W_world / HASH_CELL_SIZE));
+      hashH = Math.max(1, Math.floor(H_world / HASH_CELL_SIZE));
+      positions = new Float32Array(N_PARTICLES * 2);
+      velocities = new Float32Array(N_PARTICLES * 2);
+      U = new Float32Array(N_PARTICLES);
+      Gp = new Float32Array(N_PARTICLES);
+      F = new Float32Array(N_PARTICLES * 2);
+      field = new Float32Array(W_grid * H_grid);
+      prevField = new Float32Array(W_grid * H_grid);
+      img = ctx.createImageData(W_grid, H_grid);
+      hashHead = new Int32Array(hashW * hashH);
+      hashNext = new Int32Array(N_PARTICLES);
+      reseed();
+    }
+
+    function step() {
+      rebuildHash();
+      // Hoist params into locals — these inner loops run 10⁴⁺ times per step.
+      const muK = params.muK;
+      const sigmaK2 = params.sigmaK2;
+      const muG = params.muG;
+      const sigmaG2 = params.sigmaG2;
+      const wK = params.wK;
+      const cRep = params.cRep;
+      const kernelRange = params.kernelRange;
+      const kernelRangeSq = params.kernelRangeSq;
+
+      // Pass 1: U(p_i) for every particle by summing kernel contributions
+      // from all neighbors in the 3×3 hash-cell window.
+      for (let i = 0; i < N_PARTICLES; i++) {
+        const px = positions[i * 2];
+        const py = positions[i * 2 + 1];
+        const hx = Math.floor(px / HASH_CELL_SIZE);
+        const hy = Math.floor(py / HASH_CELL_SIZE);
+        let u = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const cx = (((hx + dx) % hashW) + hashW) % hashW;
+            const cy = (((hy + dy) % hashH) + hashH) % hashH;
+            let j = hashHead[cy * hashW + cx];
+            while (j !== -1) {
+              const dxw = wrap(px - positions[j * 2], W_world);
+              const dyw = wrap(py - positions[j * 2 + 1], H_world);
+              const r2 = dxw * dxw + dyw * dyw;
+              if (r2 < kernelRangeSq) {
+                const r = Math.sqrt(r2);
+                const dk = (r - muK);
+                u += wK * Math.exp(-(dk * dk) / sigmaK2);
+              }
+              j = hashNext[j];
+            }
+          }
+        }
+        U[i] = u;
+      }
+
+      // Cache G'(U_i) for each particle so the force pass doesn't recompute.
+      for (let i = 0; i < N_PARTICLES; i++) {
+        const d = U[i] - muG;
+        Gp[i] = -2 * d / sigmaG2 * Math.exp(-(d * d) / sigmaG2);
+      }
+
+      // Pass 2: pair-wise force on each particle. Growth-driven force on i
+      // from j is (G'(U_i) + G'(U_j)) · K'(r) · (p_i − p_j)/r; repulsion
+      // adds 2·c_rep·(1−r) along the same axis when r < 1.
+      for (let i = 0; i < N_PARTICLES; i++) {
+        const px = positions[i * 2];
+        const py = positions[i * 2 + 1];
+        const hx = Math.floor(px / HASH_CELL_SIZE);
+        const hy = Math.floor(py / HASH_CELL_SIZE);
+        const Gpi = Gp[i];
+        let fx = 0;
+        let fy = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const cx = (((hx + dx) % hashW) + hashW) % hashW;
+            const cy = (((hy + dy) % hashH) + hashH) % hashH;
+            let j = hashHead[cy * hashW + cx];
+            while (j !== -1) {
+              if (j === i) { j = hashNext[j]; continue; }
+              const dxw = wrap(px - positions[j * 2], W_world);
+              const dyw = wrap(py - positions[j * 2 + 1], H_world);
+              const r2 = dxw * dxw + dyw * dyw;
+              if (r2 < 1e-10) { j = hashNext[j]; continue; }
+              const r = Math.sqrt(r2);
+              const ux = dxw / r;
+              const uy = dyw / r;
+              if (r < 1.0) {
+                const rep = 2 * cRep * (1 - r);
+                fx += rep * ux;
+                fy += rep * uy;
+              }
+              if (r < kernelRange) {
+                const dk = (r - muK);
+                const Kr = Math.exp(-(dk * dk) / sigmaK2);
+                const Kp = -2 * dk / sigmaK2 * Kr * wK;
+                const ff = (Gpi + Gp[j]) * Kp;
+                fx += ff * ux;
+                fy += ff * uy;
+              }
+              j = hashNext[j];
+            }
+          }
+        }
+        F[i * 2] = fx;
+        F[i * 2 + 1] = fy;
+      }
+
+      // Overdamped integration; wrap to torus.
+      // Two ambient dynamics on top of the gradient flow:
+      //  • noise — per-particle Brownian jitter (uncorrelated kicks).
+      //  • flow  — a per-cycle random curl field, so creatures get advected
+      //    by coherent currents without repeating the same geometry forever.
+      // Front-load the ambient stirring so each cycle can relax into structure
+      // instead of being shaken at the same strength until the reseed.
+      const cycleRest = 1 - Math.min(1, stepCount / RESEED_AFTER);
+      const ambient = 0.15 + 0.85 * cycleRest * cycleRest;
+      const noise = params.noise * ambient;
+      const flowAmp = params.flow * ambient;
+      const flowT = stepCount * 0.0035;
+      for (let i = 0; i < N_PARTICLES; i++) {
+        // Accumulate forces (gradient + flow + noise) into velocity with
+        // damping. The damping factor controls how much of last step's motion
+        // carries over — higher = more momentum-y, smoother but less responsive.
+        let vx = velocities[i * 2] * DAMPING + DT * F[i * 2];
+        let vy = velocities[i * 2 + 1] * DAMPING + DT * F[i * 2 + 1];
+        if (flowAmp > 0) {
+          const px = positions[i * 2];
+          const py = positions[i * 2 + 1];
+          let fx = 0;
+          let fy = 0;
+          for (const wave of flowWaves) {
+            const phase = (px * wave.dx + py * wave.dy) * wave.k +
+              flowT * wave.speed + wave.phase;
+            const curl = Math.cos(phase) * wave.amp * wave.k;
+            fx += -wave.dy * curl;
+            fy += wave.dx * curl;
+          }
+          vx += flowAmp * fx * 1.15;
+          vy += flowAmp * fy * 1.15;
+        }
+        if (noise > 0) {
+          vx += (Math.random() - 0.5) * 2 * noise;
+          vy += (Math.random() - 0.5) * 2 * noise;
+        }
+        velocities[i * 2] = vx;
+        velocities[i * 2 + 1] = vy;
+        let nx = positions[i * 2] + vx;
+        let ny = positions[i * 2 + 1] + vy;
+        nx = ((nx % W_world) + W_world) % W_world;
+        ny = ((ny % H_world) + H_world) % H_world;
+        positions[i * 2] = nx;
+        positions[i * 2 + 1] = ny;
+      }
+
+      stepCount++;
+      if (stepCount >= RESEED_AFTER) reseed();
+    }
+
+    function draw() {
+      if (!img) return;
+      field.fill(0);
+      const muG = params.muG;
+      const renderRangeCells = params.renderRangeCells;
+      const lutSize = renderRangeCells * 2 + 1;
+
+      // Splat each particle's kernel onto the field grid via the precomputed
+      // 2D LUT — eliminates the per-cell exp() call which was the dominant
+      // cost in the inner loop. LUT is rebuilt on every reseed and on muK /
+      // sigmaK / wK slider changes.
+      for (let p = 0; p < N_PARTICLES; p++) {
+        const px = positions[p * 2] * CELLS_PER_UNIT;
+        const py = positions[p * 2 + 1] * CELLS_PER_UNIT;
+        const cx = Math.round(px);
+        const cy = Math.round(py);
+        for (let dy = -renderRangeCells; dy <= renderRangeCells; dy++) {
+          const lutRow = (dy + renderRangeCells) * lutSize;
+          const yIdx = (((cy + dy) % H_grid) + H_grid) % H_grid;
+          const fieldRow = yIdx * W_grid;
+          for (let dx = -renderRangeCells; dx <= renderRangeCells; dx++) {
+            const w = kernelLUT[lutRow + (dx + renderRangeCells)];
+            if (w === 0) continue;
+            const xIdx = (((cx + dx) % W_grid) + W_grid) % W_grid;
+            field[fieldRow + xIdx] += w;
+          }
+        }
+      }
+
+      // Blend with previous frame's field so the rendered pixels don't snap
+      // when each particle's rounded splat center hops by one cell.
+      const len = field.length;
+      const ks = 1 - FIELD_SMOOTH;
+      for (let i = 0; i < len; i++) {
+        const blended = field[i] * ks + prevField[i] * FIELD_SMOOTH;
+        field[i] = blended;
+        prevField[i] = blended;
+      }
+
+      // Map field strength to a palette index, clipping at ~1.4·μ_G so dense
+      // creature interiors saturate but the outer halo still resolves into
+      // distinct bands.
+      const scale = 1 / (muG * 1.4);
+      const data = img.data;
+      for (let i = 0; i < len; i++) {
+        let v = field[i] * scale;
+        if (v > 1) v = 1;
+        let idx = (v * N_LEVELS) | 0;
+        if (idx >= N_LEVELS) idx = N_LEVELS - 1;
+        const c = palette[idx];
+        const j = i * 4;
+        data[j] = c[0];
+        data[j + 1] = c[1];
+        data[j + 2] = c[2];
+        data[j + 3] = 255;
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+
+    // ── Sliders ─────────────────────────────────────────────────────────
+    type SliderKey = 'muK' | 'sigmaK' | 'wK' | 'muG' | 'cRep' | 'noise' | 'flow';
+    const SLIDER_KEYS: SliderKey[] = ['muK', 'sigmaK', 'wK', 'muG', 'cRep', 'noise', 'flow'];
+    const FORMAT: Record<SliderKey, (n: number) => string> = {
+      muK:    (n) => n.toFixed(2),
+      sigmaK: (n) => n.toFixed(2),
+      wK:     (n) => n.toFixed(4),
+      muG:    (n) => n.toFixed(3),
+      cRep:   (n) => n.toFixed(2),
+      noise:  (n) => n.toFixed(3),
+      flow:   (n) => n.toFixed(3),
+    };
+    const sliderEls: Partial<Record<SliderKey, HTMLInputElement>> = {};
+    const valEls:    Partial<Record<SliderKey, HTMLElement>>    = {};
+    for (const k of SLIDER_KEYS) {
+      sliderEls[k] = document.getElementById('s-' + k) as HTMLInputElement;
+      valEls[k]    = document.getElementById('v-' + k) as HTMLElement;
+    }
+
+    // The standalone `t` slider drives muK and sigmaK through the inverse
+    // map. It's not in SLIDER_KEYS because it doesn't bind directly to a
+    // single Params field — it computes two derived ones at once.
+    const tSlider = document.getElementById('s-t') as HTMLInputElement | null;
+    const tVal = document.getElementById('v-t') as HTMLElement | null;
+    function syncSliders() {
+      for (const k of SLIDER_KEYS) {
+        const el = sliderEls[k];
+        const v = valEls[k];
+        if (!el || !v) continue;
+        el.value = String(params[k]);
+        v.textContent = FORMAT[k](params[k]);
+      }
+      if (tSlider && tVal) {
+        tSlider.value = String(params.t);
+        tVal.textContent = params.t.toFixed(2);
+      }
+    }
+
+    for (const k of SLIDER_KEYS) {
+      const el = sliderEls[k];
+      const v = valEls[k];
+      if (!el || !v) continue;
+      el.addEventListener('input', () => {
+        const num = parseFloat(el.value);
+        params[k] = num;
+        v.textContent = FORMAT[k](num);
+        // Any kernel-shape change requires rebuilding the splat LUT.
+        if (k === 'wK') buildKernelLUT();
+      });
+    }
+
+    tSlider?.addEventListener('input', () => {
+      const t = parseFloat(tSlider.value);
+      params.t = t;
+      params.muK = deriveMuKFromT(t);
+      params.sigmaK = deriveSigmaKFromT(t);
+      if (tVal) tVal.textContent = t.toFixed(2);
+      // Mirror to the disabled muK / sigmaK sliders so the UI stays accurate.
+      const muKEl = sliderEls.muK, muKValEl = valEls.muK;
+      if (muKEl && muKValEl) {
+        muKEl.value = String(params.muK);
+        muKValEl.textContent = FORMAT.muK(params.muK);
+      }
+      const sgEl = sliderEls.sigmaK, sgValEl = valEls.sigmaK;
+      if (sgEl && sgValEl) {
+        sgEl.value = String(params.sigmaK);
+        sgValEl.textContent = FORMAT.sigmaK(params.sigmaK);
+      }
+      recompute(params);
+      buildKernelLUT();
+    });
+
+    const resetBtn = document.getElementById('reset-btn');
+    resetBtn?.addEventListener('click', () => reseed());
+
+    // ── Click perturbation ──────────────────────────────────────────────
+    // Click drops a strong outward kick on every particle within a generous
+    // radius. Falloff is (1 − r/R)² so the center gets the brunt and the
+    // edge tapers off smoothly.
+    function perturb(gx: number, gy: number) {
+      const wx = gx / CELLS_PER_UNIT;
+      const wy = gy / CELLS_PER_UNIT;
+      const kickRadius = Math.max(11, params.muK * 4.0);
+      const kickRadius2 = kickRadius * kickRadius;
+      const kickStrength = 16;
+      for (let i = 0; i < N_PARTICLES; i++) {
+        const dxw = wrap(positions[i * 2] - wx, W_world);
+        const dyw = wrap(positions[i * 2 + 1] - wy, H_world);
+        const r2 = dxw * dxw + dyw * dyw;
+        if (r2 >= kickRadius2 || r2 < 1e-6) continue;
+        const r = Math.sqrt(r2);
+        const t = 1 - r / kickRadius;
+        const kick = kickStrength * t * t;
+        let nx = positions[i * 2] + (dxw / r) * kick;
+        let ny = positions[i * 2 + 1] + (dyw / r) * kick;
+        nx = ((nx % W_world) + W_world) % W_world;
+        ny = ((ny % H_world) + H_world) % H_world;
+        positions[i * 2] = nx;
+        positions[i * 2 + 1] = ny;
+        // Impulse velocity in the same direction so the damped integrator
+        // carries momentum through several frames after the click; without
+        // this the gradient flow snaps particles back almost immediately.
+        velocities[i * 2] += (dxw / r) * kick * 0.6;
+        velocities[i * 2 + 1] += (dyw / r) * kick * 0.6;
+      }
+    }
+
+    window.addEventListener('pointerdown', (e) => {
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest('a, button, input, label, .tune-panel')) return;
+      const gx = (e.clientX / window.innerWidth) * W_grid;
+      const gy = (e.clientY / window.innerHeight) * H_grid;
+      perturb(gx, gy);
+    });
+
+    resize();
+    syncSliders();
+    window.addEventListener('resize', resize);
+
+    if (reduce) {
+      for (let i = 0; i < 200; i++) step();
+      draw();
+    } else {
+      let last = 0;
+      const targetMs = 50;
+      const loop = (t: number) => {
+        if (t - last >= targetMs) {
+          step();
+          draw();
+          last = t;
+        }
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    }
+  }
+</script>

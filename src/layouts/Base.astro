@@ -13,10 +13,13 @@ const isActive = (href: string) =>
 const navItems = [
   { href: '/', label: 'Home' },
   { href: '/about', label: 'About' },
+  { href: '/taste', label: 'Taste' },
   { href: '/writing', label: 'Writing' },
-  { href: '/lean', label: 'Lean' },
+  { href: '/formalization', label: 'Formalization' },
+  { href: '/music', label: 'Music' },
   { href: '/other', label: 'Other' },
 ];
+const pageClass = `page-${path === '/' ? 'home' : path.split('/')[1]}`;
 ---
 <!doctype html>
 <html lang="en">
@@ -25,8 +28,13 @@ const navItems = [
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
+    <script is:inline>
+      if (new URLSearchParams(window.location.search).get('animation') === '1') {
+        document.documentElement.classList.add('animation-only');
+      }
+    </script>
   </head>
-  <body>
+  <body class={pageClass}>
     {showNav && (
       <header class="site-header">
         <nav class="site-nav">
