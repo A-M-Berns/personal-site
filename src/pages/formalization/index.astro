@@ -27,10 +27,10 @@ import Base from '../../layouts/Base.astro';
       <button class="wire-about-close" type="button" aria-label="Close">x</button>
       <h2 id="wire-about-title">About this animation</h2>
       <p>
-        Wireworld++ extends Wireworld with strong and weak signals. Here the two signal layers are simulated separately, so strong and weak wires can occupy the same lattice point and cross without coupling.
+        Wireworld++ extends Wireworld with strong and weak signals. Here the two signal layers are simulated separately, so strong and weak conductors can coexist without coupling.
       </p>
       <p>
-        Each cycle chooses a Boolean formula, lays it out as a small circuit, labels the input loci, and runs strong result pulses together with a weak inspection bus through the same area.
+        Each cycle chooses a Boolean formula, lays it out as a small circuit, labels the input loci, and runs pulses through the corresponding strong and weak wires.
       </p>
     </dialog>
   </div>
@@ -107,7 +107,6 @@ import Base from '../../layouts/Base.astro';
     let rng = mulberry32(1);
     let stepCount = 0;
     let activeCount = 0;
-    let crossingCount = 0;
     let strongColor = [255, 255, 255];
     let weakColor = [255, 255, 255];
     let tailColor = [255, 128, 64];
@@ -115,7 +114,6 @@ import Base from '../../layouts/Base.astro';
     let weakConductorColor = [96, 96, 96];
     let pulses = [];
     let annotations = [];
-    let crossings = new Set();
     let formulaText = '';
     let assignmentText = '';
     let resultText = '';
@@ -198,10 +196,7 @@ import Base from '../../layouts/Base.astro';
 
     function setCell(x, y, kind, value) {
       if (!inBounds(x, y)) return;
-      const i = idx(x, y);
-      layer(kind)[i] = value;
-      const other = kind === 'strong' ? weak : strong;
-      if (value === CONDUCTOR && other[i] !== EMPTY) crossings.add(`${x},${y}`);
+      layer(kind)[idx(x, y)] = value;
     }
 
     function v(name) {
@@ -374,14 +369,6 @@ import Base from '../../layouts/Base.astro';
       if (parent) drawPath(node, parent, kind);
     }
 
-    function addInspectionBus(y, result) {
-      const x = Math.max(20, Math.floor(W * (0.52 + rng() * 0.16)));
-      drawLine(x, 5, x, H - 6, 'weak');
-      drawLine(5, y + 6, W - 6, y + 6, 'strong');
-      pulses.push({ x, y: 7, dx: 0, dy: 1, kind: 'weak', period: 42, offset: 0, enabled: true });
-      pulses.push({ x: 7, y: y + 6, dx: 1, dy: 0, kind: 'strong', period: 42, offset: 12, enabled: result });
-    }
-
     function buildCircuit() {
       strong.fill(EMPTY);
       weak.fill(EMPTY);
@@ -389,7 +376,6 @@ import Base from '../../layouts/Base.astro';
       weakHeat.fill(0);
       pulses = [];
       annotations = [];
-      crossings = new Set();
       const formula = buildFormula();
       const assignment = {};
       for (const name of VARS) assignment[name] = rng() < 0.5;
@@ -406,8 +392,6 @@ import Base from '../../layouts/Base.astro';
       drawGate(output.x, output.y, 'strong');
       annotate(`OUT=${result ? '1' : '0'}`, output.x - 15, output.y - 9, 'strong');
       pulses.push({ x: Math.max(6, output.x - 5), y: output.y, dx: 1, dy: 0, kind: 'strong', period: 54, offset: 20, enabled: result });
-      addInspectionBus(output.y, result);
-      crossingCount = crossings.size;
       formulaText = formulaToString(formula);
       assignmentText = [...collectVars(formula)].sort().map((name) => `${name}=${assignment[name] ? '1' : '0'}`).join(' ');
       resultText = result ? 'true' : 'false';
@@ -440,7 +424,6 @@ import Base from '../../layouts/Base.astro';
         <span>formula: ${formulaText}</span>
         <span>assignment: ${assignmentText}</span>
         <span>result: ${resultText}</span>
-        <span>crossings: ${crossingCount}</span>
         <span>active: ${activeCount}</span>
         <span>seed: ${seed.toString(16).padStart(8, '0')}</span>
       `;
@@ -514,12 +497,6 @@ import Base from '../../layouts/Base.astro';
     function drawAnnotations() {
       for (const note of annotations) {
         drawBitmapText(note.text, note.x, note.y, note.kind === 'strong' ? strongColor : weakColor, 1);
-      }
-      for (const key of crossings) {
-        const [x, y] = key.split(',').map(Number);
-        ctx.fillStyle = rgba(mix(strongColor, weakColor, 0.5), 0.8);
-        ctx.fillRect(x - 1, y, 3, 1);
-        ctx.fillRect(x, y - 1, 1, 3);
       }
     }
 
