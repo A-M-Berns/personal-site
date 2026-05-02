@@ -422,7 +422,7 @@ import Base from '../../layouts/Base.astro';
       wireFormula(formula, assignment, output, 'strong');
       drawPath(formula, output, 'strong');
       drawGate(output.x, output.y, 'strong');
-      annotate(`OUT=${result ? '1' : '0'}`, output.x - 15, output.y - 9, 'strong');
+      annotate(result ? 'T' : 'F', output.x - 2, output.y - 8, 'strong');
       formulaText = formulaToString(formula, assignment);
       resultText = result ? 'true' : 'false';
     }
