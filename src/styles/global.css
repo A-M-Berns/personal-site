@@ -325,6 +325,17 @@ a:focus-visible {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
+.sandpile-sim {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  opacity: 0.58;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
 .other-shell > .section-head,
 .other-shell > .note {
   position: relative;

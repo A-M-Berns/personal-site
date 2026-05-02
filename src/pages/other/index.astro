@@ -2,14 +2,227 @@
 import Base from '../../layouts/Base.astro';
 ---
 <Base title="Other — A. M. Berns" description="Side projects and miscellaneous experiments.">
-  <header class="section-head">
-    <h1><span class="hl">Other</span></h1>
-    <p><span class="hl">Side projects and miscellaneous experiments.</span></p>
-  </header>
-  <article class="note other-note">
-    <ul>
-      <li><span class="hl">Turmites, abelian sandpiles, or L-systems will land here after the next animation pass.</span></li>
-      <li><span class="hl"><a href="/Animations/">Animation-only views</a></span></li>
-    </ul>
-  </article>
+  <div class="other-shell">
+    <canvas id="sandpile-sim" class="sandpile-sim" aria-hidden="true"></canvas>
+    <header class="section-head">
+      <h1><span class="hl">Other</span></h1>
+      <p><span class="hl">Side projects and miscellaneous experiments.</span></p>
+    </header>
+    <article class="note other-note">
+      <ul>
+        <li><span class="hl">Abelian sandpile experiments.</span></li>
+        <li><span class="hl"><a href="/Animations/">Animation-only views</a></span></li>
+      </ul>
+    </article>
+  </div>
 </Base>
+
+<script>
+  const canvas = document.getElementById('sandpile-sim') as HTMLCanvasElement | null;
+  if (canvas) {
+    const ctx = canvas.getContext('2d')!;
+    ctx.imageSmoothingEnabled = false;
+
+    const CELL_PX = 4;
+    const TOPPLE_PASSES_PER_FRAME = 8;
+    const ACTIVE_DECAY = 18;
+    const CYCLE_FRAMES = 2100;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const styles = getComputedStyle(document.documentElement);
+    const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
+    const colorPool = [
+      '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
+      '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
+      '#fff0b8', '#d6ff5a', '#6ad84a', '#3ad48a', '#0fbfa8',
+      '#2cc7e0', '#4ad6ff', '#2a6fd6', '#1d3a8a', '#6a1a9a',
+      '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
+    ].map(parseHex).sort((a, b) => luma(a) - luma(b));
+
+    let W = 0;
+    let H = 0;
+    let grains = new Uint32Array();
+    let nextGrains = new Uint32Array();
+    let active = new Uint8Array();
+    let image = new ImageData(1, 1);
+    let rng = mulberry32(1);
+    let frame = 0;
+    let palette: number[][] = [];
+
+    function parseHex(h: string) {
+      const s = h.trim().replace('#', '');
+      const full = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
+      const n = parseInt(full, 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+
+    function luma(c: number[]) {
+      return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+    }
+
+    function mix(a: number[], b: number[], t: number) {
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * t),
+        Math.round(a[1] + (b[1] - a[1]) * t),
+        Math.round(a[2] + (b[2] - a[2]) * t),
+      ];
+    }
+
+    function hashString(s: string) {
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    function mulberry32(n: number) {
+      let t = n >>> 0;
+      return () => {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function idx(x: number, y: number) {
+      return y * W + x;
+    }
+
+    function choosePalette() {
+      const picked: number[][] = [];
+      for (let i = 0; i < 5; i++) {
+        const lo = Math.floor((i * colorPool.length) / 5);
+        const hi = Math.floor(((i + 1) * colorPool.length) / 5);
+        picked.push(colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))]);
+      }
+      palette = [
+        mix(paper, picked[0], 0.18),
+        mix(paper, picked[1], 0.46),
+        mix(paper, picked[2], 0.70),
+        mix(paper, picked[3], 0.90),
+        mix(paper, picked[4], 1.00),
+      ];
+    }
+
+    function addHill(cx: number, cy: number, radius: number, amount: number) {
+      const r2 = radius * radius;
+      for (let y = Math.max(0, cy - radius); y <= Math.min(H - 1, cy + radius); y++) {
+        for (let x = Math.max(0, cx - radius); x <= Math.min(W - 1, cx + radius); x++) {
+          const dx = x - cx;
+          const dy = y - cy;
+          const d2 = dx * dx + dy * dy;
+          if (d2 > r2) continue;
+          const falloff = 1 - d2 / r2;
+          const i = idx(x, y);
+          grains[i] += Math.floor(amount * falloff * (0.45 + rng() * 0.75));
+        }
+      }
+    }
+
+    function seedCycle() {
+      rng = mulberry32(hashString(`${Date.now()}:${Math.random()}`));
+      choosePalette();
+      grains.fill(0);
+      nextGrains.fill(0);
+      active.fill(0);
+      frame = 0;
+
+      for (let i = 0; i < grains.length; i++) grains[i] = Math.floor(rng() * 4);
+
+      addHill(Math.floor(W * (0.38 + rng() * 0.24)), Math.floor(H * (0.36 + rng() * 0.28)), Math.floor(Math.min(W, H) * (0.14 + rng() * 0.08)), 44 + Math.floor(rng() * 42));
+      const satellites = 3 + Math.floor(rng() * 5);
+      for (let n = 0; n < satellites; n++) {
+        addHill(
+          Math.floor(W * (0.12 + rng() * 0.76)),
+          Math.floor(H * (0.12 + rng() * 0.76)),
+          Math.floor(Math.min(W, H) * (0.04 + rng() * 0.06)),
+          14 + Math.floor(rng() * 26),
+        );
+      }
+    }
+
+    function addGrains() {
+      const drops = 6;
+      for (let n = 0; n < drops; n++) {
+        const x = Math.floor(W * (0.12 + rng() * 0.76));
+        const y = Math.floor(H * (0.12 + rng() * 0.76));
+        const i = idx(x, y);
+        grains[i] += 1 + Math.floor(rng() * 3);
+      }
+    }
+
+    function topplePass() {
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const i = idx(x, y);
+          const q = Math.floor(grains[i] / 4);
+          let value = grains[i] - q * 4;
+          if (x > 0) value += Math.floor(grains[i - 1] / 4);
+          if (x < W - 1) value += Math.floor(grains[i + 1] / 4);
+          if (y > 0) value += Math.floor(grains[i - W] / 4);
+          if (y < H - 1) value += Math.floor(grains[i + W] / 4);
+          nextGrains[i] = value;
+          if (q > 0) active[i] = 255;
+        }
+      }
+      [grains, nextGrains] = [nextGrains, grains];
+    }
+
+    function step() {
+      addGrains();
+      for (let i = 0; i < TOPPLE_PASSES_PER_FRAME; i++) topplePass();
+      for (let i = 0; i < active.length; i++) {
+        if (active[i] > ACTIVE_DECAY) active[i] -= ACTIVE_DECAY;
+        else active[i] = 0;
+      }
+      if (++frame > CYCLE_FRAMES) seedCycle();
+    }
+
+    function draw() {
+      const data = image.data;
+      for (let i = 0; i < grains.length; i++) {
+        const h = Math.min(3, grains[i]);
+        const flash = active[i] / 255;
+        const base = palette[h];
+        const color = flash > 0 ? mix(base, palette[4], 0.45 + flash * 0.55) : base;
+        const o = i * 4;
+        data[o] = color[0];
+        data[o + 1] = color[1];
+        data[o + 2] = color[2];
+        data[o + 3] = h === 0 && flash === 0 ? 150 : 255;
+      }
+      ctx.putImageData(image, 0, 0);
+    }
+
+    function resize() {
+      W = Math.max(48, Math.ceil(window.innerWidth / CELL_PX));
+      H = Math.max(36, Math.ceil(window.innerHeight / CELL_PX));
+      canvas.width = W;
+      canvas.height = H;
+      ctx.imageSmoothingEnabled = false;
+      grains = new Uint32Array(W * H);
+      nextGrains = new Uint32Array(W * H);
+      active = new Uint8Array(W * H);
+      image = new ImageData(W, H);
+      seedCycle();
+      draw();
+    }
+
+    resize();
+    if (reduce) {
+      for (let i = 0; i < 300; i++) step();
+      draw();
+    } else {
+      const loop = () => {
+        step();
+        draw();
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    }
+    window.addEventListener('resize', resize);
+  }
+</script>

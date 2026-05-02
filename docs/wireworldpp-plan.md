@@ -73,6 +73,37 @@ Recommended next increment:
 5. Add `NOT`.
 6. Add type converters and then reintroduce `XOR`.
 
+## Routing Assessment Update
+
+Real routing looks medium-hard, not scary-hard, if we deliberately restrict the first target.
+
+The useful abstraction is a VLSI-style two-phase router:
+
+1. Global layout: place the formula tree left-to-right in generously spaced lanes.
+2. Detailed routing: connect ports on a grid with obstacle-aware rectilinear paths.
+
+For the detailed route, Lee-style maze routing is the right starting point: breadth-first search over the grid from a source port to a target port, then backtrace the path. That is not sophisticated, but it is deterministic, easy to test, and good enough for the site-scale grid.
+
+The first arbitrary-formula version should make these restrictions:
+
+- Only route tree-shaped formulas, not DAGs with fanout.
+- Only use `AND` and `OR` at first, because they consume and emit strong signals.
+- Keep gates far apart; reserve padded bounding boxes around every primitive.
+- Route one net at a time, marking used path cells as obstacles.
+- Insert Manhattan delay loops to align arrival phases at binary gates.
+- Reject and reseed any formula/layout that cannot route cleanly.
+
+This should be implementable in a few focused passes:
+
+1. Template extraction and port metadata.
+2. Isolated template tests.
+3. Formula tree placement.
+4. BFS path routing with obstacles.
+5. Delay insertion and simulation tests.
+6. Visual integration.
+
+The hard version is substantially larger: `NOT`, `XOR`, weak/strong conversion, crossings, fanout, and compact layout all interact with signal kind and phase. Crossings in the Wireworld++ paper are excellent, but they have period/channel assumptions; they should not be used as a generic router escape hatch until the compiler can track signal period and occupancy.
+
 ## Next Work
 
 1. Extract reusable gate templates from Figures 16-20 of the paper.
