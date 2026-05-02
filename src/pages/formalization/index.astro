@@ -236,24 +236,20 @@ import Base from '../../layouts/Base.astro';
     }
 
     function buildFormula(vars) {
-      const [a, b, c, d, e, f, g, h, i, j] = shuffledVars(vars.length);
-      const op1 = pick(OPS);
-      const op2 = pick(OPS);
-      const op3 = pick(OPS);
-      const op4 = pick(OPS);
-      const op5 = pick(OPS);
-      const op6 = pick(OPS);
-      const templates = [
-        () => o(op3, o(op1, v(a), v(b)), o(op2, v(c), v(d))),
-        () => o(op4, o(op2, o(op1, v(a), n(v(b))), v(c)), o(op3, v(d), v(e))),
-        () => o(op3, n(o(op1, v(a), v(b))), o(op2, v(c), v(d))),
-        () => o(op5, o(op2, o(op1, v(a), v(c)), n(v(b))), o(op3, v(d), o(op4, v(e), v(f)))),
-        () => o(op6, o(op3, v(a), o(op1, n(v(b)), v(d))), o(op5, o(op2, v(e), v(f)), o(op4, v(g), v(h)))),
-      ];
-      if (vars.length >= 10) {
-        templates.push(() => o(op6, o(op5, o(op1, v(a), v(b)), o(op2, v(c), v(d))), o(op4, o(op3, v(e), v(f)), o(op2, v(g), o(op1, v(i), v(j))))));
+      let nodes = shuffledVars(vars.length).map((name) => (rng() < 0.22 ? n(v(name)) : v(name)));
+      while (nodes.length > 1) {
+        const next = [];
+        for (let i = 0; i < nodes.length; i += 2) {
+          if (i === nodes.length - 1) {
+            next.push(nodes[i]);
+          } else {
+            const combined = o(pick(OPS), nodes[i], nodes[i + 1]);
+            next.push(rng() < 0.12 ? n(combined) : combined);
+          }
+        }
+        nodes = next;
       }
-      return pick(templates)();
+      return nodes[0];
     }
 
     function formulaToString(node, assignment) {
@@ -407,11 +403,12 @@ import Base from '../../layouts/Base.astro';
       weakHeat.fill(0);
       pulses = [];
       annotations = [];
-      inputCount = 7 + Math.floor(rng() * 4);
-      const vars = VARS.slice(0, inputCount);
+      const desiredInputCount = 7 + Math.floor(rng() * 4);
+      const vars = VARS.slice(0, desiredInputCount);
       const formula = buildFormula(vars);
       const assignment = makeAssignment(vars);
       const leaves = countLeaves(formula);
+      inputCount = leaves;
       const maxDepth = treeDepth(formula);
       const usableTop = Math.max(8, Math.floor(H * 0.14));
       const usableBottom = Math.max(usableTop + 10, Math.floor(H * 0.88));
@@ -511,6 +508,10 @@ import Base from '../../layouts/Base.astro';
     function drawBitmapText(text, x, y, color, scale = 1) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.86)';
       ctx.fillRect(x - 1, y - 1, text.length * 4 * scale + 1, 7 * scale);
+      drawBitmapGlyphs(text, x, y, color, scale);
+    }
+
+    function drawBitmapGlyphs(text, x, y, color, scale = 1) {
       ctx.fillStyle = rgb(color);
       let ox = x;
       for (const raw of text.toUpperCase()) {
@@ -525,14 +526,23 @@ import Base from '../../layouts/Base.astro';
     }
 
     function drawFormulaOverlay() {
-      const compact = formulaText
-        .replaceAll('AND', '+')
-        .replaceAll('OR', 'O')
-        .replaceAll('XOR', 'X')
-        .replaceAll('NOT', 'N')
-        .slice(0, Math.max(12, Math.floor(W / 5)));
+      const compact = formulaText.replace(/\s+/g, ' ').slice(0, Math.max(12, Math.floor(W / 4.2)));
       const width = compact.length * 4 + 2;
-      drawBitmapText(compact, Math.max(2, W - width - 3), 3, labelColor, 1);
+      const x = Math.max(2, W - width - 3);
+      const y = 3;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.86)';
+      ctx.fillRect(x - 1, y - 1, width, 7);
+      const tokens = compact.match(/AND|OR|NOT|XOR|[TF()]|\s+|./g) ?? [];
+      let ox = x;
+      for (const token of tokens) {
+        const color = ['AND', 'OR', 'NOT', 'XOR'].includes(token)
+          ? weakColor
+          : token === '(' || token === ')'
+            ? tailColor
+            : labelColor;
+        drawBitmapGlyphs(token, ox, y, color, 1);
+        ox += token.length * 4;
+      }
     }
 
     function drawAnnotations() {
