@@ -23,15 +23,41 @@ import Base from '../../layouts/Base.astro';
         <span>seeder</span>
         <strong id="sandpile-seeder">-</strong>
       </div>
+      <label class="sandpile-panel-field" for="sandpile-seeder-select">
+        <span>choose</span>
+        <select id="sandpile-seeder-select">
+          <option value="random">random</option>
+        </select>
+      </label>
       <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-passes">passes</label>
-        <input id="sandpile-passes" type="range" min="1" max="16" step="1" value="8" />
+        <input id="sandpile-passes" type="range" min="1" max="64" step="1" value="8" />
         <span id="sandpile-passes-value">8</span>
       </div>
       <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-drops">drops</label>
         <input id="sandpile-drops" type="range" min="0" max="16" step="1" value="6" />
         <span id="sandpile-drops-value">6</span>
+      </div>
+      <div class="sandpile-panel-row sandpile-panel-row--control">
+        <label for="sandpile-base">base</label>
+        <input id="sandpile-base" type="range" min="0" max="3" step="1" value="0" />
+        <span id="sandpile-base-value">0</span>
+      </div>
+      <div class="sandpile-panel-row sandpile-panel-row--control">
+        <label for="sandpile-mass">mass</label>
+        <input id="sandpile-mass" type="range" min="0.3" max="2.4" step="0.1" value="1" />
+        <span id="sandpile-mass-value">1.0</span>
+      </div>
+      <div class="sandpile-panel-row sandpile-panel-row--control">
+        <label for="sandpile-cycle">cycle</label>
+        <input id="sandpile-cycle" type="range" min="0" max="4200" step="300" value="0" />
+        <span id="sandpile-cycle-value">∞</span>
+      </div>
+      <div class="sandpile-panel-row sandpile-panel-row--control">
+        <label for="sandpile-anneal">anneal</label>
+        <input id="sandpile-anneal" type="range" min="0" max="360" step="30" value="180" />
+        <span id="sandpile-anneal-value">180</span>
       </div>
       <button id="sandpile-topple-toggle" class="sandpile-toggle" type="button" aria-pressed="true">Toppling animation on</button>
       <dl class="sandpile-stats">
@@ -42,6 +68,7 @@ import Base from '../../layouts/Base.astro';
         <div><dt>max</dt><dd id="sandpile-max">-</dd></div>
         <div><dt>grains</dt><dd id="sandpile-grains">-</dd></div>
         <div><dt>topples</dt><dd id="sandpile-topples">-</dd></div>
+        <div><dt>actual passes</dt><dd id="sandpile-actual-passes">-</dd></div>
       </dl>
     </aside>
   </div>
@@ -53,12 +80,21 @@ import Base from '../../layouts/Base.astro';
     const ctx = canvas.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
     const resetButton = document.getElementById('sandpile-reset') as HTMLButtonElement | null;
+    const seederSelect = document.getElementById('sandpile-seeder-select') as HTMLSelectElement | null;
     const passesInput = document.getElementById('sandpile-passes') as HTMLInputElement | null;
     const dropsInput = document.getElementById('sandpile-drops') as HTMLInputElement | null;
+    const baseInput = document.getElementById('sandpile-base') as HTMLInputElement | null;
+    const massInput = document.getElementById('sandpile-mass') as HTMLInputElement | null;
+    const cycleInput = document.getElementById('sandpile-cycle') as HTMLInputElement | null;
+    const annealInput = document.getElementById('sandpile-anneal') as HTMLInputElement | null;
     const toppleToggle = document.getElementById('sandpile-topple-toggle') as HTMLButtonElement | null;
     const seederLabel = document.getElementById('sandpile-seeder');
     const passesValue = document.getElementById('sandpile-passes-value');
     const dropsValue = document.getElementById('sandpile-drops-value');
+    const baseValue = document.getElementById('sandpile-base-value');
+    const massValue = document.getElementById('sandpile-mass-value');
+    const cycleValue = document.getElementById('sandpile-cycle-value');
+    const annealValue = document.getElementById('sandpile-anneal-value');
     const seedLabel = document.getElementById('sandpile-seed');
     const gridLabel = document.getElementById('sandpile-grid');
     const frameLabel = document.getElementById('sandpile-frame');
@@ -66,10 +102,10 @@ import Base from '../../layouts/Base.astro';
     const maxLabel = document.getElementById('sandpile-max');
     const grainsLabel = document.getElementById('sandpile-grains');
     const topplesLabel = document.getElementById('sandpile-topples');
+    const actualPassesLabel = document.getElementById('sandpile-actual-passes');
 
     const CELL_PX = 4;
     const ACTIVE_DECAY = 18;
-    const CYCLE_FRAMES = 2100;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const styles = getComputedStyle(document.documentElement);
@@ -94,6 +130,11 @@ import Base from '../../layouts/Base.astro';
     let topplesThisFrame = 0;
     let topplePassesPerFrame = Number(passesInput?.value ?? 8);
     let dropsPerFrame = Number(dropsInput?.value ?? 6);
+    let baseHeight = Number(baseInput?.value ?? 0);
+    let massScale = Number(massInput?.value ?? 1);
+    let cycleFrames = Number(cycleInput?.value ?? 0);
+    let annealFrames = Number(annealInput?.value ?? 180);
+    let actualPasses = topplePassesPerFrame;
     let showToppling = true;
     let seederName = '';
     let palette: number[][] = [];
@@ -159,6 +200,7 @@ import Base from '../../layouts/Base.astro';
     }
 
     function addHill(cx: number, cy: number, radius: number, amount: number) {
+      const scaledAmount = amount * massScale;
       const r2 = radius * radius;
       for (let y = Math.max(0, cy - radius); y <= Math.min(H - 1, cy + radius); y++) {
         for (let x = Math.max(0, cx - radius); x <= Math.min(W - 1, cx + radius); x++) {
@@ -168,16 +210,26 @@ import Base from '../../layouts/Base.astro';
           if (d2 > r2) continue;
           const falloff = 1 - d2 / r2;
           const i = idx(x, y);
-          grains[i] += Math.floor(amount * falloff * (0.45 + rng() * 0.75));
+          grains[i] += Math.floor(scaledAmount * falloff * (0.45 + rng() * 0.75));
         }
       }
+    }
+
+    function fillBase(range = 0) {
+      for (let i = 0; i < grains.length; i++) {
+        grains[i] = Math.max(0, baseHeight + (range > 0 ? Math.floor(rng() * (range + 1)) : 0));
+      }
+    }
+
+    function scaled(n: number) {
+      return n * massScale;
     }
 
     const seeders: Seeder[] = [
       {
         name: 'central hill',
         fn: () => {
-          grains.fill(0);
+          fillBase(0);
           addHill(
             Math.floor(W * (0.38 + rng() * 0.24)),
             Math.floor(H * (0.36 + rng() * 0.28)),
@@ -189,14 +241,14 @@ import Base from '../../layouts/Base.astro';
       {
         name: 'satellites',
         fn: () => {
-          for (let i = 0; i < grains.length; i++) grains[i] = Math.floor(rng() * 2);
+          fillBase(1);
           const count = 5 + Math.floor(rng() * 8);
           for (let n = 0; n < count; n++) {
             addHill(
               Math.floor(W * (0.1 + rng() * 0.8)),
               Math.floor(H * (0.1 + rng() * 0.8)),
               Math.floor(Math.min(W, H) * (0.035 + rng() * 0.055)),
-              22 + Math.floor(rng() * 40),
+              scaled(22 + Math.floor(rng() * 40)),
             );
           }
         },
@@ -209,7 +261,7 @@ import Base from '../../layouts/Base.astro';
               const diagonal = Math.abs((x / W) - (y / H));
               const ridge = Math.max(0, 1 - diagonal * 18);
               const side = x > y * (W / H) ? 2 : 0;
-              grains[idx(x, y)] = side + Math.floor(ridge * (90 + rng() * 50));
+              grains[idx(x, y)] = baseHeight + side + Math.floor(ridge * scaled(90 + rng() * 50));
             }
           }
         },
@@ -225,7 +277,7 @@ import Base from '../../layouts/Base.astro';
               const dx = x - cx;
               const dy = y - cy;
               const wave = (Math.sin(Math.sqrt(dx * dx + dy * dy) / ring) + 1) * 0.5;
-              grains[idx(x, y)] = Math.floor(wave * wave * (32 + rng() * 36));
+              grains[idx(x, y)] = baseHeight + Math.floor(wave * wave * scaled(32 + rng() * 36));
             }
           }
         },
@@ -233,9 +285,9 @@ import Base from '../../layouts/Base.astro';
       {
         name: 'salt flats',
         fn: () => {
-          for (let i = 0; i < grains.length; i++) grains[i] = 3;
+          grains.fill(Math.max(0, baseHeight || 3));
           const burns = Math.floor(grains.length * 0.035);
-          for (let i = 0; i < burns; i++) grains[Math.floor(rng() * grains.length)] += 16 + Math.floor(rng() * 52);
+          for (let i = 0; i < burns; i++) grains[Math.floor(rng() * grains.length)] += Math.floor(scaled(16 + Math.floor(rng() * 52)));
         },
       },
       {
@@ -246,7 +298,7 @@ import Base from '../../layouts/Base.astro';
             for (let x = 0; x < W; x++) {
               const band = Math.sin((x / W) * Math.PI * freq);
               const shelf = y > H * 0.5 ? 2 : 0;
-              grains[idx(x, y)] = shelf + Math.floor(Math.max(0, band) * (36 + rng() * 30));
+              grains[idx(x, y)] = baseHeight + shelf + Math.floor(Math.max(0, band) * scaled(36 + rng() * 30));
             }
           }
         },
@@ -254,7 +306,7 @@ import Base from '../../layouts/Base.astro';
       {
         name: 'corners',
         fn: () => {
-          for (let i = 0; i < grains.length; i++) grains[i] = Math.floor(rng() * 4);
+          fillBase(3);
           const r = Math.floor(Math.min(W, H) * (0.08 + rng() * 0.06));
           addHill(Math.floor(W * 0.12), Math.floor(H * 0.14), r, 28 + Math.floor(rng() * 44));
           addHill(Math.floor(W * 0.88), Math.floor(H * 0.16), r, 28 + Math.floor(rng() * 44));
@@ -265,11 +317,11 @@ import Base from '../../layouts/Base.astro';
       {
         name: 'pin field',
         fn: () => {
-          grains.fill(0);
+          fillBase(0);
           const spacing = 5 + Math.floor(rng() * 7);
           for (let y = spacing >> 1; y < H; y += spacing) {
             for (let x = spacing >> 1; x < W; x += spacing) {
-              grains[idx(x, y)] = 18 + Math.floor(rng() * 54);
+              grains[idx(x, y)] = baseHeight + Math.floor(scaled(18 + Math.floor(rng() * 54)));
             }
           }
           for (let i = 0; i < grains.length; i++) grains[i] += Math.floor(rng() * 3);
@@ -278,14 +330,14 @@ import Base from '../../layouts/Base.astro';
       {
         name: 'cross',
         fn: () => {
-          grains.fill(0);
+          fillBase(0);
           const cx = Math.floor(W / 2);
           const cy = Math.floor(H / 2);
           const arm = Math.floor(Math.min(W, H) * (0.035 + rng() * 0.025));
           for (let y = 0; y < H; y++) {
             for (let x = 0; x < W; x++) {
               const v = Math.abs(x - cx) < arm || Math.abs(y - cy) < arm;
-              grains[idx(x, y)] = v ? 28 + Math.floor(rng() * 50) : Math.floor(rng() * 2);
+              grains[idx(x, y)] = v ? baseHeight + Math.floor(scaled(28 + Math.floor(rng() * 50))) : baseHeight + Math.floor(rng() * 2);
             }
           }
         },
@@ -296,7 +348,7 @@ import Base from '../../layouts/Base.astro';
           const wells = Array.from({ length: 4 + Math.floor(rng() * 4) }, () => ({
             x: rng() * W,
             y: rng() * H,
-            h: 26 + rng() * 60,
+            h: scaled(26 + rng() * 60),
           }));
           for (let y = 0; y < H; y++) {
             for (let x = 0; x < W; x++) {
@@ -306,7 +358,7 @@ import Base from '../../layouts/Base.astro';
                 const dy = y - well.y;
                 value += well.h / (1 + 0.028 * (dx * dx + dy * dy));
               }
-              grains[idx(x, y)] = Math.floor(value);
+              grains[idx(x, y)] = baseHeight + Math.floor(value);
             }
           }
         },
@@ -314,7 +366,7 @@ import Base from '../../layouts/Base.astro';
       {
         name: 'fault lines',
         fn: () => {
-          grains.fill(1);
+          grains.fill(Math.max(0, baseHeight || 1));
           const lines = 3 + Math.floor(rng() * 4);
           for (let n = 0; n < lines; n++) {
             const slope = -1.5 + rng() * 3;
@@ -323,13 +375,26 @@ import Base from '../../layouts/Base.astro';
             for (let y = 0; y < H; y++) {
               for (let x = 0; x < W; x++) {
                 const d = Math.abs(y - (slope * x + intercept));
-                if (d < width) grains[idx(x, y)] += Math.floor((1 - d / width) * (42 + rng() * 40));
+                if (d < width) grains[idx(x, y)] += Math.floor((1 - d / width) * scaled(42 + rng() * 40));
               }
             }
           }
         },
       },
     ];
+
+    for (const seeder of seeders) {
+      const option = document.createElement('option');
+      option.value = seeder.name;
+      option.textContent = seeder.name;
+      seederSelect?.append(option);
+    }
+
+    function chooseSeeder() {
+      const selected = seederSelect?.value ?? 'random';
+      if (selected !== 'random') return seeders.find((seeder) => seeder.name === selected) ?? seeders[0];
+      return seeders[Math.floor(rng() * seeders.length)];
+    }
 
     function seedCycle() {
       seed = hashString(`${Date.now()}:${Math.random()}`);
@@ -340,7 +405,8 @@ import Base from '../../layouts/Base.astro';
       active.fill(0);
       frame = 0;
       topplesThisFrame = 0;
-      const seeder = seeders[Math.floor(rng() * seeders.length)];
+      actualPasses = annealFrames > 0 ? 64 : topplePassesPerFrame;
+      const seeder = chooseSeeder();
       seederName = seeder.name;
       seeder.fn();
       updatePanel();
@@ -380,12 +446,14 @@ import Base from '../../layouts/Base.astro';
     function step() {
       topplesThisFrame = 0;
       addGrains();
-      for (let i = 0; i < topplePassesPerFrame; i++) topplesThisFrame += topplePass();
+      actualPasses = frame < annealFrames ? 64 : topplePassesPerFrame;
+      for (let i = 0; i < actualPasses; i++) topplesThisFrame += topplePass();
       for (let i = 0; i < active.length; i++) {
         if (active[i] > ACTIVE_DECAY) active[i] -= ACTIVE_DECAY;
         else active[i] = 0;
       }
-      if (++frame > CYCLE_FRAMES) seedCycle();
+      frame++;
+      if (cycleFrames > 0 && frame > cycleFrames) seedCycle();
       else if (frame % 12 === 0) updatePanel();
     }
 
@@ -403,11 +471,12 @@ import Base from '../../layouts/Base.astro';
       seedLabel.textContent = seed.toString(16).padStart(8, '0');
       if (seederLabel) seederLabel.textContent = seederName;
       if (gridLabel) gridLabel.textContent = `${W}x${H}`;
-      if (frameLabel) frameLabel.textContent = `${frame}/${CYCLE_FRAMES}`;
+      if (frameLabel) frameLabel.textContent = cycleFrames > 0 ? `${frame}/${cycleFrames}` : String(frame);
       if (unstableLabel) unstableLabel.textContent = String(unstable);
       if (maxLabel) maxLabel.textContent = String(max);
       if (grainsLabel) grainsLabel.textContent = total.toLocaleString();
       if (topplesLabel) topplesLabel.textContent = topplesThisFrame.toLocaleString();
+      if (actualPassesLabel) actualPassesLabel.textContent = String(actualPasses);
     }
 
     function draw() {
@@ -457,6 +526,10 @@ import Base from '../../layouts/Base.astro';
       seedCycle();
       draw();
     });
+    seederSelect?.addEventListener('change', () => {
+      seedCycle();
+      draw();
+    });
     passesInput?.addEventListener('input', () => {
       topplePassesPerFrame = Number(passesInput.value);
       if (passesValue) passesValue.textContent = passesInput.value;
@@ -464,6 +537,22 @@ import Base from '../../layouts/Base.astro';
     dropsInput?.addEventListener('input', () => {
       dropsPerFrame = Number(dropsInput.value);
       if (dropsValue) dropsValue.textContent = dropsInput.value;
+    });
+    baseInput?.addEventListener('input', () => {
+      baseHeight = Number(baseInput.value);
+      if (baseValue) baseValue.textContent = baseInput.value;
+    });
+    massInput?.addEventListener('input', () => {
+      massScale = Number(massInput.value);
+      if (massValue) massValue.textContent = massScale.toFixed(1);
+    });
+    cycleInput?.addEventListener('input', () => {
+      cycleFrames = Number(cycleInput.value);
+      if (cycleValue) cycleValue.textContent = cycleFrames > 0 ? cycleInput.value : '∞';
+    });
+    annealInput?.addEventListener('input', () => {
+      annealFrames = Number(annealInput.value);
+      if (annealValue) annealValue.textContent = annealInput.value;
     });
     toppleToggle?.addEventListener('click', () => {
       showToppling = !showToppling;

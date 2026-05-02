@@ -341,7 +341,7 @@ a:focus-visible {
   right: 1rem;
   bottom: 1rem;
   z-index: 3;
-  width: 16.5rem;
+  width: 18.5rem;
   background: rgba(14, 14, 16, 0.9);
   border: 1px solid var(--rule);
   border-radius: 4px;
@@ -399,6 +399,28 @@ a:focus-visible {
   gap: 0.55rem;
   align-items: center;
   margin-bottom: 0.35rem;
+}
+.sandpile-panel-field {
+  display: grid;
+  grid-template-columns: 4.3rem 1fr;
+  gap: 0.55rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+.sandpile-panel-field span {
+  color: var(--muted);
+}
+.sandpile-panel-field select {
+  min-width: 0;
+  width: 100%;
+  font-family: var(--font-lexend), var(--sans);
+  font-size: 0.7rem;
+  font-weight: 650;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.25rem 0.35rem;
 }
 .sandpile-panel-row span,
 .sandpile-panel-row label,
