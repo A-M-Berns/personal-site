@@ -126,7 +126,6 @@ import Base from '../../layouts/Base.astro';
     let pulses = [];
     let annotations = [];
     let formulaText = '';
-    let assignmentText = '';
     let resultText = '';
     let inputCount = 0;
 
@@ -257,10 +256,10 @@ import Base from '../../layouts/Base.astro';
       return pick(templates)();
     }
 
-    function formulaToString(node) {
-      if (node.type === 'var') return node.name;
-      if (node.type === 'not') return `NOT ${formulaToString(node.child)}`;
-      return `(${formulaToString(node.left)} ${node.op} ${formulaToString(node.right)})`;
+    function formulaToString(node, assignment) {
+      if (node.type === 'var') return assignment[node.name] ? 'T' : 'F';
+      if (node.type === 'not') return `NOT ${formulaToString(node.child, assignment)}`;
+      return `(${formulaToString(node.left, assignment)} ${node.op} ${formulaToString(node.right, assignment)})`;
     }
 
     function evalFormula(node, assignment) {
@@ -424,8 +423,7 @@ import Base from '../../layouts/Base.astro';
       drawPath(formula, output, 'strong');
       drawGate(output.x, output.y, 'strong');
       annotate(`OUT=${result ? '1' : '0'}`, output.x - 15, output.y - 9, 'strong');
-      formulaText = formulaToString(formula);
-      assignmentText = [...collectVars(formula)].sort().map((name) => `${name}=${assignment[name] ? '1' : '0'}`).join(' ');
+      formulaText = formulaToString(formula, assignment);
       resultText = result ? 'true' : 'false';
     }
 
