@@ -336,6 +336,97 @@ a:focus-visible {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
+.sandpile-panel {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 3;
+  width: 16.5rem;
+  background: rgba(14, 14, 16, 0.9);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.8rem 0.9rem;
+  color: var(--muted);
+  font-family: var(--font-lexend), var(--sans);
+  font-size: 0.72rem;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.sandpile-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+.sandpile-panel h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.sandpile-panel button {
+  font-family: var(--font-lexend), var(--sans);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+}
+.sandpile-panel button:hover {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+.sandpile-panel-row {
+  display: grid;
+  grid-template-columns: 4.3rem 1fr;
+  gap: 0.55rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+.sandpile-panel-row span,
+.sandpile-panel-row label,
+.sandpile-stats dt {
+  color: var(--muted);
+}
+.sandpile-panel-row strong,
+.sandpile-panel-row output,
+.sandpile-panel-row > span:last-child,
+.sandpile-stats dd {
+  color: var(--ink);
+  font-weight: 650;
+}
+.sandpile-panel-row--control {
+  grid-template-columns: 4.3rem 1fr 2.2rem;
+}
+.sandpile-panel-row input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.sandpile-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 0.75rem;
+  margin: 0.55rem 0 0;
+}
+.sandpile-stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.sandpile-stats dt,
+.sandpile-stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
 .other-shell > .section-head,
 .other-shell > .note {
   position: relative;
@@ -983,7 +1074,8 @@ html.animation-only .wang-boost,
 html.animation-only .wire-label,
 html.animation-only .wire-controls,
 html.animation-only .writing-controls,
-html.animation-only .tune-panel {
+html.animation-only .tune-panel,
+html.animation-only .sandpile-panel {
   display: none !important;
 }
 html.animation-only .page {

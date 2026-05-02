@@ -9,7 +9,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "build:markov": "node scripts/build-markov-model.mjs",
-    "test:wireworldpp": "node scripts/verify-wireworldpp.mjs",
+    "test:wireworldpp": "node --test tests/wireworldpp.test.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },
