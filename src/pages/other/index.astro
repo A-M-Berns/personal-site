@@ -413,12 +413,12 @@ import Base from '../../layouts/Base.astro';
         const h = Math.min(3, grains[i]);
         const flash = active[i] / 255;
         const base = palette[h];
-        const color = flash > 0 ? mix(base, palette[4], 0.45 + flash * 0.55) : base;
+        const color = base;
         const o = i * 4;
         data[o] = color[0];
         data[o + 1] = color[1];
         data[o + 2] = color[2];
-        data[o + 3] = h === 0 && flash === 0 ? 150 : 255;
+        data[o + 3] = h === 0 ? 150 : 190;
       }
       ctx.putImageData(image, 0, 0);
     }
