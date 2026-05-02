@@ -31,12 +31,12 @@ import Base from '../../layouts/Base.astro';
       </label>
       <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-passes">passes</label>
-        <input id="sandpile-passes" type="range" min="1" max="64" step="1" value="8" />
+        <input id="sandpile-passes" type="range" min="1" max="256" step="1" value="8" />
         <span id="sandpile-passes-value">8</span>
       </div>
       <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-drops">drops</label>
-        <input id="sandpile-drops" type="range" min="0" max="16" step="1" value="6" />
+        <input id="sandpile-drops" type="range" min="0" max="128" step="1" value="6" />
         <span id="sandpile-drops-value">6</span>
       </div>
       <div class="sandpile-panel-row sandpile-panel-row--control">
@@ -59,7 +59,6 @@ import Base from '../../layouts/Base.astro';
         <input id="sandpile-anneal" type="range" min="0" max="360" step="30" value="180" />
         <span id="sandpile-anneal-value">180</span>
       </div>
-      <button id="sandpile-topple-toggle" class="sandpile-toggle" type="button" aria-pressed="true">Toppling animation on</button>
       <dl class="sandpile-stats">
         <div><dt>seed</dt><dd id="sandpile-seed">-</dd></div>
         <div><dt>grid</dt><dd id="sandpile-grid">-</dd></div>
@@ -87,7 +86,6 @@ import Base from '../../layouts/Base.astro';
     const massInput = document.getElementById('sandpile-mass') as HTMLInputElement | null;
     const cycleInput = document.getElementById('sandpile-cycle') as HTMLInputElement | null;
     const annealInput = document.getElementById('sandpile-anneal') as HTMLInputElement | null;
-    const toppleToggle = document.getElementById('sandpile-topple-toggle') as HTMLButtonElement | null;
     const seederLabel = document.getElementById('sandpile-seeder');
     const passesValue = document.getElementById('sandpile-passes-value');
     const dropsValue = document.getElementById('sandpile-drops-value');
@@ -135,7 +133,6 @@ import Base from '../../layouts/Base.astro';
     let cycleFrames = Number(cycleInput?.value ?? 0);
     let annealFrames = Number(annealInput?.value ?? 180);
     let actualPasses = topplePassesPerFrame;
-    let showToppling = true;
     let seederName = '';
     let palette: number[][] = [];
 
@@ -405,7 +402,7 @@ import Base from '../../layouts/Base.astro';
       active.fill(0);
       frame = 0;
       topplesThisFrame = 0;
-      actualPasses = annealFrames > 0 ? 64 : topplePassesPerFrame;
+      actualPasses = annealFrames > 0 ? 256 : topplePassesPerFrame;
       const seeder = chooseSeeder();
       seederName = seeder.name;
       seeder.fn();
@@ -446,7 +443,7 @@ import Base from '../../layouts/Base.astro';
     function step() {
       topplesThisFrame = 0;
       addGrains();
-      actualPasses = frame < annealFrames ? 64 : topplePassesPerFrame;
+      actualPasses = frame < annealFrames ? 256 : topplePassesPerFrame;
       for (let i = 0; i < actualPasses; i++) topplesThisFrame += topplePass();
       for (let i = 0; i < active.length; i++) {
         if (active[i] > ACTIVE_DECAY) active[i] -= ACTIVE_DECAY;
@@ -483,14 +480,13 @@ import Base from '../../layouts/Base.astro';
       const data = image.data;
       for (let i = 0; i < grains.length; i++) {
         const h = Math.min(3, grains[i]);
-        const flash = showToppling ? active[i] / 255 : 0;
         const base = palette[h];
-        const color = flash > 0 ? mix(base, palette[4], 0.45 + flash * 0.55) : base;
+        const color = base;
         const o = i * 4;
         data[o] = color[0];
         data[o + 1] = color[1];
         data[o + 2] = color[2];
-        data[o + 3] = h === 0 && flash === 0 ? 150 : 255;
+        data[o + 3] = h === 0 ? 150 : 255;
       }
       ctx.putImageData(image, 0, 0);
     }
@@ -553,12 +549,6 @@ import Base from '../../layouts/Base.astro';
     annealInput?.addEventListener('input', () => {
       annealFrames = Number(annealInput.value);
       if (annealValue) annealValue.textContent = annealInput.value;
-    });
-    toppleToggle?.addEventListener('click', () => {
-      showToppling = !showToppling;
-      toppleToggle.setAttribute('aria-pressed', String(showToppling));
-      toppleToggle.textContent = showToppling ? 'Toppling animation on' : 'Toppling animation off';
-      draw();
     });
   }
 </script>
