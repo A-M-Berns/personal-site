@@ -50,11 +50,6 @@ import Base from '../../layouts/Base.astro';
         <span id="sandpile-mass-value">1.0</span>
       </div>
       <div class="sandpile-panel-row sandpile-panel-row--control">
-        <label for="sandpile-cycle">cycle</label>
-        <input id="sandpile-cycle" type="range" min="0" max="4200" step="300" value="0" />
-        <span id="sandpile-cycle-value">∞</span>
-      </div>
-      <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-anneal">anneal</label>
         <input id="sandpile-anneal" type="range" min="0" max="360" step="30" value="180" />
         <span id="sandpile-anneal-value">180</span>
@@ -84,14 +79,12 @@ import Base from '../../layouts/Base.astro';
     const dropsInput = document.getElementById('sandpile-drops') as HTMLInputElement | null;
     const baseInput = document.getElementById('sandpile-base') as HTMLInputElement | null;
     const massInput = document.getElementById('sandpile-mass') as HTMLInputElement | null;
-    const cycleInput = document.getElementById('sandpile-cycle') as HTMLInputElement | null;
     const annealInput = document.getElementById('sandpile-anneal') as HTMLInputElement | null;
     const seederLabel = document.getElementById('sandpile-seeder');
     const passesValue = document.getElementById('sandpile-passes-value');
     const dropsValue = document.getElementById('sandpile-drops-value');
     const baseValue = document.getElementById('sandpile-base-value');
     const massValue = document.getElementById('sandpile-mass-value');
-    const cycleValue = document.getElementById('sandpile-cycle-value');
     const annealValue = document.getElementById('sandpile-anneal-value');
     const seedLabel = document.getElementById('sandpile-seed');
     const gridLabel = document.getElementById('sandpile-grid');
@@ -102,7 +95,7 @@ import Base from '../../layouts/Base.astro';
     const topplesLabel = document.getElementById('sandpile-topples');
     const actualPassesLabel = document.getElementById('sandpile-actual-passes');
 
-    const CELL_PX = 4;
+    const CELL_PX = 8;
     const ACTIVE_DECAY = 18;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -130,7 +123,6 @@ import Base from '../../layouts/Base.astro';
     let dropsPerFrame = Number(dropsInput?.value ?? 6);
     let baseHeight = Number(baseInput?.value ?? 0);
     let massScale = Number(massInput?.value ?? 1);
-    let cycleFrames = Number(cycleInput?.value ?? 0);
     let annealFrames = Number(annealInput?.value ?? 180);
     let actualPasses = topplePassesPerFrame;
     let seederName = '';
@@ -450,8 +442,7 @@ import Base from '../../layouts/Base.astro';
         else active[i] = 0;
       }
       frame++;
-      if (cycleFrames > 0 && frame > cycleFrames) seedCycle();
-      else if (frame % 12 === 0) updatePanel();
+      if (frame % 12 === 0) updatePanel();
     }
 
     function updatePanel() {
@@ -468,7 +459,7 @@ import Base from '../../layouts/Base.astro';
       seedLabel.textContent = seed.toString(16).padStart(8, '0');
       if (seederLabel) seederLabel.textContent = seederName;
       if (gridLabel) gridLabel.textContent = `${W}x${H}`;
-      if (frameLabel) frameLabel.textContent = cycleFrames > 0 ? `${frame}/${cycleFrames}` : String(frame);
+      if (frameLabel) frameLabel.textContent = String(frame);
       if (unstableLabel) unstableLabel.textContent = String(unstable);
       if (maxLabel) maxLabel.textContent = String(max);
       if (grainsLabel) grainsLabel.textContent = total.toLocaleString();
@@ -541,10 +532,6 @@ import Base from '../../layouts/Base.astro';
     massInput?.addEventListener('input', () => {
       massScale = Number(massInput.value);
       if (massValue) massValue.textContent = massScale.toFixed(1);
-    });
-    cycleInput?.addEventListener('input', () => {
-      cycleFrames = Number(cycleInput.value);
-      if (cycleValue) cycleValue.textContent = cycleFrames > 0 ? cycleInput.value : '∞';
     });
     annealInput?.addEventListener('input', () => {
       annealFrames = Number(annealInput.value);
