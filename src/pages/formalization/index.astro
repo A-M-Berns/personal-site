@@ -21,99 +21,50 @@ import Base from '../../layouts/Base.astro';
     <aside id="wire-label" class="wire-label" aria-live="polite"></aside>
     <div class="wire-controls">
       <button id="wire-info" type="button" aria-label="About this animation">About this animation</button>
-      <button id="wire-reset" type="button" aria-label="Reset Wireworld">Reset</button>
+      <button id="wire-reset" type="button" aria-label="Reset Wireworld++">Reset</button>
     </div>
     <dialog id="wire-about" aria-labelledby="wire-about-title">
-      <button class="wire-about-close" type="button" aria-label="Close">×</button>
+      <button class="wire-about-close" type="button" aria-label="Close">x</button>
       <h2 id="wire-about-title">About this animation</h2>
       <p>
-        Wireworld is a cellular automaton with four states: empty, conductor, electron head, and electron tail. Conductors become heads when one or two neighboring cells are heads; heads become tails; tails become conductors.
+        Wireworld++ extends Wireworld with strong and weak signals. Strong and weak conductors propagate independently, which lets the circuit draw crossings without planar detours.
       </p>
       <p>
-        Each cycle builds a seeded circuit-like conductor field from the site's color palette, injects moving electrons, and restarts after the activity has settled.
+        Each cycle generates a small Boolean formula, chooses an assignment, lays the formula out as a circuit DAG, and sends strong/weak pulses through the corresponding wires.
       </p>
     </dialog>
   </div>
 </Base>
 
 <script>
-  const canvas = document.getElementById('wireworld') as HTMLCanvasElement | null;
+  const canvas = document.getElementById('wireworld');
   if (canvas) {
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
     const label = document.getElementById('wire-label');
-    const resetButton = document.getElementById('wire-reset') as HTMLButtonElement | null;
-    const infoButton = document.getElementById('wire-info') as HTMLButtonElement | null;
-    const aboutDialog = document.getElementById('wire-about') as HTMLDialogElement | null;
-    const aboutClose = aboutDialog?.querySelector('.wire-about-close') as HTMLButtonElement | null;
+    const resetButton = document.getElementById('wire-reset');
+    const infoButton = document.getElementById('wire-info');
+    const aboutDialog = document.getElementById('wire-about');
+    const aboutClose = aboutDialog?.querySelector('.wire-about-close');
 
     const CELL_PX = 3;
-    const TICK_MS = 48;
-    const CYCLE_STEPS = 900;
+    const TICK_MS = 42;
+    const CYCLE_STEPS = 980;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    type RGB = [number, number, number];
-    type SeedPoint = { x: number; y: number; dx: number; dy: number };
-
     const EMPTY = 0;
-    const CONDUCTOR = 1;
-    const HEAD = 2;
-    const TAIL = 3;
+    const STRONG_CONDUCTOR = 1;
+    const STRONG_HEAD = 2;
+    const STRONG_TAIL = 3;
+    const WEAK_CONDUCTOR = 4;
+    const WEAK_HEAD = 5;
+    const WEAK_TAIL = 6;
+
+    const VARS = ['A', 'B', 'C', 'D'];
+    const OPS = ['AND', 'OR', 'XOR'];
 
     const styles = getComputedStyle(document.documentElement);
-    const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
-
-    function parseHex(h: string): RGB {
-      const s = h.trim().replace('#', '');
-      const full = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
-      const n = parseInt(full, 16);
-      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-    }
-
-    function luma(c: RGB): number {
-      return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
-    }
-
-    function mix(a: RGB, b: RGB, t: number): RGB {
-      return [
-        Math.round(a[0] + (b[0] - a[0]) * t),
-        Math.round(a[1] + (b[1] - a[1]) * t),
-        Math.round(a[2] + (b[2] - a[2]) * t),
-      ];
-    }
-
-    function rgb(c: RGB): string {
-      return `rgb(${c[0]} ${c[1]} ${c[2]})`;
-    }
-
-    function rgba(c: RGB, a: number): string {
-      return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${Math.max(0, Math.min(1, a))})`;
-    }
-
-    function hashString(s: string): number {
-      let h = 2166136261;
-      for (let i = 0; i < s.length; i++) {
-        h ^= s.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-      }
-      return h >>> 0;
-    }
-
-    function mulberry32(seed: number) {
-      let t = seed >>> 0;
-      return () => {
-        t += 0x6D2B79F5;
-        let r = Math.imul(t ^ (t >>> 15), 1 | t);
-        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
-        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
-      };
-    }
-
-    function pick<T>(items: T[], rng: () => number): T {
-      return items[Math.floor(rng() * items.length)];
-    }
-
-    const paper = parseHex(paperHex);
+    const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
     const colorPool = [
       '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
       '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
@@ -129,27 +80,154 @@ import Base from '../../layouts/Base.astro';
     let heat = new Uint8Array();
     let seed = 0;
     let rng = mulberry32(1);
-    let palette: RGB[] = [];
-    let conductorColor: RGB = [128, 128, 128];
-    let headColor: RGB = [255, 255, 255];
-    let tailColor: RGB = [255, 128, 64];
     let stepCount = 0;
     let activeCount = 0;
-    let topology = 'logic';
+    let palette = [];
+    let strongColor = [255, 255, 255];
+    let weakColor = [255, 255, 255];
+    let tailColor = [255, 128, 64];
+    let strongConductorColor = [128, 128, 128];
+    let weakConductorColor = [96, 96, 96];
+    let pulses = [];
+    let formulaText = '';
+    let assignmentText = '';
+    let resultText = '';
 
-    function idx(x: number, y: number): number {
+    function parseHex(h) {
+      const s = h.trim().replace('#', '');
+      const full = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
+      const n = parseInt(full, 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+
+    function luma(c) {
+      return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+    }
+
+    function mix(a, b, t) {
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * t),
+        Math.round(a[1] + (b[1] - a[1]) * t),
+        Math.round(a[2] + (b[2] - a[2]) * t),
+      ];
+    }
+
+    function rgb(c) {
+      return `rgb(${c[0]} ${c[1]} ${c[2]})`;
+    }
+
+    function rgba(c, a) {
+      return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${Math.max(0, Math.min(1, a))})`;
+    }
+
+    function hashString(s) {
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    function mulberry32(n) {
+      let t = n >>> 0;
+      return () => {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function pick(items) {
+      return items[Math.floor(rng() * items.length)];
+    }
+
+    function idx(x, y) {
       return y * W + x;
     }
 
-    function inBounds(x: number, y: number): boolean {
+    function inBounds(x, y) {
       return x > 1 && y > 1 && x < W - 2 && y < H - 2;
     }
 
-    function setCell(x: number, y: number, value: number) {
+    function setCell(x, y, value) {
       if (inBounds(x, y)) state[idx(x, y)] = value;
     }
 
-    function drawLine(x0: number, y0: number, x1: number, y1: number) {
+    function conductor(kind) {
+      return kind === 'strong' ? STRONG_CONDUCTOR : WEAK_CONDUCTOR;
+    }
+
+    function head(kind) {
+      return kind === 'strong' ? STRONG_HEAD : WEAK_HEAD;
+    }
+
+    function tail(kind) {
+      return kind === 'strong' ? STRONG_TAIL : WEAK_TAIL;
+    }
+
+    function buildFormula(depth) {
+      if (depth <= 0 || rng() < 0.22) return { type: 'var', name: pick(VARS) };
+      if (rng() < 0.18) return { type: 'not', child: buildFormula(depth - 1) };
+      return { type: 'op', op: pick(OPS), left: buildFormula(depth - 1), right: buildFormula(depth - 1) };
+    }
+
+    function formulaToString(node) {
+      if (node.type === 'var') return node.name;
+      if (node.type === 'not') return `NOT ${formulaToString(node.child)}`;
+      return `(${formulaToString(node.left)} ${node.op} ${formulaToString(node.right)})`;
+    }
+
+    function evalFormula(node, assignment) {
+      if (node.type === 'var') return assignment[node.name];
+      if (node.type === 'not') return !evalFormula(node.child, assignment);
+      const a = evalFormula(node.left, assignment);
+      const b = evalFormula(node.right, assignment);
+      if (node.op === 'AND') return a && b;
+      if (node.op === 'OR') return a || b;
+      return a !== b;
+    }
+
+    function collectVars(node, out = new Set()) {
+      if (node.type === 'var') out.add(node.name);
+      else if (node.type === 'not') collectVars(node.child, out);
+      else {
+        collectVars(node.left, out);
+        collectVars(node.right, out);
+      }
+      return out;
+    }
+
+    function layout(node, depth, lanes) {
+      if (node.type === 'var') {
+        const y = lanes.next;
+        lanes.next += Math.max(10, Math.floor(H / 8));
+        node.x = Math.max(5, Math.floor(W * 0.12));
+        node.y = Math.min(H - 7, y);
+        return node.y;
+      }
+      if (node.type === 'not') {
+        const cy = layout(node.child, depth + 1, lanes);
+        node.x = Math.min(W - 8, Math.floor(W * (0.26 + depth * 0.16)));
+        node.y = cy;
+        return node.y;
+      }
+      const ly = layout(node.left, depth + 1, lanes);
+      const ry = layout(node.right, depth + 1, lanes);
+      node.x = Math.min(W - 8, Math.floor(W * (0.30 + depth * 0.16)));
+      node.y = Math.round((ly + ry) / 2);
+      return node.y;
+    }
+
+    function drawPath(a, b, kind) {
+      const midX = Math.round((a.x + b.x) / 2);
+      drawLine(a.x, a.y, midX, a.y, kind);
+      drawLine(midX, a.y, midX, b.y, kind === 'strong' ? 'weak' : 'strong');
+      drawLine(midX, b.y, b.x, b.y, kind);
+    }
+
+    function drawLine(x0, y0, x1, y1, kind) {
       let x = x0;
       let y = y0;
       const dx = Math.abs(x1 - x0);
@@ -158,7 +236,7 @@ import Base from '../../layouts/Base.astro';
       const sy = y0 < y1 ? 1 : -1;
       let err = dx + dy;
       while (true) {
-        setCell(x, y, CONDUCTOR);
+        setCell(x, y, conductor(kind));
         if (x === x1 && y === y1) break;
         const e2 = 2 * err;
         if (e2 >= dy) {
@@ -172,63 +250,87 @@ import Base from '../../layouts/Base.astro';
       }
     }
 
-    function thickenConductors() {
-      const copy = state.slice();
-      for (let y = 2; y < H - 2; y++) {
-        for (let x = 2; x < W - 2; x++) {
-          if (copy[idx(x, y)] !== CONDUCTOR || rng() > 0.24) continue;
-          if (rng() < 0.5) setCell(x + 1, y, CONDUCTOR);
-          else setCell(x, y + 1, CONDUCTOR);
+    function drawGate(x, y, kind) {
+      const c = conductor(kind);
+      for (let yy = -2; yy <= 2; yy++) {
+        for (let xx = -2; xx <= 2; xx++) {
+          if (Math.abs(xx) === 2 || Math.abs(yy) === 2 || rng() < 0.35) setCell(x + xx, y + yy, c);
         }
       }
     }
 
-    function addSeedHead(point: SeedPoint) {
-      setCell(point.x, point.y, HEAD);
-      setCell(point.x - point.dx, point.y - point.dy, TAIL);
+    function wireFormula(node, assignment, parent = null, kind = 'strong') {
+      if (node.type === 'var') {
+        drawGate(node.x, node.y, kind);
+        pulses.push({
+          x: node.x,
+          y: node.y,
+          dx: 1,
+          dy: 0,
+          kind,
+          period: 36 + Math.floor(rng() * 18),
+          offset: Math.floor(rng() * 18),
+          enabled: assignment[node.name],
+        });
+      } else if (node.type === 'not') {
+        wireFormula(node.child, assignment, null, kind === 'strong' ? 'weak' : 'strong');
+        drawPath(node.child, node, kind);
+        drawGate(node.x, node.y, kind);
+        pulses.push({
+          x: node.x,
+          y: node.y,
+          dx: 1,
+          dy: 0,
+          kind,
+          period: 54,
+          offset: 9,
+          enabled: evalFormula(node, assignment),
+        });
+      } else {
+        wireFormula(node.left, assignment, null, 'strong');
+        wireFormula(node.right, assignment, null, 'weak');
+        drawPath(node.left, node, 'strong');
+        drawPath(node.right, node, 'weak');
+        drawGate(node.x, node.y, kind);
+        pulses.push({
+          x: node.x,
+          y: node.y,
+          dx: 1,
+          dy: 0,
+          kind,
+          period: 54,
+          offset: 12,
+          enabled: evalFormula(node, assignment),
+        });
+      }
+      if (parent) drawPath(node, parent, kind);
     }
 
     function buildCircuit() {
       state.fill(EMPTY);
       heat.fill(0);
-      const seeds: SeedPoint[] = [];
-      const margin = 6;
-      const count = 9 + Math.floor(rng() * 8);
-      const points = Array.from({ length: count }, () => ({
-        x: margin + Math.floor(rng() * Math.max(1, W - margin * 2)),
-        y: margin + Math.floor(rng() * Math.max(1, H - margin * 2)),
-      }));
-
-      topology = pick(['logic', 'bus', 'braid', 'mesh'], rng);
-      if (topology === 'bus') {
-        const lanes = 4 + Math.floor(rng() * 4);
-        for (let i = 0; i < lanes; i++) {
-          const y = Math.round(((i + 1) * H) / (lanes + 1));
-          drawLine(margin, y, W - margin, y + Math.floor((rng() - 0.5) * 10));
-          seeds.push({ x: margin + 2, y, dx: 1, dy: 0 });
-        }
-        for (let i = 0; i < count - 1; i++) drawLine(points[i].x, points[i].y, points[(i + 1) % count].x, points[i].y);
-      } else {
-        for (let i = 0; i < count; i++) {
-          const a = points[i];
-          const b = points[(i + 1 + Math.floor(rng() * 3)) % count];
-          if (topology === 'mesh' || rng() < 0.45) {
-            drawLine(a.x, a.y, b.x, a.y);
-            drawLine(b.x, a.y, b.x, b.y);
-          } else {
-            drawLine(a.x, a.y, b.x, b.y);
-          }
-          seeds.push({ x: a.x, y: a.y, dx: Math.sign(b.x - a.x) || 1, dy: Math.sign(b.y - a.y) || 0 });
-        }
-      }
-
-      for (let i = 0; i < Math.floor(count * 0.55); i++) {
-        const a = pick(points, rng);
-        const b = pick(points, rng);
-        drawLine(a.x, a.y, b.x, b.y);
-      }
-      thickenConductors();
-      for (const point of seeds.slice(0, 4 + Math.floor(rng() * 5))) addSeedHead(point);
+      pulses = [];
+      const formula = buildFormula(3 + Math.floor(rng() * 2));
+      const assignment = {};
+      for (const name of VARS) assignment[name] = rng() < 0.5;
+      layout(formula, 0, { next: Math.max(8, Math.floor(H * 0.18)) });
+      const output = { x: Math.max(8, W - 8), y: formula.y };
+      wireFormula(formula, assignment, output, 'strong');
+      drawPath(formula, output, 'strong');
+      drawGate(output.x, output.y, 'strong');
+      pulses.push({
+        x: Math.max(4, output.x - 4),
+        y: output.y,
+        dx: 1,
+        dy: 0,
+        kind: 'strong',
+        period: 54,
+        offset: 20,
+        enabled: evalFormula(formula, assignment),
+      });
+      formulaText = formulaToString(formula);
+      assignmentText = [...collectVars(formula)].sort().map((name) => `${name}=${assignment[name] ? '1' : '0'}`).join(' ');
+      resultText = evalFormula(formula, assignment) ? 'true' : 'false';
     }
 
     function makeCycle() {
@@ -240,59 +342,83 @@ import Base from '../../layouts/Base.astro';
         const hi = Math.floor(((i + 1) * colorPool.length) / 5);
         palette.push(mix(paper, colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))], 0.92));
       }
-      conductorColor = mix(paper, palette[1], 0.45);
-      headColor = palette[4];
-      tailColor = palette[2];
-      buildCircuit();
+      strongColor = palette[4];
+      weakColor = palette[2];
+      tailColor = palette[3];
+      strongConductorColor = mix(paper, palette[4], 0.38);
+      weakConductorColor = mix(paper, palette[1], 0.48);
       stepCount = 0;
+      activeCount = 0;
+      buildCircuit();
       updateLabel();
     }
 
     function updateLabel() {
       if (!label) return;
       label.innerHTML = `
-        <span>automaton: wireworld</span>
-        <span>topology: ${topology}</span>
+        <span>automaton: Wireworld++</span>
+        <span>formula: ${formulaText}</span>
+        <span>assignment: ${assignmentText}</span>
+        <span>result: ${resultText}</span>
         <span>active: ${activeCount}</span>
         <span>seed: ${seed.toString(16).padStart(8, '0')}</span>
       `;
     }
 
-    function countHeadNeighbors(x: number, y: number): number {
+    function countNeighbors(x, y, target) {
       let count = 0;
       for (let yy = -1; yy <= 1; yy++) {
         for (let xx = -1; xx <= 1; xx++) {
           if (xx === 0 && yy === 0) continue;
-          if (state[idx(x + xx, y + yy)] === HEAD) count++;
+          if (state[idx(x + xx, y + yy)] === target) count++;
         }
       }
       return count;
     }
 
+    function injectPulse(pulse) {
+      if (!pulse.enabled || (stepCount + pulse.offset) % pulse.period !== 0) return;
+      setCell(pulse.x, pulse.y, head(pulse.kind));
+      setCell(pulse.x - pulse.dx, pulse.y - pulse.dy, tail(pulse.kind));
+    }
+
     function step() {
       activeCount = 0;
+      for (const pulse of pulses) injectPulse(pulse);
       next.fill(EMPTY);
       for (let y = 1; y < H - 1; y++) {
         for (let x = 1; x < W - 1; x++) {
           const i = idx(x, y);
           const cell = state[i];
-          if (cell === EMPTY) continue;
-          if (cell === HEAD) {
-            next[i] = TAIL;
+          if (cell === EMPTY) {
+            if (heat[i] > 0) heat[i] -= 4;
+            continue;
+          }
+          if (cell === STRONG_HEAD) {
+            next[i] = STRONG_TAIL;
             heat[i] = 255;
             activeCount++;
-          } else if (cell === TAIL) {
-            next[i] = CONDUCTOR;
+          } else if (cell === WEAK_HEAD) {
+            next[i] = WEAK_TAIL;
+            heat[i] = 230;
+            activeCount++;
+          } else if (cell === STRONG_TAIL) {
+            next[i] = STRONG_CONDUCTOR;
             heat[i] = Math.max(heat[i], 160);
-          } else {
-            const heads = countHeadNeighbors(x, y);
-            next[i] = heads === 1 || heads === 2 ? HEAD : CONDUCTOR;
+          } else if (cell === WEAK_TAIL) {
+            next[i] = WEAK_CONDUCTOR;
+            heat[i] = Math.max(heat[i], 130);
+          } else if (cell === STRONG_CONDUCTOR) {
+            const heads = countNeighbors(x, y, STRONG_HEAD);
+            next[i] = heads === 1 || heads === 2 ? STRONG_HEAD : STRONG_CONDUCTOR;
+          } else if (cell === WEAK_CONDUCTOR) {
+            const heads = countNeighbors(x, y, WEAK_HEAD);
+            next[i] = heads === 1 || heads === 2 ? WEAK_HEAD : WEAK_CONDUCTOR;
           }
-          if (heat[i] > 0) heat[i] -= 5;
         }
       }
       [state, next] = [next, state];
-      if (++stepCount > CYCLE_STEPS || (stepCount > 160 && activeCount === 0)) makeCycle();
+      if (++stepCount > CYCLE_STEPS) makeCycle();
       if (stepCount % 12 === 0) updateLabel();
     }
 
@@ -305,30 +431,33 @@ import Base from '../../layouts/Base.astro';
           const cell = state[i];
           const glow = heat[i] / 255;
           if (cell === EMPTY && glow <= 0) continue;
-          if (cell === HEAD) ctx.fillStyle = rgb(headColor);
-          else if (cell === TAIL) ctx.fillStyle = rgb(tailColor);
-          else if (cell === CONDUCTOR) ctx.fillStyle = rgba(mix(conductorColor, headColor, glow * 0.55), 0.72 + glow * 0.22);
-          else ctx.fillStyle = rgba(tailColor, glow * 0.32);
+          if (cell === STRONG_HEAD) ctx.fillStyle = rgb(strongColor);
+          else if (cell === WEAK_HEAD) ctx.fillStyle = rgb(weakColor);
+          else if (cell === STRONG_TAIL || cell === WEAK_TAIL) ctx.fillStyle = rgb(tailColor);
+          else if (cell === STRONG_CONDUCTOR) ctx.fillStyle = rgba(mix(strongConductorColor, strongColor, glow * 0.5), 0.74 + glow * 0.22);
+          else if (cell === WEAK_CONDUCTOR) ctx.fillStyle = rgba(mix(weakConductorColor, weakColor, glow * 0.5), 0.64 + glow * 0.24);
+          else ctx.fillStyle = rgba(tailColor, glow * 0.3);
           ctx.fillRect(x, y, 1, 1);
         }
       }
     }
 
-    function inject(clientX: number, clientY: number) {
+    function inject(clientX, clientY) {
       const rect = canvas.getBoundingClientRect();
       const x = Math.floor(((clientX - rect.left) / rect.width) * W);
       const y = Math.floor(((clientY - rect.top) / rect.height) * H);
-      for (let yy = -2; yy <= 2; yy++) {
-        for (let xx = -2; xx <= 2; xx++) {
+      const kind = rng() < 0.5 ? 'strong' : 'weak';
+      for (let yy = -3; yy <= 3; yy++) {
+        for (let xx = -3; xx <= 3; xx++) {
           const i = idx(x + xx, y + yy);
-          if (state[i] === CONDUCTOR && rng() < 0.38) state[i] = HEAD;
+          if (state[i] === conductor(kind) && rng() < 0.32) state[i] = head(kind);
         }
       }
     }
 
     function resize() {
-      W = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
-      H = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
+      W = Math.max(40, Math.ceil(window.innerWidth / CELL_PX));
+      H = Math.max(32, Math.ceil(window.innerHeight / CELL_PX));
       canvas.width = W;
       canvas.height = H;
       ctx.imageSmoothingEnabled = false;
@@ -342,7 +471,7 @@ import Base from '../../layouts/Base.astro';
     resize();
     if (!reduce) {
       let last = 0;
-      const loop = (now: number) => {
+      const loop = (now) => {
         if (now - last >= TICK_MS) {
           step();
           draw();
@@ -352,12 +481,16 @@ import Base from '../../layouts/Base.astro';
       };
       requestAnimationFrame(loop);
     } else {
-      for (let i = 0; i < 80; i++) step();
+      for (let i = 0; i < 120; i++) step();
       draw();
     }
 
     window.addEventListener('resize', resize);
-    canvas.addEventListener('pointerdown', (event) => inject(event.clientX, event.clientY));
+    window.addEventListener('pointerdown', (event) => {
+      const target = event.target;
+      if (target?.closest?.('a, button, dialog')) return;
+      inject(event.clientX, event.clientY);
+    });
     resetButton?.addEventListener('click', () => {
       makeCycle();
       draw();
