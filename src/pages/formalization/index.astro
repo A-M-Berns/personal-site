@@ -56,7 +56,7 @@ import Base from '../../layouts/Base.astro';
     const CONDUCTOR = 1;
     const HEAD = 2;
     const TAIL = 3;
-    const VARS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    const VARS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
     const OPS = ['AND', 'OR', 'XOR'];
 
     const FONT = {
@@ -80,8 +80,18 @@ import Base from '../../layouts/Base.astro';
       X: ['101', '101', '010', '101', '101'],
       '0': ['111', '101', '101', '101', '111'],
       '1': ['010', '110', '010', '010', '111'],
+      '2': ['110', '001', '010', '100', '111'],
+      '3': ['110', '001', '010', '001', '110'],
+      '4': ['101', '101', '111', '001', '001'],
+      '5': ['111', '100', '110', '001', '110'],
+      '6': ['011', '100', '111', '101', '111'],
+      '7': ['111', '001', '010', '010', '010'],
+      '8': ['111', '101', '111', '101', '111'],
+      '9': ['111', '101', '111', '001', '110'],
       '=': ['000', '111', '000', '111', '000'],
       '+': ['000', '010', '111', '010', '000'],
+      '(': ['001', '010', '010', '010', '001'],
+      ')': ['100', '010', '010', '010', '100'],
       ' ': ['000', '000', '000', '000', '000'],
     };
 
@@ -112,11 +122,13 @@ import Base from '../../layouts/Base.astro';
     let tailColor = [255, 128, 64];
     let strongConductorColor = [128, 128, 128];
     let weakConductorColor = [96, 96, 96];
+    const labelColor = [255, 255, 255];
     let pulses = [];
     let annotations = [];
     let formulaText = '';
     let assignmentText = '';
     let resultText = '';
+    let inputCount = 0;
 
     function parseHex(h) {
       const s = h.trim().replace('#', '');
@@ -174,6 +186,10 @@ import Base from '../../layouts/Base.astro';
       return out;
     }
 
+    function chooseSignalColor(palette, index) {
+      return liftColor(mix(paper, palette[index], 0.96), 172);
+    }
+
     function idx(x, y) {
       return y * W + x;
     }
@@ -211,8 +227,8 @@ import Base from '../../layouts/Base.astro';
       return { type: 'op', op, left, right };
     }
 
-    function shuffledVars() {
-      const vars = VARS.slice();
+    function shuffledVars(count = VARS.length) {
+      const vars = VARS.slice(0, count);
       for (let i = vars.length - 1; i > 0; i--) {
         const j = Math.floor(rng() * (i + 1));
         [vars[i], vars[j]] = [vars[j], vars[i]];
@@ -220,21 +236,25 @@ import Base from '../../layouts/Base.astro';
       return vars;
     }
 
-    function buildFormula() {
-      const [a, b, c, d, e, f, g, h] = shuffledVars();
+    function buildFormula(vars) {
+      const [a, b, c, d, e, f, g, h, i, j] = shuffledVars(vars.length);
       const op1 = pick(OPS);
       const op2 = pick(OPS);
       const op3 = pick(OPS);
       const op4 = pick(OPS);
       const op5 = pick(OPS);
       const op6 = pick(OPS);
-      return pick([
+      const templates = [
         () => o(op3, o(op1, v(a), v(b)), o(op2, v(c), v(d))),
         () => o(op4, o(op2, o(op1, v(a), n(v(b))), v(c)), o(op3, v(d), v(e))),
         () => o(op3, n(o(op1, v(a), v(b))), o(op2, v(c), v(d))),
         () => o(op5, o(op2, o(op1, v(a), v(c)), n(v(b))), o(op3, v(d), o(op4, v(e), v(f)))),
         () => o(op6, o(op3, v(a), o(op1, n(v(b)), v(d))), o(op5, o(op2, v(e), v(f)), o(op4, v(g), v(h)))),
-      ])();
+      ];
+      if (vars.length >= 10) {
+        templates.push(() => o(op6, o(op5, o(op1, v(a), v(b)), o(op2, v(c), v(d))), o(op4, o(op3, v(e), v(f)), o(op2, v(g), o(op1, v(i), v(j))))));
+      }
+      return pick(templates)();
     }
 
     function formulaToString(node) {
@@ -352,7 +372,7 @@ import Base from '../../layouts/Base.astro';
     function wireFormula(node, assignment, parent = null, kind = 'strong') {
       if (node.type === 'var') {
         drawGate(node.x, node.y, kind);
-        annotate(`${node.name}=${assignment[node.name] ? '1' : '0'}`, node.x - 9, node.y - 8, kind);
+        annotate(assignment[node.name] ? 'T' : 'F', node.x - 2, node.y - 8, kind);
         pulses.push({ x: node.x, y: node.y, dx: 1, dy: 0, kind, period: 36, offset: Math.floor(rng() * 16), enabled: assignment[node.name] });
       } else if (node.type === 'not') {
         wireFormula(node.child, assignment, null, kind === 'strong' ? 'weak' : 'strong');
@@ -370,6 +390,17 @@ import Base from '../../layouts/Base.astro';
       if (parent) drawPath(node, parent, kind);
     }
 
+    function makeAssignment(vars) {
+      const assignment = {};
+      let trueCount = 0;
+      for (const name of vars) {
+        assignment[name] = rng() < 0.5;
+        if (assignment[name]) trueCount++;
+      }
+      if (trueCount === 0) assignment[pick(vars)] = true;
+      return assignment;
+    }
+
     function buildCircuit() {
       strong.fill(EMPTY);
       weak.fill(EMPTY);
@@ -377,9 +408,10 @@ import Base from '../../layouts/Base.astro';
       weakHeat.fill(0);
       pulses = [];
       annotations = [];
-      const formula = buildFormula();
-      const assignment = {};
-      for (const name of VARS) assignment[name] = rng() < 0.5;
+      inputCount = 7 + Math.floor(rng() * 4);
+      const vars = VARS.slice(0, inputCount);
+      const formula = buildFormula(vars);
+      const assignment = makeAssignment(vars);
       const leaves = countLeaves(formula);
       const maxDepth = treeDepth(formula);
       const usableTop = Math.max(8, Math.floor(H * 0.14));
@@ -404,13 +436,13 @@ import Base from '../../layouts/Base.astro';
       for (let i = 0; i < 5; i++) {
         const lo = Math.floor((i * colorPool.length) / 5);
         const hi = Math.floor(((i + 1) * colorPool.length) / 5);
-        palette.push(mix(paper, colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))], 0.92));
+        palette.push(colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))]);
       }
-      strongColor = liftColor(palette[4], 182);
-      weakColor = liftColor(palette[2], 158);
-      tailColor = liftColor(mix(palette[3], paper, 0.1), 140);
-      strongConductorColor = mix(paper, strongColor, 0.24);
-      weakConductorColor = mix(paper, weakColor, 0.29);
+      strongColor = chooseSignalColor(palette, 4);
+      weakColor = chooseSignalColor(palette, 2);
+      tailColor = liftColor(mix(paper, palette[3], 0.78), 142);
+      strongConductorColor = mix(paper, strongColor, 0.32);
+      weakConductorColor = mix(paper, weakColor, 0.32);
       stepCount = 0;
       activeCount = 0;
       buildCircuit();
@@ -422,8 +454,8 @@ import Base from '../../layouts/Base.astro';
       label.innerHTML = `
         <span>automaton: Wireworld++</span>
         <span>formula: ${formulaText}</span>
-        <span>assignment: ${assignmentText}</span>
         <span>result: ${resultText}</span>
+        <span>inputs: ${inputCount}</span>
         <span>active: ${activeCount}</span>
         <span>seed: ${seed.toString(16).padStart(8, '0')}</span>
       `;
@@ -494,9 +526,20 @@ import Base from '../../layouts/Base.astro';
       }
     }
 
+    function drawFormulaOverlay() {
+      const compact = formulaText
+        .replaceAll('AND', '+')
+        .replaceAll('OR', 'O')
+        .replaceAll('XOR', 'X')
+        .replaceAll('NOT', 'N')
+        .slice(0, Math.max(12, Math.floor(W / 5)));
+      const width = compact.length * 4 + 2;
+      drawBitmapText(compact, Math.max(2, W - width - 3), 3, labelColor, 1);
+    }
+
     function drawAnnotations() {
       for (const note of annotations) {
-        drawBitmapText(note.text, note.x, note.y, note.kind === 'strong' ? strongColor : weakColor, 1);
+        drawBitmapText(note.text, note.x, note.y, labelColor, 1);
       }
     }
 
@@ -522,6 +565,7 @@ import Base from '../../layouts/Base.astro';
           ctx.fillRect(x, y, 1, 1);
         }
       }
+      drawFormulaOverlay();
       drawAnnotations();
     }
 
