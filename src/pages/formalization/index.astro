@@ -56,7 +56,7 @@ import Base from '../../layouts/Base.astro';
     const CONDUCTOR = 1;
     const HEAD = 2;
     const TAIL = 3;
-    const VARS = ['A', 'B', 'C', 'D'];
+    const VARS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
     const OPS = ['AND', 'OR', 'XOR'];
 
     const FONT = {
@@ -221,16 +221,19 @@ import Base from '../../layouts/Base.astro';
     }
 
     function buildFormula() {
-      const [a, b, c, d] = shuffledVars();
+      const [a, b, c, d, e, f, g, h] = shuffledVars();
       const op1 = pick(OPS);
       const op2 = pick(OPS);
       const op3 = pick(OPS);
+      const op4 = pick(OPS);
+      const op5 = pick(OPS);
+      const op6 = pick(OPS);
       return pick([
         () => o(op3, o(op1, v(a), v(b)), o(op2, v(c), v(d))),
-        () => o(op2, o(op1, v(a), n(v(b))), v(c)),
+        () => o(op4, o(op2, o(op1, v(a), n(v(b))), v(c)), o(op3, v(d), v(e))),
         () => o(op3, n(o(op1, v(a), v(b))), o(op2, v(c), v(d))),
-        () => o(op2, o(op1, v(a), v(c)), n(v(b))),
-        () => o(op3, v(a), o(op1, n(v(b)), v(d))),
+        () => o(op5, o(op2, o(op1, v(a), v(c)), n(v(b))), o(op3, v(d), o(op4, v(e), v(f)))),
+        () => o(op6, o(op3, v(a), o(op1, n(v(b)), v(d))), o(op5, o(op2, v(e), v(f)), o(op4, v(g), v(h)))),
       ])();
     }
 
@@ -349,14 +352,13 @@ import Base from '../../layouts/Base.astro';
     function wireFormula(node, assignment, parent = null, kind = 'strong') {
       if (node.type === 'var') {
         drawGate(node.x, node.y, kind);
-        annotate(`${node.name}=${assignment[node.name] ? '1' : '0'}`, node.x - 12, node.y - 9, kind);
+        annotate(`${node.name}=${assignment[node.name] ? '1' : '0'}`, node.x - 9, node.y - 8, kind);
         pulses.push({ x: node.x, y: node.y, dx: 1, dy: 0, kind, period: 36, offset: Math.floor(rng() * 16), enabled: assignment[node.name] });
       } else if (node.type === 'not') {
         wireFormula(node.child, assignment, null, kind === 'strong' ? 'weak' : 'strong');
         drawPath(node.child, node, kind);
         drawGate(node.x, node.y, kind);
         annotate('NOT', node.x - 5, node.y - 9, kind);
-        pulses.push({ x: node.x, y: node.y, dx: 1, dy: 0, kind, period: 54, offset: 9, enabled: evalFormula(node, assignment) });
       } else {
         wireFormula(node.left, assignment, null, 'strong');
         wireFormula(node.right, assignment, null, 'weak');
@@ -364,7 +366,6 @@ import Base from '../../layouts/Base.astro';
         drawPath(node.right, node, 'weak');
         drawGate(node.x, node.y, kind);
         annotate(node.op, node.x - Math.min(6, node.op.length * 2), node.y - 9, kind);
-        pulses.push({ x: node.x, y: node.y, dx: 1, dy: 0, kind, period: 54, offset: 12, enabled: evalFormula(node, assignment) });
       }
       if (parent) drawPath(node, parent, kind);
     }
@@ -381,9 +382,9 @@ import Base from '../../layouts/Base.astro';
       for (const name of VARS) assignment[name] = rng() < 0.5;
       const leaves = countLeaves(formula);
       const maxDepth = treeDepth(formula);
-      const usableTop = Math.max(10, Math.floor(H * 0.20));
-      const usableBottom = Math.max(usableTop + 10, Math.floor(H * 0.82));
-      const step = Math.max(12, Math.floor((usableBottom - usableTop) / Math.max(1, leaves - 1)));
+      const usableTop = Math.max(8, Math.floor(H * 0.14));
+      const usableBottom = Math.max(usableTop + 10, Math.floor(H * 0.88));
+      const step = Math.max(9, Math.floor((usableBottom - usableTop) / Math.max(1, leaves - 1)));
       layout(formula, 0, maxDepth, { next: usableTop, step });
       const output = { x: Math.max(10, W - 11), y: formula.y };
       const result = evalFormula(formula, assignment);
@@ -391,7 +392,6 @@ import Base from '../../layouts/Base.astro';
       drawPath(formula, output, 'strong');
       drawGate(output.x, output.y, 'strong');
       annotate(`OUT=${result ? '1' : '0'}`, output.x - 15, output.y - 9, 'strong');
-      pulses.push({ x: Math.max(6, output.x - 5), y: output.y, dx: 1, dy: 0, kind: 'strong', period: 54, offset: 20, enabled: result });
       formulaText = formulaToString(formula);
       assignmentText = [...collectVars(formula)].sort().map((name) => `${name}=${assignment[name] ? '1' : '0'}`).join(' ');
       resultText = result ? 'true' : 'false';
