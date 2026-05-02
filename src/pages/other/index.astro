@@ -31,7 +31,7 @@ import Base from '../../layouts/Base.astro';
       </label>
       <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-passes">passes</label>
-        <input id="sandpile-passes" type="range" min="1" max="256" step="1" value="8" />
+        <input id="sandpile-passes" type="range" min="1" max="100" step="1" value="8" />
         <span id="sandpile-passes-value">8</span>
       </div>
       <div class="sandpile-panel-row sandpile-panel-row--control">
@@ -402,7 +402,7 @@ import Base from '../../layouts/Base.astro';
       active.fill(0);
       frame = 0;
       topplesThisFrame = 0;
-      actualPasses = annealFrames > 0 ? 256 : topplePassesPerFrame;
+      actualPasses = annealFrames > 0 ? 100 : topplePassesPerFrame;
       const seeder = chooseSeeder();
       seederName = seeder.name;
       seeder.fn();
@@ -443,7 +443,7 @@ import Base from '../../layouts/Base.astro';
     function step() {
       topplesThisFrame = 0;
       addGrains();
-      actualPasses = frame < annealFrames ? 256 : topplePassesPerFrame;
+      actualPasses = frame < annealFrames ? 100 : topplePassesPerFrame;
       for (let i = 0; i < actualPasses; i++) topplesThisFrame += topplePass();
       for (let i = 0; i < active.length; i++) {
         if (active[i] > ACTIVE_DECAY) active[i] -= ACTIVE_DECAY;
