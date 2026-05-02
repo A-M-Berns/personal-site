@@ -364,16 +364,34 @@ import Base from '../../layouts/Base.astro';
       annotations.push({ text, x, y, kind });
     }
 
+    function pulseDelay(x) {
+      return 8 + Math.max(0, Math.round(x * 0.55));
+    }
+
+    function addPulse(x, y, kind, enabled, offset = 0) {
+      pulses.push({
+        x,
+        y,
+        dx: 1,
+        dy: 0,
+        kind,
+        period: 54,
+        offset: -(pulseDelay(x) + offset),
+        enabled,
+      });
+    }
+
     function wireFormula(node, assignment, parent = null, kind = 'strong') {
       if (node.type === 'var') {
         drawGate(node.x, node.y, kind);
         annotate(assignment[node.name] ? 'T' : 'F', node.x - 2, node.y - 8, kind);
-        pulses.push({ x: node.x, y: node.y, dx: 1, dy: 0, kind, period: 36, offset: Math.floor(rng() * 16), enabled: assignment[node.name] });
+        pulses.push({ x: node.x, y: node.y, dx: 1, dy: 0, kind, period: 54, offset: -Math.floor(rng() * 8), enabled: assignment[node.name] });
       } else if (node.type === 'not') {
         wireFormula(node.child, assignment, null, kind === 'strong' ? 'weak' : 'strong');
         drawPath(node.child, node, kind);
         drawGate(node.x, node.y, kind);
         annotate('NOT', node.x - 5, node.y - 9, kind);
+        addPulse(node.x, node.y, kind, evalFormula(node, assignment), 4);
       } else {
         wireFormula(node.left, assignment, null, 'strong');
         wireFormula(node.right, assignment, null, 'weak');
@@ -381,6 +399,7 @@ import Base from '../../layouts/Base.astro';
         drawPath(node.right, node, 'weak');
         drawGate(node.x, node.y, kind);
         annotate(node.op, node.x - Math.min(6, node.op.length * 2), node.y - 9, kind);
+        addPulse(node.x, node.y, kind, evalFormula(node, assignment), 8);
       }
       if (parent) drawPath(node, parent, kind);
     }
@@ -420,6 +439,7 @@ import Base from '../../layouts/Base.astro';
       drawPath(formula, output, 'strong');
       drawGate(output.x, output.y, 'strong');
       annotate(result ? 'T' : 'F', output.x - 2, output.y - 8, 'strong');
+      addPulse(output.x, output.y, 'strong', result, 10);
       formulaText = formulaToString(formula, assignment);
       resultText = result ? 'true' : 'false';
     }
