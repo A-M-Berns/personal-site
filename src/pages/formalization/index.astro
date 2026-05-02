@@ -47,9 +47,9 @@ import Base from '../../layouts/Base.astro';
     const aboutDialog = document.getElementById('wire-about');
     const aboutClose = aboutDialog?.querySelector('.wire-about-close');
 
-    const CELL_PX = 3;
-    const TICK_MS = 42;
-    const CYCLE_STEPS = 980;
+    const CELL_PX = 4;
+    const TICK_MS = 46;
+    const CYCLE_STEPS = 1040;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const EMPTY = 0;
@@ -62,6 +62,7 @@ import Base from '../../layouts/Base.astro';
 
     const VARS = ['A', 'B', 'C', 'D'];
     const OPS = ['AND', 'OR', 'XOR'];
+    const TEMPLATE_COUNT = 5;
 
     const styles = getComputedStyle(document.documentElement);
     const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
@@ -92,6 +93,7 @@ import Base from '../../layouts/Base.astro';
     let formulaText = '';
     let assignmentText = '';
     let resultText = '';
+    let gateCount = 0;
 
     function parseHex(h) {
       const s = h.trim().replace('#', '');
@@ -143,6 +145,12 @@ import Base from '../../layouts/Base.astro';
       return items[Math.floor(rng() * items.length)];
     }
 
+    function liftColor(c, minLuma) {
+      let out = c;
+      while (luma(out) < minLuma) out = mix(out, [245, 245, 245], 0.18);
+      return out;
+    }
+
     function idx(x, y) {
       return y * W + x;
     }
@@ -167,10 +175,40 @@ import Base from '../../layouts/Base.astro';
       return kind === 'strong' ? STRONG_TAIL : WEAK_TAIL;
     }
 
-    function buildFormula(depth) {
-      if (depth <= 0 || rng() < 0.22) return { type: 'var', name: pick(VARS) };
-      if (rng() < 0.18) return { type: 'not', child: buildFormula(depth - 1) };
-      return { type: 'op', op: pick(OPS), left: buildFormula(depth - 1), right: buildFormula(depth - 1) };
+    function v(name) {
+      return { type: 'var', name };
+    }
+
+    function n(child) {
+      return { type: 'not', child };
+    }
+
+    function o(op, left, right) {
+      return { type: 'op', op, left, right };
+    }
+
+    function shuffledVars() {
+      const vars = VARS.slice();
+      for (let i = vars.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [vars[i], vars[j]] = [vars[j], vars[i]];
+      }
+      return vars;
+    }
+
+    function buildFormula() {
+      const [a, b, c, d] = shuffledVars();
+      const op1 = pick(OPS);
+      const op2 = pick(OPS);
+      const op3 = pick(OPS);
+      const templates = [
+        () => o(op3, o(op1, v(a), v(b)), o(op2, v(c), v(d))),
+        () => o(op2, o(op1, v(a), n(v(b))), v(c)),
+        () => o(op3, n(o(op1, v(a), v(b))), o(op2, v(c), v(d))),
+        () => o(op2, o(op1, v(a), v(c)), n(v(b))),
+        () => o(op3, v(a), o(op1, n(v(b)), v(d))),
+      ];
+      return templates[Math.floor(rng() * TEMPLATE_COUNT)]();
     }
 
     function formulaToString(node) {
@@ -199,31 +237,50 @@ import Base from '../../layouts/Base.astro';
       return out;
     }
 
-    function layout(node, depth, lanes) {
+    function treeDepth(node) {
+      if (node.type === 'var') return 0;
+      if (node.type === 'not') return 1 + treeDepth(node.child);
+      return 1 + Math.max(treeDepth(node.left), treeDepth(node.right));
+    }
+
+    function countLeaves(node) {
+      if (node.type === 'var') return 1;
+      if (node.type === 'not') return countLeaves(node.child);
+      return countLeaves(node.left) + countLeaves(node.right);
+    }
+
+    function layout(node, level, maxDepth, lanes) {
       if (node.type === 'var') {
         const y = lanes.next;
-        lanes.next += Math.max(10, Math.floor(H / 8));
-        node.x = Math.max(5, Math.floor(W * 0.12));
-        node.y = Math.min(H - 7, y);
+        lanes.next += lanes.step;
+        node.x = Math.max(6, Math.floor(W * 0.12));
+        node.y = Math.min(H - 8, Math.max(6, y));
         return node.y;
       }
       if (node.type === 'not') {
-        const cy = layout(node.child, depth + 1, lanes);
-        node.x = Math.min(W - 8, Math.floor(W * (0.26 + depth * 0.16)));
+        const cy = layout(node.child, level + 1, maxDepth, lanes);
+        node.x = xForLevel(level, maxDepth);
         node.y = cy;
         return node.y;
       }
-      const ly = layout(node.left, depth + 1, lanes);
-      const ry = layout(node.right, depth + 1, lanes);
-      node.x = Math.min(W - 8, Math.floor(W * (0.30 + depth * 0.16)));
+      const ly = layout(node.left, level + 1, maxDepth, lanes);
+      const ry = layout(node.right, level + 1, maxDepth, lanes);
+      node.x = xForLevel(level, maxDepth);
       node.y = Math.round((ly + ry) / 2);
       return node.y;
     }
 
+    function xForLevel(level, maxDepth) {
+      const left = Math.floor(W * 0.14);
+      const right = Math.floor(W * 0.76);
+      const t = maxDepth <= 0 ? 1 : 1 - level / (maxDepth + 0.5);
+      return Math.max(left + 8, Math.min(right, Math.round(left + (right - left) * t)));
+    }
+
     function drawPath(a, b, kind) {
-      const midX = Math.round((a.x + b.x) / 2);
+      const midX = Math.round((a.x + b.x) / 2) + (kind === 'weak' ? 2 : -2);
       drawLine(a.x, a.y, midX, a.y, kind);
-      drawLine(midX, a.y, midX, b.y, kind === 'strong' ? 'weak' : 'strong');
+      drawLine(midX, a.y, midX, b.y, kind);
       drawLine(midX, b.y, b.x, b.y, kind);
     }
 
@@ -252,11 +309,16 @@ import Base from '../../layouts/Base.astro';
 
     function drawGate(x, y, kind) {
       const c = conductor(kind);
-      for (let yy = -2; yy <= 2; yy++) {
-        for (let xx = -2; xx <= 2; xx++) {
-          if (Math.abs(xx) === 2 || Math.abs(yy) === 2 || rng() < 0.35) setCell(x + xx, y + yy, c);
-        }
+      for (let xx = -3; xx <= 3; xx++) {
+        setCell(x + xx, y - 2, c);
+        setCell(x + xx, y + 2, c);
       }
+      for (let yy = -2; yy <= 2; yy++) {
+        setCell(x - 3, y + yy, c);
+        setCell(x + 3, y + yy, c);
+      }
+      setCell(x, y, c);
+      gateCount++;
     }
 
     function wireFormula(node, assignment, parent = null, kind = 'strong') {
@@ -310,11 +372,17 @@ import Base from '../../layouts/Base.astro';
       state.fill(EMPTY);
       heat.fill(0);
       pulses = [];
-      const formula = buildFormula(3 + Math.floor(rng() * 2));
+      gateCount = 0;
+      const formula = buildFormula();
       const assignment = {};
       for (const name of VARS) assignment[name] = rng() < 0.5;
-      layout(formula, 0, { next: Math.max(8, Math.floor(H * 0.18)) });
-      const output = { x: Math.max(8, W - 8), y: formula.y };
+      const leaves = countLeaves(formula);
+      const maxDepth = treeDepth(formula);
+      const usableTop = Math.max(8, Math.floor(H * 0.18));
+      const usableBottom = Math.max(usableTop + 8, Math.floor(H * 0.84));
+      const step = Math.max(9, Math.floor((usableBottom - usableTop) / Math.max(1, leaves - 1)));
+      layout(formula, 0, maxDepth, { next: usableTop, step });
+      const output = { x: Math.max(8, W - 10), y: formula.y };
       wireFormula(formula, assignment, output, 'strong');
       drawPath(formula, output, 'strong');
       drawGate(output.x, output.y, 'strong');
@@ -342,11 +410,11 @@ import Base from '../../layouts/Base.astro';
         const hi = Math.floor(((i + 1) * colorPool.length) / 5);
         palette.push(mix(paper, colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))], 0.92));
       }
-      strongColor = palette[4];
-      weakColor = palette[2];
-      tailColor = palette[3];
-      strongConductorColor = mix(paper, palette[4], 0.38);
-      weakConductorColor = mix(paper, palette[1], 0.48);
+      strongColor = liftColor(palette[4], 178);
+      weakColor = liftColor(palette[2], 150);
+      tailColor = liftColor(mix(palette[3], paper, 0.12), 135);
+      strongConductorColor = mix(paper, strongColor, 0.24);
+      weakConductorColor = mix(paper, weakColor, 0.28);
       stepCount = 0;
       activeCount = 0;
       buildCircuit();
@@ -360,6 +428,7 @@ import Base from '../../layouts/Base.astro';
         <span>formula: ${formulaText}</span>
         <span>assignment: ${assignmentText}</span>
         <span>result: ${resultText}</span>
+        <span>gates: ${gateCount}</span>
         <span>active: ${activeCount}</span>
         <span>seed: ${seed.toString(16).padStart(8, '0')}</span>
       `;
@@ -367,11 +436,9 @@ import Base from '../../layouts/Base.astro';
 
     function countNeighbors(x, y, target) {
       let count = 0;
-      for (let yy = -1; yy <= 1; yy++) {
-        for (let xx = -1; xx <= 1; xx++) {
-          if (xx === 0 && yy === 0) continue;
-          if (state[idx(x + xx, y + yy)] === target) count++;
-        }
+      const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+      for (const [xx, yy] of dirs) {
+        if (state[idx(x + xx, y + yy)] === target) count++;
       }
       return count;
     }
@@ -425,6 +492,9 @@ import Base from '../../layouts/Base.astro';
     function draw() {
       ctx.fillStyle = rgb(paper);
       ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.035)';
+      for (let x = 0; x < W; x += 12) ctx.fillRect(x, 0, 1, H);
+      for (let y = 0; y < H; y += 12) ctx.fillRect(0, y, W, 1);
       for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
           const i = idx(x, y);
@@ -433,9 +503,9 @@ import Base from '../../layouts/Base.astro';
           if (cell === EMPTY && glow <= 0) continue;
           if (cell === STRONG_HEAD) ctx.fillStyle = rgb(strongColor);
           else if (cell === WEAK_HEAD) ctx.fillStyle = rgb(weakColor);
-          else if (cell === STRONG_TAIL || cell === WEAK_TAIL) ctx.fillStyle = rgb(tailColor);
-          else if (cell === STRONG_CONDUCTOR) ctx.fillStyle = rgba(mix(strongConductorColor, strongColor, glow * 0.5), 0.74 + glow * 0.22);
-          else if (cell === WEAK_CONDUCTOR) ctx.fillStyle = rgba(mix(weakConductorColor, weakColor, glow * 0.5), 0.64 + glow * 0.24);
+          else if (cell === STRONG_TAIL || cell === WEAK_TAIL) ctx.fillStyle = rgba(tailColor, 0.86);
+          else if (cell === STRONG_CONDUCTOR) ctx.fillStyle = rgba(mix(strongConductorColor, strongColor, glow * 0.52), 0.52 + glow * 0.36);
+          else if (cell === WEAK_CONDUCTOR) ctx.fillStyle = rgba(mix(weakConductorColor, weakColor, glow * 0.52), 0.46 + glow * 0.34);
           else ctx.fillStyle = rgba(tailColor, glow * 0.3);
           ctx.fillRect(x, y, 1, 1);
         }
