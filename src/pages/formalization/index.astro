@@ -378,8 +378,6 @@ import Base from '../../layouts/Base.astro';
       const x = Math.max(20, Math.floor(W * (0.52 + rng() * 0.16)));
       drawLine(x, 5, x, H - 6, 'weak');
       drawLine(5, y + 6, W - 6, y + 6, 'strong');
-      annotate('W', x + 2, 7, 'weak');
-      annotate('S', 7, y + 9, 'strong');
       pulses.push({ x, y: 7, dx: 0, dy: 1, kind: 'weak', period: 42, offset: 0, enabled: true });
       pulses.push({ x: 7, y: y + 6, dx: 1, dy: 0, kind: 'strong', period: 42, offset: 12, enabled: result });
     }
