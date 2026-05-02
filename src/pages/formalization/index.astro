@@ -27,10 +27,10 @@ import Base from '../../layouts/Base.astro';
       <button class="wire-about-close" type="button" aria-label="Close">x</button>
       <h2 id="wire-about-title">About this animation</h2>
       <p>
-        Wireworld++ extends Wireworld with strong and weak signals. Here the two signal layers are simulated separately, so strong and weak conductors can coexist without coupling.
+        Wireworld++ extends Wireworld with strong and weak signals. Here strong and weak conductors obey the cross-coupled local rules from the paper.
       </p>
       <p>
-        Each cycle chooses a Boolean formula, lays it out as a small circuit, labels the input loci, and runs pulses through the corresponding strong and weak wires.
+        Each cycle lays out small paper-derived primitive gates and runs the local Wireworld++ transition rules directly.
       </p>
     </dialog>
   </div>
@@ -50,13 +50,13 @@ import Base from '../../layouts/Base.astro';
     const CELL_PX = 4;
     const TICK_MS = 44;
     const CYCLE_STEPS = 1100;
+    const SIGNAL_PERIOD = 18;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const EMPTY = 0;
     const CONDUCTOR = 1;
     const HEAD = 2;
     const TAIL = 3;
-    const VARS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'];
     const OPS = ['AND', 'OR', 'XOR'];
 
     const FONT = {
@@ -111,8 +111,6 @@ import Base from '../../layouts/Base.astro';
     let weak = new Uint8Array();
     let strongNext = new Uint8Array();
     let weakNext = new Uint8Array();
-    let strongHeat = new Uint8Array();
-    let weakHeat = new Uint8Array();
     let seed = 0;
     let rng = mulberry32(1);
     let stepCount = 0;
@@ -123,8 +121,9 @@ import Base from '../../layouts/Base.astro';
     let strongConductorColor = [128, 128, 128];
     let weakConductorColor = [96, 96, 96];
     const labelColor = [255, 255, 255];
-    let pulses = [];
+    let sources = [];
     let annotations = [];
+    let gateRows = [];
     let formulaText = '';
     let resultText = '';
     let inputCount = 0;
@@ -201,128 +200,14 @@ import Base from '../../layouts/Base.astro';
       return kind === 'strong' ? strong : weak;
     }
 
-    function nextLayer(kind) {
-      return kind === 'strong' ? strongNext : weakNext;
-    }
-
-    function heatLayer(kind) {
-      return kind === 'strong' ? strongHeat : weakHeat;
+    function otherLayer(kind) {
+      return kind === 'strong' ? weak : strong;
     }
 
     function setCell(x, y, kind, value) {
       if (!inBounds(x, y)) return;
       layer(kind)[idx(x, y)] = value;
-    }
-
-    function v(name) {
-      return { type: 'var', name };
-    }
-
-    function n(child) {
-      return { type: 'not', child };
-    }
-
-    function o(op, left, right) {
-      return { type: 'op', op, left, right };
-    }
-
-    function shuffledVars(count = VARS.length) {
-      const vars = VARS.slice(0, count);
-      for (let i = vars.length - 1; i > 0; i--) {
-        const j = Math.floor(rng() * (i + 1));
-        [vars[i], vars[j]] = [vars[j], vars[i]];
-      }
-      return vars;
-    }
-
-    function buildFormula(vars) {
-      let nodes = shuffledVars(vars.length).map((name) => (rng() < 0.22 ? n(v(name)) : v(name)));
-      while (nodes.length > 1) {
-        const next = [];
-        for (let i = 0; i < nodes.length; i += 2) {
-          if (i === nodes.length - 1) {
-            next.push(nodes[i]);
-          } else {
-            const combined = o(pick(OPS), nodes[i], nodes[i + 1]);
-            next.push(rng() < 0.12 ? n(combined) : combined);
-          }
-        }
-        nodes = next;
-      }
-      return nodes[0];
-    }
-
-    function formulaToString(node, assignment) {
-      if (node.type === 'var') return assignment[node.name] ? 'T' : 'F';
-      if (node.type === 'not') return `NOT ${formulaToString(node.child, assignment)}`;
-      return `(${formulaToString(node.left, assignment)} ${node.op} ${formulaToString(node.right, assignment)})`;
-    }
-
-    function evalFormula(node, assignment) {
-      if (node.type === 'var') return assignment[node.name];
-      if (node.type === 'not') return !evalFormula(node.child, assignment);
-      const a = evalFormula(node.left, assignment);
-      const b = evalFormula(node.right, assignment);
-      if (node.op === 'AND') return a && b;
-      if (node.op === 'OR') return a || b;
-      return a !== b;
-    }
-
-    function collectVars(node, out = new Set()) {
-      if (node.type === 'var') out.add(node.name);
-      else if (node.type === 'not') collectVars(node.child, out);
-      else {
-        collectVars(node.left, out);
-        collectVars(node.right, out);
-      }
-      return out;
-    }
-
-    function treeDepth(node) {
-      if (node.type === 'var') return 0;
-      if (node.type === 'not') return 1 + treeDepth(node.child);
-      return 1 + Math.max(treeDepth(node.left), treeDepth(node.right));
-    }
-
-    function countLeaves(node) {
-      if (node.type === 'var') return 1;
-      if (node.type === 'not') return countLeaves(node.child);
-      return countLeaves(node.left) + countLeaves(node.right);
-    }
-
-    function layout(node, level, maxDepth, lanes) {
-      if (node.type === 'var') {
-        const y = lanes.next;
-        lanes.next += lanes.step;
-        node.x = Math.max(8, Math.floor(W * 0.14));
-        node.y = Math.min(H - 9, Math.max(8, y));
-        return node.y;
-      }
-      if (node.type === 'not') {
-        const cy = layout(node.child, level + 1, maxDepth, lanes);
-        node.x = xForLevel(level, maxDepth);
-        node.y = cy;
-        return node.y;
-      }
-      const ly = layout(node.left, level + 1, maxDepth, lanes);
-      const ry = layout(node.right, level + 1, maxDepth, lanes);
-      node.x = xForLevel(level, maxDepth);
-      node.y = Math.round((ly + ry) / 2);
-      return node.y;
-    }
-
-    function xForLevel(level, maxDepth) {
-      const left = Math.floor(W * 0.16);
-      const right = Math.floor(W * 0.75);
-      const t = maxDepth <= 0 ? 1 : 1 - level / (maxDepth + 0.5);
-      return Math.max(left + 10, Math.min(right, Math.round(left + (right - left) * t)));
-    }
-
-    function drawPath(a, b, kind) {
-      const midX = Math.round((a.x + b.x) / 2) + (kind === 'weak' ? 3 : -3);
-      drawLine(a.x, a.y, midX, a.y, kind);
-      drawLine(midX, a.y, midX, b.y, kind);
-      drawLine(midX, b.y, b.x, b.y, kind);
+      if (value !== EMPTY) otherLayer(kind)[idx(x, y)] = EMPTY;
     }
 
     function drawLine(x0, y0, x1, y1, kind) {
@@ -348,100 +233,76 @@ import Base from '../../layouts/Base.astro';
       }
     }
 
-    function drawGate(x, y, kind) {
-      for (let xx = -3; xx <= 3; xx++) {
-        setCell(x + xx, y - 2, kind, CONDUCTOR);
-        setCell(x + xx, y + 2, kind, CONDUCTOR);
-      }
-      for (let yy = -2; yy <= 2; yy++) {
-        setCell(x - 3, y + yy, kind, CONDUCTOR);
-        setCell(x + 3, y + yy, kind, CONDUCTOR);
-      }
-      setCell(x, y, kind, CONDUCTOR);
-    }
-
     function annotate(text, x, y, kind) {
       annotations.push({ text, x, y, kind });
     }
 
-    function pulseDelay(x) {
-      return 8 + Math.max(0, Math.round(x * 0.55));
+    function addSource(x, y, kind, enabled, phase) {
+      sources.push({ x, y, kind, enabled, phase });
     }
 
-    function addPulse(x, y, kind, enabled, offset = 0) {
-      pulses.push({
-        x,
-        y,
-        dx: 1,
-        dy: 0,
-        kind,
-        period: 54,
-        offset: -(pulseDelay(x) + offset),
-        enabled,
-      });
+    function evalGate(op, a, b) {
+      if (op === 'AND') return a && b;
+      if (op === 'OR') return a || b;
+      return a !== b;
     }
 
-    function wireFormula(node, assignment, parent = null, kind = 'strong') {
-      if (node.type === 'var') {
-        drawGate(node.x, node.y, kind);
-        annotate(assignment[node.name] ? 'T' : 'F', node.x - 2, node.y - 8, kind);
-        pulses.push({ x: node.x, y: node.y, dx: 1, dy: 0, kind, period: 54, offset: -Math.floor(rng() * 8), enabled: assignment[node.name] });
-      } else if (node.type === 'not') {
-        wireFormula(node.child, assignment, null, kind === 'strong' ? 'weak' : 'strong');
-        drawPath(node.child, node, kind);
-        drawGate(node.x, node.y, kind);
-        annotate('NOT', node.x - 5, node.y - 9, kind);
-        addPulse(node.x, node.y, kind, evalFormula(node, assignment), 4);
+    function addPaperGate(op, x, y, a, b, phase) {
+      const outX = Math.max(x + 18, Math.min(W - 7, x + Math.floor(W * 0.56)));
+      if (op === 'AND') {
+        drawLine(x, y - 2, x + 8, y - 2, 'strong');
+        drawLine(x, y + 2, x + 8, y + 2, 'strong');
+        setCell(x + 9, y - 1, 'weak', CONDUCTOR);
+        setCell(x + 9, y + 1, 'weak', CONDUCTOR);
+        drawLine(x + 10, y, outX, y, 'strong');
+      } else if (op === 'OR') {
+        drawLine(x, y - 1, x + 8, y - 1, 'strong');
+        drawLine(x, y + 1, x + 8, y + 1, 'strong');
+        drawLine(x + 9, y, outX, y, 'strong');
       } else {
-        wireFormula(node.left, assignment, null, 'strong');
-        wireFormula(node.right, assignment, null, 'weak');
-        drawPath(node.left, node, 'strong');
-        drawPath(node.right, node, 'weak');
-        drawGate(node.x, node.y, kind);
-        annotate(node.op, node.x - Math.min(6, node.op.length * 2), node.y - 9, kind);
-        addPulse(node.x, node.y, kind, evalFormula(node, assignment), 8);
+        drawLine(x, y - 1, x + 8, y - 1, 'strong');
+        drawLine(x, y + 1, x + 8, y + 1, 'strong');
+        drawLine(x + 9, y, outX, y, 'weak');
       }
-      if (parent) drawPath(node, parent, kind);
-    }
-
-    function makeAssignment(vars) {
-      const assignment = {};
-      let trueCount = 0;
-      for (const name of vars) {
-        assignment[name] = rng() < 0.5;
-        if (assignment[name]) trueCount++;
-      }
-      if (trueCount === 0) assignment[pick(vars)] = true;
-      return assignment;
+      addSource(x, op === 'AND' ? y - 2 : y - 1, 'strong', a, phase);
+      addSource(x, op === 'AND' ? y + 2 : y + 1, 'strong', b, phase);
+      annotate(a ? 'T' : 'F', x - 1, (op === 'AND' ? y - 2 : y - 1) - 8, 'strong');
+      annotate(b ? 'T' : 'F', x - 1, (op === 'AND' ? y + 2 : y + 1) + 3, 'strong');
+      annotate(op, x + 7, y - 9, op === 'XOR' ? 'weak' : 'strong');
+      const result = evalGate(op, a, b);
+      annotate(result ? 'T' : 'F', outX - 1, y - 8, op === 'XOR' ? 'weak' : 'strong');
+      gateRows.push({ op, a, b, result });
+      return result;
     }
 
     function buildCircuit() {
       strong.fill(EMPTY);
       weak.fill(EMPTY);
-      strongHeat.fill(0);
-      weakHeat.fill(0);
-      pulses = [];
+      strongNext.fill(EMPTY);
+      weakNext.fill(EMPTY);
+      sources = [];
       annotations = [];
-      const desiredInputCount = 7 + Math.floor(rng() * 4);
-      const vars = VARS.slice(0, desiredInputCount);
-      const formula = buildFormula(vars);
-      const assignment = makeAssignment(vars);
-      const leaves = countLeaves(formula);
-      inputCount = leaves;
-      const maxDepth = treeDepth(formula);
-      const usableTop = Math.max(8, Math.floor(H * 0.14));
-      const usableBottom = Math.max(usableTop + 10, Math.floor(H * 0.88));
-      const step = Math.max(9, Math.floor((usableBottom - usableTop) / Math.max(1, leaves - 1)));
-      layout(formula, 0, maxDepth, { next: usableTop, step });
-      const output = { x: Math.max(10, W - 11), y: formula.y };
-      const result = evalFormula(formula, assignment);
-      wireFormula(formula, assignment, output, 'strong');
-      drawPath(formula, output, 'strong');
-      drawGate(output.x, output.y, 'strong');
-      annotate(result ? 'T' : 'F', output.x - 2, output.y - 8, 'strong');
-      addPulse(output.x, output.y, 'strong', result, 10);
-      formulaText = formulaToString(formula, assignment);
-      resultText = result ? 'true' : 'false';
+      gateRows = [];
+      const rows = Math.max(3, Math.min(6, Math.floor(H / 18)));
+      const top = Math.max(12, Math.floor(H * 0.17));
+      const gap = Math.max(12, Math.floor((Math.floor(H * 0.78) - top) / Math.max(1, rows - 1)));
+      const x = 4;
+      let trueRows = 0;
+      for (let i = 0; i < rows; i++) {
+        const op = pick(OPS);
+        let a = rng() < 0.5;
+        let b = rng() < 0.5;
+        if (i === 0 && !a && !b) a = true;
+        const result = addPaperGate(op, x, top + i * gap, a, b, i * 4);
+        if (result) trueRows++;
+      }
+      inputCount = rows * 2;
+      if (trueRows === 0 && gateRows[0]) resultText = 'false';
+      else resultText = `${trueRows}/${rows} true`;
+      formulaText = gateRows
+        .slice(0, 3)
+        .map((row) => `${row.a ? 'T' : 'F'} ${row.op} ${row.b ? 'T' : 'F'}`)
+        .join('   ');
     }
 
     function makeCycle() {
@@ -468,7 +329,6 @@ import Base from '../../layouts/Base.astro';
       if (!label) return;
       label.innerHTML = `
         <span>automaton: Wireworld++</span>
-        <span>formula: ${formulaText}</span>
         <span>result: ${resultText}</span>
         <span>inputs: ${inputCount}</span>
         <span>active: ${activeCount}</span>
@@ -476,39 +336,44 @@ import Base from '../../layouts/Base.astro';
       `;
     }
 
-    function countNeighbors(src, x, y) {
-      let count = 0;
-      const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
-      for (const [xx, yy] of dirs) {
-        if (src[idx(x + xx, y + yy)] === HEAD) count++;
+    function countHeads(x, y) {
+      let strongHeads = 0;
+      let weakHeads = 0;
+      for (let yy = -1; yy <= 1; yy++) {
+        for (let xx = -1; xx <= 1; xx++) {
+          if (xx === 0 && yy === 0) continue;
+          const i = idx(x + xx, y + yy);
+          if (strong[i] === HEAD) strongHeads++;
+          if (weak[i] === HEAD) weakHeads++;
+        }
       }
-      return count;
+      return { strongHeads, weakHeads };
     }
 
-    function injectPulse(pulse) {
-      if (!pulse.enabled || (stepCount + pulse.offset) % pulse.period !== 0) return;
-      setCell(pulse.x, pulse.y, pulse.kind, HEAD);
-      setCell(pulse.x - pulse.dx, pulse.y - pulse.dy, pulse.kind, TAIL);
+    function injectSource(source) {
+      if (!source.enabled || (stepCount + source.phase) % SIGNAL_PERIOD !== 0) return;
+      setCell(source.x, source.y, source.kind, HEAD);
+      setCell(source.x - 1, source.y, source.kind, TAIL);
     }
 
-    function stepLayer(src, dst, heat) {
+    function stepLayer(src, dst, kind) {
       dst.fill(EMPTY);
       for (let y = 1; y < H - 1; y++) {
         for (let x = 1; x < W - 1; x++) {
           const i = idx(x, y);
           const cell = src[i];
-          if (cell === EMPTY) {
-            if (heat[i] > 0) heat[i] -= 4;
-          } else if (cell === HEAD) {
+          if (cell === HEAD) {
             dst[i] = TAIL;
-            heat[i] = 255;
             activeCount++;
           } else if (cell === TAIL) {
             dst[i] = CONDUCTOR;
-            heat[i] = Math.max(heat[i], 150);
-          } else {
-            const heads = countNeighbors(src, x, y);
-            dst[i] = heads === 1 || heads === 2 ? HEAD : CONDUCTOR;
+          } else if (cell === CONDUCTOR) {
+            const { strongHeads, weakHeads } = countHeads(x, y);
+            if (kind === 'strong') {
+              dst[i] = (strongHeads === 1 || strongHeads === 2 || weakHeads === 2) ? HEAD : CONDUCTOR;
+            } else {
+              dst[i] = (weakHeads === 1 || weakHeads === 2 || strongHeads === 1) ? HEAD : CONDUCTOR;
+            }
           }
         }
       }
@@ -516,9 +381,9 @@ import Base from '../../layouts/Base.astro';
 
     function step() {
       activeCount = 0;
-      for (const pulse of pulses) injectPulse(pulse);
-      stepLayer(strong, strongNext, strongHeat);
-      stepLayer(weak, weakNext, weakHeat);
+      for (const source of sources) injectSource(source);
+      stepLayer(strong, strongNext, 'strong');
+      stepLayer(weak, weakNext, 'weak');
       [strong, strongNext] = [strongNext, strong];
       [weak, weakNext] = [weakNext, weak];
       if (++stepCount > CYCLE_STEPS) makeCycle();
@@ -548,8 +413,8 @@ import Base from '../../layouts/Base.astro';
     function drawFormulaOverlay() {
       const compact = formulaText.replace(/\s+/g, ' ').slice(0, Math.max(12, Math.floor(W / 4.2)));
       const width = compact.length * 4 + 2;
-      const x = Math.max(2, W - width - 3);
-      const y = 3;
+      const x = 3;
+      const y = Math.max(3, H - 9);
       ctx.fillStyle = 'rgba(0, 0, 0, 0.86)';
       ctx.fillRect(x - 1, y - 1, width, 7);
       const tokens = compact.match(/AND|OR|NOT|XOR|[TF()]|\s+|./g) ?? [];
@@ -579,17 +444,15 @@ import Base from '../../layouts/Base.astro';
           const i = idx(x, y);
           const s = strong[i];
           const w = weak[i];
-          const sg = strongHeat[i] / 255;
-          const wg = weakHeat[i] / 255;
-          if (s === EMPTY && w === EMPTY && sg <= 0 && wg <= 0) continue;
+          if (s === EMPTY && w === EMPTY) continue;
           if (s === HEAD && w === HEAD) ctx.fillStyle = rgb(mix(strongColor, weakColor, 0.5));
           else if (s === HEAD) ctx.fillStyle = rgb(strongColor);
           else if (w === HEAD) ctx.fillStyle = rgb(weakColor);
           else if (s === TAIL || w === TAIL) ctx.fillStyle = rgba(tailColor, 0.86);
-          else if (s === CONDUCTOR && w === CONDUCTOR) ctx.fillStyle = rgba(mix(strongColor, weakColor, 0.5), 0.58 + Math.max(sg, wg) * 0.34);
-          else if (s === CONDUCTOR) ctx.fillStyle = rgba(mix(strongConductorColor, strongColor, sg * 0.55), 0.50 + sg * 0.35);
-          else if (w === CONDUCTOR) ctx.fillStyle = rgba(mix(weakConductorColor, weakColor, wg * 0.55), 0.44 + wg * 0.35);
-          else ctx.fillStyle = rgba(tailColor, Math.max(sg, wg) * 0.26);
+          else if (s === CONDUCTOR && w === CONDUCTOR) ctx.fillStyle = rgba(mix(strongConductorColor, weakConductorColor, 0.5), 0.58);
+          else if (s === CONDUCTOR) ctx.fillStyle = rgba(strongConductorColor, 0.54);
+          else if (w === CONDUCTOR) ctx.fillStyle = rgba(weakConductorColor, 0.54);
+          else ctx.fillStyle = rgba(tailColor, 0.26);
           ctx.fillRect(x, y, 1, 1);
         }
       }
@@ -621,8 +484,6 @@ import Base from '../../layouts/Base.astro';
       weak = new Uint8Array(W * H);
       strongNext = new Uint8Array(W * H);
       weakNext = new Uint8Array(W * H);
-      strongHeat = new Uint8Array(W * H);
-      weakHeat = new Uint8Array(W * H);
       makeCycle();
       draw();
     }

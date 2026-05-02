@@ -528,8 +528,8 @@ a:focus-visible {
 }
 .wire-label {
   position: fixed;
-  left: 1rem;
-  bottom: 1rem;
+  right: 1rem;
+  top: 1rem;
   z-index: 3;
   display: flex;
   flex-wrap: wrap;
@@ -620,7 +620,7 @@ a:focus-visible {
 .wire-about-close:hover { color: var(--ink); }
 @media (max-width: 760px) {
   .wire-label {
-    bottom: 3.55rem;
+    top: 3.55rem;
   }
   .wire-controls {
     left: 1rem;
