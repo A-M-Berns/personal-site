@@ -69,6 +69,11 @@ import Base from '../../layouts/Base.astro';
         <input id="sandpile-pulse" type="range" min="0.005" max="0.25" step="0.005" value="0.06" />
         <span id="sandpile-pulse-value">0.060</span>
       </div>
+      <div class="sandpile-panel-row sandpile-panel-row--control">
+        <label for="sandpile-cadence">cadence</label>
+        <input id="sandpile-cadence" type="range" min="1" max="2700" step="1" value="90" />
+        <span id="sandpile-cadence-value">90</span>
+      </div>
       <dl class="sandpile-stats">
         <div><dt>seed</dt><dd id="sandpile-seed">-</dd></div>
         <div><dt>grid</dt><dd id="sandpile-grid">-</dd></div>
@@ -112,6 +117,7 @@ import Base from '../../layouts/Base.astro';
     const massInput = document.getElementById('sandpile-mass') as HTMLInputElement | null;
     const annealInput = document.getElementById('sandpile-anneal') as HTMLInputElement | null;
     const pulseInput = document.getElementById('sandpile-pulse') as HTMLInputElement | null;
+    const cadenceInput = document.getElementById('sandpile-cadence') as HTMLInputElement | null;
     const seederLabel = document.getElementById('sandpile-seeder');
     const passesValue = document.getElementById('sandpile-passes-value');
     const dropsValue = document.getElementById('sandpile-drops-value');
@@ -119,6 +125,7 @@ import Base from '../../layouts/Base.astro';
     const massValue = document.getElementById('sandpile-mass-value');
     const annealValue = document.getElementById('sandpile-anneal-value');
     const pulseValue = document.getElementById('sandpile-pulse-value');
+    const cadenceValue = document.getElementById('sandpile-cadence-value');
     const seedLabel = document.getElementById('sandpile-seed');
     const gridLabel = document.getElementById('sandpile-grid');
     const frameLabel = document.getElementById('sandpile-frame');
@@ -170,6 +177,7 @@ import Base from '../../layouts/Base.astro';
     let dropsPeak = Number(dropsInput?.value ?? 6);
     const BREATH_PERIOD_FRAMES = 2700;
     let pulseProbability = Number(pulseInput?.value ?? 0.06);
+    let pulseCadence = Math.max(1, Number(cadenceInput?.value ?? 90));
     let breathPhase = 0;
     type InjectionMode = 'random' | 'bernoulli' | 'uniform' | 'centered-point' | 'hybrid';
     const VALID_MODES: ReadonlyArray<InjectionMode> = ['random', 'bernoulli', 'uniform', 'centered-point', 'hybrid'];
@@ -496,7 +504,8 @@ import Base from '../../layouts/Base.astro';
     }
 
     function pulseCenteredPoint() {
-      const k = Math.max(1, Math.floor(8000 * massScale));
+      const totalPerCycle = 8000 * massScale;
+      const k = Math.max(1, Math.floor(totalPerCycle * pulseCadence / BREATH_PERIOD_FRAMES));
       const cx = W >> 1;
       const cy = H >> 1;
       grains[idx(cx, cy)] += k;
@@ -529,6 +538,8 @@ import Base from '../../layouts/Base.astro';
       breathPhase = 0.5 + 0.5 * Math.cos(2 * Math.PI * (frame / BREATH_PERIOD_FRAMES) + Math.PI);
       if (frame % BREATH_PERIOD_FRAMES === 0) {
         snapshot.set(grains);
+      }
+      if (frame % pulseCadence === 0) {
         if (injectionMode === 'bernoulli' || injectionMode === 'hybrid') pulseBernoulli();
         else if (injectionMode === 'uniform') pulseUniformSymmetric();
         else if (injectionMode === 'centered-point') pulseCenteredPoint();
@@ -744,6 +755,10 @@ import Base from '../../layouts/Base.astro';
     pulseInput?.addEventListener('input', () => {
       pulseProbability = Number(pulseInput.value);
       if (pulseValue) pulseValue.textContent = pulseProbability.toFixed(3);
+    });
+    cadenceInput?.addEventListener('input', () => {
+      pulseCadence = Math.max(1, Number(cadenceInput.value));
+      if (cadenceValue) cadenceValue.textContent = String(pulseCadence);
     });
   }
 </script>
