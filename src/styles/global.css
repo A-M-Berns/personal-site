@@ -5,8 +5,8 @@
   --serif: var(--sans);
   --ink: #ececec;
   --muted: #8e8e88;
-  --paper: #0e0e10;
-  --rule: #26262a;
+  --paper: #18181c;
+  --rule: #303036;
   --accent: #c8c4ba;
 }
 
@@ -331,7 +331,7 @@ a:focus-visible {
   z-index: 0;
   width: 100vw;
   height: 100vh;
-  opacity: 0.58;
+  opacity: 0.7;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -500,6 +500,18 @@ a:focus-visible {
 .other-shell > .note {
   position: relative;
   z-index: 1;
+}
+.other-note a {
+  text-decoration: underline;
+  text-decoration-color: var(--muted);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: text-decoration-color 120ms ease, color 120ms ease;
+}
+.other-note a:hover,
+.other-note a:focus-visible {
+  text-decoration-color: var(--accent);
+  color: var(--accent);
 }
 
 .lean-shell {

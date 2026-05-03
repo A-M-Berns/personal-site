@@ -26,8 +26,9 @@ import Base from '../../layouts/Base.astro';
       <label class="sandpile-panel-field" for="sandpile-mode-select">
         <span>mode</span>
         <select id="sandpile-mode-select">
+          <option value="random" selected>random</option>
           <optgroup label="symmetric">
-            <option value="center" selected>center</option>
+            <option value="center">center</option>
             <option value="radial">radial</option>
             <option value="axial-mirror">axial-mirror</option>
             <option value="grid">grid</option>
@@ -118,14 +119,16 @@ import Base from '../../layouts/Base.astro';
     const PULSE_CYCLE_FRAMES = 2700;
     let pulseCadence = Math.max(1, Number(cadenceInput?.value ?? 90));
     type InjectionMode =
+      | 'random'
       | 'center' | 'radial' | 'axial-mirror' | 'grid' | 'concentric'
       | 'off-center' | 'scatter' | 'cluster' | 'line';
     const VALID_MODES: ReadonlyArray<InjectionMode> = [
+      'random',
       'center', 'radial', 'axial-mirror', 'grid', 'concentric',
       'off-center', 'scatter', 'cluster', 'line',
     ];
     function parseMode(v: string | undefined): InjectionMode {
-      return (VALID_MODES as readonly string[]).includes(v ?? '') ? (v as InjectionMode) : 'center';
+      return (VALID_MODES as readonly string[]).includes(v ?? '') ? (v as InjectionMode) : 'random';
     }
     let injectionMode: InjectionMode = parseMode(modeSelect?.value);
     let massScale = Number(massInput?.value ?? 1);
@@ -264,6 +267,11 @@ import Base from '../../layouts/Base.astro';
     }
 
     const TEMPLATES: Record<InjectionMode, () => number[][]> = {
+      random: () => {
+        const choices = VALID_MODES.filter((m) => m !== 'random');
+        const pick = choices[Math.floor(rng() * choices.length)];
+        return TEMPLATES[pick]();
+      },
       center: () => [[W >> 1, H >> 1]],
       'off-center': () => {
         const cx = W >> 1;
