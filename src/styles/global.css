@@ -38,6 +38,8 @@ a:focus-visible {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.75rem 5vw 0;
+  position: relative;
+  z-index: 10;
 }
 
 .site-nav {
