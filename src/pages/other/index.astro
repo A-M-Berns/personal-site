@@ -43,13 +43,8 @@ import Base from '../../layouts/Base.astro';
       </label>
       <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-passes">passes</label>
-        <input id="sandpile-passes" type="range" min="1" max="100" step="1" value="8" />
+        <input id="sandpile-passes" type="range" min="5" max="10" step="1" value="8" />
         <span id="sandpile-passes-value">8</span>
-      </div>
-      <div class="sandpile-panel-row sandpile-panel-row--control">
-        <label for="sandpile-base">base</label>
-        <input id="sandpile-base" type="range" min="0" max="3" step="1" value="0" />
-        <span id="sandpile-base-value">0</span>
       </div>
       <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-mass">mass</label>
@@ -85,12 +80,10 @@ import Base from '../../layouts/Base.astro';
     const panelEl = document.querySelector('.sandpile-panel') as HTMLElement | null;
     const modeSelect = document.getElementById('sandpile-mode-select') as HTMLSelectElement | null;
     const passesInput = document.getElementById('sandpile-passes') as HTMLInputElement | null;
-    const baseInput = document.getElementById('sandpile-base') as HTMLInputElement | null;
     const massInput = document.getElementById('sandpile-mass') as HTMLInputElement | null;
     const cadenceInput = document.getElementById('sandpile-cadence') as HTMLInputElement | null;
     const easeInput = document.getElementById('sandpile-ease') as HTMLInputElement | null;
     const passesValue = document.getElementById('sandpile-passes-value');
-    const baseValue = document.getElementById('sandpile-base-value');
     const massValue = document.getElementById('sandpile-mass-value');
     const cadenceValue = document.getElementById('sandpile-cadence-value');
     const easeValue = document.getElementById('sandpile-ease-value');
@@ -135,7 +128,6 @@ import Base from '../../layouts/Base.astro';
       return (VALID_MODES as readonly string[]).includes(v ?? '') ? (v as InjectionMode) : 'center';
     }
     let injectionMode: InjectionMode = parseMode(modeSelect?.value);
-    let baseHeight = Number(baseInput?.value ?? 0);
     let massScale = Number(massInput?.value ?? 1);
     let easeAlpha = Number(easeInput?.value ?? 0.25);
     let palette: number[][] = [];
@@ -222,10 +214,6 @@ import Base from '../../layouts/Base.astro';
       });
     }
 
-    function fillBase() {
-      grains.fill(Math.max(0, baseHeight));
-    }
-
     function seedCycle() {
       seed = hashString(`${Date.now()}:${Math.random()}`);
       rng = mulberry32(seed);
@@ -241,6 +229,9 @@ import Base from '../../layouts/Base.astro';
       massScale = Math.round((0.3 + Math.floor(rng() * 22) * 0.1) * 10) / 10;
       if (massInput) massInput.value = massScale.toFixed(1);
       if (massValue) massValue.textContent = massScale.toFixed(1);
+      topplePassesPerFrame = 5 + Math.floor(rng() * 6);
+      if (passesInput) passesInput.value = String(topplePassesPerFrame);
+      if (passesValue) passesValue.textContent = String(topplePassesPerFrame);
       grains.fill(3);
       for (let i = 0; i < grains.length; i++) display[i] = Math.min(3, grains[i]);
       updatePanel();
@@ -553,10 +544,6 @@ import Base from '../../layouts/Base.astro';
     passesInput?.addEventListener('input', () => {
       topplePassesPerFrame = Number(passesInput.value);
       if (passesValue) passesValue.textContent = passesInput.value;
-    });
-    baseInput?.addEventListener('input', () => {
-      baseHeight = Number(baseInput.value);
-      if (baseValue) baseValue.textContent = baseInput.value;
     });
     massInput?.addEventListener('input', () => {
       massScale = Number(massInput.value);
