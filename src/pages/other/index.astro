@@ -280,6 +280,12 @@ import Base from '../../layouts/Base.astro';
 
     const seeders: Seeder[] = [
       {
+        name: 'primed',
+        fn: () => {
+          grains.fill(3);
+        },
+      },
+      {
         name: 'clean',
         fn: () => {
           fillBase(0);
@@ -448,7 +454,7 @@ import Base from '../../layouts/Base.astro';
       option.textContent = seeder.name;
       seederSelect?.append(option);
     }
-    if (seederSelect) seederSelect.value = 'clean';
+    if (seederSelect) seederSelect.value = 'primed';
 
     function chooseSeeder() {
       const selected = seederSelect?.value ?? 'random';
