@@ -23,16 +23,6 @@ import Base from '../../layouts/Base.astro';
         </div>
       </div>
       <div class="sandpile-panel-body">
-      <div class="sandpile-panel-row">
-        <span>seeder</span>
-        <strong id="sandpile-seeder">-</strong>
-      </div>
-      <label class="sandpile-panel-field" for="sandpile-seeder-select">
-        <span>choose</span>
-        <select id="sandpile-seeder-select">
-          <option value="random">random</option>
-        </select>
-      </label>
       <label class="sandpile-panel-field" for="sandpile-mode-select">
         <span>mode</span>
         <select id="sandpile-mode-select">
@@ -92,28 +82,8 @@ import Base from '../../layouts/Base.astro';
       </div>
       <dl class="sandpile-stats">
         <div><dt>seed</dt><dd id="sandpile-seed">-</dd></div>
-        <div><dt>grid</dt><dd id="sandpile-grid">-</dd></div>
-        <div><dt>frame</dt><dd id="sandpile-frame">-</dd></div>
-        <div><dt>unstable</dt><dd id="sandpile-unstable">-</dd></div>
-        <div><dt>max</dt><dd id="sandpile-max">-</dd></div>
-        <div><dt>grains</dt><dd id="sandpile-grains">-</dd></div>
-        <div><dt>topples</dt><dd id="sandpile-topples">-</dd></div>
-        <div><dt>actual passes</dt><dd id="sandpile-actual-passes">-</dd></div>
+        <div><dt>iterations</dt><dd id="sandpile-frame">-</dd></div>
       </dl>
-      <div class="sandpile-sparkline">
-        <div class="sandpile-sparkline-head">
-          <span>disorder</span>
-          <span id="sandpile-disorder-value">-</span>
-        </div>
-        <canvas id="sandpile-disorder-canvas" width="240" height="40" aria-hidden="true"></canvas>
-      </div>
-      <div class="sandpile-sparkline">
-        <div class="sandpile-sparkline-head">
-          <span>settle</span>
-          <span id="sandpile-settle-value">-</span>
-        </div>
-        <canvas id="sandpile-settle-canvas" width="240" height="40" aria-hidden="true"></canvas>
-      </div>
       </div>
     </aside>
   </div>
@@ -127,7 +97,6 @@ import Base from '../../layouts/Base.astro';
     const resetButton = document.getElementById('sandpile-reset') as HTMLButtonElement | null;
     const collapseButton = document.getElementById('sandpile-collapse') as HTMLButtonElement | null;
     const panelEl = document.querySelector('.sandpile-panel') as HTMLElement | null;
-    const seederSelect = document.getElementById('sandpile-seeder-select') as HTMLSelectElement | null;
     const modeSelect = document.getElementById('sandpile-mode-select') as HTMLSelectElement | null;
     const passesInput = document.getElementById('sandpile-passes') as HTMLInputElement | null;
     const baseInput = document.getElementById('sandpile-base') as HTMLInputElement | null;
@@ -135,7 +104,6 @@ import Base from '../../layouts/Base.astro';
     const cadenceInput = document.getElementById('sandpile-cadence') as HTMLInputElement | null;
     const motionInput = document.getElementById('sandpile-motion') as HTMLInputElement | null;
     const easeInput = document.getElementById('sandpile-ease') as HTMLInputElement | null;
-    const seederLabel = document.getElementById('sandpile-seeder');
     const passesValue = document.getElementById('sandpile-passes-value');
     const baseValue = document.getElementById('sandpile-base-value');
     const massValue = document.getElementById('sandpile-mass-value');
@@ -143,26 +111,7 @@ import Base from '../../layouts/Base.astro';
     const motionValue = document.getElementById('sandpile-motion-value');
     const easeValue = document.getElementById('sandpile-ease-value');
     const seedLabel = document.getElementById('sandpile-seed');
-    const gridLabel = document.getElementById('sandpile-grid');
     const frameLabel = document.getElementById('sandpile-frame');
-    const unstableLabel = document.getElementById('sandpile-unstable');
-    const maxLabel = document.getElementById('sandpile-max');
-    const grainsLabel = document.getElementById('sandpile-grains');
-    const topplesLabel = document.getElementById('sandpile-topples');
-    const actualPassesLabel = document.getElementById('sandpile-actual-passes');
-    const disorderCanvas = document.getElementById('sandpile-disorder-canvas') as HTMLCanvasElement | null;
-    const disorderCtx = disorderCanvas?.getContext('2d') ?? null;
-    const disorderValue = document.getElementById('sandpile-disorder-value');
-    const settleCanvas = document.getElementById('sandpile-settle-canvas') as HTMLCanvasElement | null;
-    const settleCtx = settleCanvas?.getContext('2d') ?? null;
-    const settleValue = document.getElementById('sandpile-settle-value');
-    const DISORDER_SAMPLES = 240;
-    const DISORDER_SAMPLE_EVERY = 12;
-    const disorderHistory = new Float32Array(DISORDER_SAMPLES);
-    let disorderFilled = 0;
-    const settleHistory = new Float32Array(DISORDER_SAMPLES);
-    let settleFilled = 0;
-    let snapshot = new Uint32Array();
 
     const CELL_PX = 3;
     const ACTIVE_DECAY = 18;
@@ -188,9 +137,8 @@ import Base from '../../layouts/Base.astro';
     let rng = mulberry32(1);
     let frame = 0;
     let seed = 0;
-    let topplesThisFrame = 0;
     let topplePassesPerFrame = Number(passesInput?.value ?? 8);
-    const SNAPSHOT_INTERVAL_FRAMES = 2700;
+    const PULSE_CYCLE_FRAMES = 2700;
     let pulseCadence = Math.max(1, Number(cadenceInput?.value ?? 90));
     type InjectionMode =
       | 'center' | 'quadrants' | 'axes' | 'cross-5' | 'ring-8' | 'grid-9' | 'uniform'
@@ -209,11 +157,7 @@ import Base from '../../layouts/Base.astro';
     let massScale = Number(massInput?.value ?? 1);
     let motionSpeed = Number(motionInput?.value ?? 1);
     let easeAlpha = Number(easeInput?.value ?? 0.2);
-    let actualPasses = topplePassesPerFrame;
-    let seederName = '';
     let palette: number[][] = [];
-
-    type Seeder = { name: string; fn: () => void };
 
     function parseHex(h: string) {
       const s = h.trim().replace('#', '');
@@ -301,104 +245,19 @@ import Base from '../../layouts/Base.astro';
       grains.fill(Math.max(0, baseHeight));
     }
 
-    const seeders: Seeder[] = [
-      {
-        name: 'primed',
-        fn: () => {
-          grains.fill(3);
-        },
-      },
-      {
-        name: 'clean',
-        fn: () => {
-          fillBase();
-        },
-      },
-      {
-        name: 'noise',
-        fn: () => {
-          for (let i = 0; i < grains.length; i++) grains[i] = Math.floor(rng() * 4);
-        },
-      },
-      {
-        name: 'gradient',
-        fn: () => {
-          for (let y = 0; y < H; y++) {
-            const v = Math.min(3, Math.floor((y / Math.max(1, H - 1)) * 4));
-            for (let x = 0; x < W; x++) grains[idx(x, y)] = v;
-          }
-        },
-      },
-      {
-        name: 'checker',
-        fn: () => {
-          for (let y = 0; y < H; y++) {
-            for (let x = 0; x < W; x++) grains[idx(x, y)] = ((x + y) & 1) ? 3 : 0;
-          }
-        },
-      },
-      {
-        name: 'ring',
-        fn: () => {
-          fillBase();
-          const cx = W >> 1;
-          const cy = H >> 1;
-          const m = Math.min(W, H);
-          const rOut = m * 0.4;
-          const rIn = m * 0.25;
-          const o2 = rOut * rOut;
-          const i2 = rIn * rIn;
-          for (let y = 0; y < H; y++) {
-            for (let x = 0; x < W; x++) {
-              const dx = x - cx;
-              const dy = y - cy;
-              const d2 = dx * dx + dy * dy;
-              if (d2 >= i2 && d2 <= o2) grains[idx(x, y)] = 3;
-            }
-          }
-        },
-      },
-    ];
-
-    for (const seeder of seeders) {
-      const option = document.createElement('option');
-      option.value = seeder.name;
-      option.textContent = seeder.name;
-      seederSelect?.append(option);
-    }
-    if (seederSelect) seederSelect.value = 'primed';
-
-    function chooseSeeder() {
-      const selected = seederSelect?.value ?? 'random';
-      if (selected !== 'random') return seeders.find((seeder) => seeder.name === selected) ?? seeders[0];
-      return seeders[Math.floor(rng() * seeders.length)];
-    }
-
     function seedCycle() {
       seed = hashString(`${Date.now()}:${Math.random()}`);
       rng = mulberry32(seed);
       choosePalette();
-      grains.fill(0);
       nextGrains.fill(0);
       active.fill(0);
       display.fill(0);
       frame = 0;
-      topplesThisFrame = 0;
-      actualPasses = topplePassesPerFrame;
-      disorderHistory.fill(0);
-      disorderFilled = 0;
-      settleHistory.fill(0);
-      settleFilled = 0;
-      snapshot.fill(0);
       pulseAccumulator = 0;
       sourceState = {};
-      const seeder = chooseSeeder();
-      seederName = seeder.name;
-      seeder.fn();
+      grains.fill(3);
       for (let i = 0; i < grains.length; i++) display[i] = Math.min(3, grains[i]);
       updatePanel();
-      drawDisorder();
-      drawSettle();
     }
 
     function pulseUniformSymmetric() {
@@ -555,7 +414,7 @@ import Base from '../../layouts/Base.astro';
       const n = positions.length;
       if (n === 0) return;
       const totalPerCycle = 32000 * massScale;
-      const totalPerPulse = totalPerCycle * pulseCadence / SNAPSHOT_INTERVAL_FRAMES;
+      const totalPerPulse = totalPerCycle * pulseCadence / PULSE_CYCLE_FRAMES;
       pulseAccumulator += totalPerPulse;
       let weightSum = 0;
       for (const p of positions) weightSum += (p[2] ?? 1);
@@ -602,145 +461,24 @@ import Base from '../../layouts/Base.astro';
     }
 
     function step() {
-      topplesThisFrame = 0;
-      if (frame % SNAPSHOT_INTERVAL_FRAMES === 0) {
-        snapshot.set(grains);
-      }
       if (injectionMode === 'drift') tickDrift();
       if (frame % pulseCadence === 0) {
         if (injectionMode === 'uniform') pulseUniformSymmetric();
         else pulsePoints(SOURCE_POSITIONS[injectionMode]());
       }
-      actualPasses = topplePassesPerFrame;
-      for (let i = 0; i < actualPasses; i++) topplesThisFrame += topplePass();
+      for (let i = 0; i < topplePassesPerFrame; i++) topplePass();
       for (let i = 0; i < active.length; i++) {
         if (active[i] > ACTIVE_DECAY) active[i] -= ACTIVE_DECAY;
         else active[i] = 0;
       }
       frame++;
-      if (frame % DISORDER_SAMPLE_EVERY === 0) {
-        pushDisorder(measureDisorder());
-        drawDisorder();
-        pushSettle(measureSettle());
-        drawSettle();
-      }
       if (frame % 12 === 0) updatePanel();
-    }
-
-    function measureDisorder() {
-      let diff = 0;
-      let pairs = 0;
-      for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W - 1; x++) {
-          const a = Math.min(3, grains[idx(x, y)]);
-          const b = Math.min(3, grains[idx(x + 1, y)]);
-          if (a !== b) diff++;
-          pairs++;
-        }
-      }
-      for (let y = 0; y < H - 1; y++) {
-        for (let x = 0; x < W; x++) {
-          const a = Math.min(3, grains[idx(x, y)]);
-          const b = Math.min(3, grains[idx(x, y + 1)]);
-          if (a !== b) diff++;
-          pairs++;
-        }
-      }
-      return pairs > 0 ? diff / pairs : 0;
-    }
-
-    function pushDisorder(value: number) {
-      if (disorderFilled < DISORDER_SAMPLES) {
-        disorderHistory[disorderFilled++] = value;
-      } else {
-        disorderHistory.copyWithin(0, 1);
-        disorderHistory[DISORDER_SAMPLES - 1] = value;
-      }
-      if (disorderValue) disorderValue.textContent = value.toFixed(3);
-    }
-
-    function drawSparkline(
-      sCtx: CanvasRenderingContext2D | null,
-      sCanvas: HTMLCanvasElement | null,
-      history: Float32Array,
-      filled: number,
-    ) {
-      if (!sCtx || !sCanvas) return;
-      const cw = sCanvas.width;
-      const ch = sCanvas.height;
-      sCtx.clearRect(0, 0, cw, ch);
-      if (filled === 0) return;
-      const inkRgb = palette[palette.length - 1] ?? [220, 220, 220];
-      sCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-      sCtx.lineWidth = 1;
-      sCtx.beginPath();
-      sCtx.moveTo(0, ch * 0.5);
-      sCtx.lineTo(cw, ch * 0.5);
-      sCtx.stroke();
-      sCtx.strokeStyle = `rgb(${inkRgb[0]}, ${inkRgb[1]}, ${inkRgb[2]})`;
-      sCtx.lineWidth = 1.25;
-      sCtx.beginPath();
-      const span = DISORDER_SAMPLES;
-      for (let i = 0; i < filled; i++) {
-        const x = (i / (span - 1)) * cw;
-        const v = Math.max(0, Math.min(1, history[i]));
-        const y = ch - v * ch;
-        if (i === 0) sCtx.moveTo(x, y);
-        else sCtx.lineTo(x, y);
-      }
-      sCtx.stroke();
-    }
-
-    function drawDisorder() {
-      drawSparkline(disorderCtx, disorderCanvas, disorderHistory, disorderFilled);
-    }
-
-    function measureSettle() {
-      if (snapshot.length !== grains.length) return 0;
-      let diff = 0;
-      const n = grains.length;
-      for (let i = 0; i < n; i++) {
-        const a = Math.min(3, grains[i]);
-        const b = Math.min(3, snapshot[i]);
-        if (a !== b) diff++;
-      }
-      return n > 0 ? diff / n : 0;
-    }
-
-    function pushSettle(value: number) {
-      if (settleFilled < DISORDER_SAMPLES) {
-        settleHistory[settleFilled++] = value;
-      } else {
-        settleHistory.copyWithin(0, 1);
-        settleHistory[DISORDER_SAMPLES - 1] = value;
-      }
-      if (settleValue) settleValue.textContent = value.toFixed(3);
-    }
-
-    function drawSettle() {
-      drawSparkline(settleCtx, settleCanvas, settleHistory, settleFilled);
     }
 
     function updatePanel() {
       if (!seedLabel) return;
-      let unstable = 0;
-      let max = 0;
-      let total = 0;
-      for (let i = 0; i < grains.length; i++) {
-        const value = grains[i];
-        if (value >= 4) unstable++;
-        if (value > max) max = value;
-        total += value;
-      }
       seedLabel.textContent = seed.toString(16).padStart(8, '0');
-      if (seederLabel) seederLabel.textContent = seederName;
-      if (gridLabel) gridLabel.textContent = `${W}x${H}`;
-      if (frameLabel) frameLabel.textContent = String(frame);
-      if (unstableLabel) unstableLabel.textContent = String(unstable);
-      if (maxLabel) maxLabel.textContent = String(max);
-      if (grainsLabel) grainsLabel.textContent = total.toLocaleString();
-      if (topplesLabel) topplesLabel.textContent = topplesThisFrame.toLocaleString();
-      if (actualPassesLabel) actualPassesLabel.textContent = String(actualPasses);
+      if (frameLabel) frameLabel.textContent = frame.toLocaleString();
     }
 
     function draw() {
@@ -774,7 +512,6 @@ import Base from '../../layouts/Base.astro';
       nextGrains = new Uint32Array(W * H);
       active = new Uint8Array(W * H);
       display = new Float32Array(W * H);
-      snapshot = new Uint32Array(W * H);
       image = new ImageData(W, H);
       seedCycle();
       draw();
@@ -812,10 +549,6 @@ import Base from '../../layouts/Base.astro';
       const next = !panelEl?.classList.contains('collapsed');
       applyCollapsed(next);
       try { localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0'); } catch {}
-    });
-    seederSelect?.addEventListener('change', () => {
-      seedCycle();
-      draw();
     });
     modeSelect?.addEventListener('change', () => {
       injectionMode = parseMode(modeSelect.value);
