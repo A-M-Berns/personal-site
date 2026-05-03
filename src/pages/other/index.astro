@@ -29,6 +29,14 @@ import Base from '../../layouts/Base.astro';
           <option value="random">random</option>
         </select>
       </label>
+      <label class="sandpile-panel-field" for="sandpile-mode-select">
+        <span>mode</span>
+        <select id="sandpile-mode-select">
+          <option value="random">random</option>
+          <option value="uniform">uniform</option>
+          <option value="hybrid" selected>hybrid</option>
+        </select>
+      </label>
       <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-passes">passes</label>
         <input id="sandpile-passes" type="range" min="1" max="100" step="1" value="8" />
@@ -83,6 +91,7 @@ import Base from '../../layouts/Base.astro';
     ctx.imageSmoothingEnabled = false;
     const resetButton = document.getElementById('sandpile-reset') as HTMLButtonElement | null;
     const seederSelect = document.getElementById('sandpile-seeder-select') as HTMLSelectElement | null;
+    const modeSelect = document.getElementById('sandpile-mode-select') as HTMLSelectElement | null;
     const passesInput = document.getElementById('sandpile-passes') as HTMLInputElement | null;
     const dropsInput = document.getElementById('sandpile-drops') as HTMLInputElement | null;
     const baseInput = document.getElementById('sandpile-base') as HTMLInputElement | null;
@@ -138,7 +147,9 @@ import Base from '../../layouts/Base.astro';
     let topplePassesPerFrame = Number(passesInput?.value ?? 8);
     let dropsPeak = Number(dropsInput?.value ?? 6);
     const BREATH_PERIOD_FRAMES = 2700;
+    const PULSE_PROBABILITY = 0.06;
     let breathPhase = 0;
+    let injectionMode: 'random' | 'uniform' | 'hybrid' = (modeSelect?.value as 'random' | 'uniform' | 'hybrid') ?? 'hybrid';
     let baseHeight = Number(baseInput?.value ?? 0);
     let massScale = Number(massInput?.value ?? 1);
     let annealFrames = Number(annealInput?.value ?? 180);
@@ -423,6 +434,7 @@ import Base from '../../layouts/Base.astro';
     }
 
     function addGrains() {
+      if (injectionMode === 'uniform') return;
       const dropsNow = dropsPeak * breathPhase;
       const whole = Math.floor(dropsNow);
       const frac = dropsNow - whole;
@@ -432,6 +444,12 @@ import Base from '../../layouts/Base.astro';
         const y = Math.floor(H * (0.12 + rng() * 0.76));
         const i = idx(x, y);
         grains[i] += 1 + Math.floor(rng() * 3);
+      }
+    }
+
+    function pulseUniform() {
+      for (let i = 0; i < grains.length; i++) {
+        if (rng() < PULSE_PROBABILITY) grains[i] += 1;
       }
     }
 
@@ -460,6 +478,9 @@ import Base from '../../layouts/Base.astro';
     function step() {
       topplesThisFrame = 0;
       breathPhase = 0.5 + 0.5 * Math.cos(2 * Math.PI * (frame / BREATH_PERIOD_FRAMES) + Math.PI);
+      if (injectionMode !== 'random' && frame > 0 && frame % BREATH_PERIOD_FRAMES === 0) {
+        pulseUniform();
+      }
       addGrains();
       actualPasses = frame < annealFrames ? 100 : topplePassesPerFrame;
       for (let i = 0; i < actualPasses; i++) topplesThisFrame += topplePass();
@@ -607,6 +628,10 @@ import Base from '../../layouts/Base.astro';
     seederSelect?.addEventListener('change', () => {
       seedCycle();
       draw();
+    });
+    modeSelect?.addEventListener('change', () => {
+      const v = modeSelect.value;
+      injectionMode = (v === 'random' || v === 'uniform' || v === 'hybrid') ? v : 'hybrid';
     });
     passesInput?.addEventListener('input', () => {
       topplePassesPerFrame = Number(passesInput.value);
