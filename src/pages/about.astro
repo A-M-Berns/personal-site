@@ -1460,24 +1460,34 @@ import Base from '../layouts/Base.astro';
       makeCycle();
       draw();
     });
+    let pointerHeld = false;
+    let ffLatched = false;
     document.addEventListener('pointerdown', (event) => {
       const target = event.target as Element | null;
       if (target?.closest('a, button, dialog')) return;
+      pointerHeld = true;
       setPlayback(inRewindZone(event.clientX) ? -1 : 1, true);
     });
-    window.addEventListener('pointerup', () => setPlayback(1, false));
-    window.addEventListener('pointercancel', () => setPlayback(1, false));
-    window.addEventListener('blur', () => setPlayback(1, false));
+    window.addEventListener('pointerup', () => {
+      pointerHeld = false;
+      if (!ffLatched) setPlayback(1, false);
+    });
+    window.addEventListener('pointercancel', () => {
+      pointerHeld = false;
+      if (!ffLatched) setPlayback(1, false);
+    });
+    window.addEventListener('blur', () => {
+      pointerHeld = false;
+      ffLatched = false;
+      setPlayback(1, false);
+    });
     window.addEventListener('keydown', (event) => {
       if (event.key !== 'f' && event.key !== 'F') return;
       if (event.repeat) return;
       const target = event.target as Element | null;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
-      setPlayback(1, true);
-    });
-    window.addEventListener('keyup', (event) => {
-      if (event.key !== 'f' && event.key !== 'F') return;
-      setPlayback(1, false);
+      ffLatched = !ffLatched;
+      setPlayback(playbackDirection, pointerHeld || ffLatched);
     });
     infoButton?.addEventListener('click', () => aboutDialog?.showModal());
     aboutClose?.addEventListener('click', () => aboutDialog?.close());
