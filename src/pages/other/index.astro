@@ -33,8 +33,10 @@ import Base from '../../layouts/Base.astro';
         <span>mode</span>
         <select id="sandpile-mode-select">
           <option value="random">random</option>
+          <option value="bernoulli">bernoulli</option>
           <option value="uniform">uniform</option>
-          <option value="hybrid" selected>hybrid</option>
+          <option value="centered-point" selected>centered-point</option>
+          <option value="hybrid">hybrid</option>
         </select>
       </label>
       <div class="sandpile-panel-row sandpile-panel-row--control">
@@ -156,7 +158,12 @@ import Base from '../../layouts/Base.astro';
     const BREATH_PERIOD_FRAMES = 2700;
     let pulseProbability = Number(pulseInput?.value ?? 0.06);
     let breathPhase = 0;
-    let injectionMode: 'random' | 'uniform' | 'hybrid' = (modeSelect?.value as 'random' | 'uniform' | 'hybrid') ?? 'hybrid';
+    type InjectionMode = 'random' | 'bernoulli' | 'uniform' | 'centered-point' | 'hybrid';
+    const VALID_MODES: ReadonlyArray<InjectionMode> = ['random', 'bernoulli', 'uniform', 'centered-point', 'hybrid'];
+    function parseMode(v: string | undefined): InjectionMode {
+      return (VALID_MODES as readonly string[]).includes(v ?? '') ? (v as InjectionMode) : 'centered-point';
+    }
+    let injectionMode: InjectionMode = parseMode(modeSelect?.value);
     let baseHeight = Number(baseInput?.value ?? 0);
     let massScale = Number(massInput?.value ?? 1);
     let annealFrames = Number(annealInput?.value ?? 180);
@@ -251,6 +258,12 @@ import Base from '../../layouts/Base.astro';
     }
 
     const seeders: Seeder[] = [
+      {
+        name: 'clean',
+        fn: () => {
+          fillBase(0);
+        },
+      },
       {
         name: 'central hill',
         fn: () => {
@@ -414,6 +427,7 @@ import Base from '../../layouts/Base.astro';
       option.textContent = seeder.name;
       seederSelect?.append(option);
     }
+    if (seederSelect) seederSelect.value = 'clean';
 
     function chooseSeeder() {
       const selected = seederSelect?.value ?? 'random';
@@ -441,7 +455,7 @@ import Base from '../../layouts/Base.astro';
     }
 
     function addGrains() {
-      if (injectionMode === 'uniform') return;
+      if (injectionMode !== 'random' && injectionMode !== 'hybrid') return;
       const dropsNow = dropsPeak * breathPhase;
       const whole = Math.floor(dropsNow);
       const frac = dropsNow - whole;
@@ -454,10 +468,21 @@ import Base from '../../layouts/Base.astro';
       }
     }
 
-    function pulseUniform() {
+    function pulseBernoulli() {
       for (let i = 0; i < grains.length; i++) {
         if (rng() < pulseProbability) grains[i] += 1;
       }
+    }
+
+    function pulseUniformSymmetric() {
+      for (let i = 0; i < grains.length; i++) grains[i] += 1;
+    }
+
+    function pulseCenteredPoint() {
+      const k = Math.max(1, Math.floor(8000 * massScale));
+      const cx = W >> 1;
+      const cy = H >> 1;
+      grains[idx(cx, cy)] += k;
     }
 
     function topplePass() {
@@ -485,8 +510,10 @@ import Base from '../../layouts/Base.astro';
     function step() {
       topplesThisFrame = 0;
       breathPhase = 0.5 + 0.5 * Math.cos(2 * Math.PI * (frame / BREATH_PERIOD_FRAMES) + Math.PI);
-      if (injectionMode !== 'random' && frame > 0 && frame % BREATH_PERIOD_FRAMES === 0) {
-        pulseUniform();
+      if (frame % BREATH_PERIOD_FRAMES === 0) {
+        if (injectionMode === 'bernoulli' || injectionMode === 'hybrid') pulseBernoulli();
+        else if (injectionMode === 'uniform') pulseUniformSymmetric();
+        else if (injectionMode === 'centered-point') pulseCenteredPoint();
       }
       addGrains();
       actualPasses = frame < annealFrames ? 100 : topplePassesPerFrame;
@@ -637,8 +664,7 @@ import Base from '../../layouts/Base.astro';
       draw();
     });
     modeSelect?.addEventListener('change', () => {
-      const v = modeSelect.value;
-      injectionMode = (v === 'random' || v === 'uniform' || v === 'hybrid') ? v : 'hybrid';
+      injectionMode = parseMode(modeSelect.value);
     });
     passesInput?.addEventListener('input', () => {
       topplePassesPerFrame = Number(passesInput.value);
