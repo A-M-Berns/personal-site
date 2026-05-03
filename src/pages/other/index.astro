@@ -87,6 +87,13 @@ import Base from '../../layouts/Base.astro';
         </div>
         <canvas id="sandpile-disorder-canvas" width="240" height="40" aria-hidden="true"></canvas>
       </div>
+      <div class="sandpile-sparkline">
+        <div class="sandpile-sparkline-head">
+          <span>settle</span>
+          <span id="sandpile-settle-value">-</span>
+        </div>
+        <canvas id="sandpile-settle-canvas" width="240" height="40" aria-hidden="true"></canvas>
+      </div>
     </aside>
   </div>
 </Base>
@@ -124,10 +131,16 @@ import Base from '../../layouts/Base.astro';
     const disorderCanvas = document.getElementById('sandpile-disorder-canvas') as HTMLCanvasElement | null;
     const disorderCtx = disorderCanvas?.getContext('2d') ?? null;
     const disorderValue = document.getElementById('sandpile-disorder-value');
+    const settleCanvas = document.getElementById('sandpile-settle-canvas') as HTMLCanvasElement | null;
+    const settleCtx = settleCanvas?.getContext('2d') ?? null;
+    const settleValue = document.getElementById('sandpile-settle-value');
     const DISORDER_SAMPLES = 240;
     const DISORDER_SAMPLE_EVERY = 12;
     const disorderHistory = new Float32Array(DISORDER_SAMPLES);
     let disorderFilled = 0;
+    const settleHistory = new Float32Array(DISORDER_SAMPLES);
+    let settleFilled = 0;
+    let snapshot = new Uint32Array();
 
     const CELL_PX = 8;
     const ACTIVE_DECAY = 18;
@@ -447,11 +460,15 @@ import Base from '../../layouts/Base.astro';
       actualPasses = annealFrames > 0 ? 100 : topplePassesPerFrame;
       disorderHistory.fill(0);
       disorderFilled = 0;
+      settleHistory.fill(0);
+      settleFilled = 0;
+      snapshot.fill(0);
       const seeder = chooseSeeder();
       seederName = seeder.name;
       seeder.fn();
       updatePanel();
       drawDisorder();
+      drawSettle();
     }
 
     function addGrains() {
@@ -511,6 +528,7 @@ import Base from '../../layouts/Base.astro';
       topplesThisFrame = 0;
       breathPhase = 0.5 + 0.5 * Math.cos(2 * Math.PI * (frame / BREATH_PERIOD_FRAMES) + Math.PI);
       if (frame % BREATH_PERIOD_FRAMES === 0) {
+        snapshot.set(grains);
         if (injectionMode === 'bernoulli' || injectionMode === 'hybrid') pulseBernoulli();
         else if (injectionMode === 'uniform') pulseUniformSymmetric();
         else if (injectionMode === 'centered-point') pulseCenteredPoint();
@@ -526,6 +544,8 @@ import Base from '../../layouts/Base.astro';
       if (frame % DISORDER_SAMPLE_EVERY === 0) {
         pushDisorder(measureDisorder());
         drawDisorder();
+        pushSettle(measureSettle());
+        drawSettle();
       }
       if (frame % 12 === 0) updatePanel();
     }
@@ -562,32 +582,66 @@ import Base from '../../layouts/Base.astro';
       if (disorderValue) disorderValue.textContent = value.toFixed(3);
     }
 
-    function drawDisorder() {
-      if (!disorderCtx || !disorderCanvas) return;
-      const cw = disorderCanvas.width;
-      const ch = disorderCanvas.height;
-      disorderCtx.clearRect(0, 0, cw, ch);
-      if (disorderFilled === 0) return;
+    function drawSparkline(
+      sCtx: CanvasRenderingContext2D | null,
+      sCanvas: HTMLCanvasElement | null,
+      history: Float32Array,
+      filled: number,
+    ) {
+      if (!sCtx || !sCanvas) return;
+      const cw = sCanvas.width;
+      const ch = sCanvas.height;
+      sCtx.clearRect(0, 0, cw, ch);
+      if (filled === 0) return;
       const inkRgb = palette[palette.length - 1] ?? [220, 220, 220];
-      const stroke = `rgb(${inkRgb[0]}, ${inkRgb[1]}, ${inkRgb[2]})`;
-      disorderCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-      disorderCtx.lineWidth = 1;
-      disorderCtx.beginPath();
-      disorderCtx.moveTo(0, ch * 0.5);
-      disorderCtx.lineTo(cw, ch * 0.5);
-      disorderCtx.stroke();
-      disorderCtx.strokeStyle = stroke;
-      disorderCtx.lineWidth = 1.25;
-      disorderCtx.beginPath();
+      sCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      sCtx.lineWidth = 1;
+      sCtx.beginPath();
+      sCtx.moveTo(0, ch * 0.5);
+      sCtx.lineTo(cw, ch * 0.5);
+      sCtx.stroke();
+      sCtx.strokeStyle = `rgb(${inkRgb[0]}, ${inkRgb[1]}, ${inkRgb[2]})`;
+      sCtx.lineWidth = 1.25;
+      sCtx.beginPath();
       const span = DISORDER_SAMPLES;
-      for (let i = 0; i < disorderFilled; i++) {
+      for (let i = 0; i < filled; i++) {
         const x = (i / (span - 1)) * cw;
-        const v = disorderHistory[i];
+        const v = Math.max(0, Math.min(1, history[i]));
         const y = ch - v * ch;
-        if (i === 0) disorderCtx.moveTo(x, y);
-        else disorderCtx.lineTo(x, y);
+        if (i === 0) sCtx.moveTo(x, y);
+        else sCtx.lineTo(x, y);
       }
-      disorderCtx.stroke();
+      sCtx.stroke();
+    }
+
+    function drawDisorder() {
+      drawSparkline(disorderCtx, disorderCanvas, disorderHistory, disorderFilled);
+    }
+
+    function measureSettle() {
+      if (snapshot.length !== grains.length) return 0;
+      let diff = 0;
+      const n = grains.length;
+      for (let i = 0; i < n; i++) {
+        const a = Math.min(3, grains[i]);
+        const b = Math.min(3, snapshot[i]);
+        if (a !== b) diff++;
+      }
+      return n > 0 ? diff / n : 0;
+    }
+
+    function pushSettle(value: number) {
+      if (settleFilled < DISORDER_SAMPLES) {
+        settleHistory[settleFilled++] = value;
+      } else {
+        settleHistory.copyWithin(0, 1);
+        settleHistory[DISORDER_SAMPLES - 1] = value;
+      }
+      if (settleValue) settleValue.textContent = value.toFixed(3);
+    }
+
+    function drawSettle() {
+      drawSparkline(settleCtx, settleCanvas, settleHistory, settleFilled);
     }
 
     function updatePanel() {
@@ -637,6 +691,7 @@ import Base from '../../layouts/Base.astro';
       grains = new Uint32Array(W * H);
       nextGrains = new Uint32Array(W * H);
       active = new Uint8Array(W * H);
+      snapshot = new Uint32Array(W * H);
       image = new ImageData(W, H);
       seedCycle();
       draw();
