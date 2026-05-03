@@ -36,13 +36,28 @@ import Base from '../../layouts/Base.astro';
       <label class="sandpile-panel-field" for="sandpile-mode-select">
         <span>mode</span>
         <select id="sandpile-mode-select">
-          <option value="center" selected>center</option>
-          <option value="quadrants">quadrants</option>
-          <option value="axes">axes</option>
-          <option value="cross-5">cross-5</option>
-          <option value="ring-8">ring-8</option>
-          <option value="grid-9">grid-9</option>
-          <option value="uniform">uniform</option>
+          <optgroup label="symmetric stationary">
+            <option value="center" selected>center</option>
+            <option value="quadrants">quadrants</option>
+            <option value="axes">axes</option>
+            <option value="cross-5">cross-5</option>
+            <option value="ring-8">ring-8</option>
+            <option value="grid-9">grid-9</option>
+          </optgroup>
+          <optgroup label="asymmetric stationary">
+            <option value="golden-2">golden-2</option>
+            <option value="scatter-7">scatter-7</option>
+            <option value="comet">comet</option>
+          </optgroup>
+          <optgroup label="moving">
+            <option value="orbit-1">orbit-1</option>
+            <option value="binary">binary</option>
+            <option value="lissajous-3">lissajous-3</option>
+            <option value="drift">drift</option>
+          </optgroup>
+          <optgroup label="other">
+            <option value="uniform">uniform</option>
+          </optgroup>
         </select>
       </label>
       <div class="sandpile-panel-row sandpile-panel-row--control">
@@ -69,6 +84,11 @@ import Base from '../../layouts/Base.astro';
         <label for="sandpile-cadence">cadence</label>
         <input id="sandpile-cadence" type="range" min="1" max="2700" step="1" value="90" />
         <span id="sandpile-cadence-value">90</span>
+      </div>
+      <div class="sandpile-panel-row sandpile-panel-row--control">
+        <label for="sandpile-motion">motion</label>
+        <input id="sandpile-motion" type="range" min="0" max="3" step="0.1" value="1" />
+        <span id="sandpile-motion-value">1.0</span>
       </div>
       <dl class="sandpile-stats">
         <div><dt>seed</dt><dd id="sandpile-seed">-</dd></div>
@@ -114,12 +134,14 @@ import Base from '../../layouts/Base.astro';
     const massInput = document.getElementById('sandpile-mass') as HTMLInputElement | null;
     const annealInput = document.getElementById('sandpile-anneal') as HTMLInputElement | null;
     const cadenceInput = document.getElementById('sandpile-cadence') as HTMLInputElement | null;
+    const motionInput = document.getElementById('sandpile-motion') as HTMLInputElement | null;
     const seederLabel = document.getElementById('sandpile-seeder');
     const passesValue = document.getElementById('sandpile-passes-value');
     const baseValue = document.getElementById('sandpile-base-value');
     const massValue = document.getElementById('sandpile-mass-value');
     const annealValue = document.getElementById('sandpile-anneal-value');
     const cadenceValue = document.getElementById('sandpile-cadence-value');
+    const motionValue = document.getElementById('sandpile-motion-value');
     const seedLabel = document.getElementById('sandpile-seed');
     const gridLabel = document.getElementById('sandpile-grid');
     const frameLabel = document.getElementById('sandpile-frame');
@@ -169,8 +191,15 @@ import Base from '../../layouts/Base.astro';
     let topplePassesPerFrame = Number(passesInput?.value ?? 8);
     const SNAPSHOT_INTERVAL_FRAMES = 2700;
     let pulseCadence = Math.max(1, Number(cadenceInput?.value ?? 90));
-    type InjectionMode = 'center' | 'quadrants' | 'axes' | 'cross-5' | 'ring-8' | 'grid-9' | 'uniform';
-    const VALID_MODES: ReadonlyArray<InjectionMode> = ['center', 'quadrants', 'axes', 'cross-5', 'ring-8', 'grid-9', 'uniform'];
+    type InjectionMode =
+      | 'center' | 'quadrants' | 'axes' | 'cross-5' | 'ring-8' | 'grid-9' | 'uniform'
+      | 'orbit-1' | 'binary' | 'lissajous-3' | 'drift'
+      | 'golden-2' | 'scatter-7' | 'comet';
+    const VALID_MODES: ReadonlyArray<InjectionMode> = [
+      'center', 'quadrants', 'axes', 'cross-5', 'ring-8', 'grid-9', 'uniform',
+      'orbit-1', 'binary', 'lissajous-3', 'drift',
+      'golden-2', 'scatter-7', 'comet',
+    ];
     function parseMode(v: string | undefined): InjectionMode {
       return (VALID_MODES as readonly string[]).includes(v ?? '') ? (v as InjectionMode) : 'center';
     }
@@ -178,6 +207,7 @@ import Base from '../../layouts/Base.astro';
     let baseHeight = Number(baseInput?.value ?? 0);
     let massScale = Number(massInput?.value ?? 1);
     let annealFrames = Number(annealInput?.value ?? 180);
+    let motionSpeed = Number(motionInput?.value ?? 1);
     let actualPasses = topplePassesPerFrame;
     let seederName = '';
     let palette: number[][] = [];
@@ -280,7 +310,51 @@ import Base from '../../layouts/Base.astro';
       {
         name: 'clean',
         fn: () => {
-          fillBase(0);
+          fillBase();
+        },
+      },
+      {
+        name: 'noise',
+        fn: () => {
+          for (let i = 0; i < grains.length; i++) grains[i] = Math.floor(rng() * 4);
+        },
+      },
+      {
+        name: 'gradient',
+        fn: () => {
+          for (let y = 0; y < H; y++) {
+            const v = Math.min(3, Math.floor((y / Math.max(1, H - 1)) * 4));
+            for (let x = 0; x < W; x++) grains[idx(x, y)] = v;
+          }
+        },
+      },
+      {
+        name: 'checker',
+        fn: () => {
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) grains[idx(x, y)] = ((x + y) & 1) ? 3 : 0;
+          }
+        },
+      },
+      {
+        name: 'ring',
+        fn: () => {
+          fillBase();
+          const cx = W >> 1;
+          const cy = H >> 1;
+          const m = Math.min(W, H);
+          const rOut = m * 0.4;
+          const rIn = m * 0.25;
+          const o2 = rOut * rOut;
+          const i2 = rIn * rIn;
+          for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+              const dx = x - cx;
+              const dy = y - cy;
+              const d2 = dx * dx + dy * dy;
+              if (d2 >= i2 && d2 <= o2) grains[idx(x, y)] = 3;
+            }
+          }
         },
       },
     ];
@@ -315,6 +389,7 @@ import Base from '../../layouts/Base.astro';
       settleFilled = 0;
       snapshot.fill(0);
       pulseAccumulator = 0;
+      sourceState = {};
       const seeder = chooseSeeder();
       seederName = seeder.name;
       seeder.fn();
@@ -326,6 +401,10 @@ import Base from '../../layouts/Base.astro';
     function pulseUniformSymmetric() {
       for (let i = 0; i < grains.length; i++) grains[i] += 1;
     }
+
+    type DriftAgent = { x: number; y: number; vx: number; vy: number };
+    type SourceState = { positions?: number[][]; drift?: DriftAgent[] };
+    let sourceState: SourceState = {};
 
     const SOURCE_POSITIONS: Record<string, () => number[][]> = {
       center: () => [[W >> 1, H >> 1]],
@@ -368,7 +447,104 @@ import Base from '../../layouts/Base.astro';
         }
         return out;
       },
+      'orbit-1': () => {
+        const cx = W >> 1;
+        const cy = H >> 1;
+        const r = Math.min(W, H) * 0.33;
+        const a = frame * 0.012 * motionSpeed;
+        return [[Math.round(cx + r * Math.cos(a)), Math.round(cy + r * Math.sin(a))]];
+      },
+      binary: () => {
+        const cx = W >> 1;
+        const cy = H >> 1;
+        const r = Math.min(W, H) * 0.3;
+        const a = frame * 0.01 * motionSpeed;
+        return [
+          [Math.round(cx + r * Math.cos(a)), Math.round(cy + r * Math.sin(a))],
+          [Math.round(cx - r * Math.cos(a)), Math.round(cy - r * Math.sin(a))],
+        ];
+      },
+      'lissajous-3': () => {
+        const cx = W >> 1;
+        const cy = H >> 1;
+        const ax = W * 0.42;
+        const ay = H * 0.42;
+        const t = frame * 0.007 * motionSpeed;
+        return [
+          [Math.round(cx + ax * Math.sin(3 * t)),       Math.round(cy + ay * Math.sin(2 * t))],
+          [Math.round(cx + ax * Math.sin(2 * t + 1.0)), Math.round(cy + ay * Math.sin(5 * t + 0.7))],
+          [Math.round(cx + ax * Math.sin(5 * t + 2.1)), Math.round(cy + ay * Math.sin(3 * t + 1.5))],
+        ];
+      },
+      drift: () => {
+        if (!sourceState.drift) return [];
+        return sourceState.drift.map((d) => [Math.round(d.x), Math.round(d.y)]);
+      },
+      'golden-2': () => {
+        if (!sourceState.positions) {
+          const phi = 0.6180339887;
+          sourceState.positions = [
+            [Math.round(W * phi), Math.round(H * phi), 1],
+            [Math.round(W * (1 - phi * 0.7)), Math.round(H * (1 - phi * 0.4)), 1],
+          ];
+        }
+        return sourceState.positions;
+      },
+      'scatter-7': () => {
+        if (!sourceState.positions) {
+          const out: number[][] = [];
+          const pad = 4;
+          for (let i = 0; i < 7; i++) {
+            out.push([
+              Math.round(rng() * (W - 2 * pad) + pad),
+              Math.round(rng() * (H - 2 * pad) + pad),
+            ]);
+          }
+          sourceState.positions = out;
+        }
+        return sourceState.positions;
+      },
+      comet: () => {
+        if (!sourceState.positions) {
+          const cx = W >> 1;
+          const cy = H >> 1;
+          sourceState.positions = [
+            [Math.round(cx - W * 0.08), Math.round(cy + H * 0.05), 4],
+            [Math.round(cx + W * 0.18), Math.round(cy - H * 0.12), 1],
+          ];
+        }
+        return sourceState.positions;
+      },
     };
+
+    function tickDrift() {
+      if (!sourceState.drift) {
+        const N = 4;
+        const arr: DriftAgent[] = [];
+        for (let i = 0; i < N; i++) {
+          arr.push({
+            x: rng() * (W - 4) + 2,
+            y: rng() * (H - 4) + 2,
+            vx: (rng() - 0.5) * 0.8,
+            vy: (rng() - 0.5) * 0.8,
+          });
+        }
+        sourceState.drift = arr;
+      }
+      const max = 1.2;
+      for (const d of sourceState.drift) {
+        d.vx += (rng() - 0.5) * 0.06;
+        d.vy += (rng() - 0.5) * 0.06;
+        const v = Math.hypot(d.vx, d.vy);
+        if (v > max) { d.vx *= max / v; d.vy *= max / v; }
+        d.x += d.vx * motionSpeed;
+        d.y += d.vy * motionSpeed;
+        if (d.x < 1)     { d.x = 1;     d.vx = Math.abs(d.vx); }
+        if (d.x > W - 2) { d.x = W - 2; d.vx = -Math.abs(d.vx); }
+        if (d.y < 1)     { d.y = 1;     d.vy = Math.abs(d.vy); }
+        if (d.y > H - 2) { d.y = H - 2; d.vy = -Math.abs(d.vy); }
+      }
+    }
 
     let pulseAccumulator = 0;
 
@@ -378,12 +554,24 @@ import Base from '../../layouts/Base.astro';
       const totalPerCycle = 32000 * massScale;
       const totalPerPulse = totalPerCycle * pulseCadence / SNAPSHOT_INTERVAL_FRAMES;
       pulseAccumulator += totalPerPulse;
-      const perSource = Math.floor(pulseAccumulator / n);
-      pulseAccumulator -= perSource * n;
-      if (perSource <= 0) return;
-      for (const [x, y] of positions) {
-        if (x >= 0 && x < W && y >= 0 && y < H) {
-          grains[idx(x, y)] += perSource;
+      let weightSum = 0;
+      for (const p of positions) weightSum += (p[2] ?? 1);
+      if (weightSum <= 0) return;
+      const massThisPulse = Math.floor(pulseAccumulator);
+      if (massThisPulse <= 0) return;
+      pulseAccumulator -= massThisPulse;
+      let allocated = 0;
+      for (let i = 0; i < n; i++) {
+        const x = positions[i][0];
+        const y = positions[i][1];
+        const w = positions[i][2] ?? 1;
+        const isLast = i === n - 1;
+        const share = isLast
+          ? massThisPulse - allocated
+          : Math.floor(massThisPulse * (w / weightSum));
+        allocated += share;
+        if (share > 0 && x >= 0 && x < W && y >= 0 && y < H) {
+          grains[idx(x, y)] += share;
         }
       }
     }
@@ -415,6 +603,7 @@ import Base from '../../layouts/Base.astro';
       if (frame % SNAPSHOT_INTERVAL_FRAMES === 0) {
         snapshot.set(grains);
       }
+      if (injectionMode === 'drift') tickDrift();
       if (frame % pulseCadence === 0) {
         if (injectionMode === 'uniform') pulseUniformSymmetric();
         else pulsePoints(SOURCE_POSITIONS[injectionMode]());
@@ -620,6 +809,8 @@ import Base from '../../layouts/Base.astro';
     });
     modeSelect?.addEventListener('change', () => {
       injectionMode = parseMode(modeSelect.value);
+      sourceState = {};
+      pulseAccumulator = 0;
     });
     passesInput?.addEventListener('input', () => {
       topplePassesPerFrame = Number(passesInput.value);
@@ -640,6 +831,10 @@ import Base from '../../layouts/Base.astro';
     cadenceInput?.addEventListener('input', () => {
       pulseCadence = Math.max(1, Number(cadenceInput.value));
       if (cadenceValue) cadenceValue.textContent = String(pulseCadence);
+    });
+    motionInput?.addEventListener('input', () => {
+      motionSpeed = Number(motionInput.value);
+      if (motionValue) motionValue.textContent = motionSpeed.toFixed(1);
     });
   }
 </script>
