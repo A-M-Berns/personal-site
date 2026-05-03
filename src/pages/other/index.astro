@@ -76,11 +76,6 @@ import Base from '../../layouts/Base.astro';
         <span id="sandpile-mass-value">1.0</span>
       </div>
       <div class="sandpile-panel-row sandpile-panel-row--control">
-        <label for="sandpile-anneal">anneal</label>
-        <input id="sandpile-anneal" type="range" min="0" max="360" step="30" value="180" />
-        <span id="sandpile-anneal-value">180</span>
-      </div>
-      <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-cadence">cadence</label>
         <input id="sandpile-cadence" type="range" min="1" max="2700" step="1" value="90" />
         <span id="sandpile-cadence-value">90</span>
@@ -137,7 +132,6 @@ import Base from '../../layouts/Base.astro';
     const passesInput = document.getElementById('sandpile-passes') as HTMLInputElement | null;
     const baseInput = document.getElementById('sandpile-base') as HTMLInputElement | null;
     const massInput = document.getElementById('sandpile-mass') as HTMLInputElement | null;
-    const annealInput = document.getElementById('sandpile-anneal') as HTMLInputElement | null;
     const cadenceInput = document.getElementById('sandpile-cadence') as HTMLInputElement | null;
     const motionInput = document.getElementById('sandpile-motion') as HTMLInputElement | null;
     const easeInput = document.getElementById('sandpile-ease') as HTMLInputElement | null;
@@ -145,7 +139,6 @@ import Base from '../../layouts/Base.astro';
     const passesValue = document.getElementById('sandpile-passes-value');
     const baseValue = document.getElementById('sandpile-base-value');
     const massValue = document.getElementById('sandpile-mass-value');
-    const annealValue = document.getElementById('sandpile-anneal-value');
     const cadenceValue = document.getElementById('sandpile-cadence-value');
     const motionValue = document.getElementById('sandpile-motion-value');
     const easeValue = document.getElementById('sandpile-ease-value');
@@ -214,7 +207,6 @@ import Base from '../../layouts/Base.astro';
     let injectionMode: InjectionMode = parseMode(modeSelect?.value);
     let baseHeight = Number(baseInput?.value ?? 0);
     let massScale = Number(massInput?.value ?? 1);
-    let annealFrames = Number(annealInput?.value ?? 180);
     let motionSpeed = Number(motionInput?.value ?? 1);
     let easeAlpha = Number(easeInput?.value ?? 0.2);
     let actualPasses = topplePassesPerFrame;
@@ -392,7 +384,7 @@ import Base from '../../layouts/Base.astro';
       display.fill(0);
       frame = 0;
       topplesThisFrame = 0;
-      actualPasses = annealFrames > 0 ? 100 : topplePassesPerFrame;
+      actualPasses = topplePassesPerFrame;
       disorderHistory.fill(0);
       disorderFilled = 0;
       settleHistory.fill(0);
@@ -619,7 +611,7 @@ import Base from '../../layouts/Base.astro';
         if (injectionMode === 'uniform') pulseUniformSymmetric();
         else pulsePoints(SOURCE_POSITIONS[injectionMode]());
       }
-      actualPasses = frame < annealFrames ? 100 : topplePassesPerFrame;
+      actualPasses = topplePassesPerFrame;
       for (let i = 0; i < actualPasses; i++) topplesThisFrame += topplePass();
       for (let i = 0; i < active.length; i++) {
         if (active[i] > ACTIVE_DECAY) active[i] -= ACTIVE_DECAY;
@@ -841,10 +833,6 @@ import Base from '../../layouts/Base.astro';
     massInput?.addEventListener('input', () => {
       massScale = Number(massInput.value);
       if (massValue) massValue.textContent = massScale.toFixed(1);
-    });
-    annealInput?.addEventListener('input', () => {
-      annealFrames = Number(annealInput.value);
-      if (annealValue) annealValue.textContent = annealInput.value;
     });
     cadenceInput?.addEventListener('input', () => {
       pulseCadence = Math.max(1, Number(cadenceInput.value));
