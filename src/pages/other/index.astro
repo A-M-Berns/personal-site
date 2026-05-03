@@ -149,7 +149,7 @@ import Base from '../../layouts/Base.astro';
     let settleFilled = 0;
     let snapshot = new Uint32Array();
 
-    const CELL_PX = 8;
+    const CELL_PX = 4;
     const ACTIVE_DECAY = 18;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -512,7 +512,7 @@ import Base from '../../layouts/Base.astro';
     }
 
     function pulseCenteredPoint() {
-      const totalPerCycle = 8000 * massScale;
+      const totalPerCycle = 32000 * massScale;
       const k = Math.max(1, Math.floor(totalPerCycle * pulseCadence / BREATH_PERIOD_FRAMES));
       const cx = W >> 1;
       const cy = H >> 1;
