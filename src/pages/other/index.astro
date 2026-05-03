@@ -237,19 +237,21 @@ import Base from '../../layouts/Base.astro';
     }
 
     function choosePalette() {
+      const indices = new Set<number>();
       const picked: number[][] = [];
-      for (let i = 0; i < 5; i++) {
-        const lo = Math.floor((i * colorPool.length) / 5);
-        const hi = Math.floor(((i + 1) * colorPool.length) / 5);
-        picked.push(colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))]);
+      while (picked.length < 5) {
+        const i = Math.floor(rng() * colorPool.length);
+        if (indices.has(i)) continue;
+        indices.add(i);
+        picked.push(colorPool[i]);
       }
-      palette = [
-        mix(paper, picked[0], 0.18),
-        mix(paper, picked[1], 0.46),
-        mix(paper, picked[2], 0.70),
-        mix(paper, picked[3], 0.90),
-        mix(paper, picked[4], 1.00),
-      ];
+      const midAlphas = [0.50, 0.72, 0.90];
+      for (let i = midAlphas.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [midAlphas[i], midAlphas[j]] = [midAlphas[j], midAlphas[i]];
+      }
+      const alphas = [0.16 + rng() * 0.10, midAlphas[0], midAlphas[1], midAlphas[2], 0.92 + rng() * 0.08];
+      palette = picked.map((color, i) => mix(paper, color, alphas[i]));
     }
 
     function addHill(cx: number, cy: number, radius: number, amount: number) {
