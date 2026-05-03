@@ -359,6 +359,26 @@ a:focus-visible {
   gap: 0.75rem;
   margin-bottom: 0.55rem;
 }
+.sandpile-panel-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.sandpile-panel.collapsed {
+  width: auto;
+  padding-bottom: 0.55rem;
+}
+.sandpile-panel.collapsed .sandpile-panel-head {
+  margin-bottom: 0;
+}
+.sandpile-panel.collapsed .sandpile-panel-body {
+  display: none;
+}
+#sandpile-collapse {
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0.2rem 0.5rem;
+}
 .sandpile-panel h2 {
   margin: 0;
   color: var(--ink);

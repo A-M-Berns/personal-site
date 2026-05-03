@@ -17,8 +17,12 @@ import Base from '../../layouts/Base.astro';
     <aside class="sandpile-panel" aria-label="Sandpile controls">
       <div class="sandpile-panel-head">
         <h2>Sandpile</h2>
-        <button id="sandpile-reset" type="button">Reset</button>
+        <div class="sandpile-panel-head-actions">
+          <button id="sandpile-reset" type="button">Reset</button>
+          <button id="sandpile-collapse" type="button" aria-label="Collapse panel" aria-expanded="true">−</button>
+        </div>
       </div>
+      <div class="sandpile-panel-body">
       <div class="sandpile-panel-row">
         <span>seeder</span>
         <strong id="sandpile-seeder">-</strong>
@@ -90,6 +94,7 @@ import Base from '../../layouts/Base.astro';
         </div>
         <canvas id="sandpile-settle-canvas" width="240" height="40" aria-hidden="true"></canvas>
       </div>
+      </div>
     </aside>
   </div>
 </Base>
@@ -100,6 +105,8 @@ import Base from '../../layouts/Base.astro';
     const ctx = canvas.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
     const resetButton = document.getElementById('sandpile-reset') as HTMLButtonElement | null;
+    const collapseButton = document.getElementById('sandpile-collapse') as HTMLButtonElement | null;
+    const panelEl = document.querySelector('.sandpile-panel') as HTMLElement | null;
     const seederSelect = document.getElementById('sandpile-seeder-select') as HTMLSelectElement | null;
     const modeSelect = document.getElementById('sandpile-mode-select') as HTMLSelectElement | null;
     const passesInput = document.getElementById('sandpile-passes') as HTMLInputElement | null;
@@ -590,6 +597,22 @@ import Base from '../../layouts/Base.astro';
     resetButton?.addEventListener('click', () => {
       seedCycle();
       draw();
+    });
+    const COLLAPSE_KEY = 'sandpile-panel-collapsed';
+    function applyCollapsed(collapsed: boolean) {
+      if (!panelEl || !collapseButton) return;
+      panelEl.classList.toggle('collapsed', collapsed);
+      collapseButton.textContent = collapsed ? '+' : '−';
+      collapseButton.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      collapseButton.setAttribute('aria-label', collapsed ? 'Expand panel' : 'Collapse panel');
+    }
+    try {
+      applyCollapsed(localStorage.getItem(COLLAPSE_KEY) === '1');
+    } catch {}
+    collapseButton?.addEventListener('click', () => {
+      const next = !panelEl?.classList.contains('collapsed');
+      applyCollapsed(next);
+      try { localStorage.setItem(COLLAPSE_KEY, next ? '1' : '0'); } catch {}
     });
     seederSelect?.addEventListener('change', () => {
       seedCycle();
