@@ -64,6 +64,13 @@ import Base from '../../layouts/Base.astro';
         <div><dt>topples</dt><dd id="sandpile-topples">-</dd></div>
         <div><dt>actual passes</dt><dd id="sandpile-actual-passes">-</dd></div>
       </dl>
+      <div class="sandpile-sparkline">
+        <div class="sandpile-sparkline-head">
+          <span>disorder</span>
+          <span id="sandpile-disorder-value">-</span>
+        </div>
+        <canvas id="sandpile-disorder-canvas" width="240" height="40" aria-hidden="true"></canvas>
+      </div>
     </aside>
   </div>
 </Base>
@@ -94,6 +101,13 @@ import Base from '../../layouts/Base.astro';
     const grainsLabel = document.getElementById('sandpile-grains');
     const topplesLabel = document.getElementById('sandpile-topples');
     const actualPassesLabel = document.getElementById('sandpile-actual-passes');
+    const disorderCanvas = document.getElementById('sandpile-disorder-canvas') as HTMLCanvasElement | null;
+    const disorderCtx = disorderCanvas?.getContext('2d') ?? null;
+    const disorderValue = document.getElementById('sandpile-disorder-value');
+    const DISORDER_SAMPLES = 240;
+    const DISORDER_SAMPLE_EVERY = 12;
+    const disorderHistory = new Float32Array(DISORDER_SAMPLES);
+    let disorderFilled = 0;
 
     const CELL_PX = 8;
     const ACTIVE_DECAY = 18;
@@ -395,10 +409,13 @@ import Base from '../../layouts/Base.astro';
       frame = 0;
       topplesThisFrame = 0;
       actualPasses = annealFrames > 0 ? 100 : topplePassesPerFrame;
+      disorderHistory.fill(0);
+      disorderFilled = 0;
       const seeder = chooseSeeder();
       seederName = seeder.name;
       seeder.fn();
       updatePanel();
+      drawDisorder();
     }
 
     function addGrains() {
@@ -442,7 +459,71 @@ import Base from '../../layouts/Base.astro';
         else active[i] = 0;
       }
       frame++;
+      if (frame % DISORDER_SAMPLE_EVERY === 0) {
+        pushDisorder(measureDisorder());
+        drawDisorder();
+      }
       if (frame % 12 === 0) updatePanel();
+    }
+
+    function measureDisorder() {
+      let diff = 0;
+      let pairs = 0;
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W - 1; x++) {
+          const a = Math.min(3, grains[idx(x, y)]);
+          const b = Math.min(3, grains[idx(x + 1, y)]);
+          if (a !== b) diff++;
+          pairs++;
+        }
+      }
+      for (let y = 0; y < H - 1; y++) {
+        for (let x = 0; x < W; x++) {
+          const a = Math.min(3, grains[idx(x, y)]);
+          const b = Math.min(3, grains[idx(x, y + 1)]);
+          if (a !== b) diff++;
+          pairs++;
+        }
+      }
+      return pairs > 0 ? diff / pairs : 0;
+    }
+
+    function pushDisorder(value: number) {
+      if (disorderFilled < DISORDER_SAMPLES) {
+        disorderHistory[disorderFilled++] = value;
+      } else {
+        disorderHistory.copyWithin(0, 1);
+        disorderHistory[DISORDER_SAMPLES - 1] = value;
+      }
+      if (disorderValue) disorderValue.textContent = value.toFixed(3);
+    }
+
+    function drawDisorder() {
+      if (!disorderCtx || !disorderCanvas) return;
+      const cw = disorderCanvas.width;
+      const ch = disorderCanvas.height;
+      disorderCtx.clearRect(0, 0, cw, ch);
+      if (disorderFilled === 0) return;
+      const inkRgb = palette[palette.length - 1] ?? [220, 220, 220];
+      const stroke = `rgb(${inkRgb[0]}, ${inkRgb[1]}, ${inkRgb[2]})`;
+      disorderCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      disorderCtx.lineWidth = 1;
+      disorderCtx.beginPath();
+      disorderCtx.moveTo(0, ch * 0.5);
+      disorderCtx.lineTo(cw, ch * 0.5);
+      disorderCtx.stroke();
+      disorderCtx.strokeStyle = stroke;
+      disorderCtx.lineWidth = 1.25;
+      disorderCtx.beginPath();
+      const span = DISORDER_SAMPLES;
+      for (let i = 0; i < disorderFilled; i++) {
+        const x = (i / (span - 1)) * cw;
+        const v = disorderHistory[i];
+        const y = ch - v * ch;
+        if (i === 0) disorderCtx.moveTo(x, y);
+        else disorderCtx.lineTo(x, y);
+      }
+      disorderCtx.stroke();
     }
 
     function updatePanel() {

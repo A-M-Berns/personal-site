@@ -449,6 +449,34 @@ a:focus-visible {
   margin: 0;
   font-variant-numeric: tabular-nums;
 }
+.sandpile-sparkline {
+  margin-top: 0.6rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--rule);
+}
+.sandpile-sparkline-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.3rem;
+  font-variant-numeric: tabular-nums;
+}
+.sandpile-sparkline-head span:first-child {
+  color: var(--muted);
+}
+.sandpile-sparkline-head span:last-child {
+  color: var(--ink);
+  font-weight: 650;
+}
+.sandpile-sparkline canvas {
+  display: block;
+  width: 100%;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  image-rendering: auto;
+}
 .other-shell > .section-head,
 .other-shell > .note {
   position: relative;
