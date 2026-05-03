@@ -63,6 +63,7 @@ import Base from '../../layouts/Base.astro';
         <div><dt>grains</dt><dd id="sandpile-grains">-</dd></div>
         <div><dt>topples</dt><dd id="sandpile-topples">-</dd></div>
         <div><dt>actual passes</dt><dd id="sandpile-actual-passes">-</dd></div>
+        <div><dt>breath</dt><dd id="sandpile-breath">-</dd></div>
       </dl>
       <div class="sandpile-sparkline">
         <div class="sandpile-sparkline-head">
@@ -101,6 +102,7 @@ import Base from '../../layouts/Base.astro';
     const grainsLabel = document.getElementById('sandpile-grains');
     const topplesLabel = document.getElementById('sandpile-topples');
     const actualPassesLabel = document.getElementById('sandpile-actual-passes');
+    const breathLabel = document.getElementById('sandpile-breath');
     const disorderCanvas = document.getElementById('sandpile-disorder-canvas') as HTMLCanvasElement | null;
     const disorderCtx = disorderCanvas?.getContext('2d') ?? null;
     const disorderValue = document.getElementById('sandpile-disorder-value');
@@ -134,7 +136,9 @@ import Base from '../../layouts/Base.astro';
     let seed = 0;
     let topplesThisFrame = 0;
     let topplePassesPerFrame = Number(passesInput?.value ?? 8);
-    let dropsPerFrame = Number(dropsInput?.value ?? 6);
+    let dropsPeak = Number(dropsInput?.value ?? 6);
+    const BREATH_PERIOD_FRAMES = 2700;
+    let breathPhase = 0;
     let baseHeight = Number(baseInput?.value ?? 0);
     let massScale = Number(massInput?.value ?? 1);
     let annealFrames = Number(annealInput?.value ?? 180);
@@ -419,7 +423,11 @@ import Base from '../../layouts/Base.astro';
     }
 
     function addGrains() {
-      for (let n = 0; n < dropsPerFrame; n++) {
+      const dropsNow = dropsPeak * breathPhase;
+      const whole = Math.floor(dropsNow);
+      const frac = dropsNow - whole;
+      const count = whole + (rng() < frac ? 1 : 0);
+      for (let n = 0; n < count; n++) {
         const x = Math.floor(W * (0.12 + rng() * 0.76));
         const y = Math.floor(H * (0.12 + rng() * 0.76));
         const i = idx(x, y);
@@ -451,6 +459,7 @@ import Base from '../../layouts/Base.astro';
 
     function step() {
       topplesThisFrame = 0;
+      breathPhase = 0.5 + 0.5 * Math.cos(2 * Math.PI * (frame / BREATH_PERIOD_FRAMES) + Math.PI);
       addGrains();
       actualPasses = frame < annealFrames ? 100 : topplePassesPerFrame;
       for (let i = 0; i < actualPasses; i++) topplesThisFrame += topplePass();
@@ -546,6 +555,7 @@ import Base from '../../layouts/Base.astro';
       if (grainsLabel) grainsLabel.textContent = total.toLocaleString();
       if (topplesLabel) topplesLabel.textContent = topplesThisFrame.toLocaleString();
       if (actualPassesLabel) actualPassesLabel.textContent = String(actualPasses);
+      if (breathLabel) breathLabel.textContent = breathPhase.toFixed(2);
     }
 
     function draw() {
@@ -603,7 +613,7 @@ import Base from '../../layouts/Base.astro';
       if (passesValue) passesValue.textContent = passesInput.value;
     });
     dropsInput?.addEventListener('input', () => {
-      dropsPerFrame = Number(dropsInput.value);
+      dropsPeak = Number(dropsInput.value);
       if (dropsValue) dropsValue.textContent = dropsInput.value;
     });
     baseInput?.addEventListener('input', () => {
