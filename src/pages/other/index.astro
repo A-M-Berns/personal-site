@@ -62,6 +62,11 @@ import Base from '../../layouts/Base.astro';
         <input id="sandpile-anneal" type="range" min="0" max="360" step="30" value="180" />
         <span id="sandpile-anneal-value">180</span>
       </div>
+      <div class="sandpile-panel-row sandpile-panel-row--control">
+        <label for="sandpile-pulse">pulse p</label>
+        <input id="sandpile-pulse" type="range" min="0.005" max="0.25" step="0.005" value="0.06" />
+        <span id="sandpile-pulse-value">0.060</span>
+      </div>
       <dl class="sandpile-stats">
         <div><dt>seed</dt><dd id="sandpile-seed">-</dd></div>
         <div><dt>grid</dt><dd id="sandpile-grid">-</dd></div>
@@ -97,12 +102,14 @@ import Base from '../../layouts/Base.astro';
     const baseInput = document.getElementById('sandpile-base') as HTMLInputElement | null;
     const massInput = document.getElementById('sandpile-mass') as HTMLInputElement | null;
     const annealInput = document.getElementById('sandpile-anneal') as HTMLInputElement | null;
+    const pulseInput = document.getElementById('sandpile-pulse') as HTMLInputElement | null;
     const seederLabel = document.getElementById('sandpile-seeder');
     const passesValue = document.getElementById('sandpile-passes-value');
     const dropsValue = document.getElementById('sandpile-drops-value');
     const baseValue = document.getElementById('sandpile-base-value');
     const massValue = document.getElementById('sandpile-mass-value');
     const annealValue = document.getElementById('sandpile-anneal-value');
+    const pulseValue = document.getElementById('sandpile-pulse-value');
     const seedLabel = document.getElementById('sandpile-seed');
     const gridLabel = document.getElementById('sandpile-grid');
     const frameLabel = document.getElementById('sandpile-frame');
@@ -147,7 +154,7 @@ import Base from '../../layouts/Base.astro';
     let topplePassesPerFrame = Number(passesInput?.value ?? 8);
     let dropsPeak = Number(dropsInput?.value ?? 6);
     const BREATH_PERIOD_FRAMES = 2700;
-    const PULSE_PROBABILITY = 0.06;
+    let pulseProbability = Number(pulseInput?.value ?? 0.06);
     let breathPhase = 0;
     let injectionMode: 'random' | 'uniform' | 'hybrid' = (modeSelect?.value as 'random' | 'uniform' | 'hybrid') ?? 'hybrid';
     let baseHeight = Number(baseInput?.value ?? 0);
@@ -449,7 +456,7 @@ import Base from '../../layouts/Base.astro';
 
     function pulseUniform() {
       for (let i = 0; i < grains.length; i++) {
-        if (rng() < PULSE_PROBABILITY) grains[i] += 1;
+        if (rng() < pulseProbability) grains[i] += 1;
       }
     }
 
@@ -652,6 +659,10 @@ import Base from '../../layouts/Base.astro';
     annealInput?.addEventListener('input', () => {
       annealFrames = Number(annealInput.value);
       if (annealValue) annealValue.textContent = annealInput.value;
+    });
+    pulseInput?.addEventListener('input', () => {
+      pulseProbability = Number(pulseInput.value);
+      if (pulseValue) pulseValue.textContent = pulseProbability.toFixed(3);
     });
   }
 </script>
