@@ -34,6 +34,7 @@ import Base from '../../layouts/Base.astro';
             <option value="concentric">concentric</option>
           </optgroup>
           <optgroup label="asymmetric">
+            <option value="off-center">off-center</option>
             <option value="scatter">scatter</option>
             <option value="cluster">cluster</option>
             <option value="line">line</option>
@@ -125,10 +126,10 @@ import Base from '../../layouts/Base.astro';
     let pulseCadence = Math.max(1, Number(cadenceInput?.value ?? 90));
     type InjectionMode =
       | 'center' | 'radial' | 'axial-mirror' | 'quad-mirror' | 'concentric'
-      | 'scatter' | 'cluster' | 'line';
+      | 'off-center' | 'scatter' | 'cluster' | 'line';
     const VALID_MODES: ReadonlyArray<InjectionMode> = [
       'center', 'radial', 'axial-mirror', 'quad-mirror', 'concentric',
-      'scatter', 'cluster', 'line',
+      'off-center', 'scatter', 'cluster', 'line',
     ];
     function parseMode(v: string | undefined): InjectionMode {
       return (VALID_MODES as readonly string[]).includes(v ?? '') ? (v as InjectionMode) : 'center';
@@ -235,6 +236,8 @@ import Base from '../../layouts/Base.astro';
       frame = 0;
       pulseAccumulator = 0;
       sourceState = {};
+      clickSources.length = 0;
+      cycleStartTime = performance.now();
       grains.fill(3);
       for (let i = 0; i < grains.length; i++) display[i] = Math.min(3, grains[i]);
       updatePanel();
@@ -242,6 +245,13 @@ import Base from '../../layouts/Base.astro';
 
     type SourceState = { positions?: number[][] };
     let sourceState: SourceState = {};
+    type ClickSource = { x: number; y: number; framesLeft: number };
+    const clickSources: ClickSource[] = [];
+    const CLICK_LIFETIME_FRAMES = 300;
+    const CLICK_WEIGHT = 5;
+    const CLICK_BURST_GRAINS = 8;
+    const AUTO_RESET_MS = 120_000;
+    let cycleStartTime = 0;
 
     function clamp(v: number, lo: number, hi: number) {
       return v < lo ? lo : v > hi ? hi : v;
@@ -255,6 +265,13 @@ import Base from '../../layouts/Base.astro';
 
     const TEMPLATES: Record<InjectionMode, () => number[][]> = {
       center: () => [[W >> 1, H >> 1]],
+      'off-center': () => {
+        const cx = W >> 1;
+        const cy = H >> 1;
+        const r = (0.20 + rng() * 0.20) * Math.min(W, H);
+        const a = rng() * Math.PI * 2;
+        return [[Math.round(cx + r * Math.cos(a)), Math.round(cy + r * Math.sin(a))]];
+      },
       radial: () => {
         const n = 3 + Math.floor(rng() * 6);
         const r = (0.18 + rng() * 0.22) * Math.min(W, H);
@@ -415,7 +432,18 @@ import Base from '../../layouts/Base.astro';
     }
 
     function step() {
-      if (frame % pulseCadence === 0) pulsePoints(getSourcePositions());
+      if (performance.now() - cycleStartTime >= AUTO_RESET_MS) {
+        seedCycle();
+        return;
+      }
+      for (let i = clickSources.length - 1; i >= 0; i--) {
+        if (--clickSources[i].framesLeft <= 0) clickSources.splice(i, 1);
+      }
+      if (frame % pulseCadence === 0) {
+        const positions: number[][] = getSourcePositions().slice();
+        for (const cs of clickSources) positions.push([cs.x, cs.y, CLICK_WEIGHT]);
+        pulsePoints(positions);
+      }
       for (let i = 0; i < topplePassesPerFrame; i++) topplePass();
       for (let i = 0; i < active.length; i++) {
         if (active[i] > ACTIVE_DECAY) active[i] -= ACTIVE_DECAY;
@@ -480,6 +508,15 @@ import Base from '../../layouts/Base.astro';
       requestAnimationFrame(loop);
     }
     window.addEventListener('resize', resize);
+    canvas.addEventListener('click', (evt) => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      const cx = Math.floor((evt.clientX - rect.left) / rect.width * W);
+      const cy = Math.floor((evt.clientY - rect.top) / rect.height * H);
+      if (cx < 0 || cx >= W || cy < 0 || cy >= H) return;
+      clickSources.push({ x: cx, y: cy, framesLeft: CLICK_LIFETIME_FRAMES });
+      grains[idx(cx, cy)] += CLICK_BURST_GRAINS;
+    });
     resetButton?.addEventListener('click', () => {
       seedCycle();
       draw();

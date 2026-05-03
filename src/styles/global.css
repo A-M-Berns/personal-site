@@ -331,10 +331,10 @@ a:focus-visible {
   z-index: 0;
   width: 100vw;
   height: 100vh;
-  pointer-events: none;
   opacity: 0.58;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+  cursor: crosshair;
 }
 .sandpile-panel {
   position: fixed;
