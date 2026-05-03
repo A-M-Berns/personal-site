@@ -42,23 +42,6 @@ a:focus-visible {
   z-index: 10;
 }
 
-.opacity-tuner {
-  position: fixed;
-  left: 1rem;
-  bottom: 1rem;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(14, 14, 16, 0.9);
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  font-family: var(--sans);
-  font-size: 0.75rem;
-  color: var(--ink);
-}
-.opacity-tuner input[type="range"] { width: 9rem; }
 
 .site-nav {
   display: flex;
@@ -127,7 +110,7 @@ a:focus-visible {
   width: 100vw;
   height: 100vh;
   z-index: 0;
-  opacity: 0.62;
+  opacity: 0.8;
   transition: opacity 150ms ease-in-out;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
@@ -342,7 +325,7 @@ a:focus-visible {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  opacity: 0.62;
+  opacity: 0.8;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -352,7 +335,7 @@ a:focus-visible {
   z-index: 0;
   width: 100vw;
   height: 100vh;
-  opacity: 0.7;
+  opacity: 0.8;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -546,7 +529,7 @@ a:focus-visible {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  opacity: 0.62;
+  opacity: 0.8;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -726,7 +709,7 @@ a:focus-visible {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  opacity: 0.7;
+  opacity: 0.8;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
@@ -843,7 +826,7 @@ a:focus-visible {
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  opacity: 0.54;
+  opacity: 0.8;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
