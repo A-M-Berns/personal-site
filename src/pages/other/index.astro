@@ -407,7 +407,6 @@ import Base from '../../layouts/Base.astro';
       topplesThisFrame = 0;
       if (frame % SNAPSHOT_INTERVAL_FRAMES === 0) {
         snapshot.set(grains);
-        if (frame > 0) choosePalette();
       }
       if (frame % pulseCadence === 0) {
         if (injectionMode === 'uniform') pulseUniformSymmetric();
