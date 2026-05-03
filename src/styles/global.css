@@ -334,7 +334,6 @@ a:focus-visible {
   opacity: 0.58;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-  cursor: crosshair;
 }
 .sandpile-panel {
   position: fixed;

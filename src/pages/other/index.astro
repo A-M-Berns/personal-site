@@ -30,7 +30,7 @@ import Base from '../../layouts/Base.astro';
             <option value="center" selected>center</option>
             <option value="radial">radial</option>
             <option value="axial-mirror">axial-mirror</option>
-            <option value="quad-mirror">quad-mirror</option>
+            <option value="grid">grid</option>
             <option value="concentric">concentric</option>
           </optgroup>
           <optgroup label="asymmetric">
@@ -58,13 +58,13 @@ import Base from '../../layouts/Base.astro';
       </div>
       <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-cadence">cadence</label>
-        <input id="sandpile-cadence" type="range" min="1" max="2700" step="1" value="90" />
+        <input id="sandpile-cadence" type="range" min="30" max="90" step="1" value="90" />
         <span id="sandpile-cadence-value">90</span>
       </div>
       <div class="sandpile-panel-row sandpile-panel-row--control">
         <label for="sandpile-ease">ease</label>
-        <input id="sandpile-ease" type="range" min="0.05" max="1" step="0.05" value="0.2" />
-        <span id="sandpile-ease-value">0.20</span>
+        <input id="sandpile-ease" type="range" min="0.25" max="0.75" step="0.05" value="0.25" />
+        <span id="sandpile-ease-value">0.25</span>
       </div>
       <dl class="sandpile-stats">
         <div><dt>seed</dt><dd id="sandpile-seed">-</dd></div>
@@ -125,10 +125,10 @@ import Base from '../../layouts/Base.astro';
     const PULSE_CYCLE_FRAMES = 2700;
     let pulseCadence = Math.max(1, Number(cadenceInput?.value ?? 90));
     type InjectionMode =
-      | 'center' | 'radial' | 'axial-mirror' | 'quad-mirror' | 'concentric'
+      | 'center' | 'radial' | 'axial-mirror' | 'grid' | 'concentric'
       | 'off-center' | 'scatter' | 'cluster' | 'line';
     const VALID_MODES: ReadonlyArray<InjectionMode> = [
-      'center', 'radial', 'axial-mirror', 'quad-mirror', 'concentric',
+      'center', 'radial', 'axial-mirror', 'grid', 'concentric',
       'off-center', 'scatter', 'cluster', 'line',
     ];
     function parseMode(v: string | undefined): InjectionMode {
@@ -137,7 +137,7 @@ import Base from '../../layouts/Base.astro';
     let injectionMode: InjectionMode = parseMode(modeSelect?.value);
     let baseHeight = Number(baseInput?.value ?? 0);
     let massScale = Number(massInput?.value ?? 1);
-    let easeAlpha = Number(easeInput?.value ?? 0.2);
+    let easeAlpha = Number(easeInput?.value ?? 0.25);
     let palette: number[][] = [];
 
     function parseHex(h: string) {
@@ -238,6 +238,9 @@ import Base from '../../layouts/Base.astro';
       sourceState = {};
       clickSources.length = 0;
       cycleStartTime = performance.now();
+      massScale = Math.round((0.3 + Math.floor(rng() * 22) * 0.1) * 10) / 10;
+      if (massInput) massInput.value = massScale.toFixed(1);
+      if (massValue) massValue.textContent = massScale.toFixed(1);
       grains.fill(3);
       for (let i = 0; i < grains.length; i++) display[i] = Math.min(3, grains[i]);
       updatePanel();
@@ -295,17 +298,22 @@ import Base from '../../layouts/Base.astro';
           [Math.round(cx + dx), Math.round(cy + dy)],
         ];
       },
-      'quad-mirror': () => {
+      grid: () => {
         const cx = W >> 1;
         const cy = H >> 1;
-        const dx = (0.12 + rng() * 0.28) * (W >> 1);
-        const dy = (0.12 + rng() * 0.28) * (H >> 1);
-        return [
-          [Math.round(cx - dx), Math.round(cy - dy)],
-          [Math.round(cx + dx), Math.round(cy - dy)],
-          [Math.round(cx - dx), Math.round(cy + dy)],
-          [Math.round(cx + dx), Math.round(cy + dy)],
-        ];
+        const nx = 2 + 2 * Math.floor(rng() * 3);
+        const ny = 2 + 2 * Math.floor(rng() * 3);
+        const sx = (0.5 + rng() * 0.5) * (W * 0.8) / nx;
+        const sy = (0.5 + rng() * 0.5) * (H * 0.8) / ny;
+        const out: number[][] = [];
+        for (let i = 0; i < nx; i++) {
+          for (let j = 0; j < ny; j++) {
+            const x = cx + (i - (nx - 1) / 2) * sx;
+            const y = cy + (j - (ny - 1) / 2) * sy;
+            out.push([Math.round(x), Math.round(y)]);
+          }
+        }
+        return out;
       },
       concentric: () => {
         const cx = W >> 1;
