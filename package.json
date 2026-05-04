@@ -10,6 +10,7 @@
     "build": "astro build",
     "build:markov": "node scripts/build-markov-model.mjs",
     "test:wireworldpp": "node --test tests/wireworldpp.test.mjs",
+    "test:wireworld-router": "node --test tests/wireworld-router.test.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },
