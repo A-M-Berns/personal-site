@@ -68,6 +68,11 @@ import Base from '../../layouts/Base.astro';
           <input id="dla-pstick" type="range" min="0.05" max="1" step="0.05" value="1" />
           <span id="dla-pstick-value">1.00</span>
         </div>
+        <div class="dla-panel-row">
+          <label for="dla-speed">speed</label>
+          <input id="dla-speed" type="range" min="50" max="3000" step="50" value="350" />
+          <span id="dla-speed-value">350</span>
+        </div>
         <label class="dla-panel-field">
           <span>stick</span>
           <select id="dla-stick-rule">
@@ -246,11 +251,12 @@ import Base from '../../layouts/Base.astro';
     const stickRuleSelect = document.getElementById('dla-stick-rule') as HTMLSelectElement | null;
     const walkRuleSelect = document.getElementById('dla-walk-rule') as HTMLSelectElement | null;
     const renderModeSelect = document.getElementById('dla-render-mode') as HTMLSelectElement | null;
+    const speedInput = document.getElementById('dla-speed') as HTMLInputElement | null;
+    const speedValue = document.getElementById('dla-speed-value');
     const seedReadout = document.getElementById('dla-seed-readout');
     const countReadout = document.getElementById('dla-count');
 
     const CELL_PX = 2;
-    const STEPS_PER_FRAME = 2500;
     const MAX_WALK_STEPS = 4000;
     const SPAWN_MARGIN = 4;
     const KILL_MARGIN = 24;
@@ -285,6 +291,7 @@ import Base from '../../layouts/Base.astro';
     let stickRule: 4 | 8 = (Number(stickRuleSelect?.value ?? 4) === 8 ? 8 : 4);
     let walkRule: 4 | 8 = (Number(walkRuleSelect?.value ?? 8) === 4 ? 4 : 8);
     let renderMode: RenderMode = ((renderModeSelect?.value as RenderMode) ?? 'lines');
+    let stepsPerFrame = Number(speedInput?.value ?? 350);
     applyRenderClass();
 
     const colorPool = [
@@ -561,7 +568,7 @@ import Base from '../../layouts/Base.astro';
         seedCycle();
         return;
       }
-      for (let i = 0; i < STEPS_PER_FRAME; i++) walkOne();
+      for (let i = 0; i < stepsPerFrame; i++) walkOne();
       updateReadout();
     }
 
@@ -631,6 +638,10 @@ import Base from '../../layouts/Base.astro';
     renderModeSelect?.addEventListener('change', () => {
       renderMode = renderModeSelect.value as RenderMode;
       applyRenderClass();
+    });
+    speedInput?.addEventListener('input', () => {
+      stepsPerFrame = Number(speedInput.value);
+      if (speedValue) speedValue.textContent = String(stepsPerFrame);
     });
   }
 </script>
