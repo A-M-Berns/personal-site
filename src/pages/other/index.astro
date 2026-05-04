@@ -87,9 +87,9 @@ import Base from '../../layouts/Base.astro';
           <span id="dla-speed-value">350</span>
         </div>
         <div class="dla-panel-row">
-          <label for="dla-bloom">bloom</label>
-          <input id="dla-bloom" type="range" min="0" max="1" step="0.05" value="0.5" />
-          <span id="dla-bloom-value">0.50</span>
+          <label for="dla-bloom-strength">bloom</label>
+          <input id="dla-bloom-strength" type="range" min="0" max="1" step="0.05" value="0.5" />
+          <span id="dla-bloom-strength-value">0.50</span>
         </div>
         <label class="dla-panel-field">
           <span>walk</span>
@@ -288,8 +288,8 @@ import Base from '../../layouts/Base.astro';
     const speedValue = document.getElementById('dla-speed-value');
     const presetSelect = document.getElementById('dla-preset') as HTMLSelectElement | null;
     const colorModeSelect = document.getElementById('dla-color-mode') as HTMLSelectElement | null;
-    const bloomInput = document.getElementById('dla-bloom') as HTMLInputElement | null;
-    const bloomValue = document.getElementById('dla-bloom-value');
+    const bloomInput = document.getElementById('dla-bloom-strength') as HTMLInputElement | null;
+    const bloomValue = document.getElementById('dla-bloom-strength-value');
     const seedReadout = document.getElementById('dla-seed-readout');
     const countReadout = document.getElementById('dla-count');
 
