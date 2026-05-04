@@ -56,26 +56,6 @@ import Base from '../../layouts/Base.astro';
             <option value="multi-point">multi-point</option>
           </select>
         </label>
-        <label class="dla-panel-field">
-          <span>spawn</span>
-          <select id="dla-spawn-mode">
-            <option value="cluster-shell" selected>cluster-shell</option>
-            <option value="top-edge">top-edge</option>
-            <option value="bottom-edge">bottom-edge</option>
-            <option value="boundary-uniform">boundary-uniform</option>
-            <option value="boundary-outset">boundary-outset</option>
-          </select>
-        </label>
-        <div class="dla-panel-row">
-          <label for="dla-drift-x">drift x</label>
-          <input id="dla-drift-x" type="range" min="-1" max="1" step="0.05" value="0" />
-          <span id="dla-drift-x-value">0.00</span>
-        </div>
-        <div class="dla-panel-row">
-          <label for="dla-drift-y">drift y</label>
-          <input id="dla-drift-y" type="range" min="-1" max="1" step="0.05" value="0" />
-          <span id="dla-drift-y-value">0.00</span>
-        </div>
         <div class="dla-panel-row">
           <label for="dla-pstick">p stick</label>
           <input id="dla-pstick" type="range" min="0.05" max="1" step="0.05" value="1" />
@@ -92,27 +72,11 @@ import Base from '../../layouts/Base.astro';
           <span id="dla-bloom-strength-value">0.50</span>
         </div>
         <label class="dla-panel-field">
-          <span>walk</span>
-          <select id="dla-walk-rule">
-            <option value="4">4-direction</option>
-            <option value="8" selected>8-direction</option>
-          </select>
-        </label>
-        <label class="dla-panel-field">
           <span>render</span>
           <select id="dla-render-mode">
             <option value="pixel" selected>pixel</option>
             <option value="lines">lines</option>
             <option value="both">both</option>
-          </select>
-        </label>
-        <label class="dla-panel-field">
-          <span>color</span>
-          <select id="dla-color-mode">
-            <option value="age-cycle" selected>age-cycle</option>
-            <option value="radial">radial</option>
-            <option value="branch">branch</option>
-            <option value="speckle">speckle</option>
           </select>
         </label>
         <dl class="dla-stats">
@@ -275,25 +239,18 @@ import Base from '../../layouts/Base.astro';
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const seedSelect = document.getElementById('dla-seed-mode') as HTMLSelectElement | null;
-    const spawnSelect = document.getElementById('dla-spawn-mode') as HTMLSelectElement | null;
-    const driftXInput = document.getElementById('dla-drift-x') as HTMLInputElement | null;
-    const driftYInput = document.getElementById('dla-drift-y') as HTMLInputElement | null;
-    const driftXValue = document.getElementById('dla-drift-x-value');
-    const driftYValue = document.getElementById('dla-drift-y-value');
     const pStickInput = document.getElementById('dla-pstick') as HTMLInputElement | null;
     const pStickValue = document.getElementById('dla-pstick-value');
-    const walkRuleSelect = document.getElementById('dla-walk-rule') as HTMLSelectElement | null;
     const renderModeSelect = document.getElementById('dla-render-mode') as HTMLSelectElement | null;
     const speedInput = document.getElementById('dla-speed') as HTMLInputElement | null;
     const speedValue = document.getElementById('dla-speed-value');
     const presetSelect = document.getElementById('dla-preset') as HTMLSelectElement | null;
-    const colorModeSelect = document.getElementById('dla-color-mode') as HTMLSelectElement | null;
     const bloomInput = document.getElementById('dla-bloom-strength') as HTMLInputElement | null;
     const bloomValue = document.getElementById('dla-bloom-strength-value');
     const seedReadout = document.getElementById('dla-seed-readout');
     const countReadout = document.getElementById('dla-count');
 
-    const CELL_PX = 2;
+    const CELL_PX = 1;
     const MAX_WALK_STEPS = 4000;
     const SPAWN_MARGIN = 4;
     const KILL_MARGIN = 24;
@@ -303,13 +260,10 @@ import Base from '../../layouts/Base.astro';
     type SeedMode =
       | 'point-center' | 'point-random' | 'top-edge' | 'bottom-edge'
       | 'vertical-stripe' | 'circle-outline' | 'multi-point';
-    type SpawnMode = 'cluster-shell' | 'top-edge' | 'bottom-edge' | 'boundary-uniform' | 'boundary-outset';
     type RenderMode = 'pixel' | 'lines' | 'both';
-    type ColorMode = 'speckle' | 'age-cycle' | 'radial' | 'branch';
     type PresetName = 'random' | 'classic' | 'lightning' | 'frost' | 'coral' | 'speckle';
 
-    const COLOR_CYCLE = 800;
-    const BRANCH_RECOLOR_PROB = 0.0025;
+    const COLOR_CYCLE = 1600;
 
     const DX8 = [1, 1, 0, -1, -1, -1, 0, 1];
     const DY8 = [0, 1, 1, 1, 0, -1, -1, -1];
@@ -318,23 +272,16 @@ import Base from '../../layouts/Base.astro';
     let H = 0;
     let state = new Uint8Array(0);
     let parents = new Int32Array(0);
-    let cellPaletteIdx = new Uint8Array(0);
     let palette: number[][] = [];
     let bxmin = 0, bxmax = 0, bymin = 0, bymax = 0;
     let cycleStart = 0;
     let rng = mulberry32(1);
     let stuckCount = 0;
     let seedHash = 0;
-    let radialMaxDist = 16;
 
     let seedMode: SeedMode = (seedSelect?.value as SeedMode) ?? 'point-center';
-    let spawnMode: SpawnMode = (spawnSelect?.value as SpawnMode) ?? 'cluster-shell';
-    let driftX = Number(driftXInput?.value ?? 0);
-    let driftY = Number(driftYInput?.value ?? 0);
     let pStick = Number(pStickInput?.value ?? 1);
-    let walkRule: 4 | 8 = (Number(walkRuleSelect?.value ?? 8) === 4 ? 4 : 8);
     let renderMode: RenderMode = ((renderModeSelect?.value as RenderMode) ?? 'pixel');
-    let colorMode: ColorMode = ((colorModeSelect?.value as ColorMode) ?? 'age-cycle');
     let stepsPerFrame = Number(speedInput?.value ?? 350);
     let preset: PresetName = ((presetSelect?.value as PresetName) ?? 'random');
     applyRenderClass();
@@ -376,7 +323,7 @@ import Base from '../../layouts/Base.astro';
       document.documentElement.classList.toggle('render-pixel', renderMode === 'pixel');
     }
 
-function setStuck(x: number, y: number, parent: number) {
+    function setStuck(x: number, y: number, parent: number) {
       const i = idx(x, y);
       state[i] = 1;
       parents[i] = parent;
@@ -385,17 +332,6 @@ function setStuck(x: number, y: number, parent: number) {
       if (x > bxmax) bxmax = x;
       if (y < bymin) bymin = y;
       if (y > bymax) bymax = y;
-      const cdx = x - ((bxmin + bxmax) >> 1);
-      const cdy = y - ((bymin + bymax) >> 1);
-      const r = Math.sqrt(cdx * cdx + cdy * cdy);
-      if (r > radialMaxDist) radialMaxDist = r;
-      if (colorMode === 'branch') {
-        if (parent < 0 || rng() < BRANCH_RECOLOR_PROB) {
-          cellPaletteIdx[i] = Math.floor(rng() * palette.length);
-        } else {
-          cellPaletteIdx[i] = cellPaletteIdx[parent];
-        }
-      }
       paintCell(x, y, parent);
     }
 
@@ -416,28 +352,12 @@ function setStuck(x: number, y: number, parent: number) {
       return lerpRGB(palette[i], palette[j], seg - Math.floor(seg));
     }
 
-    function colorFor(x: number, y: number, parent: number, cellIdx: number): number[] {
-      switch (colorMode) {
-        case 'age-cycle':
-          return paletteCycle(stuckCount / COLOR_CYCLE);
-        case 'radial': {
-          const cx = (bxmin + bxmax) >> 1;
-          const cy = (bymin + bymax) >> 1;
-          const dx = x - cx;
-          const dy = y - cy;
-          const r = Math.sqrt(dx * dx + dy * dy);
-          return paletteCycle(r / Math.max(1, radialMaxDist) * (palette.length - 1) / palette.length);
-        }
-        case 'branch':
-          return palette[cellPaletteIdx[cellIdx]] || palette[0];
-        case 'speckle':
-        default:
-          return palette[(x * 73856093 ^ y * 19349663 ^ stuckCount * 83492791) & (palette.length - 1)] || palette[0];
-      }
+    function colorFor(): number[] {
+      return paletteCycle(stuckCount / COLOR_CYCLE);
     }
 
     function paintCell(x: number, y: number, parent: number) {
-      const c = colorFor(x, y, parent, idx(x, y));
+      const c = colorFor();
       const r = Math.round(c[0]);
       const g = Math.round(c[1]);
       const b = Math.round(c[2]);
@@ -523,8 +443,6 @@ function setStuck(x: number, y: number, parent: number) {
       rng = mulberry32(seedHash);
       pickPalette();
       state.fill(0);
-      cellPaletteIdx.fill(0);
-      radialMaxDist = 16;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
       placeSeed();
@@ -533,17 +451,16 @@ function setStuck(x: number, y: number, parent: number) {
     }
 
     type PresetSpec = {
-      seedMode: SeedMode; spawnMode: SpawnMode;
-      driftX: number; driftY: number;
-      pStick: number; walkRule: 4 | 8;
-      renderMode: RenderMode; colorMode: ColorMode;
+      seedMode: SeedMode;
+      pStick: number;
+      renderMode: RenderMode;
     };
     const PRESETS: Record<Exclude<PresetName, 'random'>, PresetSpec> = {
-      classic:   { seedMode: 'point-center',     spawnMode: 'cluster-shell',   driftX: 0,  driftY: 0,    pStick: 1,   walkRule: 8, renderMode: 'pixel', colorMode: 'age-cycle' },
-      lightning: { seedMode: 'top-edge',         spawnMode: 'top-edge',        driftX: 0,  driftY: 0.55, pStick: 1,   walkRule: 8, renderMode: 'pixel', colorMode: 'age-cycle' },
-      frost:     { seedMode: 'multi-point',      spawnMode: 'boundary-outset', driftX: 0,  driftY: 0,    pStick: 0.4, walkRule: 8, renderMode: 'pixel', colorMode: 'branch' },
-      coral:     { seedMode: 'circle-outline',   spawnMode: 'cluster-shell',   driftX: 0,  driftY: 0,    pStick: 0.7, walkRule: 8, renderMode: 'pixel', colorMode: 'radial' },
-      speckle:   { seedMode: 'point-center',     spawnMode: 'cluster-shell',   driftX: 0,  driftY: 0,    pStick: 1,   walkRule: 4, renderMode: 'pixel', colorMode: 'speckle' },
+      classic:   { seedMode: 'point-center',   pStick: 1,   renderMode: 'pixel' },
+      lightning: { seedMode: 'top-edge',       pStick: 1,   renderMode: 'pixel' },
+      frost:     { seedMode: 'multi-point',    pStick: 0.4, renderMode: 'pixel' },
+      coral:     { seedMode: 'circle-outline', pStick: 0.7, renderMode: 'pixel' },
+      speckle:   { seedMode: 'point-random',   pStick: 1,   renderMode: 'pixel' },
     };
     const PRESET_KEYS = Object.keys(PRESETS) as Array<keyof typeof PRESETS>;
     function pickRandomPreset(): keyof typeof PRESETS {
@@ -552,24 +469,12 @@ function setStuck(x: number, y: number, parent: number) {
     function applyPreset(name: keyof typeof PRESETS) {
       const p = PRESETS[name];
       seedMode = p.seedMode;
-      spawnMode = p.spawnMode;
-      driftX = p.driftX;
-      driftY = p.driftY;
       pStick = p.pStick;
-      walkRule = p.walkRule;
       renderMode = p.renderMode;
-      colorMode = p.colorMode;
       applyRenderClass();
       if (seedSelect) seedSelect.value = p.seedMode;
-      if (spawnSelect) spawnSelect.value = p.spawnMode;
-      if (driftXInput) driftXInput.value = String(p.driftX);
-      if (driftYInput) driftYInput.value = String(p.driftY);
       if (pStickInput) pStickInput.value = String(p.pStick);
-      if (walkRuleSelect) walkRuleSelect.value = String(p.walkRule);
       if (renderModeSelect) renderModeSelect.value = p.renderMode;
-      if (colorModeSelect) colorModeSelect.value = p.colorMode;
-      if (driftXValue) driftXValue.textContent = p.driftX.toFixed(2);
-      if (driftYValue) driftYValue.textContent = p.driftY.toFixed(2);
       if (pStickValue) pStickValue.textContent = p.pStick.toFixed(2);
     }
 
@@ -579,77 +484,18 @@ function setStuck(x: number, y: number, parent: number) {
     }
 
     function spawnWalker(): [number, number] {
-      switch (spawnMode) {
-        case 'top-edge':
-          return [Math.floor(rng() * (W - 2)) + 1, Math.floor(rng() * 3)];
-        case 'bottom-edge':
-          return [Math.floor(rng() * (W - 2)) + 1, H - 2 - Math.floor(rng() * 3)];
-        case 'boundary-uniform': {
-          const side = Math.floor(rng() * 4);
-          if (side === 0) return [Math.floor(rng() * (W - 2)) + 1, 1];
-          if (side === 1) return [Math.floor(rng() * (W - 2)) + 1, H - 2];
-          if (side === 2) return [1, Math.floor(rng() * (H - 2)) + 1];
-          return [W - 2, Math.floor(rng() * (H - 2)) + 1];
-        }
-        case 'boundary-outset': {
-          const m = Math.max(20, Math.floor(Math.min(W, H) * 0.18));
-          const side = Math.floor(rng() * 4);
-          if (side === 0) return [Math.floor(rng() * W), -m];
-          if (side === 1) return [Math.floor(rng() * W), H - 1 + m];
-          if (side === 2) return [-m, Math.floor(rng() * H)];
-          return [W - 1 + m, Math.floor(rng() * H)];
-        }
-        case 'cluster-shell':
-        default: {
-          const cx = (bxmin + bxmax) >> 1;
-          const cy = (bymin + bymax) >> 1;
-          const halfW = (bxmax - bxmin) >> 1;
-          const halfH = (bymax - bymin) >> 1;
-          const radius = Math.max(halfW, halfH, 4) + SPAWN_MARGIN;
-          const a = rng() * Math.PI * 2;
-          let x = Math.round(cx + radius * Math.cos(a));
-          let y = Math.round(cy + radius * Math.sin(a));
-          x = Math.max(1, Math.min(W - 2, x));
-          y = Math.max(1, Math.min(H - 2, y));
-          return [x, y];
-        }
-      }
+      const m = Math.max(20, Math.floor(Math.min(W, H) * 0.18));
+      const side = Math.floor(rng() * 4);
+      if (side === 0) return [Math.floor(rng() * W), -m];
+      if (side === 1) return [Math.floor(rng() * W), H - 1 + m];
+      if (side === 2) return [-m, Math.floor(rng() * H)];
+      return [W - 1 + m, Math.floor(rng() * H)];
     }
 
     function distanceToBbox(x: number, y: number) {
       const dx = x < bxmin ? bxmin - x : x > bxmax ? x - bxmax : 0;
       const dy = y < bymin ? bymin - y : y > bymax ? y - bymax : 0;
       return Math.max(dx, dy);
-    }
-
-    function biasedDir4(): number {
-      const wRight = Math.max(0, 1 + driftX);
-      const wLeft = Math.max(0, 1 - driftX);
-      const wDown = Math.max(0, 1 + driftY);
-      const wUp = Math.max(0, 1 - driftY);
-      const total = wRight + wLeft + wDown + wUp;
-      if (total <= 0) return Math.floor(rng() * 4);
-      let r = rng() * total;
-      if ((r -= wRight) < 0) return 0;
-      if ((r -= wLeft) < 0) return 1;
-      if ((r -= wDown) < 0) return 2;
-      return 3;
-    }
-
-    function biasedDir8(): number {
-      let total = 0;
-      const w = [0, 0, 0, 0, 0, 0, 0, 0];
-      for (let i = 0; i < 8; i++) {
-        const v = 1 + driftX * DX8[i] + driftY * DY8[i];
-        w[i] = v > 0 ? v : 0;
-        total += w[i];
-      }
-      if (total <= 0) return Math.floor(rng() * 8);
-      let r = rng() * total;
-      for (let i = 0; i < 8; i++) {
-        if ((r -= w[i]) < 0) return i;
-      }
-      return 7;
     }
 
     function findStuckNeighbor(x: number, y: number): number {
@@ -674,11 +520,7 @@ function setStuck(x: number, y: number, parent: number) {
       if (x >= 0 && x < W && y >= 0 && y < H && state[idx(x, y)]) return;
       const cx = (bxmin + bxmax) >> 1;
       const cy = (bymin + bymax) >> 1;
-      const halfW = (bxmax - bxmin) >> 1;
-      const halfH = (bymax - bymin) >> 1;
-      const killRadius = (spawnMode === 'cluster-shell')
-        ? Math.max(halfW, halfH, 4) + KILL_MARGIN
-        : Math.max(W, H);
+      const killRadius = Math.max(W, H);
       const kill2 = killRadius * killRadius;
       for (let i = 0; i < MAX_WALK_STEPS; i++) {
         const d = distanceToBbox(x, y);
@@ -700,17 +542,9 @@ function setStuck(x: number, y: number, parent: number) {
             return;
           }
         }
-        if (walkRule === 8) {
-          const dir = biasedDir8();
-          x += DX8[dir];
-          y += DY8[dir];
-        } else {
-          const dir = biasedDir4();
-          if (dir === 0) x++;
-          else if (dir === 1) x--;
-          else if (dir === 2) y++;
-          else y--;
-        }
+        const dir = Math.floor(rng() * 8);
+        x += DX8[dir];
+        y += DY8[dir];
         const cdx = x - cx;
         const cdy = y - cy;
         if (cdx * cdx + cdy * cdy > kill2) return;
@@ -744,7 +578,6 @@ function setStuck(x: number, y: number, parent: number) {
       bloomCtx.globalCompositeOperation = 'lighter';
       state = new Uint8Array(W * H);
       parents = new Int32Array(W * H);
-      cellPaletteIdx = new Uint8Array(W * H);
       seedCycle();
     }
 
@@ -799,23 +632,9 @@ function setStuck(x: number, y: number, parent: number) {
       seedMode = seedSelect.value as SeedMode;
       seedCycle();
     });
-    spawnSelect?.addEventListener('change', () => {
-      spawnMode = spawnSelect.value as SpawnMode;
-    });
-    driftXInput?.addEventListener('input', () => {
-      driftX = Number(driftXInput.value);
-      if (driftXValue) driftXValue.textContent = driftX.toFixed(2);
-    });
-    driftYInput?.addEventListener('input', () => {
-      driftY = Number(driftYInput.value);
-      if (driftYValue) driftYValue.textContent = driftY.toFixed(2);
-    });
     pStickInput?.addEventListener('input', () => {
       pStick = Number(pStickInput.value);
       if (pStickValue) pStickValue.textContent = pStick.toFixed(2);
-    });
-    walkRuleSelect?.addEventListener('change', () => {
-      walkRule = Number(walkRuleSelect.value) === 4 ? 4 : 8;
     });
     renderModeSelect?.addEventListener('change', () => {
       renderMode = renderModeSelect.value as RenderMode;
@@ -829,9 +648,6 @@ function setStuck(x: number, y: number, parent: number) {
       preset = presetSelect.value as PresetName;
       if (preset !== 'random') applyPreset(preset);
       seedCycle();
-    });
-    colorModeSelect?.addEventListener('change', () => {
-      colorMode = colorModeSelect.value as ColorMode;
     });
     bloomInput?.addEventListener('input', () => {
       const v = Number(bloomInput.value);
