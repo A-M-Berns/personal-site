@@ -62,6 +62,21 @@ import Base from '../../layouts/Base.astro';
           <span id="dla-pstick-value">1.00</span>
         </div>
         <div class="dla-panel-row">
+          <label for="dla-asymm">asymm</label>
+          <input id="dla-asymm" type="range" min="0" max="1" step="0.05" value="0" />
+          <span id="dla-asymm-value">0.00</span>
+        </div>
+        <div class="dla-panel-row">
+          <label for="dla-persist">persist</label>
+          <input id="dla-persist" type="range" min="0" max="0.95" step="0.05" value="0" />
+          <span id="dla-persist-value">0.00</span>
+        </div>
+        <div class="dla-panel-row">
+          <label for="dla-eta">tip</label>
+          <input id="dla-eta" type="range" min="1" max="3" step="0.1" value="1" />
+          <span id="dla-eta-value">1.0</span>
+        </div>
+        <div class="dla-panel-row">
           <label for="dla-speed">speed</label>
           <input id="dla-speed" type="range" min="50" max="3000" step="50" value="350" />
           <span id="dla-speed-value">350</span>
@@ -241,6 +256,12 @@ import Base from '../../layouts/Base.astro';
     const seedSelect = document.getElementById('dla-seed-mode') as HTMLSelectElement | null;
     const pStickInput = document.getElementById('dla-pstick') as HTMLInputElement | null;
     const pStickValue = document.getElementById('dla-pstick-value');
+    const asymmInput = document.getElementById('dla-asymm') as HTMLInputElement | null;
+    const asymmValue = document.getElementById('dla-asymm-value');
+    const persistInput = document.getElementById('dla-persist') as HTMLInputElement | null;
+    const persistValue = document.getElementById('dla-persist-value');
+    const etaInput = document.getElementById('dla-eta') as HTMLInputElement | null;
+    const etaValue = document.getElementById('dla-eta-value');
     const renderModeSelect = document.getElementById('dla-render-mode') as HTMLSelectElement | null;
     const speedInput = document.getElementById('dla-speed') as HTMLInputElement | null;
     const speedValue = document.getElementById('dla-speed-value');
@@ -281,9 +302,13 @@ import Base from '../../layouts/Base.astro';
 
     let seedMode: SeedMode = (seedSelect?.value as SeedMode) ?? 'point-center';
     let pStick = Number(pStickInput?.value ?? 1);
+    let asymm = Number(asymmInput?.value ?? 0);
+    let persistence = Number(persistInput?.value ?? 0);
+    let eta = Number(etaInput?.value ?? 1);
     let renderMode: RenderMode = ((renderModeSelect?.value as RenderMode) ?? 'pixel');
     let stepsPerFrame = Number(speedInput?.value ?? 350);
     let preset: PresetName = ((presetSelect?.value as PresetName) ?? 'random');
+    let spawnWeights: number[] = [0.25, 0.25, 0.25, 0.25];
     applyRenderClass();
 
     const colorPool = [
@@ -321,6 +346,25 @@ import Base from '../../layouts/Base.astro';
 
     function applyRenderClass() {
       document.documentElement.classList.toggle('render-pixel', renderMode === 'pixel');
+    }
+
+    function rollSpawnWeights() {
+      if (asymm <= 0) {
+        spawnWeights = [0.25, 0.25, 0.25, 0.25];
+        return;
+      }
+      const dir = rng() * 2 * Math.PI;
+      const cd = Math.cos(dir), sd = Math.sin(dir);
+      // Side vectors point in the direction walkers come FROM:
+      // top=(0,-1), right=(1,0), bottom=(0,1), left=(-1,0).
+      const sides: Array<[number, number]> = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+      const k = 1 + asymm * 7;
+      const peaky = sides.map(([vx, vy]) => {
+        const dot = vx * cd + vy * sd;
+        return dot > 0 ? Math.pow(dot, k) : 0;
+      });
+      const psum = peaky.reduce((s, v) => s + v, 0) || 1;
+      spawnWeights = peaky.map((v) => v / psum * asymm + 0.25 * (1 - asymm));
     }
 
     function setStuck(x: number, y: number, parent: number) {
@@ -442,6 +486,7 @@ import Base from '../../layouts/Base.astro';
       seedHash = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
       rng = mulberry32(seedHash);
       pickPalette();
+      rollSpawnWeights();
       state.fill(0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
@@ -454,13 +499,16 @@ import Base from '../../layouts/Base.astro';
       seedMode: SeedMode;
       pStick: number;
       renderMode: RenderMode;
+      asymm: number;
+      persistence: number;
+      eta: number;
     };
     const PRESETS: Record<Exclude<PresetName, 'random'>, PresetSpec> = {
-      classic:   { seedMode: 'point-center',   pStick: 1,   renderMode: 'pixel' },
-      lightning: { seedMode: 'top-edge',       pStick: 1,   renderMode: 'pixel' },
-      frost:     { seedMode: 'multi-point',    pStick: 0.4, renderMode: 'pixel' },
-      coral:     { seedMode: 'circle-outline', pStick: 0.7, renderMode: 'pixel' },
-      speckle:   { seedMode: 'point-random',   pStick: 1,   renderMode: 'pixel' },
+      classic:   { seedMode: 'point-center',   pStick: 1,   renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1   },
+      lightning: { seedMode: 'top-edge',       pStick: 1,   renderMode: 'pixel', asymm: 1,    persistence: 0.55, eta: 1.6 },
+      frost:     { seedMode: 'multi-point',    pStick: 0.4, renderMode: 'pixel', asymm: 0.5,  persistence: 0,    eta: 1   },
+      coral:     { seedMode: 'circle-outline', pStick: 0.7, renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1.3 },
+      speckle:   { seedMode: 'point-random',   pStick: 1,   renderMode: 'pixel', asymm: 0.7,  persistence: 0.85, eta: 2.4 },
     };
     const PRESET_KEYS = Object.keys(PRESETS) as Array<keyof typeof PRESETS>;
     function pickRandomPreset(): keyof typeof PRESETS {
@@ -471,11 +519,20 @@ import Base from '../../layouts/Base.astro';
       seedMode = p.seedMode;
       pStick = p.pStick;
       renderMode = p.renderMode;
+      asymm = p.asymm;
+      persistence = p.persistence;
+      eta = p.eta;
       applyRenderClass();
       if (seedSelect) seedSelect.value = p.seedMode;
       if (pStickInput) pStickInput.value = String(p.pStick);
       if (renderModeSelect) renderModeSelect.value = p.renderMode;
+      if (asymmInput) asymmInput.value = String(p.asymm);
+      if (persistInput) persistInput.value = String(p.persistence);
+      if (etaInput) etaInput.value = String(p.eta);
       if (pStickValue) pStickValue.textContent = p.pStick.toFixed(2);
+      if (asymmValue) asymmValue.textContent = p.asymm.toFixed(2);
+      if (persistValue) persistValue.textContent = p.persistence.toFixed(2);
+      if (etaValue) etaValue.textContent = p.eta.toFixed(1);
     }
 
     function updateReadout() {
@@ -485,11 +542,18 @@ import Base from '../../layouts/Base.astro';
 
     function spawnWalker(): [number, number] {
       const m = Math.max(20, Math.floor(Math.min(W, H) * 0.18));
-      const side = Math.floor(rng() * 4);
+      const r = rng();
+      let side: number;
+      let cum = spawnWeights[0];
+      if (r < cum) side = 0;
+      else if (r < (cum += spawnWeights[1])) side = 1;
+      else if (r < (cum += spawnWeights[2])) side = 2;
+      else side = 3;
+      // 0=top, 1=right, 2=bottom, 3=left.
       if (side === 0) return [Math.floor(rng() * W), -m];
-      if (side === 1) return [Math.floor(rng() * W), H - 1 + m];
-      if (side === 2) return [-m, Math.floor(rng() * H)];
-      return [W - 1 + m, Math.floor(rng() * H)];
+      if (side === 1) return [W - 1 + m, Math.floor(rng() * H)];
+      if (side === 2) return [Math.floor(rng() * W), H - 1 + m];
+      return [-m, Math.floor(rng() * H)];
     }
 
     function distanceToBbox(x: number, y: number) {
@@ -498,11 +562,10 @@ import Base from '../../layouts/Base.astro';
       return Math.max(dx, dy);
     }
 
-    function findStuckNeighbor(x: number, y: number): number {
-      const N = 8;
+    function findStuckNeighbor(x: number, y: number): [number, number] {
       let pick = -1;
       let count = 0;
-      for (let i = 0; i < N; i++) {
+      for (let i = 0; i < 8; i++) {
         const nx = x + DX8[i];
         const ny = y + DY8[i];
         if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
@@ -512,7 +575,7 @@ import Base from '../../layouts/Base.astro';
           if (count === 1 || rng() * count < 1) pick = ni;
         }
       }
-      return pick;
+      return [pick, count];
     }
 
     function walkOne() {
@@ -522,6 +585,7 @@ import Base from '../../layouts/Base.astro';
       const cy = (bymin + bymax) >> 1;
       const killRadius = Math.max(W, H);
       const kill2 = killRadius * killRadius;
+      let lastDir = -1;
       for (let i = 0; i < MAX_WALK_STEPS; i++) {
         const d = distanceToBbox(x, y);
         if (d > SKIP_BUFFER) {
@@ -531,18 +595,29 @@ import Base from '../../layouts/Base.astro';
           const dy = dir8 === 1 || dir8 === 2 || dir8 === 3 ? 1 : dir8 === 5 || dir8 === 6 || dir8 === 7 ? -1 : 0;
           x += dx * jump;
           y += dy * jump;
+          lastDir = -1;
           if (x < 1 || x > W - 2 || y < 1 || y > H - 2) return;
           continue;
         }
         if (x >= 1 && x <= W - 2 && y >= 1 && y <= H - 2
             && state[idx(x, y)] === 0) {
-          const parent = findStuckNeighbor(x, y);
-          if (parent >= 0 && rng() < pStick) {
-            setStuck(x, y, parent);
-            return;
+          const [parent, neighbors] = findStuckNeighbor(x, y);
+          if (parent >= 0) {
+            const exposure = (8 - neighbors) / 8;
+            const stickP = pStick * Math.pow(exposure, eta);
+            if (rng() < stickP) {
+              setStuck(x, y, parent);
+              return;
+            }
           }
         }
-        const dir = Math.floor(rng() * 8);
+        let dir: number;
+        if (lastDir >= 0 && rng() < persistence) {
+          dir = lastDir;
+        } else {
+          dir = Math.floor(rng() * 8);
+        }
+        lastDir = dir;
         x += DX8[dir];
         y += DY8[dir];
         const cdx = x - cx;
@@ -635,6 +710,19 @@ import Base from '../../layouts/Base.astro';
     pStickInput?.addEventListener('input', () => {
       pStick = Number(pStickInput.value);
       if (pStickValue) pStickValue.textContent = pStick.toFixed(2);
+    });
+    asymmInput?.addEventListener('input', () => {
+      asymm = Number(asymmInput.value);
+      if (asymmValue) asymmValue.textContent = asymm.toFixed(2);
+      rollSpawnWeights();
+    });
+    persistInput?.addEventListener('input', () => {
+      persistence = Number(persistInput.value);
+      if (persistValue) persistValue.textContent = persistence.toFixed(2);
+    });
+    etaInput?.addEventListener('input', () => {
+      eta = Number(etaInput.value);
+      if (etaValue) etaValue.textContent = eta.toFixed(1);
     });
     renderModeSelect?.addEventListener('change', () => {
       renderMode = renderModeSelect.value as RenderMode;
