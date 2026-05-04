@@ -116,15 +116,15 @@ a:focus-visible {
   image-rendering: crisp-edges;
 }
 
-.bg-controls {
+.anim-controls {
   position: fixed;
   bottom: 1rem;
   right: 1rem;
-  z-index: 2;
+  z-index: 3;
   display: flex;
   gap: 0.5rem;
 }
-.bg-controls button {
+.anim-controls button {
   font-family: var(--font-lexend), var(--sans);
   font-size: 0.75rem;
   font-weight: 600;
@@ -140,10 +140,52 @@ a:focus-visible {
   -webkit-backdrop-filter: blur(4px);
   transition: color 120ms ease, border-color 120ms ease;
 }
-.bg-controls button:hover {
+.anim-controls button:hover {
   color: var(--ink);
   border-color: var(--muted);
 }
+
+.anim-about {
+  background: rgba(14, 14, 16, 0.94);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 1.5rem 1.75rem 1.25rem;
+  max-width: 38rem;
+  font-family: var(--font-lexend), var(--sans);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  position: relative;
+}
+.anim-about::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.anim-about h2 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  color: var(--ink);
+}
+.anim-about p {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+}
+.anim-about p:last-child { margin-bottom: 0; }
+.anim-about-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.6rem;
+  background: transparent;
+  border: 0;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.25rem 0.4rem;
+}
+.anim-about-close:hover { color: var(--ink); }
 
 #bg-about {
   background: rgba(14, 14, 16, 0.94);
@@ -341,7 +383,7 @@ a:focus-visible {
 }
 .sandpile-panel {
   position: fixed;
-  right: 1rem;
+  left: 1rem;
   bottom: 1rem;
   z-index: 3;
   width: 18.5rem;
@@ -606,8 +648,8 @@ a:focus-visible {
 }
 .wang-controls {
   position: fixed;
-  right: 1rem;
-  bottom: 1rem;
+  left: 1rem;
+  bottom: 4.25rem;
   z-index: 3;
   display: flex;
   align-items: end;
@@ -694,11 +736,12 @@ a:focus-visible {
 .wang-about-close:hover { color: var(--ink); }
 @media (max-width: 760px) {
   .wang-label {
-    bottom: 3.55rem;
+    bottom: 0.5rem;
+    left: 0.5rem;
   }
   .wang-controls {
-    left: 1rem;
-    right: auto;
+    bottom: 3.5rem;
+    left: 0.5rem;
   }
 }
 
@@ -735,34 +778,6 @@ a:focus-visible {
 }
 .wire-label span {
   white-space: nowrap;
-}
-.wire-controls {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 3;
-  display: flex;
-  gap: 0.5rem;
-}
-.wire-controls button {
-  font-family: var(--font-lexend), var(--sans);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: rgba(14, 14, 16, 0.55);
-  border: 1px solid var(--rule);
-  border-radius: 3px;
-  padding: 0.35rem 0.7rem;
-  cursor: pointer;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  transition: color 120ms ease, border-color 120ms ease;
-}
-.wire-controls button:hover {
-  color: var(--ink);
-  border-color: var(--muted);
 }
 #wire-about {
   background: rgba(14, 14, 16, 0.94);
@@ -809,10 +824,6 @@ a:focus-visible {
   .wire-label {
     top: 3.55rem;
   }
-  .wire-controls {
-    left: 1rem;
-    right: auto;
-  }
 }
 
 .writing-shell {
@@ -829,34 +840,6 @@ a:focus-visible {
   opacity: 0.8;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
-}
-.writing-controls {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 3;
-  display: flex;
-  gap: 0.5rem;
-}
-.writing-controls button {
-  font-family: var(--font-lexend), var(--sans);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: rgba(14, 14, 16, 0.55);
-  border: 1px solid var(--rule);
-  border-radius: 3px;
-  padding: 0.35rem 0.7rem;
-  cursor: pointer;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  transition: color 120ms ease, border-color 120ms ease;
-}
-.writing-controls button:hover {
-  color: var(--ink);
-  border-color: var(--muted);
 }
 .writing-shell > .section-head,
 .writing-panes {
@@ -1152,13 +1135,11 @@ html.animation-only .home-nav,
 html.animation-only .section-head,
 html.animation-only .note,
 html.animation-only .writing-panes,
-html.animation-only .bg-controls,
+html.animation-only .anim-controls,
 html.animation-only .wang-label,
 html.animation-only .wang-controls,
 html.animation-only .wang-boost,
 html.animation-only .wire-label,
-html.animation-only .wire-controls,
-html.animation-only .writing-controls,
 html.animation-only .tune-panel,
 html.animation-only .sandpile-panel {
   display: none !important;

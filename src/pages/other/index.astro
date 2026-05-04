@@ -14,6 +14,21 @@ import Base from '../../layouts/Base.astro';
         <li><span class="hl"><a href="/Animations/">Animation-only views</a></span></li>
       </ul>
     </article>
+    <div class="anim-controls">
+      <button id="sandpile-info" type="button" aria-label="About this animation">About this animation</button>
+      <button id="sandpile-restart" type="button" aria-label="Reset sandpile">Reset</button>
+    </div>
+    <dialog id="sandpile-about" class="anim-about" aria-labelledby="sandpile-about-title">
+      <button class="anim-about-close" type="button" aria-label="Close">×</button>
+      <h2 id="sandpile-about-title">About this animation</h2>
+      <p>
+        An abelian sandpile: each cell holds a stack of grains, and any cell with
+        four or more grains topples one grain to each of its four neighbors. The
+        order of topples doesn't matter — the final stable configuration is the
+        same — but the path through unstable states yields these self-similar
+        cascades. Press Reset to reseed with a new mass distribution.
+      </p>
+    </dialog>
     <aside class="sandpile-panel" aria-label="Sandpile controls">
       <div class="sandpile-panel-head">
         <h2>Sandpile</h2>
@@ -533,6 +548,18 @@ import Base from '../../layouts/Base.astro';
     resetButton?.addEventListener('click', () => {
       seedCycle();
       draw();
+    });
+    const restartButton = document.getElementById('sandpile-restart') as HTMLButtonElement | null;
+    restartButton?.addEventListener('click', () => {
+      seedCycle();
+      draw();
+    });
+    const aboutDlg = document.getElementById('sandpile-about') as HTMLDialogElement | null;
+    const infoButton = document.getElementById('sandpile-info') as HTMLButtonElement | null;
+    infoButton?.addEventListener('click', () => aboutDlg?.showModal());
+    aboutDlg?.querySelector('.anim-about-close')?.addEventListener('click', () => aboutDlg.close());
+    aboutDlg?.addEventListener('click', (e) => {
+      if (e.target === aboutDlg) aboutDlg.close();
     });
     const COLLAPSE_KEY = 'sandpile-panel-collapsed';
     function applyCollapsed(collapsed: boolean) {
