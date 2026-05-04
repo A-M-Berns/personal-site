@@ -4,6 +4,7 @@ import Base from '../../layouts/Base.astro';
 <Base title="Other — A. M. Berns" description="Side projects and miscellaneous experiments.">
   <div class="other-shell">
     <canvas id="dla-sim" class="dla-sim" aria-hidden="true"></canvas>
+    <canvas id="dla-bloom" class="dla-bloom" aria-hidden="true"></canvas>
     <header class="section-head">
       <h1><span class="hl">Other</span></h1>
       <p><span class="hl">Side projects and miscellaneous experiments.</span></p>
@@ -62,6 +63,7 @@ import Base from '../../layouts/Base.astro';
             <option value="top-edge">top-edge</option>
             <option value="bottom-edge">bottom-edge</option>
             <option value="boundary-uniform">boundary-uniform</option>
+            <option value="boundary-inset">boundary-inset</option>
           </select>
         </label>
         <div class="dla-panel-row">
@@ -84,6 +86,11 @@ import Base from '../../layouts/Base.astro';
           <input id="dla-speed" type="range" min="50" max="3000" step="50" value="350" />
           <span id="dla-speed-value">350</span>
         </div>
+        <div class="dla-panel-row">
+          <label for="dla-bloom">bloom</label>
+          <input id="dla-bloom" type="range" min="0" max="1" step="0.05" value="0.5" />
+          <span id="dla-bloom-value">0.50</span>
+        </div>
         <label class="dla-panel-field">
           <span>walk</span>
           <select id="dla-walk-rule">
@@ -94,8 +101,8 @@ import Base from '../../layouts/Base.astro';
         <label class="dla-panel-field">
           <span>render</span>
           <select id="dla-render-mode">
-            <option value="pixel">pixel</option>
-            <option value="lines" selected>lines</option>
+            <option value="pixel" selected>pixel</option>
+            <option value="lines">lines</option>
             <option value="both">both</option>
           </select>
         </label>
@@ -130,6 +137,17 @@ import Base from '../../layouts/Base.astro';
   html.render-pixel .dla-sim {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+  }
+  .dla-bloom {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    opacity: 0.5;
+    filter: blur(6px);
+    mix-blend-mode: screen;
   }
   .dla-panel {
     position: fixed;
@@ -248,9 +266,12 @@ import Base from '../../layouts/Base.astro';
 
 <script>
   const canvas = document.getElementById('dla-sim') as HTMLCanvasElement | null;
-  if (canvas) {
+  const bloomCanvas = document.getElementById('dla-bloom') as HTMLCanvasElement | null;
+  if (canvas && bloomCanvas) {
     const ctx = canvas.getContext('2d')!;
+    const bloomCtx = bloomCanvas.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
+    bloomCtx.imageSmoothingEnabled = false;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const seedSelect = document.getElementById('dla-seed-mode') as HTMLSelectElement | null;
@@ -267,6 +288,8 @@ import Base from '../../layouts/Base.astro';
     const speedValue = document.getElementById('dla-speed-value');
     const presetSelect = document.getElementById('dla-preset') as HTMLSelectElement | null;
     const colorModeSelect = document.getElementById('dla-color-mode') as HTMLSelectElement | null;
+    const bloomInput = document.getElementById('dla-bloom') as HTMLInputElement | null;
+    const bloomValue = document.getElementById('dla-bloom-value');
     const seedReadout = document.getElementById('dla-seed-readout');
     const countReadout = document.getElementById('dla-count');
 
@@ -280,7 +303,7 @@ import Base from '../../layouts/Base.astro';
     type SeedMode =
       | 'point-center' | 'point-random' | 'top-edge' | 'bottom-edge'
       | 'vertical-stripe' | 'circle-outline' | 'multi-point';
-    type SpawnMode = 'cluster-shell' | 'top-edge' | 'bottom-edge' | 'boundary-uniform';
+    type SpawnMode = 'cluster-shell' | 'top-edge' | 'bottom-edge' | 'boundary-uniform' | 'boundary-inset';
     type RenderMode = 'pixel' | 'lines' | 'both';
     type ColorMode = 'speckle' | 'age-cycle' | 'radial' | 'branch';
     type PresetName = 'random' | 'classic' | 'lightning' | 'frost' | 'coral' | 'speckle';
@@ -303,6 +326,7 @@ import Base from '../../layouts/Base.astro';
     let stuckCount = 0;
     let seedHash = 0;
     let radialMaxDist = 16;
+    let stickXmin = 0, stickXmax = 0, stickYmin = 0, stickYmax = 0;
 
     let seedMode: SeedMode = (seedSelect?.value as SeedMode) ?? 'point-center';
     let spawnMode: SpawnMode = (spawnSelect?.value as SpawnMode) ?? 'cluster-shell';
@@ -310,7 +334,7 @@ import Base from '../../layouts/Base.astro';
     let driftY = Number(driftYInput?.value ?? 0);
     let pStick = Number(pStickInput?.value ?? 1);
     let walkRule: 4 | 8 = (Number(walkRuleSelect?.value ?? 8) === 4 ? 4 : 8);
-    let renderMode: RenderMode = ((renderModeSelect?.value as RenderMode) ?? 'lines');
+    let renderMode: RenderMode = ((renderModeSelect?.value as RenderMode) ?? 'pixel');
     let colorMode: ColorMode = ((colorModeSelect?.value as ColorMode) ?? 'age-cycle');
     let stepsPerFrame = Number(speedInput?.value ?? 350);
     let preset: PresetName = ((presetSelect?.value as PresetName) ?? 'random');
@@ -351,6 +375,21 @@ import Base from '../../layouts/Base.astro';
 
     function applyRenderClass() {
       document.documentElement.classList.toggle('render-pixel', renderMode === 'pixel');
+    }
+
+    function applyStickBounds() {
+      if (spawnMode === 'boundary-inset') {
+        const margin = Math.max(8, Math.floor(Math.min(W, H) * 0.12));
+        stickXmin = margin;
+        stickXmax = W - 1 - margin;
+        stickYmin = margin;
+        stickYmax = H - 1 - margin;
+      } else {
+        stickXmin = 1;
+        stickXmax = W - 2;
+        stickYmin = 1;
+        stickYmax = H - 2;
+      }
     }
 
     function setStuck(x: number, y: number, parent: number) {
@@ -422,6 +461,8 @@ import Base from '../../layouts/Base.astro';
       if (renderMode === 'pixel' || renderMode === 'both' || parent < 0) {
         ctx.fillStyle = css;
         ctx.fillRect(x, y, 1, 1);
+        bloomCtx.fillStyle = css;
+        bloomCtx.fillRect(x, y, 1, 1);
       }
       if ((renderMode === 'lines' || renderMode === 'both') && parent >= 0) {
         const px = parent % W;
@@ -431,6 +472,11 @@ import Base from '../../layouts/Base.astro';
         ctx.moveTo(px + 0.5, py + 0.5);
         ctx.lineTo(x + 0.5, y + 0.5);
         ctx.stroke();
+        bloomCtx.strokeStyle = css;
+        bloomCtx.beginPath();
+        bloomCtx.moveTo(px + 0.5, py + 0.5);
+        bloomCtx.lineTo(x + 0.5, y + 0.5);
+        bloomCtx.stroke();
       }
     }
 
@@ -496,6 +542,8 @@ import Base from '../../layouts/Base.astro';
       cellPaletteIdx.fill(0);
       radialMaxDist = 16;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
+      applyStickBounds();
       placeSeed();
       cycleStart = performance.now();
       updateReadout();
@@ -508,11 +556,11 @@ import Base from '../../layouts/Base.astro';
       renderMode: RenderMode; colorMode: ColorMode;
     };
     const PRESETS: Record<Exclude<PresetName, 'random'>, PresetSpec> = {
-      classic:   { seedMode: 'point-center',     spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 1,   walkRule: 8, renderMode: 'lines', colorMode: 'age-cycle' },
-      lightning: { seedMode: 'top-edge',         spawnMode: 'top-edge',      driftX: 0,  driftY: 0.55, pStick: 1,   walkRule: 8, renderMode: 'lines', colorMode: 'age-cycle' },
-      frost:     { seedMode: 'multi-point',      spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 0.4, walkRule: 8, renderMode: 'lines', colorMode: 'branch' },
-      coral:     { seedMode: 'circle-outline',   spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 0.7, walkRule: 8, renderMode: 'both',  colorMode: 'radial' },
-      speckle:   { seedMode: 'point-center',     spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 1,   walkRule: 4, renderMode: 'pixel', colorMode: 'speckle' },
+      classic:   { seedMode: 'point-center',     spawnMode: 'cluster-shell',   driftX: 0,  driftY: 0,    pStick: 1,   walkRule: 8, renderMode: 'pixel', colorMode: 'age-cycle' },
+      lightning: { seedMode: 'top-edge',         spawnMode: 'top-edge',        driftX: 0,  driftY: 0.55, pStick: 1,   walkRule: 8, renderMode: 'pixel', colorMode: 'age-cycle' },
+      frost:     { seedMode: 'multi-point',      spawnMode: 'boundary-inset',  driftX: 0,  driftY: 0,    pStick: 0.4, walkRule: 8, renderMode: 'pixel', colorMode: 'branch' },
+      coral:     { seedMode: 'circle-outline',   spawnMode: 'cluster-shell',   driftX: 0,  driftY: 0,    pStick: 0.7, walkRule: 8, renderMode: 'pixel', colorMode: 'radial' },
+      speckle:   { seedMode: 'point-center',     spawnMode: 'cluster-shell',   driftX: 0,  driftY: 0,    pStick: 1,   walkRule: 4, renderMode: 'pixel', colorMode: 'speckle' },
     };
     const PRESET_KEYS = Object.keys(PRESETS) as Array<keyof typeof PRESETS>;
     function pickRandomPreset(): keyof typeof PRESETS {
@@ -553,7 +601,8 @@ import Base from '../../layouts/Base.astro';
           return [Math.floor(rng() * (W - 2)) + 1, Math.floor(rng() * 3)];
         case 'bottom-edge':
           return [Math.floor(rng() * (W - 2)) + 1, H - 2 - Math.floor(rng() * 3)];
-        case 'boundary-uniform': {
+        case 'boundary-uniform':
+        case 'boundary-inset': {
           const side = Math.floor(rng() * 4);
           if (side === 0) return [Math.floor(rng() * (W - 2)) + 1, 1];
           if (side === 1) return [Math.floor(rng() * (W - 2)) + 1, H - 2];
@@ -637,7 +686,9 @@ import Base from '../../layouts/Base.astro';
       const cy = (bymin + bymax) >> 1;
       const halfW = (bxmax - bxmin) >> 1;
       const halfH = (bymax - bymin) >> 1;
-      const killRadius = Math.max(halfW, halfH, 4) + KILL_MARGIN;
+      const killRadius = (spawnMode === 'cluster-shell')
+        ? Math.max(halfW, halfH, 4) + KILL_MARGIN
+        : Math.max(W, H);
       const kill2 = killRadius * killRadius;
       for (let i = 0; i < MAX_WALK_STEPS; i++) {
         const d = distanceToBbox(x, y);
@@ -651,7 +702,9 @@ import Base from '../../layouts/Base.astro';
           if (x < 1 || x > W - 2 || y < 1 || y > H - 2) return;
           continue;
         }
-        if (state[idx(x, y)] === 0) {
+        if (state[idx(x, y)] === 0
+            && x >= stickXmin && x <= stickXmax
+            && y >= stickYmin && y <= stickYmax) {
           const parent = findStuckNeighbor(x, y);
           if (parent >= 0 && rng() < pStick) {
             setStuck(x, y, parent);
@@ -690,10 +743,16 @@ import Base from '../../layouts/Base.astro';
       H = Math.max(36, Math.ceil(window.innerHeight / CELL_PX));
       canvas.width = W;
       canvas.height = H;
+      bloomCanvas.width = W;
+      bloomCanvas.height = H;
       ctx.imageSmoothingEnabled = false;
       ctx.lineWidth = 1;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
+      bloomCtx.imageSmoothingEnabled = false;
+      bloomCtx.lineWidth = 1;
+      bloomCtx.lineCap = 'round';
+      bloomCtx.lineJoin = 'round';
       state = new Uint8Array(W * H);
       parents = new Int32Array(W * H);
       cellPaletteIdx = new Uint8Array(W * H);
@@ -753,6 +812,7 @@ import Base from '../../layouts/Base.astro';
     });
     spawnSelect?.addEventListener('change', () => {
       spawnMode = spawnSelect.value as SpawnMode;
+      applyStickBounds();
     });
     driftXInput?.addEventListener('input', () => {
       driftX = Number(driftXInput.value);
@@ -784,6 +844,11 @@ import Base from '../../layouts/Base.astro';
     });
     colorModeSelect?.addEventListener('change', () => {
       colorMode = colorModeSelect.value as ColorMode;
+    });
+    bloomInput?.addEventListener('input', () => {
+      const v = Number(bloomInput.value);
+      bloomCanvas.style.opacity = String(v);
+      if (bloomValue) bloomValue.textContent = v.toFixed(2);
     });
   }
 </script>
