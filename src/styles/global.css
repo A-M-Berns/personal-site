@@ -1150,6 +1150,15 @@ html.animation-only .page {
   padding: 0;
 }
 
+/* Dev-mode gating: per-page parameter panels and state readouts are hidden
+   by default. Toggle with ?dev=1 in the URL or shift+D. */
+html:not(.dev-mode) .wang-controls,
+html:not(.dev-mode) .wang-label,
+html:not(.dev-mode) .tune-panel,
+html:not(.dev-mode) .sandpile-panel {
+  display: none !important;
+}
+
 @media (max-width: 1180px) {
   .note { max-width: 100%; }
   .note > * { max-width: 100%; }

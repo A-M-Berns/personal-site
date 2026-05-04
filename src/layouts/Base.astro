@@ -32,6 +32,33 @@ const pageClass = `page-${path === '/' ? 'home' : path.split('/')[1]}`;
       if (new URLSearchParams(window.location.search).get('animation') === '1') {
         document.documentElement.classList.add('animation-only');
       }
+      (function () {
+        var DEV_KEY = 'site-dev-mode';
+        var params = new URLSearchParams(window.location.search);
+        var paramVal = params.get('dev');
+        var stored = null;
+        try { stored = localStorage.getItem(DEV_KEY); } catch (e) {}
+        var on;
+        if (paramVal === '1') {
+          on = true;
+          try { localStorage.setItem(DEV_KEY, '1'); } catch (e) {}
+        } else if (paramVal === '0') {
+          on = false;
+          try { localStorage.setItem(DEV_KEY, '0'); } catch (e) {}
+        } else {
+          on = stored === '1';
+        }
+        if (on) document.documentElement.classList.add('dev-mode');
+        document.addEventListener('keydown', function (e) {
+          if (e.shiftKey && (e.key === 'D' || e.key === 'd') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+            var t = e.target;
+            if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+            var next = !document.documentElement.classList.contains('dev-mode');
+            document.documentElement.classList.toggle('dev-mode', next);
+            try { localStorage.setItem(DEV_KEY, next ? '1' : '0'); } catch (e2) {}
+          }
+        });
+      })();
     </script>
   </head>
   <body class={pageClass}>
