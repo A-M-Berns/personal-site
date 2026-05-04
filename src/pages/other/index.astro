@@ -145,8 +145,8 @@ import Base from '../../layouts/Base.astro';
     width: 100vw;
     height: 100vh;
     pointer-events: none;
-    opacity: 0.5;
-    filter: blur(6px);
+    opacity: 0.6;
+    filter: blur(14px);
     mix-blend-mode: screen;
   }
   .dla-panel {
@@ -741,6 +741,7 @@ function setStuck(x: number, y: number, parent: number) {
       bloomCtx.lineWidth = 1;
       bloomCtx.lineCap = 'round';
       bloomCtx.lineJoin = 'round';
+      bloomCtx.globalCompositeOperation = 'lighter';
       state = new Uint8Array(W * H);
       parents = new Int32Array(W * H);
       cellPaletteIdx = new Uint8Array(W * H);
