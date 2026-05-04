@@ -75,6 +75,21 @@ import Base from '../../layouts/Base.astro';
             <option value="8">8-neighbor</option>
           </select>
         </label>
+        <label class="dla-panel-field">
+          <span>walk</span>
+          <select id="dla-walk-rule">
+            <option value="4">4-direction</option>
+            <option value="8" selected>8-direction</option>
+          </select>
+        </label>
+        <label class="dla-panel-field">
+          <span>render</span>
+          <select id="dla-render-mode">
+            <option value="pixel">pixel</option>
+            <option value="lines" selected>lines</option>
+            <option value="both">both</option>
+          </select>
+        </label>
         <dl class="dla-stats">
           <div><dt>seed</dt><dd id="dla-seed-readout">-</dd></div>
           <div><dt>cells</dt><dd id="dla-count">-</dd></div>
@@ -92,7 +107,9 @@ import Base from '../../layouts/Base.astro';
     width: 100vw;
     height: 100vh;
     pointer-events: none;
-    opacity: 0.8;
+    opacity: 0.85;
+  }
+  html.render-pixel .dla-sim {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
   }
@@ -227,6 +244,8 @@ import Base from '../../layouts/Base.astro';
     const pStickInput = document.getElementById('dla-pstick') as HTMLInputElement | null;
     const pStickValue = document.getElementById('dla-pstick-value');
     const stickRuleSelect = document.getElementById('dla-stick-rule') as HTMLSelectElement | null;
+    const walkRuleSelect = document.getElementById('dla-walk-rule') as HTMLSelectElement | null;
+    const renderModeSelect = document.getElementById('dla-render-mode') as HTMLSelectElement | null;
     const seedReadout = document.getElementById('dla-seed-readout');
     const countReadout = document.getElementById('dla-count');
 
@@ -242,10 +261,15 @@ import Base from '../../layouts/Base.astro';
       | 'point-center' | 'point-random' | 'top-edge' | 'bottom-edge'
       | 'vertical-stripe' | 'circle-outline' | 'multi-point';
     type SpawnMode = 'cluster-shell' | 'top-edge' | 'bottom-edge' | 'boundary-uniform';
+    type RenderMode = 'pixel' | 'lines' | 'both';
+
+    const DX8 = [1, 1, 0, -1, -1, -1, 0, 1];
+    const DY8 = [0, 1, 1, 1, 0, -1, -1, -1];
 
     let W = 0;
     let H = 0;
     let state = new Uint8Array(0);
+    let parents = new Int32Array(0);
     let palette: number[][] = [];
     let bxmin = 0, bxmax = 0, bymin = 0, bymax = 0;
     let cycleStart = 0;
@@ -259,6 +283,9 @@ import Base from '../../layouts/Base.astro';
     let driftY = Number(driftYInput?.value ?? 0);
     let pStick = Number(pStickInput?.value ?? 1);
     let stickRule: 4 | 8 = (Number(stickRuleSelect?.value ?? 4) === 8 ? 8 : 4);
+    let walkRule: 4 | 8 = (Number(walkRuleSelect?.value ?? 8) === 4 ? 4 : 8);
+    let renderMode: RenderMode = ((renderModeSelect?.value as RenderMode) ?? 'lines');
+    applyRenderClass();
 
     const colorPool = [
       '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
@@ -293,20 +320,42 @@ import Base from '../../layouts/Base.astro';
       palette = Array.from(indices).map((i) => colorPool[i]);
     }
 
-    function setStuck(x: number, y: number) {
-      state[idx(x, y)] = 1;
+    function applyRenderClass() {
+      document.documentElement.classList.toggle('render-pixel', renderMode === 'pixel');
+    }
+
+    function setStuck(x: number, y: number, parent: number) {
+      const i = idx(x, y);
+      state[i] = 1;
+      parents[i] = parent;
       stuckCount++;
       if (x < bxmin) bxmin = x;
       if (x > bxmax) bxmax = x;
       if (y < bymin) bymin = y;
       if (y > bymax) bymax = y;
-      paintCell(x, y);
+      paintCell(x, y, parent);
     }
 
-    function paintCell(x: number, y: number) {
-      const c = palette[(x * 73856093 ^ y * 19349663 ^ stuckCount * 83492791) & (palette.length - 1)] || palette[0];
-      ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
-      ctx.fillRect(x, y, 1, 1);
+    function colorFor(x: number, y: number) {
+      return palette[(x * 73856093 ^ y * 19349663 ^ stuckCount * 83492791) & (palette.length - 1)] || palette[0];
+    }
+
+    function paintCell(x: number, y: number, parent: number) {
+      const c = colorFor(x, y);
+      const css = `rgb(${c[0]},${c[1]},${c[2]})`;
+      if (renderMode === 'pixel' || renderMode === 'both' || parent < 0) {
+        ctx.fillStyle = css;
+        ctx.fillRect(x, y, 1, 1);
+      }
+      if ((renderMode === 'lines' || renderMode === 'both') && parent >= 0) {
+        const px = parent % W;
+        const py = (parent / W) | 0;
+        ctx.strokeStyle = css;
+        ctx.beginPath();
+        ctx.moveTo(px + 0.5, py + 0.5);
+        ctx.lineTo(x + 0.5, y + 0.5);
+        ctx.stroke();
+      }
     }
 
     function placeSeed() {
@@ -316,27 +365,27 @@ import Base from '../../layouts/Base.astro';
       const cy = H >> 1;
       switch (seedMode) {
         case 'point-center':
-          setStuck(cx, cy);
+          setStuck(cx, cy, -1);
           break;
         case 'point-random': {
           const x = Math.floor(rng() * (W - 4)) + 2;
           const y = Math.floor(rng() * (H - 4)) + 2;
-          setStuck(x, y);
+          setStuck(x, y, -1);
           break;
         }
         case 'top-edge': {
           const y = 1;
-          for (let x = 0; x < W; x++) setStuck(x, y);
+          for (let x = 0; x < W; x++) setStuck(x, y, -1);
           break;
         }
         case 'bottom-edge': {
           const y = H - 2;
-          for (let x = 0; x < W; x++) setStuck(x, y);
+          for (let x = 0; x < W; x++) setStuck(x, y, -1);
           break;
         }
         case 'vertical-stripe': {
           const x = cx;
-          for (let y = 0; y < H; y++) setStuck(x, y);
+          for (let y = 0; y < H; y++) setStuck(x, y, -1);
           break;
         }
         case 'circle-outline': {
@@ -346,7 +395,7 @@ import Base from '../../layouts/Base.astro';
             const a = (i / steps) * 2 * Math.PI;
             const x = Math.round(cx + r * Math.cos(a));
             const y = Math.round(cy + r * Math.sin(a));
-            if (x >= 1 && x < W - 1 && y >= 1 && y < H - 1 && !state[idx(x, y)]) setStuck(x, y);
+            if (x >= 1 && x < W - 1 && y >= 1 && y < H - 1 && !state[idx(x, y)]) setStuck(x, y, -1);
           }
           break;
         }
@@ -355,7 +404,7 @@ import Base from '../../layouts/Base.astro';
           for (let i = 0; i < n; i++) {
             const x = Math.floor(rng() * (W - 8)) + 4;
             const y = Math.floor(rng() * (H - 8)) + 4;
-            if (!state[idx(x, y)]) setStuck(x, y);
+            if (!state[idx(x, y)]) setStuck(x, y, -1);
           }
           break;
         }
@@ -414,7 +463,7 @@ import Base from '../../layouts/Base.astro';
       return Math.max(dx, dy);
     }
 
-    function biasedDir(): number {
+    function biasedDir4(): number {
       const wRight = Math.max(0, 1 + driftX);
       const wLeft = Math.max(0, 1 - driftX);
       const wDown = Math.max(0, 1 + driftY);
@@ -428,18 +477,37 @@ import Base from '../../layouts/Base.astro';
       return 3;
     }
 
-    function hasStuckNeighbor(x: number, y: number) {
-      if (x > 0 && state[idx(x - 1, y)]) return true;
-      if (x < W - 1 && state[idx(x + 1, y)]) return true;
-      if (y > 0 && state[idx(x, y - 1)]) return true;
-      if (y < H - 1 && state[idx(x, y + 1)]) return true;
-      if (stickRule === 8) {
-        if (x > 0 && y > 0 && state[idx(x - 1, y - 1)]) return true;
-        if (x < W - 1 && y > 0 && state[idx(x + 1, y - 1)]) return true;
-        if (x > 0 && y < H - 1 && state[idx(x - 1, y + 1)]) return true;
-        if (x < W - 1 && y < H - 1 && state[idx(x + 1, y + 1)]) return true;
+    function biasedDir8(): number {
+      let total = 0;
+      const w = [0, 0, 0, 0, 0, 0, 0, 0];
+      for (let i = 0; i < 8; i++) {
+        const v = 1 + driftX * DX8[i] + driftY * DY8[i];
+        w[i] = v > 0 ? v : 0;
+        total += w[i];
       }
-      return false;
+      if (total <= 0) return Math.floor(rng() * 8);
+      let r = rng() * total;
+      for (let i = 0; i < 8; i++) {
+        if ((r -= w[i]) < 0) return i;
+      }
+      return 7;
+    }
+
+    function findStuckNeighbor(x: number, y: number): number {
+      const N = stickRule === 8 ? 8 : 4;
+      let pick = -1;
+      let count = 0;
+      for (let i = 0; i < N; i++) {
+        const nx = x + DX8[i];
+        const ny = y + DY8[i];
+        if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+        const ni = idx(nx, ny);
+        if (state[ni]) {
+          count++;
+          if (count === 1 || rng() * count < 1) pick = ni;
+        }
+      }
+      return pick;
     }
 
     function walkOne() {
@@ -463,17 +531,24 @@ import Base from '../../layouts/Base.astro';
           if (x < 1 || x > W - 2 || y < 1 || y > H - 2) return;
           continue;
         }
-        if (state[idx(x, y)] === 0 && hasStuckNeighbor(x, y)) {
-          if (rng() < pStick) {
-            setStuck(x, y);
+        if (state[idx(x, y)] === 0) {
+          const parent = findStuckNeighbor(x, y);
+          if (parent >= 0 && rng() < pStick) {
+            setStuck(x, y, parent);
             return;
           }
         }
-        const dir = biasedDir();
-        if (dir === 0) x++;
-        else if (dir === 1) x--;
-        else if (dir === 2) y++;
-        else y--;
+        if (walkRule === 8) {
+          const dir = biasedDir8();
+          x += DX8[dir];
+          y += DY8[dir];
+        } else {
+          const dir = biasedDir4();
+          if (dir === 0) x++;
+          else if (dir === 1) x--;
+          else if (dir === 2) y++;
+          else y--;
+        }
         const cdx = x - cx;
         const cdy = y - cy;
         if (cdx * cdx + cdy * cdy > kill2) return;
@@ -496,7 +571,11 @@ import Base from '../../layouts/Base.astro';
       canvas.width = W;
       canvas.height = H;
       ctx.imageSmoothingEnabled = false;
+      ctx.lineWidth = 1;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
       state = new Uint8Array(W * H);
+      parents = new Int32Array(W * H);
       seedCycle();
     }
 
@@ -545,6 +624,13 @@ import Base from '../../layouts/Base.astro';
     });
     stickRuleSelect?.addEventListener('change', () => {
       stickRule = Number(stickRuleSelect.value) === 8 ? 8 : 4;
+    });
+    walkRuleSelect?.addEventListener('change', () => {
+      walkRule = Number(walkRuleSelect.value) === 4 ? 4 : 8;
+    });
+    renderModeSelect?.addEventListener('change', () => {
+      renderMode = renderModeSelect.value as RenderMode;
+      applyRenderClass();
     });
   }
 </script>
