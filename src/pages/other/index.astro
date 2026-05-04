@@ -19,13 +19,68 @@ import Base from '../../layouts/Base.astro';
       <button class="anim-about-close" type="button" aria-label="Close">×</button>
       <h2 id="dla-about-title">About this animation</h2>
       <p>
-        Diffusion-limited aggregation (Witten and Sander, 1981): a single seed
-        cell anchors a growing cluster. Random walkers are released from a
-        circle just outside the cluster and wander until they touch it; on
-        contact they freeze in place, becoming part of the cluster. The
-        resulting structure is a fractal of dimension ~1.71 in two dimensions.
+        Diffusion-limited aggregation (Witten and Sander, 1981): seed cells
+        anchor a growing cluster. Random walkers are released from a circle
+        just outside the cluster and wander until they touch it; on contact
+        they freeze in place, becoming part of the cluster. The resulting
+        structure is a fractal of dimension ~1.71 in two dimensions.
       </p>
     </dialog>
+    <aside class="dla-panel" aria-label="DLA controls">
+      <div class="dla-panel-head">
+        <h2>DLA</h2>
+        <button id="dla-reset" type="button">Reset</button>
+      </div>
+      <div class="dla-panel-body">
+        <label class="dla-panel-field">
+          <span>seed</span>
+          <select id="dla-seed-mode">
+            <option value="point-center" selected>point-center</option>
+            <option value="point-random">point-random</option>
+            <option value="top-edge">top-edge</option>
+            <option value="bottom-edge">bottom-edge</option>
+            <option value="vertical-stripe">vertical-stripe</option>
+            <option value="circle-outline">circle-outline</option>
+            <option value="multi-point">multi-point</option>
+          </select>
+        </label>
+        <label class="dla-panel-field">
+          <span>spawn</span>
+          <select id="dla-spawn-mode">
+            <option value="cluster-shell" selected>cluster-shell</option>
+            <option value="top-edge">top-edge</option>
+            <option value="bottom-edge">bottom-edge</option>
+            <option value="boundary-uniform">boundary-uniform</option>
+          </select>
+        </label>
+        <div class="dla-panel-row">
+          <label for="dla-drift-x">drift x</label>
+          <input id="dla-drift-x" type="range" min="-1" max="1" step="0.05" value="0" />
+          <span id="dla-drift-x-value">0.00</span>
+        </div>
+        <div class="dla-panel-row">
+          <label for="dla-drift-y">drift y</label>
+          <input id="dla-drift-y" type="range" min="-1" max="1" step="0.05" value="0" />
+          <span id="dla-drift-y-value">0.00</span>
+        </div>
+        <div class="dla-panel-row">
+          <label for="dla-pstick">p stick</label>
+          <input id="dla-pstick" type="range" min="0.05" max="1" step="0.05" value="1" />
+          <span id="dla-pstick-value">1.00</span>
+        </div>
+        <label class="dla-panel-field">
+          <span>stick</span>
+          <select id="dla-stick-rule">
+            <option value="4" selected>4-neighbor</option>
+            <option value="8">8-neighbor</option>
+          </select>
+        </label>
+        <dl class="dla-stats">
+          <div><dt>seed</dt><dd id="dla-seed-readout">-</dd></div>
+          <div><dt>cells</dt><dd id="dla-count">-</dd></div>
+        </dl>
+      </div>
+    </aside>
   </div>
 </Base>
 
@@ -41,6 +96,119 @@ import Base from '../../layouts/Base.astro';
     image-rendering: pixelated;
     image-rendering: crisp-edges;
   }
+  .dla-panel {
+    position: fixed;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 3;
+    width: 16.5rem;
+    background: rgba(14, 14, 16, 0.92);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.85rem 1rem 0.9rem;
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.78rem;
+    color: var(--muted);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .dla-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.55rem;
+  }
+  .dla-panel-head h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .dla-panel button {
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.3rem 0.55rem;
+    cursor: pointer;
+  }
+  .dla-panel button:hover {
+    color: var(--ink);
+    border-color: var(--muted);
+  }
+  .dla-panel-field {
+    display: grid;
+    grid-template-columns: 4.3rem 1fr;
+    gap: 0.55rem;
+    align-items: center;
+    margin-bottom: 0.35rem;
+  }
+  .dla-panel-field span {
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  .dla-panel-field select {
+    width: 100%;
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: rgba(14, 14, 16, 0.55);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.2rem 0.35rem;
+  }
+  .dla-panel-row {
+    display: grid;
+    grid-template-columns: 4.3rem 1fr 3.3rem;
+    gap: 0.55rem;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+  .dla-panel-row label {
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+  .dla-panel-row input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+    margin: 0;
+  }
+  .dla-panel-row span {
+    font-size: 0.68rem;
+    color: var(--ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .dla-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    margin: 0.6rem 0 0;
+    font-size: 0.65rem;
+  }
+  .dla-stats div {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 0.3rem;
+  }
+  .dla-stats dt {
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .dla-stats dd {
+    margin: 0;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
 </style>
 
 <script>
@@ -50,13 +218,30 @@ import Base from '../../layouts/Base.astro';
     ctx.imageSmoothingEnabled = false;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    const seedSelect = document.getElementById('dla-seed-mode') as HTMLSelectElement | null;
+    const spawnSelect = document.getElementById('dla-spawn-mode') as HTMLSelectElement | null;
+    const driftXInput = document.getElementById('dla-drift-x') as HTMLInputElement | null;
+    const driftYInput = document.getElementById('dla-drift-y') as HTMLInputElement | null;
+    const driftXValue = document.getElementById('dla-drift-x-value');
+    const driftYValue = document.getElementById('dla-drift-y-value');
+    const pStickInput = document.getElementById('dla-pstick') as HTMLInputElement | null;
+    const pStickValue = document.getElementById('dla-pstick-value');
+    const stickRuleSelect = document.getElementById('dla-stick-rule') as HTMLSelectElement | null;
+    const seedReadout = document.getElementById('dla-seed-readout');
+    const countReadout = document.getElementById('dla-count');
+
     const CELL_PX = 2;
     const STEPS_PER_FRAME = 2500;
     const MAX_WALK_STEPS = 4000;
     const SPAWN_MARGIN = 4;
-    const KILL_MARGIN = 18;
+    const KILL_MARGIN = 24;
     const SKIP_BUFFER = 2;
     const AUTO_RESET_MS = 90_000;
+
+    type SeedMode =
+      | 'point-center' | 'point-random' | 'top-edge' | 'bottom-edge'
+      | 'vertical-stripe' | 'circle-outline' | 'multi-point';
+    type SpawnMode = 'cluster-shell' | 'top-edge' | 'bottom-edge' | 'boundary-uniform';
 
     let W = 0;
     let H = 0;
@@ -66,6 +251,14 @@ import Base from '../../layouts/Base.astro';
     let cycleStart = 0;
     let rng = mulberry32(1);
     let stuckCount = 0;
+    let seedHash = 0;
+
+    let seedMode: SeedMode = (seedSelect?.value as SeedMode) ?? 'point-center';
+    let spawnMode: SpawnMode = (spawnSelect?.value as SpawnMode) ?? 'cluster-shell';
+    let driftX = Number(driftXInput?.value ?? 0);
+    let driftY = Number(driftYInput?.value ?? 0);
+    let pStick = Number(pStickInput?.value ?? 1);
+    let stickRule: 4 | 8 = (Number(stickRuleSelect?.value ?? 4) === 8 ? 8 : 4);
 
     const colorPool = [
       '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
@@ -100,19 +293,14 @@ import Base from '../../layouts/Base.astro';
       palette = Array.from(indices).map((i) => colorPool[i]);
     }
 
-    function seedCycle() {
-      rng = mulberry32((Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0);
-      pickPalette();
-      state.fill(0);
-      const cx = W >> 1;
-      const cy = H >> 1;
-      state[idx(cx, cy)] = 1;
-      bxmin = cx; bxmax = cx; bymin = cy; bymax = cy;
-      stuckCount = 1;
-      cycleStart = performance.now();
-      ctx.fillStyle = 'rgba(0,0,0,0)';
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      paintCell(cx, cy);
+    function setStuck(x: number, y: number) {
+      state[idx(x, y)] = 1;
+      stuckCount++;
+      if (x < bxmin) bxmin = x;
+      if (x > bxmax) bxmax = x;
+      if (y < bymin) bymin = y;
+      if (y > bymax) bymax = y;
+      paintCell(x, y);
     }
 
     function paintCell(x: number, y: number) {
@@ -121,26 +309,103 @@ import Base from '../../layouts/Base.astro';
       ctx.fillRect(x, y, 1, 1);
     }
 
-    function hasStuckNeighbor(x: number, y: number) {
-      if (x > 0 && state[idx(x - 1, y)]) return true;
-      if (x < W - 1 && state[idx(x + 1, y)]) return true;
-      if (y > 0 && state[idx(x, y - 1)]) return true;
-      if (y < H - 1 && state[idx(x, y + 1)]) return true;
-      return false;
+    function placeSeed() {
+      bxmin = W; bxmax = -1; bymin = H; bymax = -1;
+      stuckCount = 0;
+      const cx = W >> 1;
+      const cy = H >> 1;
+      switch (seedMode) {
+        case 'point-center':
+          setStuck(cx, cy);
+          break;
+        case 'point-random': {
+          const x = Math.floor(rng() * (W - 4)) + 2;
+          const y = Math.floor(rng() * (H - 4)) + 2;
+          setStuck(x, y);
+          break;
+        }
+        case 'top-edge': {
+          const y = 1;
+          for (let x = 0; x < W; x++) setStuck(x, y);
+          break;
+        }
+        case 'bottom-edge': {
+          const y = H - 2;
+          for (let x = 0; x < W; x++) setStuck(x, y);
+          break;
+        }
+        case 'vertical-stripe': {
+          const x = cx;
+          for (let y = 0; y < H; y++) setStuck(x, y);
+          break;
+        }
+        case 'circle-outline': {
+          const r = Math.floor(Math.min(W, H) * 0.3);
+          const steps = Math.floor(2 * Math.PI * r);
+          for (let i = 0; i < steps; i++) {
+            const a = (i / steps) * 2 * Math.PI;
+            const x = Math.round(cx + r * Math.cos(a));
+            const y = Math.round(cy + r * Math.sin(a));
+            if (x >= 1 && x < W - 1 && y >= 1 && y < H - 1 && !state[idx(x, y)]) setStuck(x, y);
+          }
+          break;
+        }
+        case 'multi-point': {
+          const n = 4 + Math.floor(rng() * 5);
+          for (let i = 0; i < n; i++) {
+            const x = Math.floor(rng() * (W - 8)) + 4;
+            const y = Math.floor(rng() * (H - 8)) + 4;
+            if (!state[idx(x, y)]) setStuck(x, y);
+          }
+          break;
+        }
+      }
+    }
+
+    function seedCycle() {
+      seedHash = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+      rng = mulberry32(seedHash);
+      pickPalette();
+      state.fill(0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      placeSeed();
+      cycleStart = performance.now();
+      updateReadout();
+    }
+
+    function updateReadout() {
+      if (seedReadout) seedReadout.textContent = seedHash.toString(16).padStart(8, '0');
+      if (countReadout) countReadout.textContent = stuckCount.toLocaleString();
     }
 
     function spawnWalker(): [number, number] {
-      const cx = (bxmin + bxmax) >> 1;
-      const cy = (bymin + bymax) >> 1;
-      const halfW = (bxmax - bxmin) >> 1;
-      const halfH = (bymax - bymin) >> 1;
-      const radius = Math.max(halfW, halfH, 4) + SPAWN_MARGIN;
-      const a = rng() * Math.PI * 2;
-      let x = Math.round(cx + radius * Math.cos(a));
-      let y = Math.round(cy + radius * Math.sin(a));
-      x = Math.max(1, Math.min(W - 2, x));
-      y = Math.max(1, Math.min(W - 2, y));
-      return [x, y];
+      switch (spawnMode) {
+        case 'top-edge':
+          return [Math.floor(rng() * (W - 2)) + 1, Math.floor(rng() * 3)];
+        case 'bottom-edge':
+          return [Math.floor(rng() * (W - 2)) + 1, H - 2 - Math.floor(rng() * 3)];
+        case 'boundary-uniform': {
+          const side = Math.floor(rng() * 4);
+          if (side === 0) return [Math.floor(rng() * (W - 2)) + 1, 1];
+          if (side === 1) return [Math.floor(rng() * (W - 2)) + 1, H - 2];
+          if (side === 2) return [1, Math.floor(rng() * (H - 2)) + 1];
+          return [W - 2, Math.floor(rng() * (H - 2)) + 1];
+        }
+        case 'cluster-shell':
+        default: {
+          const cx = (bxmin + bxmax) >> 1;
+          const cy = (bymin + bymax) >> 1;
+          const halfW = (bxmax - bxmin) >> 1;
+          const halfH = (bymax - bymin) >> 1;
+          const radius = Math.max(halfW, halfH, 4) + SPAWN_MARGIN;
+          const a = rng() * Math.PI * 2;
+          let x = Math.round(cx + radius * Math.cos(a));
+          let y = Math.round(cy + radius * Math.sin(a));
+          x = Math.max(1, Math.min(W - 2, x));
+          y = Math.max(1, Math.min(H - 2, y));
+          return [x, y];
+        }
+      }
     }
 
     function distanceToBbox(x: number, y: number) {
@@ -149,43 +414,69 @@ import Base from '../../layouts/Base.astro';
       return Math.max(dx, dy);
     }
 
+    function biasedDir(): number {
+      const wRight = Math.max(0, 1 + driftX);
+      const wLeft = Math.max(0, 1 - driftX);
+      const wDown = Math.max(0, 1 + driftY);
+      const wUp = Math.max(0, 1 - driftY);
+      const total = wRight + wLeft + wDown + wUp;
+      if (total <= 0) return Math.floor(rng() * 4);
+      let r = rng() * total;
+      if ((r -= wRight) < 0) return 0;
+      if ((r -= wLeft) < 0) return 1;
+      if ((r -= wDown) < 0) return 2;
+      return 3;
+    }
+
+    function hasStuckNeighbor(x: number, y: number) {
+      if (x > 0 && state[idx(x - 1, y)]) return true;
+      if (x < W - 1 && state[idx(x + 1, y)]) return true;
+      if (y > 0 && state[idx(x, y - 1)]) return true;
+      if (y < H - 1 && state[idx(x, y + 1)]) return true;
+      if (stickRule === 8) {
+        if (x > 0 && y > 0 && state[idx(x - 1, y - 1)]) return true;
+        if (x < W - 1 && y > 0 && state[idx(x + 1, y - 1)]) return true;
+        if (x > 0 && y < H - 1 && state[idx(x - 1, y + 1)]) return true;
+        if (x < W - 1 && y < H - 1 && state[idx(x + 1, y + 1)]) return true;
+      }
+      return false;
+    }
+
     function walkOne() {
       let [x, y] = spawnWalker();
+      if (state[idx(x, y)]) return;
       const cx = (bxmin + bxmax) >> 1;
       const cy = (bymin + bymax) >> 1;
       const halfW = (bxmax - bxmin) >> 1;
       const halfH = (bymax - bymin) >> 1;
       const killRadius = Math.max(halfW, halfH, 4) + KILL_MARGIN;
+      const kill2 = killRadius * killRadius;
       for (let i = 0; i < MAX_WALK_STEPS; i++) {
         const d = distanceToBbox(x, y);
         if (d > SKIP_BUFFER) {
           const jump = d - SKIP_BUFFER;
-          const dir = Math.floor(rng() * 8);
-          const dx = dir === 0 || dir === 1 || dir === 7 ? 1 : dir === 3 || dir === 4 || dir === 5 ? -1 : 0;
-          const dy = dir === 1 || dir === 2 || dir === 3 ? 1 : dir === 5 || dir === 6 || dir === 7 ? -1 : 0;
+          const dir8 = Math.floor(rng() * 8);
+          const dx = dir8 === 0 || dir8 === 1 || dir8 === 7 ? 1 : dir8 === 3 || dir8 === 4 || dir8 === 5 ? -1 : 0;
+          const dy = dir8 === 1 || dir8 === 2 || dir8 === 3 ? 1 : dir8 === 5 || dir8 === 6 || dir8 === 7 ? -1 : 0;
           x += dx * jump;
           y += dy * jump;
           if (x < 1 || x > W - 2 || y < 1 || y > H - 2) return;
           continue;
         }
-        if (hasStuckNeighbor(x, y) && state[idx(x, y)] === 0) {
-          state[idx(x, y)] = 1;
-          stuckCount++;
-          if (x < bxmin) bxmin = x;
-          if (x > bxmax) bxmax = x;
-          if (y < bymin) bymin = y;
-          if (y > bymax) bymax = y;
-          paintCell(x, y);
-          return;
+        if (state[idx(x, y)] === 0 && hasStuckNeighbor(x, y)) {
+          if (rng() < pStick) {
+            setStuck(x, y);
+            return;
+          }
         }
-        const dir = Math.floor(rng() * 4);
+        const dir = biasedDir();
         if (dir === 0) x++;
         else if (dir === 1) x--;
         else if (dir === 2) y++;
         else y--;
         const cdx = x - cx;
         const cdy = y - cy;
-        if (cdx * cdx + cdy * cdy > killRadius * killRadius) return;
+        if (cdx * cdx + cdy * cdy > kill2) return;
         if (x < 1 || x > W - 2 || y < 1 || y > H - 2) return;
       }
     }
@@ -196,6 +487,7 @@ import Base from '../../layouts/Base.astro';
         return;
       }
       for (let i = 0; i < STEPS_PER_FRAME; i++) walkOne();
+      updateReadout();
     }
 
     function resize() {
@@ -223,11 +515,36 @@ import Base from '../../layouts/Base.astro';
     const aboutDlg = document.getElementById('dla-about') as HTMLDialogElement | null;
     const infoBtn = document.getElementById('dla-info');
     const restartBtn = document.getElementById('dla-restart');
+    const panelResetBtn = document.getElementById('dla-reset');
     infoBtn?.addEventListener('click', () => aboutDlg?.showModal());
     restartBtn?.addEventListener('click', () => seedCycle());
+    panelResetBtn?.addEventListener('click', () => seedCycle());
     aboutDlg?.querySelector('.anim-about-close')?.addEventListener('click', () => aboutDlg.close());
     aboutDlg?.addEventListener('click', (e) => {
       if (e.target === aboutDlg) aboutDlg.close();
+    });
+
+    seedSelect?.addEventListener('change', () => {
+      seedMode = seedSelect.value as SeedMode;
+      seedCycle();
+    });
+    spawnSelect?.addEventListener('change', () => {
+      spawnMode = spawnSelect.value as SpawnMode;
+    });
+    driftXInput?.addEventListener('input', () => {
+      driftX = Number(driftXInput.value);
+      if (driftXValue) driftXValue.textContent = driftX.toFixed(2);
+    });
+    driftYInput?.addEventListener('input', () => {
+      driftY = Number(driftYInput.value);
+      if (driftYValue) driftYValue.textContent = driftY.toFixed(2);
+    });
+    pStickInput?.addEventListener('input', () => {
+      pStick = Number(pStickInput.value);
+      if (pStickValue) pStickValue.textContent = pStick.toFixed(2);
+    });
+    stickRuleSelect?.addEventListener('change', () => {
+      stickRule = Number(stickRuleSelect.value) === 8 ? 8 : 4;
     });
   }
 </script>

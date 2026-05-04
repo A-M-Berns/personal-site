@@ -1154,7 +1154,11 @@ html.animation-only .page {
 html:not(.dev-mode) .wang-controls,
 html:not(.dev-mode) .wang-label,
 html:not(.dev-mode) .tune-panel,
-html:not(.dev-mode) .sandpile-panel {
+html:not(.dev-mode) .sandpile-panel,
+html:not(.dev-mode) .dla-panel {
+  display: none !important;
+}
+html.animation-only .dla-panel {
   display: none !important;
 }
 
