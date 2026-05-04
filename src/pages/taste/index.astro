@@ -194,42 +194,17 @@ import Base from '../../layouts/Base.astro';
 
     function choosePalette() {
       const Lp = luma(paper);
-      const targets = [
-        22 + Math.floor(rng() * 12),
-        Math.floor(65 + rng() * 15),
-        Math.floor(135 + rng() * 20),
-        Math.floor(195 + rng() * 15),
-        Math.floor(222 + rng() * 15),
-      ];
-      const midPart = [targets[1], targets[2], targets[3]];
-      for (let i = midPart.length - 1; i > 0; i--) {
-        const j = Math.floor(rng() * (i + 1));
-        [midPart[i], midPart[j]] = [midPart[j], midPart[i]];
+      const usable: number[][] = [];
+      for (const c of colorPool) if (luma(c) >= Lp + 30) usable.push(c);
+      const buckets = 4;
+      const stops: number[][] = [paper];
+      for (let i = 0; i < buckets; i++) {
+        const lo = Math.floor((i * usable.length) / buckets);
+        const hi = Math.floor(((i + 1) * usable.length) / buckets);
+        const idx = lo + Math.floor(rng() * Math.max(1, hi - lo));
+        stops.push(usable[idx]);
       }
-      targets[1] = midPart[0];
-      targets[2] = midPart[1];
-      targets[3] = midPart[2];
-      const used = new Set<number>();
-      palette = targets.map((t) => {
-        const candidates: number[] = [];
-        for (let i = 0; i < colorPool.length; i++) {
-          if (used.has(i)) continue;
-          if (luma(colorPool[i]) >= t - 8) candidates.push(i);
-        }
-        let pickIdx: number;
-        if (candidates.length > 0) {
-          pickIdx = candidates[Math.floor(rng() * candidates.length)];
-        } else {
-          const all: number[] = [];
-          for (let i = 0; i < colorPool.length; i++) if (!used.has(i)) all.push(i);
-          pickIdx = all[Math.floor(rng() * all.length)];
-        }
-        used.add(pickIdx);
-        const color = colorPool[pickIdx];
-        const denom = luma(color) - Lp;
-        const alpha = denom > 1 ? Math.max(0.04, Math.min(1, (t - Lp) / denom)) : 1;
-        return mix(paper, color, alpha);
-      });
+      palette = stops;
     }
 
     function seedCycle() {
