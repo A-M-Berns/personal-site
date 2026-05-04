@@ -118,6 +118,47 @@ The hard version is substantially larger: `NOT`, `XOR`, weak/strong conversion, 
 6. Reintroduce randomly generated formulas only after compiled layouts are verified by simulation, not by a separate Boolean label.
 7. Keep the on-page text honest: if a cycle is showing primitive gates, call them primitives; if it is showing a compiled formula, display the formula.
 
+## Phase 2 Status (2026-05-03, paused)
+
+Phase 1 (router-friendly gate templates with verified timing) shipped in
+`src/lib/wireworld-router.mjs` and `tests/wireworld-router.test.mjs`.
+AND, OR, NOT all defined as data with footprint, ports, latencies, and
+phase requirements. Period 6 verified to work for all three. Tests pass.
+
+Phase 2 (formula → placement → routing → phase solver → simulation) is
+present in the same file but **incomplete and not on main**. End-to-end
+test `tests/wireworld-router-compile.test.mjs` covers AND-of-leaves and
+OR-of-leaves (both pass) but fails on nested formulas and on the trivial
+leaf case.
+
+Two concrete obstacles surfaced and need design work before the compile
+path can be made reliable:
+
+1. **Moore corner shortcuts.** Wireworld++ propagates via Moore (8-cell)
+   neighborhood, so any L-shaped wire's corner cell triggers the
+   diagonal next-row cell *one tick early*. Effective travel time for a
+   route is `path.length - corner_count`, not `path.length`. The current
+   code uses naive Manhattan, giving phase math that drifts by one tick
+   per corner. A `measureWireTravel` helper was started (run a tiny
+   simulation per route to measure travel empirically) but not finished.
+2. **Delay-loop gadgets.** The current `padPath` inserts U-bumps to add
+   delay, but the bump cells are Moore-adjacent to the original wire,
+   causing more diagonal shortcuts that defeat the padding. To add
+   controlled delay, the router needs proper "delay coil" gadgets
+   (parallel snake wires kept 2+ cells apart with explicit corner
+   handling). This is a non-trivial design pass.
+
+Beyond those, NOT (Figure 19) is timing-fragile: the oscillator only
+quenches when input arrives at exactly the right phase mod 6. Any drift
+in the phase math causes NOTs to misfire silently. Plan for accurate
+per-route travel measurement *and* working delay gadgets before adding
+NOTs into compiled circuits.
+
+The current page (`src/pages/formalization/index.astro`) shows a stack
+of independent primitive gates rather than a compiled formula. That
+remains honest Wireworld++ and is fine to ship as-is until the compile
+pipeline is finished.
+
 ## Visual Constraints
 
 - Keep the bus close to the left edge.
