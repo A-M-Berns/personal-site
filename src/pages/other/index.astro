@@ -85,13 +85,6 @@ import Base from '../../layouts/Base.astro';
           <span id="dla-speed-value">350</span>
         </div>
         <label class="dla-panel-field">
-          <span>stick</span>
-          <select id="dla-stick-rule">
-            <option value="4" selected>4-neighbor</option>
-            <option value="8">8-neighbor</option>
-          </select>
-        </label>
-        <label class="dla-panel-field">
           <span>walk</span>
           <select id="dla-walk-rule">
             <option value="4">4-direction</option>
@@ -268,7 +261,6 @@ import Base from '../../layouts/Base.astro';
     const driftYValue = document.getElementById('dla-drift-y-value');
     const pStickInput = document.getElementById('dla-pstick') as HTMLInputElement | null;
     const pStickValue = document.getElementById('dla-pstick-value');
-    const stickRuleSelect = document.getElementById('dla-stick-rule') as HTMLSelectElement | null;
     const walkRuleSelect = document.getElementById('dla-walk-rule') as HTMLSelectElement | null;
     const renderModeSelect = document.getElementById('dla-render-mode') as HTMLSelectElement | null;
     const speedInput = document.getElementById('dla-speed') as HTMLInputElement | null;
@@ -317,7 +309,6 @@ import Base from '../../layouts/Base.astro';
     let driftX = Number(driftXInput?.value ?? 0);
     let driftY = Number(driftYInput?.value ?? 0);
     let pStick = Number(pStickInput?.value ?? 1);
-    let stickRule: 4 | 8 = (Number(stickRuleSelect?.value ?? 4) === 8 ? 8 : 4);
     let walkRule: 4 | 8 = (Number(walkRuleSelect?.value ?? 8) === 4 ? 4 : 8);
     let renderMode: RenderMode = ((renderModeSelect?.value as RenderMode) ?? 'lines');
     let colorMode: ColorMode = ((colorModeSelect?.value as ColorMode) ?? 'age-cycle');
@@ -513,15 +504,15 @@ import Base from '../../layouts/Base.astro';
     type PresetSpec = {
       seedMode: SeedMode; spawnMode: SpawnMode;
       driftX: number; driftY: number;
-      pStick: number; stickRule: 4 | 8; walkRule: 4 | 8;
+      pStick: number; walkRule: 4 | 8;
       renderMode: RenderMode; colorMode: ColorMode;
     };
     const PRESETS: Record<Exclude<PresetName, 'random'>, PresetSpec> = {
-      classic:   { seedMode: 'point-center',     spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 1,   stickRule: 4, walkRule: 8, renderMode: 'lines', colorMode: 'age-cycle' },
-      lightning: { seedMode: 'top-edge',         spawnMode: 'top-edge',      driftX: 0,  driftY: 0.55, pStick: 1,   stickRule: 4, walkRule: 8, renderMode: 'lines', colorMode: 'age-cycle' },
-      frost:     { seedMode: 'multi-point',      spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 0.4, stickRule: 4, walkRule: 8, renderMode: 'lines', colorMode: 'branch' },
-      coral:     { seedMode: 'circle-outline',   spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 0.7, stickRule: 8, walkRule: 8, renderMode: 'both',  colorMode: 'radial' },
-      speckle:   { seedMode: 'point-center',     spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 1,   stickRule: 4, walkRule: 4, renderMode: 'pixel', colorMode: 'speckle' },
+      classic:   { seedMode: 'point-center',     spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 1,   walkRule: 8, renderMode: 'lines', colorMode: 'age-cycle' },
+      lightning: { seedMode: 'top-edge',         spawnMode: 'top-edge',      driftX: 0,  driftY: 0.55, pStick: 1,   walkRule: 8, renderMode: 'lines', colorMode: 'age-cycle' },
+      frost:     { seedMode: 'multi-point',      spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 0.4, walkRule: 8, renderMode: 'lines', colorMode: 'branch' },
+      coral:     { seedMode: 'circle-outline',   spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 0.7, walkRule: 8, renderMode: 'both',  colorMode: 'radial' },
+      speckle:   { seedMode: 'point-center',     spawnMode: 'cluster-shell', driftX: 0,  driftY: 0,    pStick: 1,   walkRule: 4, renderMode: 'pixel', colorMode: 'speckle' },
     };
     const PRESET_KEYS = Object.keys(PRESETS) as Array<keyof typeof PRESETS>;
     function pickRandomPreset(): keyof typeof PRESETS {
@@ -534,7 +525,6 @@ import Base from '../../layouts/Base.astro';
       driftX = p.driftX;
       driftY = p.driftY;
       pStick = p.pStick;
-      stickRule = p.stickRule;
       walkRule = p.walkRule;
       renderMode = p.renderMode;
       colorMode = p.colorMode;
@@ -544,7 +534,6 @@ import Base from '../../layouts/Base.astro';
       if (driftXInput) driftXInput.value = String(p.driftX);
       if (driftYInput) driftYInput.value = String(p.driftY);
       if (pStickInput) pStickInput.value = String(p.pStick);
-      if (stickRuleSelect) stickRuleSelect.value = String(p.stickRule);
       if (walkRuleSelect) walkRuleSelect.value = String(p.walkRule);
       if (renderModeSelect) renderModeSelect.value = p.renderMode;
       if (colorModeSelect) colorModeSelect.value = p.colorMode;
@@ -625,7 +614,7 @@ import Base from '../../layouts/Base.astro';
     }
 
     function findStuckNeighbor(x: number, y: number): number {
-      const N = stickRule === 8 ? 8 : 4;
+      const N = 8;
       let pick = -1;
       let count = 0;
       for (let i = 0; i < N; i++) {
@@ -753,9 +742,6 @@ import Base from '../../layouts/Base.astro';
     pStickInput?.addEventListener('input', () => {
       pStick = Number(pStickInput.value);
       if (pStickValue) pStickValue.textContent = pStick.toFixed(2);
-    });
-    stickRuleSelect?.addEventListener('change', () => {
-      stickRule = Number(stickRuleSelect.value) === 8 ? 8 : 4;
     });
     walkRuleSelect?.addEventListener('change', () => {
       walkRule = Number(walkRuleSelect.value) === 4 ? 4 : 8;
