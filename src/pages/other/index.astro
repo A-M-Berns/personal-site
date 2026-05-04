@@ -124,8 +124,8 @@ import Base from '../../layouts/Base.astro';
     z-index: 0;
     width: 100vw;
     height: 100vh;
-    pointer-events: none;
     opacity: 0.85;
+    cursor: crosshair;
   }
   html.render-pixel .dla-sim {
     image-rendering: pixelated;
@@ -711,6 +711,29 @@ import Base from '../../layouts/Base.astro';
       for (let i = 0; i < 30; i++) step();
     }
     window.addEventListener('resize', resize);
+
+    function clickSeed(gx: number, gy: number) {
+      const offsets: Array<[number, number]> = [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]];
+      let centerIdx = -1;
+      for (const [dx, dy] of offsets) {
+        const x = gx + dx;
+        const y = gy + dy;
+        if (x < 1 || x >= W - 1 || y < 1 || y >= H - 1) continue;
+        if (state[idx(x, y)]) continue;
+        const parent = dx === 0 && dy === 0 ? -1 : centerIdx;
+        setStuck(x, y, parent);
+        if (dx === 0 && dy === 0) centerIdx = idx(x, y);
+      }
+    }
+
+    canvas.addEventListener('pointerdown', (evt) => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      const gx = Math.floor((evt.clientX - rect.left) / rect.width * W);
+      const gy = Math.floor((evt.clientY - rect.top) / rect.height * H);
+      if (gx < 1 || gx >= W - 1 || gy < 1 || gy >= H - 1) return;
+      clickSeed(gx, gy);
+    });
 
     const aboutDlg = document.getElementById('dla-about') as HTMLDialogElement | null;
     const infoBtn = document.getElementById('dla-info');
