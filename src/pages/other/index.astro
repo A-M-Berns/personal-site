@@ -63,7 +63,7 @@ import Base from '../../layouts/Base.astro';
             <option value="top-edge">top-edge</option>
             <option value="bottom-edge">bottom-edge</option>
             <option value="boundary-uniform">boundary-uniform</option>
-            <option value="boundary-inset">boundary-inset</option>
+            <option value="boundary-outset">boundary-outset</option>
           </select>
         </label>
         <div class="dla-panel-row">
@@ -303,7 +303,7 @@ import Base from '../../layouts/Base.astro';
     type SeedMode =
       | 'point-center' | 'point-random' | 'top-edge' | 'bottom-edge'
       | 'vertical-stripe' | 'circle-outline' | 'multi-point';
-    type SpawnMode = 'cluster-shell' | 'top-edge' | 'bottom-edge' | 'boundary-uniform' | 'boundary-inset';
+    type SpawnMode = 'cluster-shell' | 'top-edge' | 'bottom-edge' | 'boundary-uniform' | 'boundary-outset';
     type RenderMode = 'pixel' | 'lines' | 'both';
     type ColorMode = 'speckle' | 'age-cycle' | 'radial' | 'branch';
     type PresetName = 'random' | 'classic' | 'lightning' | 'frost' | 'coral' | 'speckle';
@@ -326,7 +326,6 @@ import Base from '../../layouts/Base.astro';
     let stuckCount = 0;
     let seedHash = 0;
     let radialMaxDist = 16;
-    let stickXmin = 0, stickXmax = 0, stickYmin = 0, stickYmax = 0;
 
     let seedMode: SeedMode = (seedSelect?.value as SeedMode) ?? 'point-center';
     let spawnMode: SpawnMode = (spawnSelect?.value as SpawnMode) ?? 'cluster-shell';
@@ -377,22 +376,7 @@ import Base from '../../layouts/Base.astro';
       document.documentElement.classList.toggle('render-pixel', renderMode === 'pixel');
     }
 
-    function applyStickBounds() {
-      if (spawnMode === 'boundary-inset') {
-        const margin = Math.max(8, Math.floor(Math.min(W, H) * 0.12));
-        stickXmin = margin;
-        stickXmax = W - 1 - margin;
-        stickYmin = margin;
-        stickYmax = H - 1 - margin;
-      } else {
-        stickXmin = 1;
-        stickXmax = W - 2;
-        stickYmin = 1;
-        stickYmax = H - 2;
-      }
-    }
-
-    function setStuck(x: number, y: number, parent: number) {
+function setStuck(x: number, y: number, parent: number) {
       const i = idx(x, y);
       state[i] = 1;
       parents[i] = parent;
@@ -543,7 +527,6 @@ import Base from '../../layouts/Base.astro';
       radialMaxDist = 16;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
-      applyStickBounds();
       placeSeed();
       cycleStart = performance.now();
       updateReadout();
@@ -558,7 +541,7 @@ import Base from '../../layouts/Base.astro';
     const PRESETS: Record<Exclude<PresetName, 'random'>, PresetSpec> = {
       classic:   { seedMode: 'point-center',     spawnMode: 'cluster-shell',   driftX: 0,  driftY: 0,    pStick: 1,   walkRule: 8, renderMode: 'pixel', colorMode: 'age-cycle' },
       lightning: { seedMode: 'top-edge',         spawnMode: 'top-edge',        driftX: 0,  driftY: 0.55, pStick: 1,   walkRule: 8, renderMode: 'pixel', colorMode: 'age-cycle' },
-      frost:     { seedMode: 'multi-point',      spawnMode: 'boundary-inset',  driftX: 0,  driftY: 0,    pStick: 0.4, walkRule: 8, renderMode: 'pixel', colorMode: 'branch' },
+      frost:     { seedMode: 'multi-point',      spawnMode: 'boundary-outset', driftX: 0,  driftY: 0,    pStick: 0.4, walkRule: 8, renderMode: 'pixel', colorMode: 'branch' },
       coral:     { seedMode: 'circle-outline',   spawnMode: 'cluster-shell',   driftX: 0,  driftY: 0,    pStick: 0.7, walkRule: 8, renderMode: 'pixel', colorMode: 'radial' },
       speckle:   { seedMode: 'point-center',     spawnMode: 'cluster-shell',   driftX: 0,  driftY: 0,    pStick: 1,   walkRule: 4, renderMode: 'pixel', colorMode: 'speckle' },
     };
@@ -601,13 +584,20 @@ import Base from '../../layouts/Base.astro';
           return [Math.floor(rng() * (W - 2)) + 1, Math.floor(rng() * 3)];
         case 'bottom-edge':
           return [Math.floor(rng() * (W - 2)) + 1, H - 2 - Math.floor(rng() * 3)];
-        case 'boundary-uniform':
-        case 'boundary-inset': {
+        case 'boundary-uniform': {
           const side = Math.floor(rng() * 4);
           if (side === 0) return [Math.floor(rng() * (W - 2)) + 1, 1];
           if (side === 1) return [Math.floor(rng() * (W - 2)) + 1, H - 2];
           if (side === 2) return [1, Math.floor(rng() * (H - 2)) + 1];
           return [W - 2, Math.floor(rng() * (H - 2)) + 1];
+        }
+        case 'boundary-outset': {
+          const m = Math.max(20, Math.floor(Math.min(W, H) * 0.18));
+          const side = Math.floor(rng() * 4);
+          if (side === 0) return [Math.floor(rng() * W), -m];
+          if (side === 1) return [Math.floor(rng() * W), H - 1 + m];
+          if (side === 2) return [-m, Math.floor(rng() * H)];
+          return [W - 1 + m, Math.floor(rng() * H)];
         }
         case 'cluster-shell':
         default: {
@@ -681,7 +671,7 @@ import Base from '../../layouts/Base.astro';
 
     function walkOne() {
       let [x, y] = spawnWalker();
-      if (state[idx(x, y)]) return;
+      if (x >= 0 && x < W && y >= 0 && y < H && state[idx(x, y)]) return;
       const cx = (bxmin + bxmax) >> 1;
       const cy = (bymin + bymax) >> 1;
       const halfW = (bxmax - bxmin) >> 1;
@@ -702,9 +692,8 @@ import Base from '../../layouts/Base.astro';
           if (x < 1 || x > W - 2 || y < 1 || y > H - 2) return;
           continue;
         }
-        if (state[idx(x, y)] === 0
-            && x >= stickXmin && x <= stickXmax
-            && y >= stickYmin && y <= stickYmax) {
+        if (x >= 1 && x <= W - 2 && y >= 1 && y <= H - 2
+            && state[idx(x, y)] === 0) {
           const parent = findStuckNeighbor(x, y);
           if (parent >= 0 && rng() < pStick) {
             setStuck(x, y, parent);
@@ -725,7 +714,6 @@ import Base from '../../layouts/Base.astro';
         const cdx = x - cx;
         const cdy = y - cy;
         if (cdx * cdx + cdy * cdy > kill2) return;
-        if (x < 1 || x > W - 2 || y < 1 || y > H - 2) return;
       }
     }
 
@@ -812,7 +800,6 @@ import Base from '../../layouts/Base.astro';
     });
     spawnSelect?.addEventListener('change', () => {
       spawnMode = spawnSelect.value as SpawnMode;
-      applyStickBounds();
     });
     driftXInput?.addEventListener('input', () => {
       driftX = Number(driftXInput.value);
