@@ -364,6 +364,11 @@ a:focus-visible {
   align-items: start;
   max-width: 100ch;
 }
+.about-panes .anson {
+  color: var(--c4, var(--accent));
+  font-weight: 700;
+  transition: color 200ms ease;
+}
 .taste-panes {
   display: grid;
   grid-template-columns: minmax(0, 60ch);
