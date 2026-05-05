@@ -56,8 +56,7 @@ a:focus-visible {
   padding-bottom: 0.15rem;
   border-bottom: 1px solid transparent;
 }
-.page-writing .site-nav a,
-.page-other .site-nav a {
+.site-nav a {
   background: #000;
   padding: 0.05em 0.28em 0.15rem;
   -webkit-box-decoration-break: clone;
