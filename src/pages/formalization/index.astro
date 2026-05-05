@@ -55,13 +55,6 @@ import Base from '../../layouts/Base.astro';
               <option value="LR">LR (Langton, ant 2)</option>
               <option value="LRRL">LRRL (ant 9)</option>
               <option value="LLRR">LLRR (ant 12)</option>
-              <option value="LRRRRL">LRRRRL (ant 33)</option>
-              <option value="LRRLLL">LRRLLL (ant 39)</option>
-              <option value="LLRRRR">LLRRRR (ant 48)</option>
-              <option value="LLRRLL">LLRRLL (ant 51)</option>
-              <option value="LLLRRL">LLLRRL (ant 57)</option>
-              <option value="LLLLRR">LLLLRR (ant 60)</option>
-              <option value="LRRRRRRL">LRRRRRRL (ant 214)</option>
               <option value="LLRRLLRR">LLRRLLRR (ant 204)</option>
             </optgroup>
             <optgroup label="other">
@@ -349,20 +342,13 @@ import Base from '../../layouts/Base.astro';
     // to be picked but every rule still appears regularly. Rules
     // starting with R are reflections of L-starting rules and run
     // identically up to a mirror.
-    type Tier = 'high' | 'medium' | 'other';
+    type Tier = 'high' | 'other';
     const RULE_POOL: { rule: string; weight: number; tier: Tier }[] = [
       // From the paper — bilaterally-symmetric "track" ants.
       { rule: 'LR',        weight: 3, tier: 'high' },   // ant 2 (Langton)
       { rule: 'LRRL',      weight: 3, tier: 'high' },   // ant 9
       { rule: 'LLRR',      weight: 3, tier: 'high' },   // ant 12
       { rule: 'LLRRLLRR',  weight: 3, tier: 'high' },   // ant 204
-      { rule: 'LRRRRL',    weight: 1, tier: 'medium' }, // ant 33
-      { rule: 'LRRLLL',    weight: 1, tier: 'medium' }, // ant 39
-      { rule: 'LLRRRR',    weight: 1, tier: 'medium' }, // ant 48
-      { rule: 'LLRRLL',    weight: 1, tier: 'medium' }, // ant 51
-      { rule: 'LLLRRL',    weight: 1, tier: 'medium' }, // ant 57
-      { rule: 'LLLLRR',    weight: 1, tier: 'medium' }, // ant 60
-      { rule: 'LRRRRRRL',  weight: 1, tier: 'medium' }, // ant 214
       // Other patterns of interest.
       { rule: 'LRL',       weight: 1, tier: 'other' },
       { rule: 'LLR',       weight: 1, tier: 'other' },
@@ -439,15 +425,21 @@ import Base from '../../layouts/Base.astro';
     let seed = 0;
     let totalSteps = 0;
 
+    // Rule alphabet: L = turn left, R = turn right, F = no turn (forward).
+    // F is most distinctive on the hex lattice (where no-turn ≠ a smaller
+    // L/R mix) but is allowed in both modes.
     function isValidRule(s: string) {
-      return s.length >= 2 && s.length <= 14 && /^[LR]+$/.test(s);
+      return s.length >= 2 && s.length <= 14 && /^[LRF]+$/.test(s);
     }
 
+    // rule[state] encoding: 0 = L, 1 = R, 2 = F.
     function setRuleFromString(s: string) {
       ruleStr = s;
       nStates = s.length;
       rule = new Uint8Array(nStates);
-      for (let i = 0; i < nStates; i++) rule[i] = s[i] === 'R' ? 1 : 0;
+      for (let i = 0; i < nStates; i++) {
+        rule[i] = s[i] === 'R' ? 1 : s[i] === 'F' ? 2 : 0;
+      }
     }
 
     function pickPalette() {
@@ -484,21 +476,22 @@ import Base from '../../layouts/Base.astro';
       return RULE_POOL[(rng() * RULE_POOL.length) | 0];
     }
 
-    // Fully-random rule: any L/R string, length 2..10. Length distribution
-    // skews toward 3-6 since shorter rules read as plain Langton-like and
-    // longer rules tend to be visually mush. Constants-only rules (all L
-    // or all R) are rejected — those just spiral the ant in a circle.
+    // Fully-random rule: L/R/F string, length 2..10, length-distribution
+    // skewed toward 3-6. F shows up ~20% of the time so most rules still
+    // resemble the L/R family. Constant rules (all-same letter) are
+    // rejected — those collapse to circular orbits or a straight line.
     function pickFullyRandomRule(avoid: string): string {
       for (let attempt = 0; attempt < 6; attempt++) {
         const len = 2 + Math.min(8, ((-Math.log(1 - rng() * 0.95)) * 2.5) | 0);
         let s = '';
-        let countL = 0;
+        let counts = { L: 0, R: 0, F: 0 };
         for (let i = 0; i < len; i++) {
-          const c = rng() < 0.5 ? 'L' : 'R';
-          if (c === 'L') countL++;
+          const r = rng();
+          const c = r < 0.4 ? 'L' : r < 0.8 ? 'R' : 'F';
+          counts[c as keyof typeof counts]++;
           s += c;
         }
-        if (countL === 0 || countL === len) continue;
+        if (counts.L === len || counts.R === len || counts.F === len) continue;
         if (s === avoid) continue;
         return s;
       }
@@ -528,11 +521,9 @@ import Base from '../../layouts/Base.astro';
       }
     }
 
-    function pickAntCountForTier(t: Tier): number {
-      // High-tier rules are visibly best with a single ant (preserves the
-      // paper's bilateral track). Medium-tier rules need a flock to stay
-      // visually busy. "Other"-tier rules default to 1.
-      if (t === 'medium') return 3 + ((rng() * 8) | 0); // 3..10 inclusive
+    function pickAntCountForTier(_t: Tier): number {
+      // All tiered rules currently use a single ant. Tier remains a
+      // typed field for future per-tier overrides.
       return 1;
     }
 
@@ -590,8 +581,10 @@ import Base from '../../layouts/Base.astro';
         for (let s = 0; s < n; s++) {
           const i = ant.y * cw + ant.x;
           const cell = grid[i];
-          if (r[cell] === 0) ant.d = (ant.d + dirCount - 1) % dirCount;
-          else ant.d = (ant.d + 1) % dirCount;
+          const turn = r[cell];
+          if (turn === 0) ant.d = (ant.d + dirCount - 1) % dirCount;
+          else if (turn === 1) ant.d = (ant.d + 1) % dirCount;
+          // turn === 2 (F): no turn — keep direction.
           grid[i] = (cell + 1) % ns;
           let nx, ny;
           if (isHex) {
@@ -651,68 +644,81 @@ import Base from '../../layouts/Base.astro';
     }
 
     function buildTruchetBg() {
-      // Pre-render the "all cells in state 0" tile pattern for the current
-      // rule. Drawn once and blitted each frame so we only re-stroke the
-      // *visited* cells per frame.
-      const off = document.createElement('canvas');
-      off.width = W_PX;
-      off.height = H_PX;
-      const oc = off.getContext('2d');
-      if (!oc) { truchetBg = null; return; }
-      oc.fillStyle = rgb(paper);
-      oc.fillRect(0, 0, W_PX, H_PX);
+      // Render a single CELL_PX × CELL_PX tile of the rule[0] orientation,
+      // and let createPattern tile it across the canvas at fill time. This
+      // is constant-work per cycle no matter how big the canvas is — the
+      // earlier "stroke a single 80k-arc path" approach locked the browser
+      // when entering truchet mode at common screen sizes.
       const cs = CELL_PX;
+      const tile = document.createElement('canvas');
+      tile.width = cs;
+      tile.height = cs;
+      const tc = tile.getContext('2d');
+      if (!tc) { truchetBg = null; return; }
+      tc.lineWidth = Math.max(1, cs / 4.5);
+      tc.lineCap = 'round';
       const orient0 = rule[0];
-      const path = new Path2D();
-      for (let y = 0; y < CH; y++) {
-        for (let x = 0; x < CW; x++) {
-          arcsForOrient(path, x * cs, y * cs, cs, orient0);
-        }
+      if (orient0 === 2) {
+        // State-0 rule is F: no arcs in the bg, just paper.
+        truchetBg = null;
+        return;
       }
-      oc.lineWidth = Math.max(1, cs / 4.5);
-      oc.lineCap = 'round';
-      oc.strokeStyle = `rgba(140, 140, 150, 0.32)`;
-      oc.stroke(path);
-      truchetBg = off;
+      tc.strokeStyle = 'rgba(140, 140, 150, 0.32)';
+      const path = new Path2D();
+      arcsForOrient(path, 0, 0, cs, orient0);
+      tc.stroke(path);
+      truchetBg = tile;
     }
 
     function drawSquareTruchet() {
-      if (truchetBg) ctx.drawImage(truchetBg, 0, 0);
-      else {
-        ctx.fillStyle = rgb(paper);
-        ctx.fillRect(0, 0, W_PX, H_PX);
+      ctx.fillStyle = rgb(paper);
+      ctx.fillRect(0, 0, W_PX, H_PX);
+      if (truchetBg) {
+        const pattern = ctx.createPattern(truchetBg, 'repeat');
+        if (pattern) {
+          ctx.fillStyle = pattern;
+          ctx.fillRect(0, 0, W_PX, H_PX);
+        }
       }
       const cs = CELL_PX;
-      // For each visited cell: clear paper rect, then stroke its arcs in
-      // the state's palette color. Group by state so stroke colour changes
-      // are O(nStates) instead of O(cells).
       ctx.lineWidth = Math.max(1, cs / 4.5);
       ctx.lineCap = 'round';
-      // First clear all visited cells with paper, in one batch.
+      // One pass over visited cells: build per-state arc paths for L/R
+      // states and per-state cell lists for F states. Paper-clear under
+      // every L/R cell so the bg pattern doesn't bleed through. F cells
+      // get a solid palette-color fill (they don't have an arc to draw).
+      const arcPaths: (Path2D | null)[] = new Array(nStates).fill(null);
+      const fCellsByState: number[][] = new Array(nStates).fill(null).map(() => []);
+      for (let s = 1; s < nStates; s++) {
+        if (rule[s] !== 2) arcPaths[s] = new Path2D();
+      }
       ctx.fillStyle = rgb(paper);
       for (let y = 0; y < CH; y++) {
         const row = y * CW;
         for (let x = 0; x < CW; x++) {
-          if (grid[row + x] !== 0) ctx.fillRect(x * cs, y * cs, cs, cs);
-        }
-      }
-      // Then stroke per-state arc paths.
-      for (let s = 1; s < nStates; s++) {
-        const path = new Path2D();
-        const orient = rule[s];
-        let any = false;
-        for (let y = 0; y < CH; y++) {
-          const row = y * CW;
-          for (let x = 0; x < CW; x++) {
-            if (grid[row + x] === s) {
-              arcsForOrient(path, x * cs, y * cs, cs, orient);
-              any = true;
-            }
+          const s = grid[row + x];
+          if (s === 0) continue;
+          const px = x * cs;
+          const py = y * cs;
+          if (rule[s] === 2) {
+            fCellsByState[s].push(px, py);
+          } else {
+            ctx.fillRect(px, py, cs, cs);
+            arcsForOrient(arcPaths[s]!, px, py, cs, rule[s]);
           }
         }
-        if (!any) continue;
+      }
+      for (let s = 1; s < nStates; s++) {
+        const fc = fCellsByState[s];
+        if (fc.length === 0) continue;
+        ctx.fillStyle = rgb(palette[s]);
+        for (let i = 0; i < fc.length; i += 2) ctx.fillRect(fc[i], fc[i + 1], cs, cs);
+      }
+      for (let s = 1; s < nStates; s++) {
+        const p = arcPaths[s];
+        if (!p) continue;
         ctx.strokeStyle = rgb(palette[s]);
-        ctx.stroke(path);
+        ctx.stroke(p);
       }
     }
 
@@ -888,7 +894,7 @@ import Base from '../../layouts/Base.astro';
       draw();
     });
     ruleInput?.addEventListener('input', () => {
-      const v = ruleInput.value.toUpperCase().replace(/[^LR]/g, '');
+      const v = ruleInput.value.toUpperCase().replace(/[^LRF]/g, '');
       if (v !== ruleInput.value) ruleInput.value = v;
       if (isValidRule(v)) {
         ruleInput.classList.remove('invalid');
