@@ -769,18 +769,17 @@ import Base from '../../layouts/Base.astro';
 
     function drawAnts() {
       ctx.fillStyle = '#ffffff';
-      // Centered white marker, smaller than the cell so the trail color
-      // peeks out around it. 2px floor so it stays visible at small cells.
-      const m = Math.max(2, Math.round(CELL_PX * 0.55));
       if (mode === 'hex-track') {
+        // Fill the whole hex cell so the ant matches the lattice geometry.
+        const path = new Path2D();
         for (const ant of ants) {
           const [cx, cy] = hexCenter(ant.x, ant.y);
-          ctx.fillRect(cx - m / 2, cy - m / 2, m, m);
+          addHexToPath(path, cx, cy);
         }
+        ctx.fill(path);
       } else {
-        const off = Math.floor((CELL_PX - m) / 2);
         for (const ant of ants) {
-          ctx.fillRect(ant.x * CELL_PX + off, ant.y * CELL_PX + off, m, m);
+          ctx.fillRect(ant.x * CELL_PX, ant.y * CELL_PX, CELL_PX, CELL_PX);
         }
       }
     }
