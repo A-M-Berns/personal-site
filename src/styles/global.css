@@ -1229,27 +1229,6 @@ label.margin-toggle:not(.sidenote-number):focus-visible + input.margin-toggle + 
 label.margin-toggle:not(.sidenote-number) { display: none; }
 input.margin-toggle { display: none; }
 
-.animation-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: 1rem;
-}
-.animation-card {
-  display: block;
-  color: var(--ink);
-  text-decoration: none;
-  background: #000;
-  padding: 0.75rem;
-}
-.animation-card iframe {
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  border: 1px solid var(--rule);
-  background: var(--paper);
-  pointer-events: none;
-}
-
 html.animation-only,
 html.animation-only body,
 html.animation-only .page {
@@ -1257,6 +1236,9 @@ html.animation-only .page {
   height: 100%;
   overflow: hidden;
 }
+/* Animation-only mode (?animation=1 or shift+A). Hides text content and
+   readouts, but keeps the floating .anim-controls and any active dev
+   panels visible so the user can still navigate / tweak parameters. */
 html.animation-only .site-header,
 html.animation-only .hero,
 html.animation-only .home-nav,
@@ -1267,13 +1249,11 @@ html.animation-only .about-panes,
 html.animation-only .taste-panes,
 html.animation-only .music-panes,
 html.animation-only .music-intro,
-html.animation-only .anim-controls,
+html.animation-only .formalization-panes,
+html.animation-only .formalization-intro,
 html.animation-only .wang-label,
-html.animation-only .wang-controls,
 html.animation-only .wang-boost,
-html.animation-only .wire-label,
-html.animation-only .tune-panel,
-html.animation-only .sandpile-panel {
+html.animation-only .wire-label {
   display: none !important;
 }
 html.animation-only .page {
@@ -1282,16 +1262,12 @@ html.animation-only .page {
   padding: 0;
 }
 
-/* Dev-mode gating: per-page parameter panels and state readouts are hidden
-   by default. Toggle with ?dev=1 in the URL or shift+D. */
+/* Dev-mode gating: per-page parameter panels are hidden by default.
+   Toggle with ?dev=1 in the URL or shift+D. */
 html:not(.dev-mode) .wang-controls,
-html:not(.dev-mode) .wang-label,
 html:not(.dev-mode) .tune-panel,
 html:not(.dev-mode) .sandpile-panel,
 html:not(.dev-mode) .dla-panel {
-  display: none !important;
-}
-html.animation-only .dla-panel {
   display: none !important;
 }
 

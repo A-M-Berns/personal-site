@@ -31,24 +31,28 @@ const pageClass = `page-${path === '/' ? 'home' : path.split('/')[1]}`;
     <script is:inline>
       (function () {
         var params = new URLSearchParams(window.location.search);
-        function readToggle(key, paramName) {
-          var paramVal = params.get(paramName);
-          var stored = null;
-          try { stored = localStorage.getItem(key); } catch (e) {}
-          if (paramVal === '1') {
-            try { localStorage.setItem(key, '1'); } catch (e) {}
-            return true;
-          }
-          if (paramVal === '0') {
-            try { localStorage.setItem(key, '0'); } catch (e) {}
-            return false;
-          }
-          return stored === '1';
-        }
         var DEV_KEY = 'site-dev-mode';
         var ANIM_KEY = 'site-animation-only';
-        if (readToggle(DEV_KEY, 'dev')) document.documentElement.classList.add('dev-mode');
-        if (readToggle(ANIM_KEY, 'animation')) document.documentElement.classList.add('animation-only');
+
+        // Dev mode: URL ?dev=1/0 persists to localStorage (intentional opt-in).
+        var devParam = params.get('dev');
+        if (devParam === '1') { try { localStorage.setItem(DEV_KEY, '1'); } catch (e) {} }
+        else if (devParam === '0') { try { localStorage.setItem(DEV_KEY, '0'); } catch (e) {} }
+        var devStored = false;
+        try { devStored = localStorage.getItem(DEV_KEY) === '1'; } catch (e) {}
+        if (devParam === '1' || (devParam !== '0' && devStored)) {
+          document.documentElement.classList.add('dev-mode');
+        }
+
+        // Animation mode: URL ?animation=1 is per-load (does NOT persist).
+        // Shift+A toggles the persistent state.
+        var animParam = params.get('animation');
+        var animPersisted = false;
+        try { animPersisted = localStorage.getItem(ANIM_KEY) === '1'; } catch (e) {}
+        if (animParam === '1' || (animParam !== '0' && animPersisted)) {
+          document.documentElement.classList.add('animation-only');
+        }
+
         function bindToggle(key, cls, letterUpper, letterLower) {
           document.addEventListener('keydown', function (e) {
             if (!e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
