@@ -19,7 +19,6 @@ import Base from '../../layouts/Base.astro';
         <p class="empty">More to come.</p>
       </section>
     </div>
-    <aside id="ant-label" class="ant-label" aria-live="polite"></aside>
     <div class="anim-controls">
       <button id="ant-info" type="button" aria-label="About">About</button>
       <button id="ant-restart" type="button" aria-label="Reset ant">Reset</button>
@@ -151,31 +150,6 @@ import Base from '../../layouts/Base.astro';
     pointer-events: none;
     opacity: 0.85;
   }
-  .ant-label {
-    position: fixed;
-    right: 1rem;
-    top: 1rem;
-    z-index: 3;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem 0.7rem;
-    max-width: min(34rem, calc(100vw - 2rem));
-    background: rgba(0, 0, 0, 0.82);
-    border: 1px solid rgba(236, 236, 236, 0.12);
-    border-radius: 3px;
-    padding: 0.45rem 0.6rem;
-    color: var(--muted);
-    font-family: var(--font-lexend), var(--sans);
-    font-size: 0.68rem;
-    font-weight: 600;
-    line-height: 1.2;
-    pointer-events: none;
-  }
-  .ant-label span { white-space: nowrap; }
-  @media (max-width: 760px) {
-    .ant-label { top: 3.55rem; }
-  }
-
   .ant-panel {
     position: fixed;
     left: 1rem;
@@ -313,8 +287,6 @@ import Base from '../../layouts/Base.astro';
   }
 
   html:not(.dev-mode) .ant-panel { display: none !important; }
-  html.animation-only .ant-panel,
-  html.animation-only .ant-label { display: none !important; }
   .ant-panel:not(.is-truchet) .truchet-only { display: none !important; }
 </style>
 
@@ -350,7 +322,6 @@ import Base from '../../layouts/Base.astro';
     const infoButton = document.getElementById('ant-info');
     const aboutDialog = document.getElementById('ant-about') as HTMLDialogElement | null;
     const aboutClose = aboutDialog?.querySelector('.anim-about-close');
-    const labelEl = document.getElementById('ant-label');
     const nReadout = document.getElementById('ant-n');
     const stepReadout = document.getElementById('ant-step');
     const seedReadout = document.getElementById('ant-seed');
@@ -1038,15 +1009,7 @@ import Base from '../../layouts/Base.astro';
       if (showAnt) drawAnts();
     }
 
-    function updateLabel(activeCount = ants.length) {
-      if (labelEl) {
-        labelEl.innerHTML = `
-          <span>automaton: n-state ant</span>
-          <span>rule: ${ruleStr}</span>
-          <span>n: ${nStates}</span>
-          <span>ants: ${activeCount}</span>
-        `;
-      }
+    function updateLabel(_activeCount = ants.length) {
       if (nReadout) nReadout.textContent = String(nStates);
       if (ruleReadout) ruleReadout.textContent = ruleStr;
       if (seedReadout) seedReadout.textContent = seed.toString(16).padStart(8, '0');

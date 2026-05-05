@@ -1251,7 +1251,6 @@ html.animation-only .music-panes,
 html.animation-only .music-intro,
 html.animation-only .formalization-panes,
 html.animation-only .formalization-intro,
-html.animation-only .wang-label,
 html.animation-only .wang-boost,
 html.animation-only .wire-label {
   display: none !important;
@@ -1265,6 +1264,7 @@ html.animation-only .page {
 /* Dev-mode gating: per-page parameter panels are hidden by default.
    Toggle with ?dev=1 in the URL or shift+D. */
 html:not(.dev-mode) .wang-controls,
+html:not(.dev-mode) .wang-label,
 html:not(.dev-mode) .tune-panel,
 html:not(.dev-mode) .sandpile-panel,
 html:not(.dev-mode) .dla-panel {
