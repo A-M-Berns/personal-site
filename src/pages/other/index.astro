@@ -77,6 +77,16 @@ import Base from '../../layouts/Base.astro';
           <span id="dla-eta-value">1.0</span>
         </div>
         <div class="dla-panel-row">
+          <label for="dla-wind">wind</label>
+          <input id="dla-wind" type="range" min="0" max="1" step="0.05" value="0" />
+          <span id="dla-wind-value">0.00</span>
+        </div>
+        <div class="dla-panel-row">
+          <label for="dla-cycle">cycle</label>
+          <input id="dla-cycle" type="range" min="100" max="6000" step="50" value="1600" />
+          <span id="dla-cycle-value">1600</span>
+        </div>
+        <div class="dla-panel-row">
           <label for="dla-speed">speed</label>
           <input id="dla-speed" type="range" min="50" max="3000" step="50" value="350" />
           <span id="dla-speed-value">350</span>
@@ -262,6 +272,10 @@ import Base from '../../layouts/Base.astro';
     const persistValue = document.getElementById('dla-persist-value');
     const etaInput = document.getElementById('dla-eta') as HTMLInputElement | null;
     const etaValue = document.getElementById('dla-eta-value');
+    const windInput = document.getElementById('dla-wind') as HTMLInputElement | null;
+    const windValue = document.getElementById('dla-wind-value');
+    const cycleInput = document.getElementById('dla-cycle') as HTMLInputElement | null;
+    const cycleValue = document.getElementById('dla-cycle-value');
     const renderModeSelect = document.getElementById('dla-render-mode') as HTMLSelectElement | null;
     const speedInput = document.getElementById('dla-speed') as HTMLInputElement | null;
     const speedValue = document.getElementById('dla-speed-value');
@@ -284,7 +298,6 @@ import Base from '../../layouts/Base.astro';
     type RenderMode = 'pixel' | 'lines' | 'both';
     type PresetName = 'random' | 'classic' | 'lightning' | 'frost' | 'coral' | 'speckle';
 
-    const COLOR_CYCLE = 1600;
 
     const DX8 = [1, 1, 0, -1, -1, -1, 0, 1];
     const DY8 = [0, 1, 1, 1, 0, -1, -1, -1];
@@ -305,6 +318,10 @@ import Base from '../../layouts/Base.astro';
     let asymm = Number(asymmInput?.value ?? 0);
     let persistence = Number(persistInput?.value ?? 0);
     let eta = Number(etaInput?.value ?? 1);
+    let windStrength = Number(windInput?.value ?? 0);
+    let colorCycle = Number(cycleInput?.value ?? 1600);
+    let windAngle = 0;
+    let windRotSpeed = 0;
     let renderMode: RenderMode = ((renderModeSelect?.value as RenderMode) ?? 'pixel');
     let stepsPerFrame = Number(speedInput?.value ?? 350);
     let preset: PresetName = ((presetSelect?.value as PresetName) ?? 'random');
@@ -346,6 +363,25 @@ import Base from '../../layouts/Base.astro';
 
     function applyRenderClass() {
       document.documentElement.classList.toggle('render-pixel', renderMode === 'pixel');
+    }
+
+    function pickWindBiasedDir(): number {
+      if (windStrength <= 0) return Math.floor(rng() * 8);
+      const wx = Math.cos(windAngle) * windStrength;
+      const wy = Math.sin(windAngle) * windStrength;
+      let total = 0;
+      const w = [0, 0, 0, 0, 0, 0, 0, 0];
+      for (let i = 0; i < 8; i++) {
+        const v = 1 + wx * DX8[i] + wy * DY8[i];
+        w[i] = v > 0 ? v : 0;
+        total += w[i];
+      }
+      if (total <= 0) return Math.floor(rng() * 8);
+      let r = rng() * total;
+      for (let i = 0; i < 8; i++) {
+        if ((r -= w[i]) < 0) return i;
+      }
+      return 7;
     }
 
     function rollSpawnWeights() {
@@ -397,7 +433,7 @@ import Base from '../../layouts/Base.astro';
     }
 
     function colorFor(): number[] {
-      return paletteCycle(stuckCount / COLOR_CYCLE);
+      return paletteCycle(stuckCount / colorCycle);
     }
 
     function paintCell(x: number, y: number, parent: number) {
@@ -487,6 +523,8 @@ import Base from '../../layouts/Base.astro';
       rng = mulberry32(seedHash);
       pickPalette();
       rollSpawnWeights();
+      windAngle = rng() * 2 * Math.PI;
+      windRotSpeed = (0.003 + rng() * 0.012) * (rng() < 0.5 ? -1 : 1);
       state.fill(0);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
@@ -502,13 +540,15 @@ import Base from '../../layouts/Base.astro';
       asymm: number;
       persistence: number;
       eta: number;
+      windStrength: number;
+      colorCycle: number;
     };
     const PRESETS: Record<Exclude<PresetName, 'random'>, PresetSpec> = {
-      classic:   { seedMode: 'point-center',   pStick: 1,   renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1   },
-      lightning: { seedMode: 'top-edge',       pStick: 1,   renderMode: 'pixel', asymm: 1,    persistence: 0.55, eta: 1.6 },
-      frost:     { seedMode: 'multi-point',    pStick: 0.4, renderMode: 'pixel', asymm: 0.5,  persistence: 0,    eta: 1   },
-      coral:     { seedMode: 'circle-outline', pStick: 0.7, renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1.3 },
-      speckle:   { seedMode: 'point-random',   pStick: 1,   renderMode: 'pixel', asymm: 0.7,  persistence: 0.85, eta: 2.4 },
+      classic:   { seedMode: 'point-center',   pStick: 1,   renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1,   windStrength: 0,    colorCycle: 1600 },
+      lightning: { seedMode: 'top-edge',       pStick: 1,   renderMode: 'pixel', asymm: 1,    persistence: 0.55, eta: 1.6, windStrength: 0.55, colorCycle: 800  },
+      frost:     { seedMode: 'multi-point',    pStick: 0.4, renderMode: 'pixel', asymm: 0.5,  persistence: 0,    eta: 1,   windStrength: 0.25, colorCycle: 2400 },
+      coral:     { seedMode: 'circle-outline', pStick: 0.7, renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1.3, windStrength: 0,    colorCycle: 600  },
+      speckle:   { seedMode: 'point-random',   pStick: 1,   renderMode: 'pixel', asymm: 0.7,  persistence: 0.85, eta: 2.4, windStrength: 0.4,  colorCycle: 4000 },
     };
     const PRESET_KEYS = Object.keys(PRESETS) as Array<keyof typeof PRESETS>;
     function pickRandomPreset(): keyof typeof PRESETS {
@@ -522,6 +562,8 @@ import Base from '../../layouts/Base.astro';
       asymm = p.asymm;
       persistence = p.persistence;
       eta = p.eta;
+      windStrength = p.windStrength;
+      colorCycle = p.colorCycle;
       applyRenderClass();
       if (seedSelect) seedSelect.value = p.seedMode;
       if (pStickInput) pStickInput.value = String(p.pStick);
@@ -529,10 +571,14 @@ import Base from '../../layouts/Base.astro';
       if (asymmInput) asymmInput.value = String(p.asymm);
       if (persistInput) persistInput.value = String(p.persistence);
       if (etaInput) etaInput.value = String(p.eta);
+      if (windInput) windInput.value = String(p.windStrength);
+      if (cycleInput) cycleInput.value = String(p.colorCycle);
       if (pStickValue) pStickValue.textContent = p.pStick.toFixed(2);
       if (asymmValue) asymmValue.textContent = p.asymm.toFixed(2);
       if (persistValue) persistValue.textContent = p.persistence.toFixed(2);
       if (etaValue) etaValue.textContent = p.eta.toFixed(1);
+      if (windValue) windValue.textContent = p.windStrength.toFixed(2);
+      if (cycleValue) cycleValue.textContent = String(p.colorCycle);
     }
 
     function updateReadout() {
@@ -615,7 +661,7 @@ import Base from '../../layouts/Base.astro';
         if (lastDir >= 0 && rng() < persistence) {
           dir = lastDir;
         } else {
-          dir = Math.floor(rng() * 8);
+          dir = pickWindBiasedDir();
         }
         lastDir = dir;
         x += DX8[dir];
@@ -631,6 +677,7 @@ import Base from '../../layouts/Base.astro';
         seedCycle();
         return;
       }
+      windAngle += windRotSpeed;
       for (let i = 0; i < stepsPerFrame; i++) walkOne();
       updateReadout();
     }
@@ -723,6 +770,14 @@ import Base from '../../layouts/Base.astro';
     etaInput?.addEventListener('input', () => {
       eta = Number(etaInput.value);
       if (etaValue) etaValue.textContent = eta.toFixed(1);
+    });
+    windInput?.addEventListener('input', () => {
+      windStrength = Number(windInput.value);
+      if (windValue) windValue.textContent = windStrength.toFixed(2);
+    });
+    cycleInput?.addEventListener('input', () => {
+      colorCycle = Number(cycleInput.value);
+      if (cycleValue) cycleValue.textContent = String(colorCycle);
     });
     renderModeSelect?.addEventListener('change', () => {
       renderMode = renderModeSelect.value as RenderMode;
