@@ -1,13 +1,12 @@
 ---
 import Base from '../../layouts/Base.astro';
 
-type Anim = { title: string; href: string; preview?: 'iframe' | 'lenia' };
-const animations: Anim[] = [
+const animations = [
   { title: 'Home',          href: '/?animation=1' },
   { title: 'About',         href: '/about/?animation=1' },
   { title: 'Writing',       href: '/writing/?animation=1' },
   { title: 'Formalization', href: '/formalization/?animation=1' },
-  { title: 'Music',         href: '/music/?animation=1', preview: 'lenia' },
+  { title: 'Music',         href: '/music/?animation=1' },
   { title: 'Other',         href: '/other/?animation=1' },
 ];
 ---
@@ -18,10 +17,7 @@ const animations: Anim[] = [
   <div class="animation-grid">
     {animations.map((animation) => (
       <a class="animation-card" href={animation.href} aria-label={`${animation.title} animation`}>
-        {animation.preview === 'lenia'
-          ? <div class="animation-preview animation-preview--lenia" aria-hidden="true"></div>
-          : <iframe title={`${animation.title} animation`} src={animation.href} loading="lazy"></iframe>
-        }
+        <iframe title={`${animation.title} animation`} src={animation.href} loading="lazy"></iframe>
       </a>
     ))}
   </div>
