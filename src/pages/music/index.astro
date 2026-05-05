@@ -6,7 +6,7 @@ import Base from '../../layouts/Base.astro';
     <canvas id="lenia-sim" class="lenia-sim" aria-hidden="true"></canvas>
     <header class="section-head">
       <h1><span class="hl">Music</span></h1>
-      <p><span class="hl">Released music and site-only recordings.</span></p>
+      <p><span class="hl">I make sample-based experimental music. More to come.</span></p>
     </header>
     <article class="note">
       <p><span class="hl"><a href="https://open.spotify.com/artist/3dS0px84EtOAKKdgoaNd2c">Anson Berns on Spotify</a></span></p>
@@ -21,11 +21,7 @@ import Base from '../../layouts/Base.astro';
       <button class="anim-about-close" type="button" aria-label="Close">×</button>
       <h2 id="lenia-about-title">About this animation</h2>
       <p>
-        Particle Lenia (Mordvintsev, Niklasson, Randazzo, Chan): a continuous-space
-        cellular system where each particle integrates a smooth bell-ring kernel
-        over its neighbors and follows the gradient of a target field. Click the
-        background to nudge particles; press Reset to reseed with a new mass and
-        kernel configuration.
+        This animation is an implementation of <a href="https://google-research.github.io/self-organising-systems/particle-lenia/">Particle Lenia</a>, a system of differential equations that gives rise to lifelike behavior. Each cycle randomly tunes a few parameters of the equations and initializes based on a random template and seed. A flow is also applied according to a randomly generated vector field. The resulting blobs often look like alien cells, brain tissue, or weather radar. Click to perturb the field and push the blobs around.
       </p>
     </dialog>
     <aside id="tune-panel" class="tune-panel" aria-label="Particle Lenia parameters">

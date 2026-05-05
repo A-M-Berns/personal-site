@@ -6,11 +6,36 @@ import Base from '../layouts/Base.astro';
     <canvas id="wang-tiles" class="wang-tiles" aria-hidden="true"></canvas>
     <header class="section-head">
       <h1><span class="hl">About</span></h1>
-      <p><span class="hl">A short bio goes here.</span></p>
     </header>
-    <article class="note">
-      <p><span class="hl">More to come.</span></p>
-    </article>
+    <div class="about-panes">
+      <section class="writing-pane">
+        <h2>About me</h2>
+        <p>
+          I'm Anson, an independent AI researcher and contractor. My research interests
+          include formal verification, AI cooperation, agent foundations, logical induction,
+          and applications of moral philosophy to AI alignment. More broadly, I am
+          interested in formal systems, abstract beauty, and the Good. My projects on
+          these and other topics have taken the form of <a href="/writing">writing</a>,
+          <a href="/formalization">formalization</a>, and <a href="/music">music</a>.
+          Various dimensions of my taste are documented <a href="/taste">here</a>.
+        </p>
+      </section>
+      <section class="writing-pane">
+        <h2>About this site</h2>
+        <p>
+          This site is a <a href="https://en.wikipedia.org/wiki/Generative_art">generative
+          art</a> gallery of algorithmically generated animations. A few of the animations
+          demonstrate the beautiful emergent complexity of <a href="https://en.wikipedia.org/wiki/Cellular_automaton">cellular
+          automata</a>: the <a href="/">cyclic automaton</a>, the <a href="/taste">Abelian
+          sandpile</a>, and the <a href="/formalization">turmites</a>. Other animations
+          implement <a href="/music">Particle Lenia</a>, a simple <a href="/writing">Markov
+          text model</a>, and <a href="/other">diffusion-limited aggregation</a>. This
+          page's background uses a random <a href="https://en.wikipedia.org/wiki/Wang_tile">Wang
+          tiling</a> generator. All the text on the site is written by me. The site's
+          code was written in Astro by Claude Code and Codex under my direction.
+        </p>
+      </section>
+    </div>
     <aside id="wang-label" class="wang-label" aria-live="polite"></aside>
     <div id="wang-boost" class="wang-boost" aria-hidden="true">
       <span></span><span></span>
@@ -33,10 +58,7 @@ import Base from '../layouts/Base.astro';
       <button class="wang-about-close" type="button" aria-label="Close">×</button>
       <h2 id="wang-about-title">About this animation</h2>
       <p>
-        A seeded tile generator fills a finite lattice with shape-native matching rules: four labels for square-like tiles, three for triangles, and six for hexagonal or circle-packed tiles. Touching sides always share the same label. Each cycle chooses a mathematical tileset, a visual skin, an organic growth order, a reveal speed, and a small palette from the site's master color pool.
-      </p>
-      <p>
-        The label shows the active tileset, skin, growth mode, speed, tile size, seed, and palette so variants can be compared while tuning.
+        Each cycle of this animation displays a tiling created with <a href="https://en.wikipedia.org/wiki/Wang_tile">Wang tiles</a>. The animation samples from various sets of Wang tiles, including ones that generate <a href="https://en.wikipedia.org/wiki/Aperiodic_tiling">aperiodic tilings</a>. Aperiodic Wang tiles are sometimes used in video games to procedurally generate realistic terrain textures. I think other patterns this page generates end up looking like fancy sweaters or beautiful QR codes. Hold your mouse down on the right side of the screen to fast forward, hold on the left to rewind.
       </p>
     </dialog>
   </div>

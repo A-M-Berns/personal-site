@@ -9,7 +9,12 @@ import Base from '../../layouts/Base.astro';
       <p><span class="hl">Side projects and miscellaneous experiments.</span></p>
     </header>
     <article class="note other-note">
-      <p><span class="hl">Background: diffusion-limited aggregation.</span></p>
+      <ul>
+        <li><span class="hl">JHEP paper.</span></li>
+        <li><span class="hl">Quizbowl.</span></li>
+        <li><span class="hl">Acting.</span></li>
+        <li><span class="hl">More to come.</span></li>
+      </ul>
     </article>
     <div class="anim-controls">
       <button id="dla-info" type="button" aria-label="About this animation">About this animation</button>
@@ -19,11 +24,7 @@ import Base from '../../layouts/Base.astro';
       <button class="anim-about-close" type="button" aria-label="Close">×</button>
       <h2 id="dla-about-title">About this animation</h2>
       <p>
-        Diffusion-limited aggregation (Witten and Sander, 1981): seed cells
-        anchor a growing cluster. Random walkers are released from a circle
-        just outside the cluster and wander until they touch it; on contact
-        they freeze in place, becoming part of the cluster. The resulting
-        structure is a fractal of dimension ~1.71 in two dimensions.
+        This animation is an implementation of <a href="https://en.wikipedia.org/wiki/Diffusion-limited_aggregation">diffusion-limited aggregation</a>: seed cells anchor a growing cluster, and random walkers released nearby stick the moment they touch it. The result is a fractal of dimension ≈1.71 in two dimensions.
       </p>
     </dialog>
     <aside class="dla-panel" aria-label="DLA controls">

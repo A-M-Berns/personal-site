@@ -11,10 +11,13 @@ import Base from '../../layouts/Base.astro';
     <article class="note">
       <ul>
         <li>
-          <span class="hl"><a href="https://github.com/leanprover-community/mathlib4/blob/7d71710aa79bdb99d16d25644d1e592501f26c41/Mathlib/Geometry/Polygon/Basic.lean">Mathlib polygon geometry</a></span>
+          <span class="hl"><a href="https://github.com/leanprover-community/mathlib4/blob/7d71710aa79bdb99d16d25644d1e592501f26c41/Mathlib/Geometry/Polygon/Basic.lean">Polygon geometry in Mathlib</a></span>
         </li>
         <li>
           <span class="hl"><a href="https://github.com/A-M-Berns/Formalized-Agent-Foundations">Formalized Agent Foundations</a></span>
+        </li>
+        <li>
+          <span class="hl">More to come.</span>
         </li>
       </ul>
     </article>
@@ -27,10 +30,7 @@ import Base from '../../layouts/Base.astro';
       <button class="anim-about-close" type="button" aria-label="Close">×</button>
       <h2 id="ant-about-title">About this animation</h2>
       <p>
-        n-state Langton's ant (Gale, Propp, Sutherland, Troubetzkoy 1995). A rule-string of L's and R's specifies what each cell-state does when an ant visits it: turn left or turn right. As the ant leaves, the cell advances to the next state mod n. With n &gt; 2 some rule-strings produce bilaterally-symmetric "tracks" that grow forever while never drifting from their starting cell.
-      </p>
-      <p>
-        Each cycle picks a fresh rule-string, ant count, and palette; press Reset to advance immediately.
+        This animation is an implementation of <a href="https://en.wikipedia.org/wiki/Turmite">turmites</a> — generalizations of <a href="https://en.wikipedia.org/wiki/Langton%27s_ant">Langton's ant</a>. Each cycle picks a fresh rule-string, palette, and lattice (square or hex). For some rule-strings the ant traces a bilaterally-symmetric track that grows forever while the ant keeps returning to its starting cell.
       </p>
     </dialog>
     <aside class="ant-panel" aria-label="Ant controls">

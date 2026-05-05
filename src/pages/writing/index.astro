@@ -40,8 +40,16 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
   <div class="writing-shell">
     <canvas id="markov-text" class="markov-text" aria-hidden="true"></canvas>
     <div class="anim-controls" aria-label="Writing animation controls">
+      <button id="writing-info" type="button" aria-label="About this animation">About this animation</button>
       <button id="writing-reset" type="button" aria-label="Reset Writing animation">Reset</button>
     </div>
+    <dialog id="writing-about" class="anim-about" aria-labelledby="writing-about-title">
+      <button class="anim-about-close" type="button" aria-label="Close">×</button>
+      <h2 id="writing-about-title">About this animation</h2>
+      <p>
+        A simple character-level <a href="https://en.wikipedia.org/wiki/Markov_chain">Markov</a> text model, trained on writing from this site. Each cycle samples a fresh passage by repeatedly picking the next character given the last few.
+      </p>
+    </dialog>
     <header class="section-head">
       <h1>Writing</h1>
     </header>
@@ -378,6 +386,14 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
 
     resize();
     resetButton?.addEventListener('click', startCycle);
+    const infoButton = document.getElementById('writing-info');
+    const aboutDialog = document.getElementById('writing-about');
+    const aboutClose = aboutDialog?.querySelector('.anim-about-close');
+    infoButton?.addEventListener('click', () => aboutDialog?.showModal());
+    aboutClose?.addEventListener('click', () => aboutDialog?.close());
+    aboutDialog?.addEventListener('click', (event) => {
+      if (event.target === aboutDialog) aboutDialog.close();
+    });
     if (!reduce) {
       let last = 0;
       const loop = (now) => {

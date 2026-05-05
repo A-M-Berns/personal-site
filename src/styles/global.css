@@ -350,9 +350,28 @@ a:focus-visible {
   isolation: isolate;
 }
 .about-shell > .section-head,
-.about-shell > .note {
+.about-shell > .note,
+.about-shell > .about-panes,
+.taste-shell > .section-head,
+.taste-shell > .taste-panes {
   position: relative;
   z-index: 1;
+}
+.about-panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2rem 2.5rem;
+  align-items: start;
+  max-width: 100ch;
+}
+.taste-panes {
+  display: grid;
+  grid-template-columns: minmax(0, 60ch);
+  gap: 1.25rem;
+  max-width: 60ch;
+}
+@media (max-width: 760px) {
+  .about-panes { grid-template-columns: 1fr; gap: 1.5rem; }
 }
 
 .other-shell {
@@ -877,6 +896,25 @@ a:focus-visible {
   color: var(--muted);
   font-style: italic;
   margin: 0;
+}
+.writing-pane p {
+  margin: 0 0 0.75rem;
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.writing-pane p:last-child { margin-bottom: 0; }
+.writing-pane a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--muted);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+.writing-pane a:hover,
+.writing-pane a:focus-visible {
+  color: var(--accent);
+  text-decoration-color: var(--accent);
 }
 .writing-pane .note-list li {
   flex-direction: column;
