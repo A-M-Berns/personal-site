@@ -6,12 +6,32 @@ import Base from '../../layouts/Base.astro';
     <canvas id="lenia-sim" class="lenia-sim" aria-hidden="true"></canvas>
     <header class="section-head">
       <h1><span class="hl">Music</span></h1>
-      <p><span class="hl">I make sample-based experimental music. More to come.</span></p>
     </header>
-    <article class="note">
-      <p><span class="hl"><a href="https://open.spotify.com/artist/3dS0px84EtOAKKdgoaNd2c">Anson Berns on Spotify</a></span></p>
-      <p><span class="hl">Site-only: <audio controls preload="metadata" src="/music/gbr-project.wav"></audio></span></p>
-    </article>
+    <p class="music-intro">I make sample-based experimental music. More to come.</p>
+    <div class="music-panes">
+      <section class="writing-pane">
+        <h2>Released</h2>
+        <p><a href="https://open.spotify.com/artist/3dS0px84EtOAKKdgoaNd2c">Anson Berns on Spotify</a></p>
+      </section>
+      <section class="writing-pane">
+        <h2>Site-only</h2>
+        <div class="audio-player" data-src="/music/gbr-project.wav">
+          <button class="audio-play" type="button" aria-label="Play">
+            <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
+              <polygon class="audio-icon-play" points="3,2 10,6 3,10"></polygon>
+              <g class="audio-icon-pause">
+                <rect x="3" y="2" width="2" height="8"></rect>
+                <rect x="7" y="2" width="2" height="8"></rect>
+              </g>
+            </svg>
+          </button>
+          <div class="audio-track" tabindex="0" role="slider" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <div class="audio-progress"></div>
+          </div>
+          <span class="audio-time">0:00 / —:—</span>
+        </div>
+      </section>
+    </div>
 
     <div class="anim-controls">
       <button id="lenia-info" type="button" aria-label="About this animation">About this animation</button>
@@ -1608,5 +1628,97 @@ import Base from '../../layouts/Base.astro';
       };
       requestAnimationFrame(loop);
     }
+  }
+</script>
+
+<script>
+  // Custom audio player to keep the controls in the site's visual language
+  // (no native browser chrome). Exposes play/pause toggle, click-to-seek,
+  // and a tabular-numeric time readout.
+  for (const player of document.querySelectorAll<HTMLElement>('.audio-player')) {
+    const src = player.dataset.src;
+    if (!src) continue;
+    const audio = new Audio(src);
+    audio.preload = 'metadata';
+    const playBtn = player.querySelector<HTMLButtonElement>('.audio-play');
+    const track = player.querySelector<HTMLElement>('.audio-track');
+    const progress = player.querySelector<HTMLElement>('.audio-progress');
+    const timeEl = player.querySelector<HTMLElement>('.audio-time');
+
+    function fmt(t: number): string {
+      if (!isFinite(t) || t < 0) return '—:—';
+      const m = Math.floor(t / 60);
+      const s = Math.floor(t - m * 60);
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+    function syncTime() {
+      if (!timeEl) return;
+      timeEl.textContent = `${fmt(audio.currentTime)} / ${fmt(audio.duration)}`;
+    }
+    function syncProgress() {
+      if (!progress || !track) return;
+      const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+      progress.style.width = `${pct}%`;
+      track.setAttribute('aria-valuenow', pct.toFixed(0));
+    }
+    function seekTo(clientX: number) {
+      if (!track || !audio.duration) return;
+      const rect = track.getBoundingClientRect();
+      const t = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      audio.currentTime = t * audio.duration;
+      syncProgress();
+      syncTime();
+    }
+
+    playBtn?.addEventListener('click', () => {
+      if (audio.paused) audio.play();
+      else audio.pause();
+    });
+    audio.addEventListener('play', () => {
+      player.classList.add('is-playing');
+      playBtn?.setAttribute('aria-label', 'Pause');
+    });
+    audio.addEventListener('pause', () => {
+      player.classList.remove('is-playing');
+      playBtn?.setAttribute('aria-label', 'Play');
+    });
+    audio.addEventListener('timeupdate', () => {
+      syncProgress();
+      syncTime();
+    });
+    audio.addEventListener('loadedmetadata', () => {
+      syncProgress();
+      syncTime();
+    });
+    audio.addEventListener('ended', () => {
+      audio.currentTime = 0;
+      syncProgress();
+      syncTime();
+    });
+    track?.addEventListener('pointerdown', (e) => {
+      seekTo(e.clientX);
+      const onMove = (m: PointerEvent) => seekTo(m.clientX);
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+    track?.addEventListener('keydown', (e) => {
+      if (!audio.duration) return;
+      if (e.key === 'ArrowLeft') {
+        audio.currentTime = Math.max(0, audio.currentTime - 5);
+        e.preventDefault();
+      } else if (e.key === 'ArrowRight') {
+        audio.currentTime = Math.min(audio.duration, audio.currentTime + 5);
+        e.preventDefault();
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        if (audio.paused) audio.play();
+        else audio.pause();
+        e.preventDefault();
+      }
+    });
+    syncTime();
   }
 </script>

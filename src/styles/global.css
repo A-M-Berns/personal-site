@@ -954,31 +954,96 @@ a:focus-visible {
 }
 
 /* --- Music --- */
-.music-section + .music-section {
-  margin-top: 2.5rem;
+.other-shell > .music-intro,
+.other-shell > .music-panes {
+  position: relative;
+  z-index: 1;
 }
-.spotify-embed {
-  max-width: 42rem;
-  margin: 1rem 0 0;
+.music-intro {
+  color: var(--ink);
+  font-family: var(--font-lexend), var(--sans);
+  font-size: 1.125rem;
+  line-height: 1.45;
+  font-weight: 600;
+  margin: 0 0 1.75rem;
+  max-width: 60ch;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.85);
 }
-.spotify-embed iframe {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  border: 0;
-  border-radius: 8px;
-  background: #1a1a1d;
+.music-panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem 2rem;
+  max-width: 70ch;
+  align-items: start;
 }
-.music-track h3 {
-  font-family: var(--display);
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: 0;
-  margin: 0 0 0.75rem;
+@media (max-width: 760px) {
+  .music-panes { grid-template-columns: 1fr; gap: 1.25rem; }
 }
-.music-track audio {
-  display: block;
-  width: min(100%, 42rem);
+
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0;
+}
+.audio-play {
+  flex: 0 0 auto;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+.audio-play:hover,
+.audio-play:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+  outline: none;
+}
+.audio-play svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  fill: currentColor;
+}
+.audio-play .audio-icon-pause { display: none; }
+.audio-player.is-playing .audio-icon-play { display: none; }
+.audio-player.is-playing .audio-icon-pause { display: block; }
+
+.audio-track {
+  position: relative;
+  flex: 1 1 auto;
+  height: 2px;
+  background: var(--rule);
+  border-radius: 1px;
+  cursor: pointer;
+}
+.audio-track:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 4px;
+}
+.audio-progress {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.audio-time {
+  flex: 0 0 auto;
+  font-family: var(--font-lexend), var(--sans);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 /* --- Note layout (Tufte-style float sidenotes) --- */
