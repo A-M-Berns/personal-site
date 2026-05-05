@@ -587,6 +587,31 @@ a:focus-visible {
   position: relative;
   isolation: isolate;
 }
+.lean-shell > .formalization-intro,
+.lean-shell > .formalization-panes {
+  position: relative;
+  z-index: 1;
+}
+.formalization-intro {
+  color: var(--ink);
+  font-family: var(--font-lexend), var(--sans);
+  font-size: 1.125rem;
+  line-height: 1.45;
+  font-weight: 600;
+  margin: 0 0 1.75rem;
+  max-width: 60ch;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.85);
+}
+.formalization-panes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem 2rem;
+  max-width: 70ch;
+  align-items: start;
+}
+@media (max-width: 760px) {
+  .formalization-panes { grid-template-columns: 1fr; gap: 1.25rem; }
+}
 .wang-tiles {
   position: fixed;
   inset: 0;
@@ -1210,23 +1235,32 @@ input.margin-toggle { display: none; }
   gap: 1rem;
 }
 .animation-card {
-  display: grid;
-  gap: 0.55rem;
+  display: block;
   color: var(--ink);
   text-decoration: none;
   background: #000;
   padding: 0.75rem;
 }
-.animation-card iframe {
+.animation-card iframe,
+.animation-card .animation-preview {
+  display: block;
   width: 100%;
   aspect-ratio: 16 / 10;
   border: 1px solid var(--rule);
   background: var(--paper);
   pointer-events: none;
 }
-.animation-card span {
-  font-family: var(--font-lexend), var(--sans);
-  font-weight: 700;
+.animation-preview--lenia {
+  /* Static thumbnail evoking the Particle Lenia animation: stacked
+     radial gradients in palette colors over the paper background.
+     Cheaper than rendering the live lenia simulation in an iframe. */
+  background-color: var(--paper);
+  background-image:
+    radial-gradient(ellipse 22% 28% at 28% 38%, rgba(255, 138, 58, 0.55), transparent 70%),
+    radial-gradient(ellipse 18% 22% at 65% 28%, rgba(106, 216, 74, 0.45), transparent 70%),
+    radial-gradient(ellipse 30% 24% at 50% 70%, rgba(74, 214, 255, 0.40), transparent 75%),
+    radial-gradient(ellipse 14% 16% at 80% 75%, rgba(232, 74, 138, 0.50), transparent 70%),
+    radial-gradient(ellipse 12% 18% at 18% 75%, rgba(255, 192, 74, 0.45), transparent 70%);
 }
 
 html.animation-only,
@@ -1242,6 +1276,11 @@ html.animation-only .home-nav,
 html.animation-only .section-head,
 html.animation-only .note,
 html.animation-only .writing-panes,
+html.animation-only .about-panes,
+html.animation-only .taste-panes,
+html.animation-only .music-panes,
+html.animation-only .music-intro,
+html.animation-only .anim-controls,
 html.animation-only .wang-label,
 html.animation-only .wang-controls,
 html.animation-only .wang-boost,

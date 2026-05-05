@@ -29,35 +29,39 @@ const pageClass = `page-${path === '/' ? 'home' : path.split('/')[1]}`;
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
     <script is:inline>
-      if (new URLSearchParams(window.location.search).get('animation') === '1') {
-        document.documentElement.classList.add('animation-only');
-      }
       (function () {
-        var DEV_KEY = 'site-dev-mode';
         var params = new URLSearchParams(window.location.search);
-        var paramVal = params.get('dev');
-        var stored = null;
-        try { stored = localStorage.getItem(DEV_KEY); } catch (e) {}
-        var on;
-        if (paramVal === '1') {
-          on = true;
-          try { localStorage.setItem(DEV_KEY, '1'); } catch (e) {}
-        } else if (paramVal === '0') {
-          on = false;
-          try { localStorage.setItem(DEV_KEY, '0'); } catch (e) {}
-        } else {
-          on = stored === '1';
+        function readToggle(key, paramName) {
+          var paramVal = params.get(paramName);
+          var stored = null;
+          try { stored = localStorage.getItem(key); } catch (e) {}
+          if (paramVal === '1') {
+            try { localStorage.setItem(key, '1'); } catch (e) {}
+            return true;
+          }
+          if (paramVal === '0') {
+            try { localStorage.setItem(key, '0'); } catch (e) {}
+            return false;
+          }
+          return stored === '1';
         }
-        if (on) document.documentElement.classList.add('dev-mode');
-        document.addEventListener('keydown', function (e) {
-          if (e.shiftKey && (e.key === 'D' || e.key === 'd') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        var DEV_KEY = 'site-dev-mode';
+        var ANIM_KEY = 'site-animation-only';
+        if (readToggle(DEV_KEY, 'dev')) document.documentElement.classList.add('dev-mode');
+        if (readToggle(ANIM_KEY, 'animation')) document.documentElement.classList.add('animation-only');
+        function bindToggle(key, cls, letterUpper, letterLower) {
+          document.addEventListener('keydown', function (e) {
+            if (!e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+            if (e.key !== letterUpper && e.key !== letterLower) return;
             var t = e.target;
             if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-            var next = !document.documentElement.classList.contains('dev-mode');
-            document.documentElement.classList.toggle('dev-mode', next);
-            try { localStorage.setItem(DEV_KEY, next ? '1' : '0'); } catch (e2) {}
-          }
-        });
+            var next = !document.documentElement.classList.contains(cls);
+            document.documentElement.classList.toggle(cls, next);
+            try { localStorage.setItem(key, next ? '1' : '0'); } catch (e2) {}
+          });
+        }
+        bindToggle(DEV_KEY, 'dev-mode', 'D', 'd');
+        bindToggle(ANIM_KEY, 'animation-only', 'A', 'a');
       })();
     </script>
   </head>

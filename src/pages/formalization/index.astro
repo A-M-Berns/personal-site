@@ -6,21 +6,19 @@ import Base from '../../layouts/Base.astro';
     <canvas id="ant-sim" class="ant-sim" aria-hidden="true"></canvas>
     <header class="section-head">
       <h1><span class="hl">Formalization</span></h1>
-      <p><span class="hl">Formalization projects in Lean 4.</span></p>
     </header>
-    <article class="note">
-      <ul>
-        <li>
-          <span class="hl"><a href="https://github.com/leanprover-community/mathlib4/blob/7d71710aa79bdb99d16d25644d1e592501f26c41/Mathlib/Geometry/Polygon/Basic.lean">Polygon geometry in Mathlib</a></span>
-        </li>
-        <li>
-          <span class="hl"><a href="https://github.com/A-M-Berns/Formalized-Agent-Foundations">Formalized Agent Foundations</a></span>
-        </li>
-        <li>
-          <span class="hl">More to come.</span>
-        </li>
-      </ul>
-    </article>
+    <p class="formalization-intro">Formalization projects in Lean 4.</p>
+    <div class="formalization-panes">
+      <section class="writing-pane">
+        <h2>Mathlib</h2>
+        <p><a href="https://github.com/leanprover-community/mathlib4/blob/7d71710aa79bdb99d16d25644d1e592501f26c41/Mathlib/Geometry/Polygon/Basic.lean">Polygon geometry in Mathlib</a></p>
+      </section>
+      <section class="writing-pane">
+        <h2>Personal</h2>
+        <p><a href="https://github.com/A-M-Berns/Formalized-Agent-Foundations">Formalized Agent Foundations</a></p>
+        <p class="empty">More to come.</p>
+      </section>
+    </div>
     <aside id="ant-label" class="ant-label" aria-live="polite"></aside>
     <div class="anim-controls">
       <button id="ant-info" type="button" aria-label="About this animation">About this animation</button>
@@ -56,6 +54,13 @@ import Base from '../../layouts/Base.astro';
               <option value="LR">LR (Langton, ant 2)</option>
               <option value="LRRL">LRRL (ant 9)</option>
               <option value="LLRR">LLRR (ant 12)</option>
+              <option value="LRRRRL">LRRRRL (ant 33)</option>
+              <option value="LRRLLL">LRRLLL (ant 39)</option>
+              <option value="LLRRRR">LLRRRR (ant 48)</option>
+              <option value="LLRRLL">LLRRLL (ant 51)</option>
+              <option value="LLLRRL">LLLRRL (ant 57)</option>
+              <option value="LLLLRR">LLLLRR (ant 60)</option>
+              <option value="LRRRRRRL">LRRRRRRL (ant 214)</option>
               <option value="LLRRLLRR">LLRRLLRR (ant 204)</option>
             </optgroup>
             <optgroup label="other">
@@ -373,13 +378,20 @@ import Base from '../../layouts/Base.astro';
     // to be picked but every rule still appears regularly. Rules
     // starting with R are reflections of L-starting rules and run
     // identically up to a mirror.
-    type Tier = 'high' | 'other';
+    type Tier = 'high' | 'medium' | 'other';
     const RULE_POOL: { rule: string; weight: number; tier: Tier }[] = [
       // From the paper — bilaterally-symmetric "track" ants.
       { rule: 'LR',        weight: 3, tier: 'high' },   // ant 2 (Langton)
       { rule: 'LRRL',      weight: 3, tier: 'high' },   // ant 9
       { rule: 'LLRR',      weight: 3, tier: 'high' },   // ant 12
       { rule: 'LLRRLLRR',  weight: 3, tier: 'high' },   // ant 204
+      { rule: 'LRRRRL',    weight: 1, tier: 'medium' }, // ant 33
+      { rule: 'LRRLLL',    weight: 1, tier: 'medium' }, // ant 39
+      { rule: 'LLRRRR',    weight: 1, tier: 'medium' }, // ant 48
+      { rule: 'LLRRLL',    weight: 1, tier: 'medium' }, // ant 51
+      { rule: 'LLLRRL',    weight: 1, tier: 'medium' }, // ant 57
+      { rule: 'LLLLRR',    weight: 1, tier: 'medium' }, // ant 60
+      { rule: 'LRRRRRRL',  weight: 1, tier: 'medium' }, // ant 214
       // Other patterns of interest.
       { rule: 'LRL',       weight: 1, tier: 'other' },
       { rule: 'LLR',       weight: 1, tier: 'other' },
