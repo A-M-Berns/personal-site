@@ -40,6 +40,14 @@ import Base from '../../layouts/Base.astro';
       </div>
       <div class="ant-panel-body">
         <label class="ant-panel-field">
+          <span>mode</span>
+          <select id="ant-mode">
+            <option value="square-track" selected>square track</option>
+            <option value="square-truchet">square truchet</option>
+            <option value="hex-track">hex track</option>
+          </select>
+        </label>
+        <label class="ant-panel-field">
           <span>preset</span>
           <select id="ant-preset">
             <option value="random" selected>random</option>
@@ -97,6 +105,10 @@ import Base from '../../layouts/Base.astro';
           <input id="ant-fully-random" type="checkbox" />
           <span>fully random rule</span>
         </label>
+        <label class="ant-panel-toggle" for="ant-lock-heading">
+          <input id="ant-lock-heading" type="checkbox" />
+          <span>lock heading (multi-ant)</span>
+        </label>
         <dl class="ant-stats">
           <div><dt>n</dt><dd id="ant-n">-</dd></div>
           <div><dt>step</dt><dd id="ant-step">-</dd></div>
@@ -117,8 +129,6 @@ import Base from '../../layouts/Base.astro';
     height: 100vh;
     pointer-events: none;
     opacity: 0.85;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
   }
   .ant-label {
     position: fixed;
@@ -304,6 +314,8 @@ import Base from '../../layouts/Base.astro';
     const cycleInput = document.getElementById('ant-cycle') as HTMLInputElement | null;
     const cycleValue = document.getElementById('ant-cycle-value');
     const fullyRandomInput = document.getElementById('ant-fully-random') as HTMLInputElement | null;
+    const lockHeadingInput = document.getElementById('ant-lock-heading') as HTMLInputElement | null;
+    const modeSelect = document.getElementById('ant-mode') as HTMLSelectElement | null;
     const resetButton = document.getElementById('ant-reset') as HTMLButtonElement | null;
     const restartButton = document.getElementById('ant-restart') as HTMLButtonElement | null;
     const infoButton = document.getElementById('ant-info');
@@ -337,28 +349,29 @@ import Base from '../../layouts/Base.astro';
     // to be picked but every rule still appears regularly. Rules
     // starting with R are reflections of L-starting rules and run
     // identically up to a mirror.
-    const RULE_POOL: { rule: string; weight: number }[] = [
+    type Tier = 'high' | 'medium' | 'other';
+    const RULE_POOL: { rule: string; weight: number; tier: Tier }[] = [
       // From the paper — bilaterally-symmetric "track" ants.
-      { rule: 'LR',        weight: 3 }, // ant 2 (Langton)
-      { rule: 'LRRL',      weight: 3 }, // ant 9
-      { rule: 'LLRR',      weight: 3 }, // ant 12
-      { rule: 'LLRRLLRR',  weight: 3 }, // ant 204
-      { rule: 'LRRRRL',    weight: 1 }, // ant 33
-      { rule: 'LRRLLL',    weight: 1 }, // ant 39
-      { rule: 'LLRRRR',    weight: 1 }, // ant 48
-      { rule: 'LLRRLL',    weight: 1 }, // ant 51
-      { rule: 'LLLRRL',    weight: 1 }, // ant 57
-      { rule: 'LLLLRR',    weight: 1 }, // ant 60
-      { rule: 'LRRRRRRL',  weight: 1 }, // ant 214
+      { rule: 'LR',        weight: 3, tier: 'high' },   // ant 2 (Langton)
+      { rule: 'LRRL',      weight: 3, tier: 'high' },   // ant 9
+      { rule: 'LLRR',      weight: 3, tier: 'high' },   // ant 12
+      { rule: 'LLRRLLRR',  weight: 3, tier: 'high' },   // ant 204
+      { rule: 'LRRRRL',    weight: 1, tier: 'medium' }, // ant 33
+      { rule: 'LRRLLL',    weight: 1, tier: 'medium' }, // ant 39
+      { rule: 'LLRRRR',    weight: 1, tier: 'medium' }, // ant 48
+      { rule: 'LLRRLL',    weight: 1, tier: 'medium' }, // ant 51
+      { rule: 'LLLRRL',    weight: 1, tier: 'medium' }, // ant 57
+      { rule: 'LLLLRR',    weight: 1, tier: 'medium' }, // ant 60
+      { rule: 'LRRRRRRL',  weight: 1, tier: 'medium' }, // ant 214
       // Other patterns of interest.
-      { rule: 'LRL',       weight: 1 },
-      { rule: 'LLR',       weight: 1 },
-      { rule: 'LLRL',      weight: 1 },
-      { rule: 'LRRRR',     weight: 1 },
-      { rule: 'LRRRLL',    weight: 1 },
-      { rule: 'LLLLR',     weight: 1 },
-      { rule: 'RRLRLL',    weight: 1 },
-      { rule: 'LLLLLR',    weight: 1 },
+      { rule: 'LRL',       weight: 1, tier: 'other' },
+      { rule: 'LLR',       weight: 1, tier: 'other' },
+      { rule: 'LLRL',      weight: 1, tier: 'other' },
+      { rule: 'LRRRR',     weight: 1, tier: 'other' },
+      { rule: 'LRRRLL',    weight: 1, tier: 'other' },
+      { rule: 'LLLLR',     weight: 1, tier: 'other' },
+      { rule: 'RRLRLL',    weight: 1, tier: 'other' },
+      { rule: 'LLLLLR',    weight: 1, tier: 'other' },
     ];
 
     function parseHex(h: string): RGB {
@@ -386,18 +399,38 @@ import Base from '../../layouts/Base.astro';
     let cycleSeconds = Number(cycleInput?.value ?? 60);
     let preset: string = presetSelect?.value ?? 'random';
     let useFullyRandom = !!fullyRandomInput?.checked;
+    let lockHeading = !!lockHeadingInput?.checked;
+    type Mode = 'square-track' | 'square-truchet' | 'hex-track';
+    let mode: Mode = (modeSelect?.value as Mode) ?? 'square-track';
 
-    let W = 0;
-    let H = 0;
+    // Pixel dimensions of the canvas (= screen px) and grid dimensions in cells.
+    let W_PX = 0;
+    let H_PX = 0;
+    let CW = 0;
+    let CH = 0;
     let grid = new Uint8Array(0);
-    let img: ImageData | null = null;
 
-    // Direction encoding: 0=N, 1=E, 2=S, 3=W. Left = (d+3)&3, Right = (d+1)&3.
-    const DX = [0, 1, 0, -1];
-    const DY = [-1, 0, 1, 0];
+    // Square direction encoding: 0=N, 1=E, 2=S, 3=W.
+    const SQ_DX = [0, 1, 0, -1];
+    const SQ_DY = [-1, 0, 1, 0];
+
+    // Hex direction encoding (pointy-top, odd-r offset, clockwise from NE):
+    // 0=NE, 1=E, 2=SE, 3=SW, 4=W, 5=NW.
+    // Offsets depend on the row's parity in odd-r layout.
+    const HEX_DX_EVEN = [ 0, 1,  0, -1, -1, -1];
+    const HEX_DY_EVEN = [-1, 0,  1,  1,  0, -1];
+    const HEX_DX_ODD  = [ 1, 1,  1,  0, -1,  0];
+    const HEX_DY_ODD  = [-1, 0,  1,  1,  0, -1];
+
+    let dirCount = 4;
 
     type Ant = { x: number; y: number; d: number };
     let ants: Ant[] = [];
+
+    // Pre-rendered background tile pattern for square truchet mode — every
+    // cell painted with rule[0]'s orientation. Rebuilt on reseed/resize so
+    // per-frame work is proportional to # of *visited* cells, not all cells.
+    let truchetBg: HTMLCanvasElement | null = null;
 
     let rule: Uint8Array = new Uint8Array(0); // 0=L, 1=R
     let ruleStr = 'LLRR';
@@ -437,19 +470,18 @@ import Base from '../../layouts/Base.astro';
     // often. Reject the most-recent rule on the first re-roll so we
     // don't hit the same pattern back-to-back.
     const totalWeight = RULE_POOL.reduce((s, r) => s + r.weight, 0);
-    function pickPoolRule(avoid: string): string {
+    function pickPoolEntry(avoid: string) {
       for (let attempt = 0; attempt < 4; attempt++) {
         let t = rng() * totalWeight;
         for (const entry of RULE_POOL) {
           t -= entry.weight;
           if (t <= 0) {
-            if (entry.rule !== avoid) return entry.rule;
+            if (entry.rule !== avoid) return entry;
             break;
           }
         }
       }
-      // Fall through if we kept hitting `avoid` — fine, just return it.
-      return RULE_POOL[(rng() * RULE_POOL.length) | 0].rule;
+      return RULE_POOL[(rng() * RULE_POOL.length) | 0];
     }
 
     // Fully-random rule: any L/R string, length 2..10. Length distribution
@@ -475,38 +507,56 @@ import Base from '../../layouts/Base.astro';
 
     function placeAnts(cycleAntCount: number) {
       ants = [];
-      // For random-preset cycles, jitter the seeding center within a
-      // central region (instead of always exact center) so the bilateral
-      // axis of symmetry sits somewhere different each cycle. Single-ant
-      // runs also pick a random initial heading.
       const jitterRange = preset === 'random' ? 0.18 : 0;
-      const jx = (rng() * 2 - 1) * W * jitterRange;
-      const jy = (rng() * 2 - 1) * H * jitterRange;
-      const cx = (W / 2 + jx) | 0;
-      const cy = (H / 2 + jy) | 0;
+      const jx = (rng() * 2 - 1) * CW * jitterRange;
+      const jy = (rng() * 2 - 1) * CH * jitterRange;
+      const cx = (CW / 2 + jx) | 0;
+      const cy = (CH / 2 + jy) | 0;
+      const sharedHeading = (rng() * dirCount) | 0;
+      const headingFor = () => lockHeading ? sharedHeading : (rng() * dirCount) | 0;
       if (cycleAntCount === 1) {
-        ants.push({ x: cx, y: cy, d: (rng() * 4) | 0 });
+        ants.push({ x: cx, y: cy, d: headingFor() });
         return;
       }
-      // Ring of ants around the (jittered) center, with each ant given
-      // an independent random heading instead of the index-derived one.
-      const r = Math.max(8, Math.min(W, H) / 6);
+      const r = Math.max(8, Math.min(CW, CH) / 6);
       const phaseOffset = rng() * Math.PI * 2;
       for (let i = 0; i < cycleAntCount; i++) {
         const a = phaseOffset + (i / cycleAntCount) * Math.PI * 2;
-        const ax = (((cx + Math.cos(a) * r) | 0) % W + W) % W;
-        const ay = (((cy + Math.sin(a) * r) | 0) % H + H) % H;
-        ants.push({ x: ax, y: ay, d: (rng() * 4) | 0 });
+        const ax = (((cx + Math.cos(a) * r) | 0) % CW + CW) % CW;
+        const ay = (((cy + Math.sin(a) * r) | 0) % CH + CH) % CH;
+        ants.push({ x: ax, y: ay, d: headingFor() });
       }
+    }
+
+    function pickAntCountForTier(t: Tier): number {
+      // High-tier rules are visibly best with a single ant (preserves the
+      // paper's bilateral track). Medium-tier rules need a flock to stay
+      // visually busy. "Other"-tier rules default to 1.
+      if (t === 'medium') return 3 + ((rng() * 8) | 0); // 3..10 inclusive
+      return 1;
     }
 
     function reseed(useExplicitRule: string | null) {
       seed = (Math.random() * 0xffffffff) >>> 0;
       rng = mulberry32(seed);
-      const chosen = useExplicitRule
-        ?? (preset === 'random'
-          ? (useFullyRandom ? pickFullyRandomRule(ruleStr) : pickPoolRule(ruleStr))
-          : preset);
+      // Default-mode (random preset, curated pool) returns the entry so we
+      // can read its tier. Explicit/pinned/fully-random rules don't carry
+      // a tier — those use the slider directly.
+      let chosen: string;
+      let chosenTier: Tier | null = null;
+      if (useExplicitRule) {
+        chosen = useExplicitRule;
+      } else if (preset === 'random') {
+        if (useFullyRandom) {
+          chosen = pickFullyRandomRule(ruleStr);
+        } else {
+          const entry = pickPoolEntry(ruleStr);
+          chosen = entry.rule;
+          chosenTier = entry.tier;
+        }
+      } else {
+        chosen = preset;
+      }
       setRuleFromString(chosen);
       if (ruleInput && ruleInput.value !== chosen) {
         ruleInput.value = chosen;
@@ -515,39 +565,45 @@ import Base from '../../layouts/Base.astro';
       }
       pickPalette();
       grid.fill(0);
-      // In random preset mode the slider is interpreted as a cap and the
-      // actual count is biased toward 1 (squared distribution): single-ant
-      // runs are the ones that exhibit the paper's bilateral symmetry,
-      // and multi-ant runs are chaotic, so we want them to be the
-      // exception not the rule.
+      // Default-mode ant-count scaling by tier; otherwise the slider is
+      // taken at face value. Pinned-preset/fully-random use slider-as-cap
+      // with a squared-bias pick (carried over from before).
       let activeCount = antCount;
-      if (preset === 'random' && antCount > 1) {
+      if (chosenTier !== null) {
+        activeCount = pickAntCountForTier(chosenTier);
+      } else if (preset === 'random' && antCount > 1) {
         activeCount = 1 + ((rng() * rng() * antCount) | 0);
       }
       placeAnts(activeCount);
       totalSteps = 0;
+      if (mode === 'square-truchet') buildTruchetBg();
       updateLabel(activeCount);
     }
 
     function step(n: number) {
       const r = rule;
       const ns = nStates;
-      const w = W;
-      const h = H;
+      const cw = CW;
+      const ch = CH;
+      const isHex = mode === 'hex-track';
       for (const ant of ants) {
         for (let s = 0; s < n; s++) {
-          const i = ant.y * w + ant.x;
+          const i = ant.y * cw + ant.x;
           const cell = grid[i];
-          // Turn first (based on the cell's current state), increment
-          // the cell, then move forward — matches the paper's "the cell
-          // changes to state i+1 (mod n) as the ant leaves" rule.
-          if (r[cell] === 0) ant.d = (ant.d + 3) & 3;
-          else ant.d = (ant.d + 1) & 3;
+          if (r[cell] === 0) ant.d = (ant.d + dirCount - 1) % dirCount;
+          else ant.d = (ant.d + 1) % dirCount;
           grid[i] = (cell + 1) % ns;
-          let nx = ant.x + DX[ant.d];
-          let ny = ant.y + DY[ant.d];
-          if (nx < 0) nx += w; else if (nx >= w) nx -= w;
-          if (ny < 0) ny += h; else if (ny >= h) ny -= h;
+          let nx, ny;
+          if (isHex) {
+            const odd = ant.y & 1;
+            nx = ant.x + (odd ? HEX_DX_ODD : HEX_DX_EVEN)[ant.d];
+            ny = ant.y + (odd ? HEX_DY_ODD : HEX_DY_EVEN)[ant.d];
+          } else {
+            nx = ant.x + SQ_DX[ant.d];
+            ny = ant.y + SQ_DY[ant.d];
+          }
+          if (nx < 0) nx += cw; else if (nx >= cw) nx -= cw;
+          if (ny < 0) ny += ch; else if (ny >= ch) ny -= ch;
           ant.x = nx;
           ant.y = ny;
         }
@@ -555,22 +611,179 @@ import Base from '../../layouts/Base.astro';
       totalSteps += n * ants.length;
     }
 
-    function draw() {
-      if (!img) return;
-      const data = img.data;
-      for (let i = 0; i < grid.length; i++) {
-        const c = palette[grid[i]];
-        const j = i * 4;
-        data[j] = c[0];
-        data[j + 1] = c[1];
-        data[j + 2] = c[2];
-        data[j + 3] = 255;
+    function rgb(c: RGB) { return `rgb(${c[0]}, ${c[1]}, ${c[2]})`; }
+
+    // --- Square track ---
+    function drawSquareTrack() {
+      ctx.fillStyle = rgb(paper);
+      ctx.fillRect(0, 0, W_PX, H_PX);
+      const cs = CELL_PX;
+      // Skip state 0 — those cells already match the paper background.
+      // Group by state so we issue one fillStyle change per state (saves
+      // ~ns× the GPU state churn vs. one per cell).
+      for (let s = 1; s < nStates; s++) {
+        ctx.fillStyle = rgb(palette[s]);
+        for (let y = 0; y < CH; y++) {
+          const row = y * CW;
+          for (let x = 0; x < CW; x++) {
+            if (grid[row + x] === s) ctx.fillRect(x * cs, y * cs, cs, cs);
+          }
+        }
       }
-      // Draw ants on top as a slightly-bright single pixel each so you
-      // can see the heads moving across the field.
-      ctx.putImageData(img, 0, 0);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-      for (const ant of ants) ctx.fillRect(ant.x, ant.y, 1, 1);
+    }
+
+    // --- Square truchet ---
+    function arcsForOrient(p: Path2D, px: number, py: number, cs: number, orient: number) {
+      const r = cs / 2;
+      if (orient === 0) {
+        // L: arc top-mid → right-mid (NE corner) and bottom-mid → left-mid (SW corner)
+        p.moveTo(px + cs, py + r);
+        p.arc(px + cs, py, r, Math.PI / 2, Math.PI);
+        p.moveTo(px, py + cs - r);
+        p.arc(px, py + cs, r, -Math.PI / 2, 0);
+      } else {
+        // R: arc top-mid → left-mid (NW corner) and bottom-mid → right-mid (SE corner)
+        p.moveTo(px + r, py);
+        p.arc(px, py, r, 0, Math.PI / 2);
+        p.moveTo(px + cs - r, py + cs);
+        p.arc(px + cs, py + cs, r, Math.PI, 3 * Math.PI / 2);
+      }
+    }
+
+    function buildTruchetBg() {
+      // Pre-render the "all cells in state 0" tile pattern for the current
+      // rule. Drawn once and blitted each frame so we only re-stroke the
+      // *visited* cells per frame.
+      const off = document.createElement('canvas');
+      off.width = W_PX;
+      off.height = H_PX;
+      const oc = off.getContext('2d');
+      if (!oc) { truchetBg = null; return; }
+      oc.fillStyle = rgb(paper);
+      oc.fillRect(0, 0, W_PX, H_PX);
+      const cs = CELL_PX;
+      const orient0 = rule[0];
+      const path = new Path2D();
+      for (let y = 0; y < CH; y++) {
+        for (let x = 0; x < CW; x++) {
+          arcsForOrient(path, x * cs, y * cs, cs, orient0);
+        }
+      }
+      oc.lineWidth = Math.max(1, cs / 4.5);
+      oc.lineCap = 'round';
+      oc.strokeStyle = `rgba(140, 140, 150, 0.32)`;
+      oc.stroke(path);
+      truchetBg = off;
+    }
+
+    function drawSquareTruchet() {
+      if (truchetBg) ctx.drawImage(truchetBg, 0, 0);
+      else {
+        ctx.fillStyle = rgb(paper);
+        ctx.fillRect(0, 0, W_PX, H_PX);
+      }
+      const cs = CELL_PX;
+      // For each visited cell: clear paper rect, then stroke its arcs in
+      // the state's palette color. Group by state so stroke colour changes
+      // are O(nStates) instead of O(cells).
+      ctx.lineWidth = Math.max(1, cs / 4.5);
+      ctx.lineCap = 'round';
+      // First clear all visited cells with paper, in one batch.
+      ctx.fillStyle = rgb(paper);
+      for (let y = 0; y < CH; y++) {
+        const row = y * CW;
+        for (let x = 0; x < CW; x++) {
+          if (grid[row + x] !== 0) ctx.fillRect(x * cs, y * cs, cs, cs);
+        }
+      }
+      // Then stroke per-state arc paths.
+      for (let s = 1; s < nStates; s++) {
+        const path = new Path2D();
+        const orient = rule[s];
+        let any = false;
+        for (let y = 0; y < CH; y++) {
+          const row = y * CW;
+          for (let x = 0; x < CW; x++) {
+            if (grid[row + x] === s) {
+              arcsForOrient(path, x * cs, y * cs, cs, orient);
+              any = true;
+            }
+          }
+        }
+        if (!any) continue;
+        ctx.strokeStyle = rgb(palette[s]);
+        ctx.stroke(path);
+      }
+    }
+
+    // --- Hex track ---
+    let HEX_S = 0;
+    let HEX_W = 0;
+    let HEX_H = 0;
+
+    function hexCenter(col: number, row: number): [number, number] {
+      const x = HEX_W * (col + (row & 1) * 0.5) + HEX_W / 2;
+      const y = HEX_H * 0.75 * row + HEX_H / 2;
+      return [x, y];
+    }
+
+    function addHexToPath(p: Path2D, cx: number, cy: number) {
+      // Pointy-top hexagon, vertices at 30°+k*60°.
+      for (let i = 0; i < 6; i++) {
+        const a = Math.PI / 3 * i + Math.PI / 6;
+        const px = cx + HEX_S * Math.cos(a);
+        const py = cy + HEX_S * Math.sin(a);
+        if (i === 0) p.moveTo(px, py);
+        else p.lineTo(px, py);
+      }
+      p.closePath();
+    }
+
+    function drawHexTrack() {
+      ctx.fillStyle = rgb(paper);
+      ctx.fillRect(0, 0, W_PX, H_PX);
+      for (let s = 1; s < nStates; s++) {
+        const path = new Path2D();
+        let any = false;
+        for (let row = 0; row < CH; row++) {
+          const rowBase = row * CW;
+          for (let col = 0; col < CW; col++) {
+            if (grid[rowBase + col] === s) {
+              const [cx, cy] = hexCenter(col, row);
+              addHexToPath(path, cx, cy);
+              any = true;
+            }
+          }
+        }
+        if (!any) continue;
+        ctx.fillStyle = rgb(palette[s]);
+        ctx.fill(path);
+      }
+    }
+
+    function drawAnts() {
+      ctx.fillStyle = '#ffffff';
+      // Centered white marker, smaller than the cell so the trail color
+      // peeks out around it. 2px floor so it stays visible at small cells.
+      const m = Math.max(2, Math.round(CELL_PX * 0.55));
+      if (mode === 'hex-track') {
+        for (const ant of ants) {
+          const [cx, cy] = hexCenter(ant.x, ant.y);
+          ctx.fillRect(cx - m / 2, cy - m / 2, m, m);
+        }
+      } else {
+        const off = Math.floor((CELL_PX - m) / 2);
+        for (const ant of ants) {
+          ctx.fillRect(ant.x * CELL_PX + off, ant.y * CELL_PX + off, m, m);
+        }
+      }
+    }
+
+    function draw() {
+      if (mode === 'hex-track') drawHexTrack();
+      else if (mode === 'square-truchet') drawSquareTruchet();
+      else drawSquareTrack();
+      drawAnts();
     }
 
     function updateLabel(activeCount = ants.length) {
@@ -592,13 +805,28 @@ import Base from '../../layouts/Base.astro';
     }
 
     function resize() {
-      W = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
-      H = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
-      canvas.width = W;
-      canvas.height = H;
-      ctx.imageSmoothingEnabled = false;
-      grid = new Uint8Array(W * H);
-      img = ctx.createImageData(W, H);
+      W_PX = Math.max(64, window.innerWidth);
+      H_PX = Math.max(64, window.innerHeight);
+      canvas.width = W_PX;
+      canvas.height = H_PX;
+      // Square modes: integer cells of CELL_PX × CELL_PX.
+      // Hex mode: pointy-top hexes; CELL_PX is the hex circumradius (so
+      // it has roughly the same on-screen footprint as a square cell).
+      if (mode === 'hex-track') {
+        HEX_S = CELL_PX;
+        HEX_W = Math.sqrt(3) * HEX_S;
+        HEX_H = 2 * HEX_S;
+        CW = Math.max(8, Math.ceil(W_PX / HEX_W) + 1);
+        CH = Math.max(8, Math.ceil(H_PX / (HEX_H * 0.75)) + 1);
+      } else {
+        CW = Math.max(8, Math.ceil(W_PX / CELL_PX));
+        CH = Math.max(8, Math.ceil(H_PX / CELL_PX));
+      }
+      grid = new Uint8Array(CW * CH);
+      dirCount = mode === 'hex-track' ? 6 : 4;
+      // Square track is integer cell-aligned and looks crisper without
+      // anti-aliasing; truchet/hex draw curves and need it on.
+      ctx.imageSmoothingEnabled = mode !== 'square-track';
       reseed(ruleInput && isValidRule(ruleInput.value) ? ruleInput.value : null);
       draw();
     }
@@ -638,13 +866,21 @@ import Base from '../../layouts/Base.astro';
     });
     fullyRandomInput?.addEventListener('change', () => {
       useFullyRandom = !!fullyRandomInput.checked;
-      // Switching the toggle implies the user wants to see the new mode
-      // immediately, so reseed (only meaningful in random preset; pinned
-      // presets ignore the toggle).
       if (preset === 'random') {
         reseed(null);
         draw();
       }
+    });
+    lockHeadingInput?.addEventListener('change', () => {
+      lockHeading = !!lockHeadingInput.checked;
+      reseed(preset === 'random' ? null : preset);
+      draw();
+    });
+    modeSelect?.addEventListener('change', () => {
+      mode = (modeSelect.value as Mode);
+      // Mode change can switch lattice (4-dir ↔ 6-dir) so we have to
+      // re-init the grid and reseed.
+      resize();
     });
     presetSelect?.addEventListener('change', () => {
       preset = presetSelect.value;
