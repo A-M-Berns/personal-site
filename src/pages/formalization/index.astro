@@ -90,6 +90,24 @@ import Base from '../../layouts/Base.astro';
           <input id="ant-cell" type="range" min="3" max="7" step="1" value="5" />
           <span id="ant-cell-value">5</span>
         </div>
+        <label class="ant-panel-field truchet-only">
+          <span>skin</span>
+          <select id="ant-truchet-skin">
+            <option value="arcs" selected>arcs</option>
+            <option value="chords">chords</option>
+            <option value="wedges">wedges</option>
+          </select>
+        </label>
+        <div class="ant-panel-row truchet-only">
+          <label for="ant-truchet-thickness">stroke</label>
+          <input id="ant-truchet-thickness" type="range" min="0.05" max="0.45" step="0.01" value="0.20" />
+          <span id="ant-truchet-thickness-value">0.20</span>
+        </div>
+        <div class="ant-panel-row truchet-only">
+          <label for="ant-truchet-bg">bg</label>
+          <input id="ant-truchet-bg" type="range" min="0" max="0.5" step="0.01" value="0.10" />
+          <span id="ant-truchet-bg-value">0.10</span>
+        </div>
         <div class="ant-panel-row">
           <label for="ant-cycle">cycle</label>
           <input id="ant-cycle" type="range" min="20" max="180" step="5" value="60" />
@@ -292,6 +310,7 @@ import Base from '../../layouts/Base.astro';
   html:not(.dev-mode) .ant-panel { display: none !important; }
   html.animation-only .ant-panel,
   html.animation-only .ant-label { display: none !important; }
+  .ant-panel:not(.is-truchet) .truchet-only { display: none !important; }
 </style>
 
 <script>
@@ -315,6 +334,12 @@ import Base from '../../layouts/Base.astro';
     const lockHeadingInput = document.getElementById('ant-lock-heading') as HTMLInputElement | null;
     const showAntInput = document.getElementById('ant-show-ant') as HTMLInputElement | null;
     const modeSelect = document.getElementById('ant-mode') as HTMLSelectElement | null;
+    const truchetSkinSelect = document.getElementById('ant-truchet-skin') as HTMLSelectElement | null;
+    const truchetThicknessInput = document.getElementById('ant-truchet-thickness') as HTMLInputElement | null;
+    const truchetThicknessValue = document.getElementById('ant-truchet-thickness-value');
+    const truchetBgInput = document.getElementById('ant-truchet-bg') as HTMLInputElement | null;
+    const truchetBgValue = document.getElementById('ant-truchet-bg-value');
+    const antPanelEl = document.querySelector('.ant-panel') as HTMLElement | null;
     const resetButton = document.getElementById('ant-reset') as HTMLButtonElement | null;
     const restartButton = document.getElementById('ant-restart') as HTMLButtonElement | null;
     const infoButton = document.getElementById('ant-info');
@@ -393,6 +418,17 @@ import Base from '../../layouts/Base.astro';
     let useFullyRandom = !!fullyRandomInput?.checked;
     let lockHeading = !!lockHeadingInput?.checked;
     let showAnt = !!showAntInput?.checked;
+    type TruchetSkin = 'arcs' | 'chords' | 'wedges';
+    let truchetSkin: TruchetSkin = ((truchetSkinSelect?.value as TruchetSkin) ?? 'arcs');
+    let truchetThickness = Number(truchetThicknessInput?.value ?? 0.20);
+    let truchetBgOpacity = Number(truchetBgInput?.value ?? 0.10);
+
+    function isTruchetMode() {
+      return mode === 'square-truchet' || mode === 'hex-truchet';
+    }
+    function syncTruchetControlsVisibility() {
+      antPanelEl?.classList.toggle('is-truchet', isTruchetMode());
+    }
     type Mode = 'square-track' | 'square-truchet' | 'hex-track' | 'hex-truchet';
     let mode: Mode = (modeSelect?.value as Mode) ?? 'square-track';
 
@@ -528,30 +564,16 @@ import Base from '../../layouts/Base.astro';
       }
     }
 
-    function pickAntCountForTier(_t: Tier): number {
-      // All tiered rules currently use a single ant. Tier remains a
-      // typed field for future per-tier overrides.
-      return 1;
-    }
-
     function reseed(useExplicitRule: string | null) {
       seed = (Math.random() * 0xffffffff) >>> 0;
       rng = mulberry32(seed);
-      // Default-mode (random preset, curated pool) returns the entry so we
-      // can read its tier. Explicit/pinned/fully-random rules don't carry
-      // a tier — those use the slider directly.
       let chosen: string;
-      let chosenTier: Tier | null = null;
       if (useExplicitRule) {
         chosen = useExplicitRule;
       } else if (preset === 'random') {
-        if (useFullyRandom) {
-          chosen = pickFullyRandomRule(ruleStr);
-        } else {
-          const entry = pickPoolEntry(ruleStr);
-          chosen = entry.rule;
-          chosenTier = entry.tier;
-        }
+        chosen = useFullyRandom
+          ? pickFullyRandomRule(ruleStr)
+          : pickPoolEntry(ruleStr).rule;
       } else {
         chosen = preset;
       }
@@ -563,15 +585,8 @@ import Base from '../../layouts/Base.astro';
       }
       pickPalette();
       grid.fill(0);
-      // Default-mode ant-count scaling by tier; otherwise the slider is
-      // taken at face value. Pinned-preset/fully-random use slider-as-cap
-      // with a squared-bias pick (carried over from before).
-      let activeCount = antCount;
-      if (chosenTier !== null) {
-        activeCount = pickAntCountForTier(chosenTier);
-      } else if (preset === 'random' && antCount > 1) {
-        activeCount = 1 + ((rng() * rng() * antCount) | 0);
-      }
+      // The ants slider is authoritative.
+      const activeCount = antCount;
       placeAnts(activeCount);
       totalSteps = 0;
       if (mode === 'square-truchet') buildTruchetBg();
@@ -634,47 +649,91 @@ import Base from '../../layouts/Base.astro';
     }
 
     // --- Square truchet ---
-    function arcsForOrient(p: Path2D, px: number, py: number, cs: number, orient: number) {
+    // Each square truchet cell has two "corners" (vertex + two adjacent
+    // edge-midpoints) determined by orientation. The skin chooses how to
+    // draw the shape that connects those midpoints around the vertex:
+    //   arcs   — quarter-arc centered at the vertex, radius cs/2
+    //   chords — straight line between the midpoints
+    //   wedges — filled triangle vertex+midA+midB
+    type SqCorner = readonly [
+      vx: number, vy: number,
+      max: number, may: number,
+      mbx: number, mby: number,
+      arcStart: number, arcEnd: number,
+    ];
+    function squareCorners(px: number, py: number, cs: number, orient: number): SqCorner[] {
       const r = cs / 2;
       if (orient === 0) {
-        // L: arc top-mid → right-mid (NE corner) and bottom-mid → left-mid (SW corner)
-        p.moveTo(px + cs, py + r);
-        p.arc(px + cs, py, r, Math.PI / 2, Math.PI);
-        p.moveTo(px, py + cs - r);
-        p.arc(px, py + cs, r, -Math.PI / 2, 0);
-      } else {
-        // R: arc top-mid → left-mid (NW corner) and bottom-mid → right-mid (SE corner)
-        p.moveTo(px + r, py);
-        p.arc(px, py, r, 0, Math.PI / 2);
-        p.moveTo(px + cs - r, py + cs);
-        p.arc(px + cs, py + cs, r, Math.PI, 3 * Math.PI / 2);
+        return [
+          // L: NE corner (arc top-mid → right-mid)
+          [px + cs, py,     px + r, py,     px + cs, py + r,    Math.PI / 2, Math.PI],
+          // L: SW corner (arc bottom-mid → left-mid)
+          [px,      py + cs, px + r, py + cs, px,    py + r,    -Math.PI / 2, 0],
+        ];
+      }
+      return [
+        // R: NW corner (arc top-mid → left-mid)
+        [px,      py,      px + r, py,     px,      py + r,    0, Math.PI / 2],
+        // R: SE corner (arc bottom-mid → right-mid)
+        [px + cs, py + cs, px + r, py + cs, px + cs, py + r,    Math.PI, 3 * Math.PI / 2],
+      ];
+    }
+    function addSquareTruchetGeometry(
+      stroke: Path2D | null, fill: Path2D | null,
+      px: number, py: number, cs: number, orient: number, skin: TruchetSkin,
+    ) {
+      const r = cs / 2;
+      for (const [vx, vy, max, may, mbx, mby, a0, a1] of squareCorners(px, py, cs, orient)) {
+        if (skin === 'arcs') {
+          if (!stroke) continue;
+          stroke.moveTo(vx + r * Math.cos(a0), vy + r * Math.sin(a0));
+          stroke.arc(vx, vy, r, a0, a1, false);
+        } else if (skin === 'chords') {
+          if (!stroke) continue;
+          stroke.moveTo(max, may);
+          stroke.lineTo(mbx, mby);
+        } else {
+          if (!fill) continue;
+          fill.moveTo(vx, vy);
+          fill.lineTo(max, may);
+          fill.lineTo(mbx, mby);
+          fill.closePath();
+        }
       }
     }
 
+    function squareTruchetLineWidth() {
+      return Math.max(0.5, CELL_PX * truchetThickness);
+    }
+
     function buildTruchetBg() {
-      // Render a single CELL_PX × CELL_PX tile of the rule[0] orientation,
-      // and let createPattern tile it across the canvas at fill time. This
-      // is constant-work per cycle no matter how big the canvas is — the
-      // earlier "stroke a single 80k-arc path" approach locked the browser
-      // when entering truchet mode at common screen sizes.
+      // Render a single CELL_PX × CELL_PX tile of the rule[0] geometry in
+      // the current skin and let createPattern tile it across the canvas.
       const cs = CELL_PX;
       const tile = document.createElement('canvas');
       tile.width = cs;
       tile.height = cs;
       const tc = tile.getContext('2d');
       if (!tc) { truchetBg = null; return; }
-      tc.lineWidth = Math.max(1, cs / 4.5);
-      tc.lineCap = 'round';
       const orient0 = rule[0];
-      if (orient0 === 2) {
-        // State-0 rule is F: no arcs in the bg, just paper.
+      if (orient0 === 2 || truchetBgOpacity === 0) {
         truchetBg = null;
         return;
       }
-      tc.strokeStyle = 'rgba(140, 140, 150, 0.32)';
-      const path = new Path2D();
-      arcsForOrient(path, 0, 0, cs, orient0);
-      tc.stroke(path);
+      const stroke = (truchetSkin === 'wedges') ? null : new Path2D();
+      const fill = (truchetSkin === 'wedges') ? new Path2D() : null;
+      addSquareTruchetGeometry(stroke, fill, 0, 0, cs, orient0, truchetSkin);
+      const a = truchetBgOpacity;
+      if (stroke) {
+        tc.lineWidth = squareTruchetLineWidth();
+        tc.lineCap = 'round';
+        tc.strokeStyle = `rgba(170, 170, 180, ${a})`;
+        tc.stroke(stroke);
+      }
+      if (fill) {
+        tc.fillStyle = `rgba(170, 170, 180, ${a})`;
+        tc.fill(fill);
+      }
       truchetBg = tile;
     }
 
@@ -689,16 +748,20 @@ import Base from '../../layouts/Base.astro';
         }
       }
       const cs = CELL_PX;
-      ctx.lineWidth = Math.max(1, cs / 4.5);
+      ctx.lineWidth = squareTruchetLineWidth();
       ctx.lineCap = 'round';
-      // One pass over visited cells: build per-state arc paths for L/R
-      // states and per-state cell lists for F states. Paper-clear under
-      // every L/R cell so the bg pattern doesn't bleed through. F cells
-      // get a solid palette-color fill (they don't have an arc to draw).
-      const arcPaths: (Path2D | null)[] = new Array(nStates).fill(null);
+      // Per-state stroke paths (arcs/chords) and fill paths (wedges, F-cells).
+      const strokePaths: (Path2D | null)[] = new Array(nStates).fill(null);
+      const fillPaths: (Path2D | null)[] = new Array(nStates).fill(null);
       const fCellsByState: number[][] = new Array(nStates).fill(null).map(() => []);
       for (let s = 1; s < nStates; s++) {
-        if (rule[s] !== 2) arcPaths[s] = new Path2D();
+        if (rule[s] === 2) {
+          // F state — solid cell fill (no truchet geometry).
+        } else if (truchetSkin === 'wedges') {
+          fillPaths[s] = new Path2D();
+        } else {
+          strokePaths[s] = new Path2D();
+        }
       }
       ctx.fillStyle = rgb(paper);
       for (let y = 0; y < CH; y++) {
@@ -712,7 +775,7 @@ import Base from '../../layouts/Base.astro';
             fCellsByState[s].push(px, py);
           } else {
             ctx.fillRect(px, py, cs, cs);
-            arcsForOrient(arcPaths[s]!, px, py, cs, rule[s]);
+            addSquareTruchetGeometry(strokePaths[s], fillPaths[s], px, py, cs, rule[s], truchetSkin);
           }
         }
       }
@@ -723,10 +786,16 @@ import Base from '../../layouts/Base.astro';
         for (let i = 0; i < fc.length; i += 2) ctx.fillRect(fc[i], fc[i + 1], cs, cs);
       }
       for (let s = 1; s < nStates; s++) {
-        const p = arcPaths[s];
-        if (!p) continue;
+        const fp = fillPaths[s];
+        if (!fp) continue;
+        ctx.fillStyle = rgb(palette[s]);
+        ctx.fill(fp);
+      }
+      for (let s = 1; s < nStates; s++) {
+        const sp = strokePaths[s];
+        if (!sp) continue;
         ctx.strokeStyle = rgb(palette[s]);
-        ctx.stroke(p);
+        ctx.stroke(sp);
       }
     }
 
@@ -761,7 +830,10 @@ import Base from '../../layouts/Base.astro';
     // edge-midpoints adjacent to that vertex, passing through the
     // hex interior. When neighboring hexes share an edge, both hexes'
     // arcs meet at the shared midpoint, forming continuous contours.
-    function arcsForHexOrient(p: Path2D, cx: number, cy: number, sz: number, orient: number) {
+    function addHexTruchetGeometry(
+      stroke: Path2D | null, fill: Path2D | null,
+      cx: number, cy: number, sz: number, orient: number, skin: TruchetSkin,
+    ) {
       const r = sz / 2;
       const offset = orient === 0 ? 0 : 1;
       for (let k = 0; k < 3; k++) {
@@ -769,13 +841,27 @@ import Base from '../../layouts/Base.astro';
         const va = Math.PI / 3 * i + Math.PI / 6;
         const vx = cx + sz * Math.cos(va);
         const vy = cy + sz * Math.sin(va);
-        // Arc endpoints at angles (va + 2π/3) and (va + 4π/3) from the
-        // vertex; the CCW sweep between them passes through the cell
-        // interior (math derived in commit msg).
         const angOut = va + 2 * Math.PI / 3;
         const angIn = va + 4 * Math.PI / 3;
-        p.moveTo(vx + r * Math.cos(angOut), vy + r * Math.sin(angOut));
-        p.arc(vx, vy, r, angOut, angIn, false);
+        const moX = vx + r * Math.cos(angOut);
+        const moY = vy + r * Math.sin(angOut);
+        const miX = vx + r * Math.cos(angIn);
+        const miY = vy + r * Math.sin(angIn);
+        if (skin === 'arcs') {
+          if (!stroke) continue;
+          stroke.moveTo(moX, moY);
+          stroke.arc(vx, vy, r, angOut, angIn, false);
+        } else if (skin === 'chords') {
+          if (!stroke) continue;
+          stroke.moveTo(moX, moY);
+          stroke.lineTo(miX, miY);
+        } else {
+          if (!fill) continue;
+          fill.moveTo(vx, vy);
+          fill.lineTo(moX, moY);
+          fill.lineTo(miX, miY);
+          fill.closePath();
+        }
       }
     }
 
@@ -790,14 +876,16 @@ import Base from '../../layouts/Base.astro';
       tile.height = Math.max(2, Math.ceil(HEX_H * 1.5));
       const tc = tile.getContext('2d');
       if (!tc) { truchetBg = null; return; }
-      tc.lineWidth = Math.max(1, HEX_S / 4);
-      tc.lineCap = 'round';
-      tc.strokeStyle = 'rgba(140, 140, 150, 0.32)';
-      const path = new Path2D();
-      // Within the tile we draw: row-0-col-0 (fully inside), the two
-      // half-hexes from row 1 (left and right of the tile center), and
-      // their phantoms one tile up (since their bottoms protrude into
-      // the tile from the previous y-period).
+      const orient0 = rule[0];
+      if (orient0 === 2 || truchetBgOpacity === 0) {
+        truchetBg = null;
+        return;
+      }
+      const stroke = (truchetSkin === 'wedges') ? null : new Path2D();
+      const fill = (truchetSkin === 'wedges') ? new Path2D() : null;
+      // Hex centers contributing to the tile: row 0 col 0 (fully inside),
+      // both halves of row 1 at the tile boundary, plus their phantoms
+      // one period up so the bottoms protrude into the tile correctly.
       const positions: [number, number][] = [
         [HEX_W / 2, HEX_H / 2],
         [HEX_W,     HEX_H * 1.25],
@@ -806,10 +894,24 @@ import Base from '../../layouts/Base.astro';
         [0,         -HEX_H * 0.25],
       ];
       for (const [cx, cy] of positions) {
-        arcsForHexOrient(path, cx, cy, HEX_S, rule[0]);
+        addHexTruchetGeometry(stroke, fill, cx, cy, HEX_S, orient0, truchetSkin);
       }
-      tc.stroke(path);
+      const a = truchetBgOpacity;
+      if (stroke) {
+        tc.lineWidth = hexTruchetLineWidth();
+        tc.lineCap = 'round';
+        tc.strokeStyle = `rgba(170, 170, 180, ${a})`;
+        tc.stroke(stroke);
+      }
+      if (fill) {
+        tc.fillStyle = `rgba(170, 170, 180, ${a})`;
+        tc.fill(fill);
+      }
       truchetBg = tile;
+    }
+
+    function hexTruchetLineWidth() {
+      return Math.max(0.5, HEX_S * truchetThickness);
     }
 
     function drawHexTruchet() {
@@ -822,16 +924,19 @@ import Base from '../../layouts/Base.astro';
           ctx.fillRect(0, 0, W_PX, H_PX);
         }
       }
-      ctx.lineWidth = Math.max(1, HEX_S / 4);
+      ctx.lineWidth = hexTruchetLineWidth();
       ctx.lineCap = 'round';
-      // Visited cells: clear with a paper-colored hex underneath, then
-      // either stroke arcs (L/R cells) or solid-fill (F cells) in the
-      // state's palette colour. Path2D batching keeps state changes O(nStates).
-      const arcPaths: (Path2D | null)[] = new Array(nStates).fill(null);
+      const strokePaths: (Path2D | null)[] = new Array(nStates).fill(null);
+      const fillPaths: (Path2D | null)[] = new Array(nStates).fill(null);
       const fHexPaths: (Path2D | null)[] = new Array(nStates).fill(null);
       for (let s = 1; s < nStates; s++) {
-        if (rule[s] === 2) fHexPaths[s] = new Path2D();
-        else arcPaths[s] = new Path2D();
+        if (rule[s] === 2) {
+          fHexPaths[s] = new Path2D();
+        } else if (truchetSkin === 'wedges') {
+          fillPaths[s] = new Path2D();
+        } else {
+          strokePaths[s] = new Path2D();
+        }
       }
       const clearPath = new Path2D();
       let anyClear = false;
@@ -846,7 +951,7 @@ import Base from '../../layouts/Base.astro';
           if (rule[s] === 2) {
             addHexToPath(fHexPaths[s]!, cx, cy);
           } else {
-            arcsForHexOrient(arcPaths[s]!, cx, cy, HEX_S, rule[s]);
+            addHexTruchetGeometry(strokePaths[s], fillPaths[s], cx, cy, HEX_S, rule[s], truchetSkin);
           }
         }
       }
@@ -861,7 +966,13 @@ import Base from '../../layouts/Base.astro';
         ctx.fill(p);
       }
       for (let s = 1; s < nStates; s++) {
-        const p = arcPaths[s];
+        const p = fillPaths[s];
+        if (!p) continue;
+        ctx.fillStyle = rgb(palette[s]);
+        ctx.fill(p);
+      }
+      for (let s = 1; s < nStates; s++) {
+        const p = strokePaths[s];
         if (!p) continue;
         ctx.strokeStyle = rgb(palette[s]);
         ctx.stroke(p);
@@ -970,6 +1081,9 @@ import Base from '../../layouts/Base.astro';
     syncRangeLabel(speedInput, speedValue);
     syncRangeLabel(cellInput, cellValue);
     syncRangeLabel(cycleInput, cycleValue, 's');
+    if (truchetThicknessValue) truchetThicknessValue.textContent = truchetThickness.toFixed(2);
+    if (truchetBgValue) truchetBgValue.textContent = truchetBgOpacity.toFixed(2);
+    syncTruchetControlsVisibility();
 
     countInput?.addEventListener('input', () => {
       antCount = Number(countInput.value);
@@ -1011,9 +1125,30 @@ import Base from '../../layouts/Base.astro';
     });
     modeSelect?.addEventListener('change', () => {
       mode = (modeSelect.value as Mode);
+      syncTruchetControlsVisibility();
       // Mode change can switch lattice (4-dir ↔ 6-dir) so we have to
       // re-init the grid and reseed.
       resize();
+    });
+    truchetSkinSelect?.addEventListener('change', () => {
+      truchetSkin = (truchetSkinSelect.value as TruchetSkin);
+      if (mode === 'square-truchet') buildTruchetBg();
+      else if (mode === 'hex-truchet') buildHexTruchetBg();
+      draw();
+    });
+    truchetThicknessInput?.addEventListener('input', () => {
+      truchetThickness = Number(truchetThicknessInput.value);
+      if (truchetThicknessValue) truchetThicknessValue.textContent = truchetThickness.toFixed(2);
+      if (mode === 'square-truchet') buildTruchetBg();
+      else if (mode === 'hex-truchet') buildHexTruchetBg();
+      draw();
+    });
+    truchetBgInput?.addEventListener('input', () => {
+      truchetBgOpacity = Number(truchetBgInput.value);
+      if (truchetBgValue) truchetBgValue.textContent = truchetBgOpacity.toFixed(2);
+      if (mode === 'square-truchet') buildTruchetBg();
+      else if (mode === 'hex-truchet') buildHexTruchetBg();
+      draw();
     });
     presetSelect?.addEventListener('change', () => {
       preset = presetSelect.value;
