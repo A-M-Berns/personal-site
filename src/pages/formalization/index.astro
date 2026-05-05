@@ -103,6 +103,10 @@ import Base from '../../layouts/Base.astro';
           <input id="ant-lock-heading" type="checkbox" />
           <span>lock heading (multi-ant)</span>
         </label>
+        <label class="ant-panel-toggle" for="ant-show-ant">
+          <input id="ant-show-ant" type="checkbox" />
+          <span>show ant</span>
+        </label>
         <dl class="ant-stats">
           <div><dt>n</dt><dd id="ant-n">-</dd></div>
           <div><dt>step</dt><dd id="ant-step">-</dd></div>
@@ -309,6 +313,7 @@ import Base from '../../layouts/Base.astro';
     const cycleValue = document.getElementById('ant-cycle-value');
     const fullyRandomInput = document.getElementById('ant-fully-random') as HTMLInputElement | null;
     const lockHeadingInput = document.getElementById('ant-lock-heading') as HTMLInputElement | null;
+    const showAntInput = document.getElementById('ant-show-ant') as HTMLInputElement | null;
     const modeSelect = document.getElementById('ant-mode') as HTMLSelectElement | null;
     const resetButton = document.getElementById('ant-reset') as HTMLButtonElement | null;
     const restartButton = document.getElementById('ant-restart') as HTMLButtonElement | null;
@@ -387,6 +392,7 @@ import Base from '../../layouts/Base.astro';
     let preset: string = presetSelect?.value ?? 'random';
     let useFullyRandom = !!fullyRandomInput?.checked;
     let lockHeading = !!lockHeadingInput?.checked;
+    let showAnt = !!showAntInput?.checked;
     type Mode = 'square-track' | 'square-truchet' | 'hex-track' | 'hex-truchet';
     let mode: Mode = (modeSelect?.value as Mode) ?? 'square-track';
 
@@ -906,7 +912,7 @@ import Base from '../../layouts/Base.astro';
       else if (mode === 'hex-truchet') drawHexTruchet();
       else if (mode === 'square-truchet') drawSquareTruchet();
       else drawSquareTrack();
-      drawAnts();
+      if (showAnt) drawAnts();
     }
 
     function updateLabel(activeCount = ants.length) {
@@ -997,6 +1003,10 @@ import Base from '../../layouts/Base.astro';
     lockHeadingInput?.addEventListener('change', () => {
       lockHeading = !!lockHeadingInput.checked;
       reseed(preset === 'random' ? null : preset);
+      draw();
+    });
+    showAntInput?.addEventListener('change', () => {
+      showAnt = !!showAntInput.checked;
       draw();
     });
     modeSelect?.addEventListener('change', () => {
