@@ -46,12 +46,14 @@ import Base from '../../layouts/Base.astro';
         <label class="dla-panel-field">
           <span>seed</span>
           <select id="dla-seed-mode">
-            <option value="point-random" selected>point-random</option>
+            <option value="point-center" selected>point-center</option>
+            <option value="point-random">point-random</option>
             <option value="top-edge">top-edge</option>
             <option value="bottom-edge">bottom-edge</option>
             <option value="left-edge">left-edge</option>
             <option value="right-edge">right-edge</option>
-            <option value="vertical-stripe">vertical-stripe</option>
+            <option value="polygon">polygon</option>
+            <option value="line">line</option>
           </select>
         </label>
         <div class="dla-panel-row">
@@ -260,11 +262,12 @@ import Base from '../../layouts/Base.astro';
     const SPAWN_MARGIN = 4;
     const KILL_MARGIN = 24;
     const SKIP_BUFFER = 2;
-    const AUTO_RESET_MS = 90_000;
+    const AUTO_RESET_MS = 45_000;
 
     type SeedMode =
-      | 'point-random' | 'top-edge' | 'bottom-edge' | 'left-edge' | 'right-edge'
-      | 'vertical-stripe';
+      | 'point-center' | 'point-random'
+      | 'top-edge' | 'bottom-edge' | 'left-edge' | 'right-edge'
+      | 'polygon' | 'line';
     type RenderMode = 'pixel' | 'lines' | 'both';
     type PresetName = 'random' | 'classic' | 'lightning' | 'frost' | 'coral' | 'speckle';
 
@@ -283,7 +286,7 @@ import Base from '../../layouts/Base.astro';
     let stuckCount = 0;
     let seedHash = 0;
 
-    let seedMode: SeedMode = (seedSelect?.value as SeedMode) ?? 'point-random';
+    let seedMode: SeedMode = (seedSelect?.value as SeedMode) ?? 'point-center';
     let pStick = Number(pStickInput?.value ?? 1);
     let asymm = Number(asymmInput?.value ?? 0);
     let persistence = Number(persistInput?.value ?? 0);
@@ -411,6 +414,9 @@ import Base from '../../layouts/Base.astro';
       const cx = W >> 1;
       const cy = H >> 1;
       switch (seedMode) {
+        case 'point-center':
+          setStuck(cx, cy, -1);
+          break;
         case 'point-random': {
           const x = Math.floor(rng() * (W - 4)) + 2;
           const y = Math.floor(rng() * (H - 4)) + 2;
@@ -437,16 +443,63 @@ import Base from '../../layouts/Base.astro';
           for (let y = 0; y < H; y++) setStuck(x, y, -1);
           break;
         }
-        case 'vertical-stripe': {
-          const x = cx;
-          for (let y = 0; y < H; y++) setStuck(x, y, -1);
+        case 'polygon': {
+          const n = 3 + Math.floor(rng() * 6);
+          const r = (0.05 + rng() * 0.10) * Math.min(W, H);
+          const phase = rng() * 2 * Math.PI;
+          for (let i = 0; i < n; i++) {
+            const a = phase + (i / n) * 2 * Math.PI;
+            const x = Math.round(cx + r * Math.cos(a));
+            const y = Math.round(cy + r * Math.sin(a));
+            if (x < 1 || x > W - 2 || y < 1 || y > H - 2) continue;
+            if (state[idx(x, y)]) continue;
+            setStuck(x, y, -1);
+          }
+          break;
+        }
+        case 'line': {
+          const angle = rng() * Math.PI;
+          const dx = Math.cos(angle);
+          const dy = Math.sin(angle);
+          const L = Math.ceil(Math.sqrt(W * W + H * H));
+          for (let t = -L; t <= L; t++) {
+            const x = Math.round(cx + t * dx);
+            const y = Math.round(cy + t * dy);
+            if (x < 1 || x > W - 2 || y < 1 || y > H - 2) continue;
+            if (state[idx(x, y)]) continue;
+            setStuck(x, y, -1);
+          }
           break;
         }
       }
     }
 
+    const SEED_WEIGHTS: Array<[SeedMode, number]> = [
+      ['point-center', 2],
+      ['point-random', 2],
+      ['top-edge',     1],
+      ['bottom-edge',  1],
+      ['left-edge',    1],
+      ['right-edge',   1],
+      ['polygon',      2],
+      ['line',         2],
+    ];
+    function pickRandomSeedMode(): SeedMode {
+      let total = 0;
+      for (const [, w] of SEED_WEIGHTS) total += w;
+      let r = rng() * total;
+      for (const [m, w] of SEED_WEIGHTS) {
+        if ((r -= w) < 0) return m;
+      }
+      return SEED_WEIGHTS[SEED_WEIGHTS.length - 1][0];
+    }
+
     function seedCycle() {
-      if (preset === 'random') applyPreset(pickRandomPreset());
+      if (preset === 'random') {
+        applyPreset(pickRandomPreset());
+        seedMode = pickRandomSeedMode();
+        if (seedSelect) seedSelect.value = seedMode;
+      }
       seedHash = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
       rng = mulberry32(seedHash);
       pickPalette();
