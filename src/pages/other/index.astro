@@ -41,6 +41,14 @@ import Base from '../../layouts/Base.astro';
             <option value="frost">frost</option>
             <option value="coral">coral</option>
             <option value="speckle">speckle</option>
+            <option value="moss">moss</option>
+          </select>
+        </label>
+        <label class="dla-panel-field">
+          <span>engine</span>
+          <select id="dla-engine">
+            <option value="dla" selected>dla</option>
+            <option value="eden">eden</option>
           </select>
         </label>
         <label class="dla-panel-field">
@@ -239,6 +247,7 @@ import Base from '../../layouts/Base.astro';
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const seedSelect = document.getElementById('dla-seed-mode') as HTMLSelectElement | null;
+    const engineSelect = document.getElementById('dla-engine') as HTMLSelectElement | null;
     const pStickInput = document.getElementById('dla-pstick') as HTMLInputElement | null;
     const pStickValue = document.getElementById('dla-pstick-value');
     const asymmInput = document.getElementById('dla-asymm') as HTMLInputElement | null;
@@ -267,7 +276,8 @@ import Base from '../../layouts/Base.astro';
       | 'point-random' | 'top-edge' | 'bottom-edge' | 'left-edge' | 'right-edge'
       | 'vertical-stripe' | 'circle-outline';
     type RenderMode = 'pixel' | 'lines' | 'both';
-    type PresetName = 'random' | 'classic' | 'lightning' | 'frost' | 'coral' | 'speckle';
+    type Engine = 'dla' | 'eden';
+    type PresetName = 'random' | 'classic' | 'lightning' | 'frost' | 'coral' | 'speckle' | 'moss';
 
 
     const DX8 = [1, 1, 0, -1, -1, -1, 0, 1];
@@ -277,6 +287,8 @@ import Base from '../../layouts/Base.astro';
     let H = 0;
     let state = new Uint8Array(0);
     let parents = new Int32Array(0);
+    let inFrontier = new Uint8Array(0);
+    let frontier: number[] = [];
     let palette: number[][] = [];
     let bxmin = 0, bxmax = 0, bymin = 0, bymax = 0;
     let cycleStart = 0;
@@ -291,6 +303,7 @@ import Base from '../../layouts/Base.astro';
     let eta = Number(etaInput?.value ?? 1);
     let colorCycle = Number(cycleInput?.value ?? 1600);
     let renderMode: RenderMode = ((renderModeSelect?.value as RenderMode) ?? 'pixel');
+    let engine: Engine = ((engineSelect?.value as Engine) ?? 'dla');
     let stepsPerFrame = Number(speedInput?.value ?? 350);
     let preset: PresetName = ((presetSelect?.value as PresetName) ?? 'random');
     let spawnWeights: number[] = [0.25, 0.25, 0.25, 0.25];
@@ -356,12 +369,115 @@ import Base from '../../layouts/Base.astro';
       const i = idx(x, y);
       state[i] = 1;
       parents[i] = parent;
+      inFrontier[i] = 0;
       stuckCount++;
       if (x < bxmin) bxmin = x;
       if (x > bxmax) bxmax = x;
       if (y < bymin) bymin = y;
       if (y > bymax) bymax = y;
+      if (engine === 'eden') {
+        for (let k = 0; k < 8; k++) {
+          const nx = x + DX8[k];
+          const ny = y + DY8[k];
+          if (nx < 1 || nx > W - 2 || ny < 1 || ny > H - 2) continue;
+          const ni = idx(nx, ny);
+          if (state[ni] || inFrontier[ni]) continue;
+          inFrontier[ni] = 1;
+          frontier.push(ni);
+        }
+      }
       paintCell(x, y, parent);
+    }
+
+    function popFrontier(): number {
+      while (frontier.length > 0) {
+        const pos = Math.floor(rng() * frontier.length);
+        const ci = frontier[pos];
+        const last = frontier.pop()!;
+        if (pos < frontier.length) frontier[pos] = last;
+        if (inFrontier[ci]) {
+          inFrontier[ci] = 0;
+          return ci;
+        }
+      }
+      return -1;
+    }
+
+    function pickFrontierWithBias(): number {
+      if (eta <= 1.001) return popFrontier();
+      const samples = Math.min(8, frontier.length);
+      if (samples <= 0) return -1;
+      let bestCi = -1;
+      let bestPos = -1;
+      let bestScore = -1;
+      for (let s = 0; s < samples; s++) {
+        let pos = Math.floor(rng() * frontier.length);
+        let ci = frontier[pos];
+        if (!inFrontier[ci]) {
+          const last = frontier.pop()!;
+          if (pos < frontier.length) frontier[pos] = last;
+          continue;
+        }
+        const cx = ci % W;
+        const cy = (ci / W) | 0;
+        let neighbors = 0;
+        for (let k = 0; k < 8; k++) {
+          const nx = cx + DX8[k], ny = cy + DY8[k];
+          if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+          if (state[idx(nx, ny)]) neighbors++;
+        }
+        const exposure = (8 - neighbors) / 8;
+        const score = Math.pow(exposure, eta);
+        if (score > bestScore) {
+          bestScore = score;
+          bestCi = ci;
+          bestPos = pos;
+        }
+      }
+      if (bestCi < 0) return -1;
+      const last = frontier.pop()!;
+      if (bestPos < frontier.length) frontier[bestPos] = last;
+      inFrontier[bestCi] = 0;
+      return bestCi;
+    }
+
+    function edenStep() {
+      if (frontier.length === 0) {
+        seedCycle();
+        return;
+      }
+      const ci = pickFrontierWithBias();
+      if (ci < 0) return;
+      if (rng() >= pStick) return;
+      const x = ci % W;
+      const y = (ci / W) | 0;
+      let parent = -1;
+      for (let k = 0; k < 8; k++) {
+        const nx = x + DX8[k];
+        const ny = y + DY8[k];
+        if (nx < 0 || nx >= W || ny < 0 || ny >= H) continue;
+        const ni = idx(nx, ny);
+        if (state[ni]) { parent = ni; break; }
+      }
+      setStuck(x, y, parent);
+    }
+
+    function rebuildFrontierFromSeeds() {
+      frontier.length = 0;
+      inFrontier.fill(0);
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          if (!state[idx(x, y)]) continue;
+          for (let k = 0; k < 8; k++) {
+            const nx = x + DX8[k], ny = y + DY8[k];
+            if (nx < 1 || nx > W - 2 || ny < 1 || ny > H - 2) continue;
+            const ni = idx(nx, ny);
+            if (state[ni] || inFrontier[ni]) continue;
+            inFrontier[ni] = 1;
+            frontier.push(ni);
+          }
+        }
+      }
     }
 
     function lerpRGB(a: number[], b: number[], t: number): number[] {
@@ -464,13 +580,17 @@ import Base from '../../layouts/Base.astro';
       pickPalette();
       rollSpawnWeights();
       state.fill(0);
+      inFrontier.fill(0);
+      frontier.length = 0;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       placeSeed();
+      if (engine === 'eden') rebuildFrontierFromSeeds();
       cycleStart = performance.now();
       updateReadout();
     }
 
     type PresetSpec = {
+      engine: Engine;
       seedMode: SeedMode;
       pStick: number;
       renderMode: RenderMode;
@@ -480,11 +600,12 @@ import Base from '../../layouts/Base.astro';
       colorCycle: number;
     };
     const PRESETS: Record<Exclude<PresetName, 'random'>, PresetSpec> = {
-      classic:   { seedMode: 'point-random',   pStick: 1,   renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1,   colorCycle: 1600 },
-      lightning: { seedMode: 'top-edge',       pStick: 1,   renderMode: 'pixel', asymm: 1,    persistence: 0.55, eta: 1.6, colorCycle: 800  },
-      frost:     { seedMode: 'left-edge',      pStick: 0.4, renderMode: 'pixel', asymm: 0.5,  persistence: 0,    eta: 1,   colorCycle: 2400 },
-      coral:     { seedMode: 'circle-outline', pStick: 0.7, renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1.3, colorCycle: 600  },
-      speckle:   { seedMode: 'right-edge',     pStick: 1,   renderMode: 'pixel', asymm: 0.7,  persistence: 0.85, eta: 2.4, colorCycle: 4000 },
+      classic:   { engine: 'dla',  seedMode: 'point-random',   pStick: 1,   renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1,   colorCycle: 1600 },
+      lightning: { engine: 'dla',  seedMode: 'top-edge',       pStick: 1,   renderMode: 'pixel', asymm: 1,    persistence: 0.55, eta: 1.6, colorCycle: 800  },
+      frost:     { engine: 'dla',  seedMode: 'left-edge',      pStick: 0.4, renderMode: 'pixel', asymm: 0.5,  persistence: 0,    eta: 1,   colorCycle: 2400 },
+      coral:     { engine: 'dla',  seedMode: 'circle-outline', pStick: 0.7, renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1.3, colorCycle: 600  },
+      speckle:   { engine: 'dla',  seedMode: 'right-edge',     pStick: 1,   renderMode: 'pixel', asymm: 0.7,  persistence: 0.85, eta: 2.4, colorCycle: 4000 },
+      moss:      { engine: 'eden', seedMode: 'point-random',   pStick: 0.7, renderMode: 'pixel', asymm: 0,    persistence: 0,    eta: 1.8, colorCycle: 3000 },
     };
     const PRESET_KEYS = Object.keys(PRESETS) as Array<keyof typeof PRESETS>;
     function pickRandomPreset(): keyof typeof PRESETS {
@@ -492,6 +613,7 @@ import Base from '../../layouts/Base.astro';
     }
     function applyPreset(name: keyof typeof PRESETS) {
       const p = PRESETS[name];
+      engine = p.engine;
       seedMode = p.seedMode;
       pStick = p.pStick;
       renderMode = p.renderMode;
@@ -500,6 +622,7 @@ import Base from '../../layouts/Base.astro';
       eta = p.eta;
       colorCycle = p.colorCycle;
       applyRenderClass();
+      if (engineSelect) engineSelect.value = p.engine;
       if (seedSelect) seedSelect.value = p.seedMode;
       if (pStickInput) pStickInput.value = String(p.pStick);
       if (renderModeSelect) renderModeSelect.value = p.renderMode;
@@ -610,7 +733,11 @@ import Base from '../../layouts/Base.astro';
         seedCycle();
         return;
       }
-      for (let i = 0; i < stepsPerFrame; i++) walkOne();
+      if (engine === 'eden') {
+        for (let i = 0; i < stepsPerFrame; i++) edenStep();
+      } else {
+        for (let i = 0; i < stepsPerFrame; i++) walkOne();
+      }
       updateReadout();
     }
 
@@ -625,6 +752,8 @@ import Base from '../../layouts/Base.astro';
       ctx.lineJoin = 'round';
       state = new Uint8Array(W * H);
       parents = new Int32Array(W * H);
+      inFrontier = new Uint8Array(W * H);
+      frontier = [];
       seedCycle();
     }
 
@@ -677,6 +806,10 @@ import Base from '../../layouts/Base.astro';
 
     seedSelect?.addEventListener('change', () => {
       seedMode = seedSelect.value as SeedMode;
+      seedCycle();
+    });
+    engineSelect?.addEventListener('change', () => {
+      engine = engineSelect.value as Engine;
       seedCycle();
     });
     pStickInput?.addEventListener('input', () => {
