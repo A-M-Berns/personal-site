@@ -1192,6 +1192,58 @@ import Base from '../../layouts/Base.astro';
       resizeTimer = window.setTimeout(() => { resize(); draw(); }, 200);
     });
 
+    // --- Click/drag to paint cells in the highest state ---
+    // The canvas is fixed-positioned at 100vw × 100vh and its internal
+    // resolution matches the window in CSS pixels, so clientX/Y maps
+    // directly to grid pixel space.
+    function pixelToCellIndex(mx: number, my: number): number {
+      if (mode === 'hex-track' || mode === 'hex-truchet') {
+        // Pixel → axial inverse for pointy-top, then hex-round, then back
+        // to odd-r offset coords. O(1).
+        const px = mx - HEX_W / 2;
+        const py = my - HEX_H / 2;
+        const rf = py / (HEX_S * 1.5);
+        const qf = px / HEX_W - rf / 2;
+        const sf = -qf - rf;
+        let q = Math.round(qf);
+        let r = Math.round(rf);
+        let s = Math.round(sf);
+        const dq = Math.abs(q - qf);
+        const dr = Math.abs(r - rf);
+        const ds = Math.abs(s - sf);
+        if (dq > dr && dq > ds) q = -r - s;
+        else if (dr > ds) r = -q - s;
+        const row = r;
+        const col = q + (r - (r & 1)) / 2;
+        if (col < 0 || col >= CW || row < 0 || row >= CH) return -1;
+        return row * CW + col;
+      }
+      const col = Math.floor(mx / CELL_PX);
+      const row = Math.floor(my / CELL_PX);
+      if (col < 0 || col >= CW || row < 0 || row >= CH) return -1;
+      return row * CW + col;
+    }
+
+    let isPainting = false;
+    function paintAt(mx: number, my: number) {
+      const i = pixelToCellIndex(mx, my);
+      if (i < 0 || nStates < 1) return;
+      grid[i] = nStates - 1;
+    }
+    window.addEventListener('pointerdown', (e) => {
+      const target = e.target as Element | null;
+      if (target?.closest?.('a, button, dialog, input, select, label, .ant-panel, .anim-controls, .ant-label')) return;
+      isPainting = true;
+      paintAt(e.clientX, e.clientY);
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!isPainting) return;
+      paintAt(e.clientX, e.clientY);
+    });
+    window.addEventListener('pointerup', () => { isPainting = false; });
+    window.addEventListener('pointercancel', () => { isPainting = false; });
+    window.addEventListener('pointerleave', () => { isPainting = false; });
+
     // --- Auto cycle (matches home page's reseed-on-interval pattern) ---
 
     let cycleTimer: number | undefined;
