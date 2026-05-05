@@ -43,17 +43,29 @@ import Base from '../../layouts/Base.astro';
           <span>preset</span>
           <select id="ant-preset">
             <option value="random" selected>random</option>
-            <option value="LR">2 — LR (Langton)</option>
-            <option value="LRRL">9 — LRRL</option>
-            <option value="LLRR">12 — LLRR</option>
-            <option value="LRRRRL">33 — LRRRRL</option>
-            <option value="LRRLLL">39 — LRRLLL</option>
-            <option value="LLRRRR">48 — LLRRRR</option>
-            <option value="LLRRLL">51 — LLRRLL</option>
-            <option value="LLLRRL">57 — LLLRRL</option>
-            <option value="LLLLRR">60 — LLLLRR</option>
-            <option value="LRRRRRRL">214 — LRRRRRRL</option>
-            <option value="LLRRLLRR">204 — LLRRLLRR</option>
+            <optgroup label="from the paper">
+              <option value="LR">LR (Langton, ant 2)</option>
+              <option value="LRRL">LRRL (ant 9)</option>
+              <option value="LLRR">LLRR (ant 12)</option>
+              <option value="LRRRRL">LRRRRL (ant 33)</option>
+              <option value="LRRLLL">LRRLLL (ant 39)</option>
+              <option value="LLRRRR">LLRRRR (ant 48)</option>
+              <option value="LLRRLL">LLRRLL (ant 51)</option>
+              <option value="LLLRRL">LLLRRL (ant 57)</option>
+              <option value="LLLLRR">LLLLRR (ant 60)</option>
+              <option value="LRRRRRRL">LRRRRRRL (ant 214)</option>
+              <option value="LLRRLLRR">LLRRLLRR (ant 204)</option>
+            </optgroup>
+            <optgroup label="other">
+              <option value="LRL">LRL</option>
+              <option value="LLR">LLR</option>
+              <option value="LLRL">LLRL</option>
+              <option value="LRRRR">LRRRR</option>
+              <option value="LRRRLL">LRRRLL</option>
+              <option value="LLLLR">LLLLR</option>
+              <option value="RRLRLL">RRLRLL</option>
+              <option value="LLLLLR">LLLLLR</option>
+            </optgroup>
           </select>
         </label>
         <div class="ant-panel-row">
@@ -299,21 +311,34 @@ import Base from '../../layouts/Base.astro';
       '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
     ].map(parseHex).sort((a, b) => luma(a) - luma(b));
 
-    // Curated rule-strings — the bilaterally-symmetric ants from the paper
-    // plus a couple of longer rules for variety. These produce the
-    // recurrent-track patterns shown in the paper's Figures 2 and 3.
-    const RULE_POOL = [
-      'LRRL',     // ant 9
-      'LLRR',     // ant 12
-      'LRRRRL',   // 33
-      'LRRLLL',   // 39
-      'LLRRRR',   // 48
-      'LLRRLL',   // 51
-      'LLLRRL',   // 57
-      'LLLLRR',   // 60
-      'LRRRRRRL', // 214
-      'LLRRLLRR', // 204
-      'LR',       // classic Langton
+    // Curated rule-strings, weighted by visual interest (Anson's
+    // assessment): "high"-interest rules get picked roughly 3× as often
+    // as "medium"-interest ones. Higher-weight entries are more likely
+    // to be picked but every rule still appears regularly. Rules
+    // starting with R are reflections of L-starting rules and run
+    // identically up to a mirror.
+    const RULE_POOL: { rule: string; weight: number }[] = [
+      // From the paper — bilaterally-symmetric "track" ants.
+      { rule: 'LR',        weight: 3 }, // ant 2 (Langton)
+      { rule: 'LRRL',      weight: 3 }, // ant 9
+      { rule: 'LLRR',      weight: 3 }, // ant 12
+      { rule: 'LLRRLLRR',  weight: 3 }, // ant 204
+      { rule: 'LRRRRL',    weight: 1 }, // ant 33
+      { rule: 'LRRLLL',    weight: 1 }, // ant 39
+      { rule: 'LLRRRR',    weight: 1 }, // ant 48
+      { rule: 'LLRRLL',    weight: 1 }, // ant 51
+      { rule: 'LLLRRL',    weight: 1 }, // ant 57
+      { rule: 'LLLLRR',    weight: 1 }, // ant 60
+      { rule: 'LRRRRRRL',  weight: 1 }, // ant 214
+      // Other patterns of interest.
+      { rule: 'LRL',       weight: 1 },
+      { rule: 'LLR',       weight: 1 },
+      { rule: 'LLRL',      weight: 1 },
+      { rule: 'LRRRR',     weight: 1 },
+      { rule: 'LRRRLL',    weight: 1 },
+      { rule: 'LLLLR',     weight: 1 },
+      { rule: 'RRLRLL',    weight: 1 },
+      { rule: 'LLLLLR',    weight: 1 },
     ];
 
     function parseHex(h: string): RGB {
@@ -387,42 +412,49 @@ import Base from '../../layouts/Base.astro';
       palette = out;
     }
 
-    // Shuffled-deck rule picker so every cycle visits every pool entry
-    // before any repeats — same pattern the home page uses for its CA
-    // seeders.
-    let ruleDeck: number[] = [];
-    function nextPoolRule(avoid: string): string {
-      if (ruleDeck.length === 0) {
-        const idxs: number[] = [];
-        for (let i = 0; i < RULE_POOL.length; i++) idxs.push(i);
-        for (let i = idxs.length - 1; i > 0; i--) {
-          const j = (rng() * (i + 1)) | 0;
-          const tmp = idxs[i]; idxs[i] = idxs[j]; idxs[j] = tmp;
+    // Weighted pick from RULE_POOL — high-interest rules show up more
+    // often. Reject the most-recent rule on the first re-roll so we
+    // don't hit the same pattern back-to-back.
+    const totalWeight = RULE_POOL.reduce((s, r) => s + r.weight, 0);
+    function pickPoolRule(avoid: string): string {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        let t = rng() * totalWeight;
+        for (const entry of RULE_POOL) {
+          t -= entry.weight;
+          if (t <= 0) {
+            if (entry.rule !== avoid) return entry.rule;
+            break;
+          }
         }
-        if (idxs.length > 1 && RULE_POOL[idxs[0]] === avoid) {
-          const tmp = idxs[0]; idxs[0] = idxs[1]; idxs[1] = tmp;
-        }
-        ruleDeck = idxs;
       }
-      return RULE_POOL[ruleDeck.shift()!];
+      // Fall through if we kept hitting `avoid` — fine, just return it.
+      return RULE_POOL[(rng() * RULE_POOL.length) | 0].rule;
     }
 
-    function placeAnts() {
+    function placeAnts(cycleAntCount: number) {
       ants = [];
-      const cx = (W / 2) | 0;
-      const cy = (H / 2) | 0;
-      if (antCount === 1) {
-        ants.push({ x: cx, y: cy, d: 0 });
+      // For random-preset cycles, jitter the seeding center within a
+      // central region (instead of always exact center) so the bilateral
+      // axis of symmetry sits somewhere different each cycle. Single-ant
+      // runs also pick a random initial heading.
+      const jitterRange = preset === 'random' ? 0.18 : 0;
+      const jx = (rng() * 2 - 1) * W * jitterRange;
+      const jy = (rng() * 2 - 1) * H * jitterRange;
+      const cx = (W / 2 + jx) | 0;
+      const cy = (H / 2 + jy) | 0;
+      if (cycleAntCount === 1) {
+        ants.push({ x: cx, y: cy, d: (rng() * 4) | 0 });
         return;
       }
-      // Spread ants on a ring around the center so they don't immediately
-      // collide. Initial heading rotates with placement angle for variety.
+      // Ring of ants around the (jittered) center, with each ant given
+      // an independent random heading instead of the index-derived one.
       const r = Math.max(8, Math.min(W, H) / 6);
-      for (let i = 0; i < antCount; i++) {
-        const a = (i / antCount) * Math.PI * 2;
+      const phaseOffset = rng() * Math.PI * 2;
+      for (let i = 0; i < cycleAntCount; i++) {
+        const a = phaseOffset + (i / cycleAntCount) * Math.PI * 2;
         const ax = (((cx + Math.cos(a) * r) | 0) % W + W) % W;
         const ay = (((cy + Math.sin(a) * r) | 0) % H + H) % H;
-        ants.push({ x: ax, y: ay, d: i & 3 });
+        ants.push({ x: ax, y: ay, d: (rng() * 4) | 0 });
       }
     }
 
@@ -430,7 +462,7 @@ import Base from '../../layouts/Base.astro';
       seed = (Math.random() * 0xffffffff) >>> 0;
       rng = mulberry32(seed);
       const chosen = useExplicitRule
-        ?? (preset === 'random' ? nextPoolRule(ruleStr) : preset);
+        ?? (preset === 'random' ? pickPoolRule(ruleStr) : preset);
       setRuleFromString(chosen);
       if (ruleInput && ruleInput.value !== chosen) {
         ruleInput.value = chosen;
@@ -439,9 +471,18 @@ import Base from '../../layouts/Base.astro';
       }
       pickPalette();
       grid.fill(0);
-      placeAnts();
+      // In random preset mode the slider is interpreted as a cap and the
+      // actual count is biased toward 1 (squared distribution): single-ant
+      // runs are the ones that exhibit the paper's bilateral symmetry,
+      // and multi-ant runs are chaotic, so we want them to be the
+      // exception not the rule.
+      let activeCount = antCount;
+      if (preset === 'random' && antCount > 1) {
+        activeCount = 1 + ((rng() * rng() * antCount) | 0);
+      }
+      placeAnts(activeCount);
       totalSteps = 0;
-      updateLabel();
+      updateLabel(activeCount);
     }
 
     function step(n: number) {
@@ -488,13 +529,13 @@ import Base from '../../layouts/Base.astro';
       for (const ant of ants) ctx.fillRect(ant.x, ant.y, 1, 1);
     }
 
-    function updateLabel() {
+    function updateLabel(activeCount = ants.length) {
       if (labelEl) {
         labelEl.innerHTML = `
           <span>automaton: n-state ant</span>
           <span>rule: ${ruleStr}</span>
           <span>n: ${nStates}</span>
-          <span>ants: ${antCount}</span>
+          <span>ants: ${activeCount}</span>
         `;
       }
       if (nReadout) nReadout.textContent = String(nStates);
@@ -532,10 +573,10 @@ import Base from '../../layouts/Base.astro';
     countInput?.addEventListener('input', () => {
       antCount = Number(countInput.value);
       syncRangeLabel(countInput, countValue);
-      placeAnts();
-      grid.fill(0);
-      totalSteps = 0;
-      updateLabel();
+      // Reseed so the new ant count picks fresh positions/headings
+      // rather than partial overwriting on the half-evolved board.
+      reseed(preset === 'random' ? null : preset);
+      draw();
     });
     speedInput?.addEventListener('input', () => {
       stepsPerFrame = Number(speedInput.value);
