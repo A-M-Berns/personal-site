@@ -93,6 +93,10 @@ import Base from '../../layouts/Base.astro';
           <input id="ant-cycle" type="range" min="20" max="180" step="5" value="60" />
           <span id="ant-cycle-value">60s</span>
         </div>
+        <label class="ant-panel-toggle" for="ant-fully-random">
+          <input id="ant-fully-random" type="checkbox" />
+          <span>fully random rule</span>
+        </label>
         <dl class="ant-stats">
           <div><dt>n</dt><dd id="ant-n">-</dd></div>
           <div><dt>step</dt><dd id="ant-step">-</dd></div>
@@ -234,6 +238,21 @@ import Base from '../../layouts/Base.astro';
     text-align: right;
     font-variant-numeric: tabular-nums;
   }
+  .ant-panel-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.45rem 0 0.1rem;
+    font-size: 0.7rem;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .ant-panel-toggle input[type="checkbox"] {
+    accent-color: var(--accent);
+    margin: 0;
+    cursor: pointer;
+  }
+  .ant-panel-toggle:hover { color: var(--ink); }
   .ant-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -284,6 +303,7 @@ import Base from '../../layouts/Base.astro';
     const cellValue = document.getElementById('ant-cell-value');
     const cycleInput = document.getElementById('ant-cycle') as HTMLInputElement | null;
     const cycleValue = document.getElementById('ant-cycle-value');
+    const fullyRandomInput = document.getElementById('ant-fully-random') as HTMLInputElement | null;
     const resetButton = document.getElementById('ant-reset') as HTMLButtonElement | null;
     const restartButton = document.getElementById('ant-restart') as HTMLButtonElement | null;
     const infoButton = document.getElementById('ant-info');
@@ -365,6 +385,7 @@ import Base from '../../layouts/Base.astro';
     let antCount = Number(countInput?.value ?? 1);
     let cycleSeconds = Number(cycleInput?.value ?? 60);
     let preset: string = presetSelect?.value ?? 'random';
+    let useFullyRandom = !!fullyRandomInput?.checked;
 
     let W = 0;
     let H = 0;
@@ -431,6 +452,27 @@ import Base from '../../layouts/Base.astro';
       return RULE_POOL[(rng() * RULE_POOL.length) | 0].rule;
     }
 
+    // Fully-random rule: any L/R string, length 2..10. Length distribution
+    // skews toward 3-6 since shorter rules read as plain Langton-like and
+    // longer rules tend to be visually mush. Constants-only rules (all L
+    // or all R) are rejected — those just spiral the ant in a circle.
+    function pickFullyRandomRule(avoid: string): string {
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const len = 2 + Math.min(8, ((-Math.log(1 - rng() * 0.95)) * 2.5) | 0);
+        let s = '';
+        let countL = 0;
+        for (let i = 0; i < len; i++) {
+          const c = rng() < 0.5 ? 'L' : 'R';
+          if (c === 'L') countL++;
+          s += c;
+        }
+        if (countL === 0 || countL === len) continue;
+        if (s === avoid) continue;
+        return s;
+      }
+      return rng() < 0.5 ? 'LR' : 'LLRR';
+    }
+
     function placeAnts(cycleAntCount: number) {
       ants = [];
       // For random-preset cycles, jitter the seeding center within a
@@ -462,7 +504,9 @@ import Base from '../../layouts/Base.astro';
       seed = (Math.random() * 0xffffffff) >>> 0;
       rng = mulberry32(seed);
       const chosen = useExplicitRule
-        ?? (preset === 'random' ? pickPoolRule(ruleStr) : preset);
+        ?? (preset === 'random'
+          ? (useFullyRandom ? pickFullyRandomRule(ruleStr) : pickPoolRule(ruleStr))
+          : preset);
       setRuleFromString(chosen);
       if (ruleInput && ruleInput.value !== chosen) {
         ruleInput.value = chosen;
@@ -591,6 +635,16 @@ import Base from '../../layouts/Base.astro';
       cycleSeconds = Number(cycleInput.value);
       syncRangeLabel(cycleInput, cycleValue, 's');
       scheduleAutoCycle();
+    });
+    fullyRandomInput?.addEventListener('change', () => {
+      useFullyRandom = !!fullyRandomInput.checked;
+      // Switching the toggle implies the user wants to see the new mode
+      // immediately, so reseed (only meaningful in random preset; pinned
+      // presets ignore the toggle).
+      if (preset === 'random') {
+        reseed(null);
+        draw();
+      }
     });
     presetSelect?.addEventListener('change', () => {
       preset = presetSelect.value;
