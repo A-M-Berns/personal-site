@@ -42,9 +42,9 @@ import Base from '../../layouts/Base.astro';
         <label class="ant-panel-field">
           <span>mode</span>
           <select id="ant-mode">
-            <option value="square-track" selected>square track</option>
+            <option value="hex-track" selected>hex track</option>
+            <option value="square-track">square track</option>
             <option value="square-truchet">square truchet</option>
-            <option value="hex-track">hex track</option>
           </select>
         </label>
         <label class="ant-panel-field">
@@ -81,12 +81,12 @@ import Base from '../../layouts/Base.astro';
         </div>
         <div class="ant-panel-row">
           <label for="ant-speed">speed</label>
-          <input id="ant-speed" type="range" min="100" max="6000" step="100" value="1500" />
-          <span id="ant-speed-value">1500</span>
+          <input id="ant-speed" type="range" min="100" max="6000" step="100" value="400" />
+          <span id="ant-speed-value">400</span>
         </div>
         <div class="ant-panel-row">
           <label for="ant-cell">cell</label>
-          <input id="ant-cell" type="range" min="3" max="9" step="1" value="5" />
+          <input id="ant-cell" type="range" min="3" max="7" step="1" value="5" />
           <span id="ant-cell-value">5</span>
         </div>
         <div class="ant-panel-row">
