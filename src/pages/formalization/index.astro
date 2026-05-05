@@ -3,7 +3,7 @@ import Base from '../../layouts/Base.astro';
 ---
 <Base title="Formalization — A. M. Berns" description="Formalization projects in Lean 4.">
   <div class="lean-shell">
-    <canvas id="wireworld" class="wireworld" aria-hidden="true"></canvas>
+    <canvas id="ant-sim" class="ant-sim" aria-hidden="true"></canvas>
     <header class="section-head">
       <h1><span class="hl">Formalization</span></h1>
       <p><span class="hl">Formalization projects in Lean 4.</span></p>
@@ -18,86 +18,280 @@ import Base from '../../layouts/Base.astro';
         </li>
       </ul>
     </article>
-    <aside id="wire-label" class="wire-label" aria-live="polite"></aside>
+    <aside id="ant-label" class="ant-label" aria-live="polite"></aside>
     <div class="anim-controls">
-      <button id="wire-info" type="button" aria-label="About this animation">About this animation</button>
-      <button id="wire-reset" type="button" aria-label="Reset Wireworld++">Reset</button>
+      <button id="ant-info" type="button" aria-label="About this animation">About this animation</button>
+      <button id="ant-restart" type="button" aria-label="Reset ant">Reset</button>
     </div>
-    <dialog id="wire-about" aria-labelledby="wire-about-title">
-      <button class="wire-about-close" type="button" aria-label="Close">x</button>
-      <h2 id="wire-about-title">About this animation</h2>
+    <dialog id="ant-about" class="anim-about" aria-labelledby="ant-about-title">
+      <button class="anim-about-close" type="button" aria-label="Close">×</button>
+      <h2 id="ant-about-title">About this animation</h2>
       <p>
-        Wireworld++ extends Wireworld with strong and weak signals. Here strong and weak conductors obey the cross-coupled local rules from the paper.
+        n-state Langton's ant (Gale, Propp, Sutherland, Troubetzkoy 1995). A rule-string of L's and R's specifies what each cell-state does when an ant visits it: turn left or turn right. As the ant leaves, the cell advances to the next state mod n. With n &gt; 2 some rule-strings produce bilaterally-symmetric "tracks" that grow forever while never drifting from their starting cell.
       </p>
       <p>
-        Each cycle lays out small paper-derived primitive gates and runs the local Wireworld++ transition rules directly.
+        Each cycle picks a fresh rule-string, ant count, and palette; press Reset to advance immediately.
       </p>
     </dialog>
+    <aside class="ant-panel" aria-label="Ant controls">
+      <div class="ant-panel-head">
+        <h2>Ant</h2>
+        <button id="ant-reset" type="button">Reset</button>
+      </div>
+      <div class="ant-panel-body">
+        <label class="ant-panel-field">
+          <span>preset</span>
+          <select id="ant-preset">
+            <option value="random" selected>random</option>
+            <option value="LR">2 — LR (Langton)</option>
+            <option value="LRRL">9 — LRRL</option>
+            <option value="LLRR">12 — LLRR</option>
+            <option value="LRRRRL">33 — LRRRRL</option>
+            <option value="LRRLLL">39 — LRRLLL</option>
+            <option value="LLRRRR">48 — LLRRRR</option>
+            <option value="LLRRLL">51 — LLRRLL</option>
+            <option value="LLLRRL">57 — LLLRRL</option>
+            <option value="LLLLRR">60 — LLLLRR</option>
+            <option value="LRRRRRRL">214 — LRRRRRRL</option>
+            <option value="LLRRLLRR">204 — LLRRLLRR</option>
+          </select>
+        </label>
+        <div class="ant-panel-row">
+          <label for="ant-rule">rule</label>
+          <input id="ant-rule" type="text" autocomplete="off" spellcheck="false" maxlength="14" value="LLRR" />
+          <span id="ant-rule-status">ok</span>
+        </div>
+        <div class="ant-panel-row">
+          <label for="ant-count">ants</label>
+          <input id="ant-count" type="range" min="1" max="12" step="1" value="1" />
+          <span id="ant-count-value">1</span>
+        </div>
+        <div class="ant-panel-row">
+          <label for="ant-speed">speed</label>
+          <input id="ant-speed" type="range" min="100" max="6000" step="100" value="1500" />
+          <span id="ant-speed-value">1500</span>
+        </div>
+        <div class="ant-panel-row">
+          <label for="ant-cell">cell</label>
+          <input id="ant-cell" type="range" min="3" max="9" step="1" value="5" />
+          <span id="ant-cell-value">5</span>
+        </div>
+        <div class="ant-panel-row">
+          <label for="ant-cycle">cycle</label>
+          <input id="ant-cycle" type="range" min="20" max="180" step="5" value="60" />
+          <span id="ant-cycle-value">60s</span>
+        </div>
+        <dl class="ant-stats">
+          <div><dt>n</dt><dd id="ant-n">-</dd></div>
+          <div><dt>step</dt><dd id="ant-step">-</dd></div>
+          <div><dt>seed</dt><dd id="ant-seed">-</dd></div>
+          <div><dt>rule</dt><dd id="ant-rule-readout">-</dd></div>
+        </dl>
+      </div>
+    </aside>
   </div>
 </Base>
 
+<style>
+  .ant-sim {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    opacity: 0.85;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .ant-label {
+    position: fixed;
+    right: 1rem;
+    top: 1rem;
+    z-index: 3;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.7rem;
+    max-width: min(34rem, calc(100vw - 2rem));
+    background: rgba(0, 0, 0, 0.82);
+    border: 1px solid rgba(236, 236, 236, 0.12);
+    border-radius: 3px;
+    padding: 0.45rem 0.6rem;
+    color: var(--muted);
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.2;
+    pointer-events: none;
+  }
+  .ant-label span { white-space: nowrap; }
+  @media (max-width: 760px) {
+    .ant-label { top: 3.55rem; }
+  }
+
+  .ant-panel {
+    position: fixed;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 3;
+    width: 17rem;
+    background: rgba(14, 14, 16, 0.92);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.85rem 1rem 0.9rem;
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.78rem;
+    color: var(--muted);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .ant-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.55rem;
+  }
+  .ant-panel-head h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .ant-panel button {
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.3rem 0.55rem;
+    cursor: pointer;
+  }
+  .ant-panel button:hover { color: var(--ink); border-color: var(--muted); }
+  .ant-panel-field {
+    display: grid;
+    grid-template-columns: 4rem 1fr;
+    gap: 0.55rem;
+    align-items: center;
+    margin-bottom: 0.35rem;
+  }
+  .ant-panel-field span { font-size: 0.7rem; color: var(--muted); }
+  .ant-panel-field select {
+    width: 100%;
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: rgba(14, 14, 16, 0.55);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.2rem 0.35rem;
+  }
+  .ant-panel-row {
+    display: grid;
+    grid-template-columns: 4rem 1fr 3.3rem;
+    gap: 0.55rem;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+  .ant-panel-row label { font-size: 0.7rem; color: var(--muted); }
+  .ant-panel-row input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+  .ant-panel-row input[type="text"] {
+    width: 100%;
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--ink);
+    background: rgba(14, 14, 16, 0.55);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.25rem 0.4rem;
+    text-transform: uppercase;
+  }
+  .ant-panel-row input[type="text"].invalid {
+    border-color: #d63a2a;
+    color: #ff8a3a;
+  }
+  .ant-panel-row span {
+    font-size: 0.68rem;
+    color: var(--ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .ant-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    margin: 0.6rem 0 0;
+    font-size: 0.65rem;
+  }
+  .ant-stats div {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 0.3rem;
+    overflow: hidden;
+  }
+  .ant-stats dt {
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .ant-stats dd {
+    margin: 0;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  html:not(.dev-mode) .ant-panel { display: none !important; }
+  html.animation-only .ant-panel,
+  html.animation-only .ant-label { display: none !important; }
+</style>
+
 <script>
-  const canvas = document.getElementById('wireworld');
+  const canvas = document.getElementById('ant-sim') as HTMLCanvasElement | null;
   if (canvas) {
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
-    const label = document.getElementById('wire-label');
-    const resetButton = document.getElementById('wire-reset');
-    const infoButton = document.getElementById('wire-info');
-    const aboutDialog = document.getElementById('wire-about');
-    const aboutClose = aboutDialog?.querySelector('.wire-about-close');
 
-    const CELL_PX = 4;
-    const TICK_MS = 44;
-    const CYCLE_STEPS = 1100;
-    const SIGNAL_PERIOD = 18;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const ruleInput = document.getElementById('ant-rule') as HTMLInputElement | null;
+    const ruleStatus = document.getElementById('ant-rule-status');
+    const presetSelect = document.getElementById('ant-preset') as HTMLSelectElement | null;
+    const countInput = document.getElementById('ant-count') as HTMLInputElement | null;
+    const countValue = document.getElementById('ant-count-value');
+    const speedInput = document.getElementById('ant-speed') as HTMLInputElement | null;
+    const speedValue = document.getElementById('ant-speed-value');
+    const cellInput = document.getElementById('ant-cell') as HTMLInputElement | null;
+    const cellValue = document.getElementById('ant-cell-value');
+    const cycleInput = document.getElementById('ant-cycle') as HTMLInputElement | null;
+    const cycleValue = document.getElementById('ant-cycle-value');
+    const resetButton = document.getElementById('ant-reset') as HTMLButtonElement | null;
+    const restartButton = document.getElementById('ant-restart') as HTMLButtonElement | null;
+    const infoButton = document.getElementById('ant-info');
+    const aboutDialog = document.getElementById('ant-about') as HTMLDialogElement | null;
+    const aboutClose = aboutDialog?.querySelector('.anim-about-close');
+    const labelEl = document.getElementById('ant-label');
+    const nReadout = document.getElementById('ant-n');
+    const stepReadout = document.getElementById('ant-step');
+    const seedReadout = document.getElementById('ant-seed');
+    const ruleReadout = document.getElementById('ant-rule-readout');
 
-    const EMPTY = 0;
-    const CONDUCTOR = 1;
-    const HEAD = 2;
-    const TAIL = 3;
-    const OPS = ['AND', 'OR', 'XOR'];
-
-    const FONT = {
-      A: ['010', '101', '111', '101', '101'],
-      B: ['110', '101', '110', '101', '110'],
-      C: ['011', '100', '100', '100', '011'],
-      D: ['110', '101', '101', '101', '110'],
-      E: ['111', '100', '110', '100', '111'],
-      F: ['111', '100', '110', '100', '100'],
-      G: ['011', '100', '101', '101', '011'],
-      H: ['101', '101', '111', '101', '101'],
-      I: ['111', '010', '010', '010', '111'],
-      L: ['100', '100', '100', '100', '111'],
-      N: ['101', '111', '111', '111', '101'],
-      O: ['010', '101', '101', '101', '010'],
-      R: ['110', '101', '110', '101', '101'],
-      S: ['011', '100', '010', '001', '110'],
-      T: ['111', '010', '010', '010', '010'],
-      U: ['101', '101', '101', '101', '111'],
-      W: ['101', '101', '111', '111', '101'],
-      X: ['101', '101', '010', '101', '101'],
-      '0': ['111', '101', '101', '101', '111'],
-      '1': ['010', '110', '010', '010', '111'],
-      '2': ['110', '001', '010', '100', '111'],
-      '3': ['110', '001', '010', '001', '110'],
-      '4': ['101', '101', '111', '001', '001'],
-      '5': ['111', '100', '110', '001', '110'],
-      '6': ['011', '100', '111', '101', '111'],
-      '7': ['111', '001', '010', '010', '010'],
-      '8': ['111', '101', '111', '101', '111'],
-      '9': ['111', '101', '111', '001', '110'],
-      '=': ['000', '111', '000', '111', '000'],
-      '+': ['000', '010', '111', '010', '000'],
-      '(': ['001', '010', '010', '010', '001'],
-      ')': ['100', '010', '010', '010', '100'],
-      ' ': ['000', '000', '000', '000', '000'],
-    };
+    type RGB = [number, number, number];
 
     const styles = getComputedStyle(document.documentElement);
-    const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
-    const colorPool = [
+    const paper = parseHex((styles.getPropertyValue('--paper').trim() || '#0e0e10'));
+
+    // Same jewel-tone pool as the home page so the formalization animation
+    // shares the site's color identity. Sorted by luma so we can sample
+    // dark→light stops.
+    const colorPool: RGB[] = [
       '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
       '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
       '#fff0b8', '#d6ff5a', '#6ad84a', '#3ad48a', '#0fbfa8',
@@ -105,67 +299,33 @@ import Base from '../../layouts/Base.astro';
       '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
     ].map(parseHex).sort((a, b) => luma(a) - luma(b));
 
-    let W = 0;
-    let H = 0;
-    let strong = new Uint8Array();
-    let weak = new Uint8Array();
-    let strongNext = new Uint8Array();
-    let weakNext = new Uint8Array();
-    let seed = 0;
-    let rng = mulberry32(1);
-    let stepCount = 0;
-    let activeCount = 0;
-    let strongColor = [255, 255, 255];
-    let weakColor = [255, 255, 255];
-    let tailColor = [255, 128, 64];
-    let strongConductorColor = [128, 128, 128];
-    let weakConductorColor = [96, 96, 96];
-    const labelColor = [255, 255, 255];
-    let sources = [];
-    let annotations = [];
-    let gateRows = [];
-    let formulaText = '';
-    let resultText = '';
-    let inputCount = 0;
+    // Curated rule-strings — the bilaterally-symmetric ants from the paper
+    // plus a couple of longer rules for variety. These produce the
+    // recurrent-track patterns shown in the paper's Figures 2 and 3.
+    const RULE_POOL = [
+      'LRRL',     // ant 9
+      'LLRR',     // ant 12
+      'LRRRRL',   // 33
+      'LRRLLL',   // 39
+      'LLRRRR',   // 48
+      'LLRRLL',   // 51
+      'LLLRRL',   // 57
+      'LLLLRR',   // 60
+      'LRRRRRRL', // 214
+      'LLRRLLRR', // 204
+      'LR',       // classic Langton
+    ];
 
-    function parseHex(h) {
+    function parseHex(h: string): RGB {
       const s = h.trim().replace('#', '');
       const full = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
       const n = parseInt(full, 16);
       return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
     }
+    function luma(c: RGB) { return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]; }
 
-    function luma(c) {
-      return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
-    }
-
-    function mix(a, b, t) {
-      return [
-        Math.round(a[0] + (b[0] - a[0]) * t),
-        Math.round(a[1] + (b[1] - a[1]) * t),
-        Math.round(a[2] + (b[2] - a[2]) * t),
-      ];
-    }
-
-    function rgb(c) {
-      return `rgb(${c[0]} ${c[1]} ${c[2]})`;
-    }
-
-    function rgba(c, a) {
-      return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${Math.max(0, Math.min(1, a))})`;
-    }
-
-    function hashString(s) {
-      let h = 2166136261;
-      for (let i = 0; i < s.length; i++) {
-        h ^= s.charCodeAt(i);
-        h = Math.imul(h, 16777619);
-      }
-      return h >>> 0;
-    }
-
-    function mulberry32(n) {
-      let t = n >>> 0;
+    function mulberry32(s: number) {
+      let t = s >>> 0;
       return () => {
         t += 0x6D2B79F5;
         let r = Math.imul(t ^ (t >>> 15), 1 | t);
@@ -173,352 +333,312 @@ import Base from '../../layouts/Base.astro';
         return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
       };
     }
+    let rng = mulberry32(1);
 
-    function pick(items) {
-      return items[Math.floor(rng() * items.length)];
+    let CELL_PX = Number(cellInput?.value ?? 5);
+    let stepsPerFrame = Number(speedInput?.value ?? 1500);
+    let antCount = Number(countInput?.value ?? 1);
+    let cycleSeconds = Number(cycleInput?.value ?? 60);
+    let preset: string = presetSelect?.value ?? 'random';
+
+    let W = 0;
+    let H = 0;
+    let grid = new Uint8Array(0);
+    let img: ImageData | null = null;
+
+    // Direction encoding: 0=N, 1=E, 2=S, 3=W. Left = (d+3)&3, Right = (d+1)&3.
+    const DX = [0, 1, 0, -1];
+    const DY = [-1, 0, 1, 0];
+
+    type Ant = { x: number; y: number; d: number };
+    let ants: Ant[] = [];
+
+    let rule: Uint8Array = new Uint8Array(0); // 0=L, 1=R
+    let ruleStr = 'LLRR';
+    let nStates = 4;
+    let palette: RGB[] = [];
+    let seed = 0;
+    let totalSteps = 0;
+
+    function isValidRule(s: string) {
+      return s.length >= 2 && s.length <= 14 && /^[LR]+$/.test(s);
     }
 
-    function liftColor(c, minLuma) {
-      let out = c;
-      while (luma(out) < minLuma) out = mix(out, [245, 245, 245], 0.18);
-      return out;
+    function setRuleFromString(s: string) {
+      ruleStr = s;
+      nStates = s.length;
+      rule = new Uint8Array(nStates);
+      for (let i = 0; i < nStates; i++) rule[i] = s[i] === 'R' ? 1 : 0;
     }
 
-    function chooseSignalColor(palette, index) {
-      return liftColor(mix(paper, palette[index], 0.96), 172);
+    function pickPalette() {
+      // palette[0] = paper so untouched cells fade into the page background
+      // (matches the figs-2/3 look where state 0 reads as the canvas paper).
+      // Remaining states sample one luma-bucket each from the jewel pool,
+      // sorted dark→light so stepping through states produces a smooth ramp.
+      const out: RGB[] = [paper];
+      const buckets = Math.max(1, nStates - 1);
+      for (let i = 0; i < buckets; i++) {
+        const lo = Math.floor((i * colorPool.length) / buckets);
+        const hi = Math.floor(((i + 1) * colorPool.length) / buckets);
+        const span = Math.max(1, hi - lo);
+        out.push(colorPool[lo + Math.floor(rng() * span)]);
+      }
+      palette = out;
     }
 
-    function idx(x, y) {
-      return y * W + x;
-    }
-
-    function inBounds(x, y) {
-      return x > 1 && y > 1 && x < W - 2 && y < H - 2;
-    }
-
-    function layer(kind) {
-      return kind === 'strong' ? strong : weak;
-    }
-
-    function otherLayer(kind) {
-      return kind === 'strong' ? weak : strong;
-    }
-
-    function setCell(x, y, kind, value) {
-      if (!inBounds(x, y)) return;
-      layer(kind)[idx(x, y)] = value;
-      if (value !== EMPTY) otherLayer(kind)[idx(x, y)] = EMPTY;
-    }
-
-    function drawLine(x0, y0, x1, y1, kind) {
-      let x = x0;
-      let y = y0;
-      const dx = Math.abs(x1 - x0);
-      const dy = -Math.abs(y1 - y0);
-      const sx = x0 < x1 ? 1 : -1;
-      const sy = y0 < y1 ? 1 : -1;
-      let err = dx + dy;
-      while (true) {
-        setCell(x, y, kind, CONDUCTOR);
-        if (x === x1 && y === y1) break;
-        const e2 = 2 * err;
-        if (e2 >= dy) {
-          err += dy;
-          x += sx;
+    // Shuffled-deck rule picker so every cycle visits every pool entry
+    // before any repeats — same pattern the home page uses for its CA
+    // seeders.
+    let ruleDeck: number[] = [];
+    function nextPoolRule(avoid: string): string {
+      if (ruleDeck.length === 0) {
+        const idxs: number[] = [];
+        for (let i = 0; i < RULE_POOL.length; i++) idxs.push(i);
+        for (let i = idxs.length - 1; i > 0; i--) {
+          const j = (rng() * (i + 1)) | 0;
+          const tmp = idxs[i]; idxs[i] = idxs[j]; idxs[j] = tmp;
         }
-        if (e2 <= dx) {
-          err += dx;
-          y += sy;
+        if (idxs.length > 1 && RULE_POOL[idxs[0]] === avoid) {
+          const tmp = idxs[0]; idxs[0] = idxs[1]; idxs[1] = tmp;
         }
+        ruleDeck = idxs;
+      }
+      return RULE_POOL[ruleDeck.shift()!];
+    }
+
+    function placeAnts() {
+      ants = [];
+      const cx = (W / 2) | 0;
+      const cy = (H / 2) | 0;
+      if (antCount === 1) {
+        ants.push({ x: cx, y: cy, d: 0 });
+        return;
+      }
+      // Spread ants on a ring around the center so they don't immediately
+      // collide. Initial heading rotates with placement angle for variety.
+      const r = Math.max(8, Math.min(W, H) / 6);
+      for (let i = 0; i < antCount; i++) {
+        const a = (i / antCount) * Math.PI * 2;
+        const ax = (((cx + Math.cos(a) * r) | 0) % W + W) % W;
+        const ay = (((cy + Math.sin(a) * r) | 0) % H + H) % H;
+        ants.push({ x: ax, y: ay, d: i & 3 });
       }
     }
 
-    function annotate(text, x, y, kind) {
-      annotations.push({ text, x, y, kind });
-    }
-
-    function addSource(x, y, kind, enabled, phase) {
-      sources.push({ x, y, kind, enabled, phase });
-    }
-
-    function evalGate(op, a, b) {
-      if (op === 'AND') return a && b;
-      if (op === 'OR') return a || b;
-      return a !== b;
-    }
-
-    function addPaperGate(op, x, y, a, b, phase) {
-      const outX = Math.max(x + 18, Math.min(W - 7, x + Math.floor(W * 0.56)));
-      if (op === 'AND') {
-        drawLine(x, y - 2, x + 8, y - 2, 'strong');
-        drawLine(x, y + 2, x + 8, y + 2, 'strong');
-        setCell(x + 9, y - 1, 'weak', CONDUCTOR);
-        setCell(x + 9, y + 1, 'weak', CONDUCTOR);
-        drawLine(x + 10, y, outX, y, 'strong');
-      } else if (op === 'OR') {
-        drawLine(x, y - 1, x + 8, y - 1, 'strong');
-        drawLine(x, y + 1, x + 8, y + 1, 'strong');
-        drawLine(x + 9, y, outX, y, 'strong');
-      } else {
-        drawLine(x, y - 1, x + 8, y - 1, 'strong');
-        drawLine(x, y + 1, x + 8, y + 1, 'strong');
-        drawLine(x + 9, y, outX, y, 'weak');
-      }
-      addSource(x, op === 'AND' ? y - 2 : y - 1, 'strong', a, phase);
-      addSource(x, op === 'AND' ? y + 2 : y + 1, 'strong', b, phase);
-      annotate(a ? 'T' : 'F', x - 1, (op === 'AND' ? y - 2 : y - 1) - 8, 'strong');
-      annotate(b ? 'T' : 'F', x - 1, (op === 'AND' ? y + 2 : y + 1) + 3, 'strong');
-      annotate(op, x + 7, y - 9, op === 'XOR' ? 'weak' : 'strong');
-      const result = evalGate(op, a, b);
-      annotate(result ? 'T' : 'F', outX - 1, y - 8, op === 'XOR' ? 'weak' : 'strong');
-      gateRows.push({ op, a, b, result });
-      return result;
-    }
-
-    function buildCircuit() {
-      strong.fill(EMPTY);
-      weak.fill(EMPTY);
-      strongNext.fill(EMPTY);
-      weakNext.fill(EMPTY);
-      sources = [];
-      annotations = [];
-      gateRows = [];
-      const rows = Math.max(3, Math.min(6, Math.floor(H / 18)));
-      const top = Math.max(12, Math.floor(H * 0.17));
-      const gap = Math.max(12, Math.floor((Math.floor(H * 0.78) - top) / Math.max(1, rows - 1)));
-      const x = 4;
-      let trueRows = 0;
-      for (let i = 0; i < rows; i++) {
-        const op = pick(OPS);
-        let a = rng() < 0.5;
-        let b = rng() < 0.5;
-        if (i === 0 && !a && !b) a = true;
-        const result = addPaperGate(op, x, top + i * gap, a, b, i * 4);
-        if (result) trueRows++;
-      }
-      inputCount = rows * 2;
-      if (trueRows === 0 && gateRows[0]) resultText = 'false';
-      else resultText = `${trueRows}/${rows} true`;
-      formulaText = gateRows
-        .slice(0, 3)
-        .map((row) => `${row.a ? 'T' : 'F'} ${row.op} ${row.b ? 'T' : 'F'}`)
-        .join('   ');
-    }
-
-    function makeCycle() {
-      seed = hashString(`${Date.now()}:${Math.random()}`);
+    function reseed(useExplicitRule: string | null) {
+      seed = (Math.random() * 0xffffffff) >>> 0;
       rng = mulberry32(seed);
-      const palette = [];
-      for (let i = 0; i < 5; i++) {
-        const lo = Math.floor((i * colorPool.length) / 5);
-        const hi = Math.floor(((i + 1) * colorPool.length) / 5);
-        palette.push(colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))]);
+      const chosen = useExplicitRule
+        ?? (preset === 'random' ? nextPoolRule(ruleStr) : preset);
+      setRuleFromString(chosen);
+      if (ruleInput && ruleInput.value !== chosen) {
+        ruleInput.value = chosen;
+        ruleInput.classList.remove('invalid');
+        if (ruleStatus) ruleStatus.textContent = 'ok';
       }
-      strongColor = chooseSignalColor(palette, 4);
-      weakColor = chooseSignalColor(palette, 2);
-      tailColor = liftColor(mix(paper, palette[3], 0.78), 142);
-      strongConductorColor = mix(paper, strongColor, 0.32);
-      weakConductorColor = mix(paper, weakColor, 0.32);
-      stepCount = 0;
-      activeCount = 0;
-      buildCircuit();
+      pickPalette();
+      grid.fill(0);
+      placeAnts();
+      totalSteps = 0;
       updateLabel();
     }
 
-    function updateLabel() {
-      if (!label) return;
-      label.innerHTML = `
-        <span>automaton: Wireworld++</span>
-        <span>result: ${resultText}</span>
-        <span>inputs: ${inputCount}</span>
-        <span>active: ${activeCount}</span>
-        <span>seed: ${seed.toString(16).padStart(8, '0')}</span>
-      `;
-    }
-
-    function countHeads(x, y) {
-      let strongHeads = 0;
-      let weakHeads = 0;
-      for (let yy = -1; yy <= 1; yy++) {
-        for (let xx = -1; xx <= 1; xx++) {
-          if (xx === 0 && yy === 0) continue;
-          const i = idx(x + xx, y + yy);
-          if (strong[i] === HEAD) strongHeads++;
-          if (weak[i] === HEAD) weakHeads++;
+    function step(n: number) {
+      const r = rule;
+      const ns = nStates;
+      const w = W;
+      const h = H;
+      for (const ant of ants) {
+        for (let s = 0; s < n; s++) {
+          const i = ant.y * w + ant.x;
+          const cell = grid[i];
+          // Turn first (based on the cell's current state), increment
+          // the cell, then move forward — matches the paper's "the cell
+          // changes to state i+1 (mod n) as the ant leaves" rule.
+          if (r[cell] === 0) ant.d = (ant.d + 3) & 3;
+          else ant.d = (ant.d + 1) & 3;
+          grid[i] = (cell + 1) % ns;
+          let nx = ant.x + DX[ant.d];
+          let ny = ant.y + DY[ant.d];
+          if (nx < 0) nx += w; else if (nx >= w) nx -= w;
+          if (ny < 0) ny += h; else if (ny >= h) ny -= h;
+          ant.x = nx;
+          ant.y = ny;
         }
       }
-      return { strongHeads, weakHeads };
-    }
-
-    function injectSource(source) {
-      if (!source.enabled || (stepCount + source.phase) % SIGNAL_PERIOD !== 0) return;
-      setCell(source.x, source.y, source.kind, HEAD);
-      setCell(source.x - 1, source.y, source.kind, TAIL);
-    }
-
-    function stepLayer(src, dst, kind) {
-      dst.fill(EMPTY);
-      for (let y = 1; y < H - 1; y++) {
-        for (let x = 1; x < W - 1; x++) {
-          const i = idx(x, y);
-          const cell = src[i];
-          if (cell === HEAD) {
-            dst[i] = TAIL;
-            activeCount++;
-          } else if (cell === TAIL) {
-            dst[i] = CONDUCTOR;
-          } else if (cell === CONDUCTOR) {
-            const { strongHeads, weakHeads } = countHeads(x, y);
-            if (kind === 'strong') {
-              dst[i] = (strongHeads === 1 || strongHeads === 2 || weakHeads === 2) ? HEAD : CONDUCTOR;
-            } else {
-              dst[i] = (weakHeads === 1 || weakHeads === 2 || strongHeads === 1) ? HEAD : CONDUCTOR;
-            }
-          }
-        }
-      }
-    }
-
-    function step() {
-      activeCount = 0;
-      for (const source of sources) injectSource(source);
-      stepLayer(strong, strongNext, 'strong');
-      stepLayer(weak, weakNext, 'weak');
-      [strong, strongNext] = [strongNext, strong];
-      [weak, weakNext] = [weakNext, weak];
-      if (++stepCount > CYCLE_STEPS) makeCycle();
-      if (stepCount % 12 === 0) updateLabel();
-    }
-
-    function drawBitmapText(text, x, y, color, scale = 1) {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.86)';
-      ctx.fillRect(x - 1, y - 1, text.length * 4 * scale + 1, 7 * scale);
-      drawBitmapGlyphs(text, x, y, color, scale);
-    }
-
-    function drawBitmapGlyphs(text, x, y, color, scale = 1) {
-      ctx.fillStyle = rgb(color);
-      let ox = x;
-      for (const raw of text.toUpperCase()) {
-        const glyph = FONT[raw] ?? FONT[' '];
-        for (let gy = 0; gy < glyph.length; gy++) {
-          for (let gx = 0; gx < glyph[gy].length; gx++) {
-            if (glyph[gy][gx] === '1') ctx.fillRect(ox + gx * scale, y + gy * scale, scale, scale);
-          }
-        }
-        ox += 4 * scale;
-      }
-    }
-
-    function drawFormulaOverlay() {
-      const compact = formulaText.replace(/\s+/g, ' ').slice(0, Math.max(12, Math.floor(W / 4.2)));
-      const width = compact.length * 4 + 2;
-      const x = 3;
-      const y = Math.max(3, H - 9);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.86)';
-      ctx.fillRect(x - 1, y - 1, width, 7);
-      const tokens = compact.match(/AND|OR|NOT|XOR|[TF()]|\s+|./g) ?? [];
-      let ox = x;
-      for (const token of tokens) {
-        const color = ['AND', 'OR', 'NOT', 'XOR'].includes(token)
-          ? weakColor
-          : token === '(' || token === ')'
-            ? tailColor
-            : labelColor;
-        drawBitmapGlyphs(token, ox, y, color, 1);
-        ox += token.length * 4;
-      }
-    }
-
-    function drawAnnotations() {
-      for (const note of annotations) {
-        drawBitmapText(note.text, note.x, note.y, labelColor, 1);
-      }
+      totalSteps += n * ants.length;
     }
 
     function draw() {
-      ctx.fillStyle = rgb(paper);
-      ctx.fillRect(0, 0, W, H);
-      for (let y = 0; y < H; y++) {
-        for (let x = 0; x < W; x++) {
-          const i = idx(x, y);
-          const s = strong[i];
-          const w = weak[i];
-          if (s === EMPTY && w === EMPTY) continue;
-          if (s === HEAD && w === HEAD) ctx.fillStyle = rgb(mix(strongColor, weakColor, 0.5));
-          else if (s === HEAD) ctx.fillStyle = rgb(strongColor);
-          else if (w === HEAD) ctx.fillStyle = rgb(weakColor);
-          else if (s === TAIL || w === TAIL) ctx.fillStyle = rgba(tailColor, 0.86);
-          else if (s === CONDUCTOR && w === CONDUCTOR) ctx.fillStyle = rgba(mix(strongConductorColor, weakConductorColor, 0.5), 0.58);
-          else if (s === CONDUCTOR) ctx.fillStyle = rgba(strongConductorColor, 0.54);
-          else if (w === CONDUCTOR) ctx.fillStyle = rgba(weakConductorColor, 0.54);
-          else ctx.fillStyle = rgba(tailColor, 0.26);
-          ctx.fillRect(x, y, 1, 1);
-        }
+      if (!img) return;
+      const data = img.data;
+      for (let i = 0; i < grid.length; i++) {
+        const c = palette[grid[i]];
+        const j = i * 4;
+        data[j] = c[0];
+        data[j + 1] = c[1];
+        data[j + 2] = c[2];
+        data[j + 3] = 255;
       }
-      drawFormulaOverlay();
-      drawAnnotations();
+      // Draw ants on top as a slightly-bright single pixel each so you
+      // can see the heads moving across the field.
+      ctx.putImageData(img, 0, 0);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      for (const ant of ants) ctx.fillRect(ant.x, ant.y, 1, 1);
     }
 
-    function inject(clientX, clientY) {
-      const rect = canvas.getBoundingClientRect();
-      const x = Math.floor(((clientX - rect.left) / rect.width) * W);
-      const y = Math.floor(((clientY - rect.top) / rect.height) * H);
-      const kind = rng() < 0.5 ? 'strong' : 'weak';
-      const l = layer(kind);
-      for (let yy = -3; yy <= 3; yy++) {
-        for (let xx = -3; xx <= 3; xx++) {
-          const i = idx(x + xx, y + yy);
-          if (l[i] === CONDUCTOR && rng() < 0.34) l[i] = HEAD;
-        }
+    function updateLabel() {
+      if (labelEl) {
+        labelEl.innerHTML = `
+          <span>automaton: n-state ant</span>
+          <span>rule: ${ruleStr}</span>
+          <span>n: ${nStates}</span>
+          <span>ants: ${antCount}</span>
+        `;
       }
+      if (nReadout) nReadout.textContent = String(nStates);
+      if (ruleReadout) ruleReadout.textContent = ruleStr;
+      if (seedReadout) seedReadout.textContent = seed.toString(16).padStart(8, '0');
+    }
+
+    function updateStepReadout() {
+      if (stepReadout) stepReadout.textContent = totalSteps.toLocaleString();
     }
 
     function resize() {
-      W = Math.max(48, Math.ceil(window.innerWidth / CELL_PX));
-      H = Math.max(36, Math.ceil(window.innerHeight / CELL_PX));
+      W = Math.max(8, Math.ceil(window.innerWidth / CELL_PX));
+      H = Math.max(8, Math.ceil(window.innerHeight / CELL_PX));
       canvas.width = W;
       canvas.height = H;
       ctx.imageSmoothingEnabled = false;
-      strong = new Uint8Array(W * H);
-      weak = new Uint8Array(W * H);
-      strongNext = new Uint8Array(W * H);
-      weakNext = new Uint8Array(W * H);
-      makeCycle();
+      grid = new Uint8Array(W * H);
+      img = ctx.createImageData(W, H);
+      reseed(ruleInput && isValidRule(ruleInput.value) ? ruleInput.value : null);
       draw();
     }
 
+    // --- Wire up controls ---
+
+    function syncRangeLabel(input: HTMLInputElement | null, out: Element | null, suffix = '') {
+      if (!input || !out) return;
+      out.textContent = input.value + suffix;
+    }
+    syncRangeLabel(countInput, countValue);
+    syncRangeLabel(speedInput, speedValue);
+    syncRangeLabel(cellInput, cellValue);
+    syncRangeLabel(cycleInput, cycleValue, 's');
+
+    countInput?.addEventListener('input', () => {
+      antCount = Number(countInput.value);
+      syncRangeLabel(countInput, countValue);
+      placeAnts();
+      grid.fill(0);
+      totalSteps = 0;
+      updateLabel();
+    });
+    speedInput?.addEventListener('input', () => {
+      stepsPerFrame = Number(speedInput.value);
+      syncRangeLabel(speedInput, speedValue);
+    });
+    cellInput?.addEventListener('input', () => {
+      CELL_PX = Number(cellInput.value);
+      syncRangeLabel(cellInput, cellValue);
+      resize();
+    });
+    cycleInput?.addEventListener('input', () => {
+      cycleSeconds = Number(cycleInput.value);
+      syncRangeLabel(cycleInput, cycleValue, 's');
+      scheduleAutoCycle();
+    });
+    presetSelect?.addEventListener('change', () => {
+      preset = presetSelect.value;
+      reseed(preset === 'random' ? null : preset);
+      draw();
+    });
+    ruleInput?.addEventListener('input', () => {
+      const v = ruleInput.value.toUpperCase().replace(/[^LR]/g, '');
+      if (v !== ruleInput.value) ruleInput.value = v;
+      if (isValidRule(v)) {
+        ruleInput.classList.remove('invalid');
+        if (ruleStatus) ruleStatus.textContent = 'ok';
+        if (presetSelect) presetSelect.value = 'random';
+        preset = 'random';
+        reseed(v);
+        draw();
+      } else {
+        ruleInput.classList.add('invalid');
+        if (ruleStatus) ruleStatus.textContent = 'bad';
+      }
+    });
+    resetButton?.addEventListener('click', () => {
+      reseed(preset === 'random' ? null : preset);
+      draw();
+      scheduleAutoCycle();
+    });
+    restartButton?.addEventListener('click', () => {
+      reseed(preset === 'random' ? null : preset);
+      draw();
+      scheduleAutoCycle();
+    });
+    infoButton?.addEventListener('click', () => aboutDialog?.showModal());
+    aboutClose?.addEventListener('click', () => aboutDialog?.close());
+    aboutDialog?.addEventListener('click', (e) => {
+      if (e.target === aboutDialog) aboutDialog.close();
+    });
+
+    let resizeTimer: number | undefined;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => { resize(); draw(); }, 200);
+    });
+
+    // --- Auto cycle (matches home page's reseed-on-interval pattern) ---
+
+    let cycleTimer: number | undefined;
+    function scheduleAutoCycle() {
+      window.clearInterval(cycleTimer);
+      cycleTimer = window.setInterval(() => {
+        // Only auto-cycle when the user hasn't pinned a preset.
+        if (preset === 'random') {
+          canvas.style.opacity = '0';
+          window.setTimeout(() => {
+            reseed(null);
+            draw();
+            canvas.style.opacity = '';
+          }, 150);
+        }
+      }, cycleSeconds * 1000);
+    }
+
+    // --- Boot ---
+
+    if (ruleInput && isValidRule(ruleInput.value)) {
+      // Honor an initial value from the input if the field starts populated.
+      ruleStr = ruleInput.value;
+    }
     resize();
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!reduce) {
       let last = 0;
-      const loop = (now) => {
-        if (now - last >= TICK_MS) {
-          step();
+      const targetMs = 33;
+      const loop = (t: number) => {
+        if (t - last >= targetMs) {
+          step(stepsPerFrame);
           draw();
-          last = now;
+          last = t;
+          updateStepReadout();
         }
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
+      scheduleAutoCycle();
     } else {
-      for (let i = 0; i < 120; i++) step();
+      // Reduced motion: just render the steady-state of one short run.
+      step(8000);
       draw();
+      updateStepReadout();
     }
-
-    window.addEventListener('resize', resize);
-    window.addEventListener('pointerdown', (event) => {
-      const target = event.target;
-      if (target?.closest?.('a, button, dialog')) return;
-      inject(event.clientX, event.clientY);
-    });
-    resetButton?.addEventListener('click', () => {
-      makeCycle();
-      draw();
-    });
-    infoButton?.addEventListener('click', () => aboutDialog?.showModal());
-    aboutClose?.addEventListener('click', () => aboutDialog?.close());
-    aboutDialog?.addEventListener('click', (event) => {
-      if (event.target === aboutDialog) aboutDialog.close();
-    });
   }
 </script>

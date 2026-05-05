@@ -1,0 +1,510 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="Wireworld++ — A. M. Berns" description="Wireworld++ animation." showNav={false}>
+  <div class="lean-shell">
+    <canvas id="wireworld" class="wireworld" aria-hidden="true"></canvas>
+    <aside id="wire-label" class="wire-label" aria-live="polite"></aside>
+    <div class="anim-controls">
+      <button id="wire-info" type="button" aria-label="About this animation">About this animation</button>
+      <button id="wire-reset" type="button" aria-label="Reset Wireworld++">Reset</button>
+    </div>
+    <dialog id="wire-about" aria-labelledby="wire-about-title">
+      <button class="wire-about-close" type="button" aria-label="Close">x</button>
+      <h2 id="wire-about-title">About this animation</h2>
+      <p>
+        Wireworld++ extends Wireworld with strong and weak signals. Here strong and weak conductors obey the cross-coupled local rules from the paper.
+      </p>
+      <p>
+        Each cycle lays out small paper-derived primitive gates and runs the local Wireworld++ transition rules directly.
+      </p>
+    </dialog>
+  </div>
+</Base>
+
+<script>
+  const canvas = document.getElementById('wireworld');
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const label = document.getElementById('wire-label');
+    const resetButton = document.getElementById('wire-reset');
+    const infoButton = document.getElementById('wire-info');
+    const aboutDialog = document.getElementById('wire-about');
+    const aboutClose = aboutDialog?.querySelector('.wire-about-close');
+
+    const CELL_PX = 4;
+    const TICK_MS = 44;
+    const CYCLE_STEPS = 1100;
+    const SIGNAL_PERIOD = 18;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const EMPTY = 0;
+    const CONDUCTOR = 1;
+    const HEAD = 2;
+    const TAIL = 3;
+    const OPS = ['AND', 'OR', 'XOR'];
+
+    const FONT = {
+      A: ['010', '101', '111', '101', '101'],
+      B: ['110', '101', '110', '101', '110'],
+      C: ['011', '100', '100', '100', '011'],
+      D: ['110', '101', '101', '101', '110'],
+      E: ['111', '100', '110', '100', '111'],
+      F: ['111', '100', '110', '100', '100'],
+      G: ['011', '100', '101', '101', '011'],
+      H: ['101', '101', '111', '101', '101'],
+      I: ['111', '010', '010', '010', '111'],
+      L: ['100', '100', '100', '100', '111'],
+      N: ['101', '111', '111', '111', '101'],
+      O: ['010', '101', '101', '101', '010'],
+      R: ['110', '101', '110', '101', '101'],
+      S: ['011', '100', '010', '001', '110'],
+      T: ['111', '010', '010', '010', '010'],
+      U: ['101', '101', '101', '101', '111'],
+      W: ['101', '101', '111', '111', '101'],
+      X: ['101', '101', '010', '101', '101'],
+      '0': ['111', '101', '101', '101', '111'],
+      '1': ['010', '110', '010', '010', '111'],
+      '2': ['110', '001', '010', '100', '111'],
+      '3': ['110', '001', '010', '001', '110'],
+      '4': ['101', '101', '111', '001', '001'],
+      '5': ['111', '100', '110', '001', '110'],
+      '6': ['011', '100', '111', '101', '111'],
+      '7': ['111', '001', '010', '010', '010'],
+      '8': ['111', '101', '111', '101', '111'],
+      '9': ['111', '101', '111', '001', '110'],
+      '=': ['000', '111', '000', '111', '000'],
+      '+': ['000', '010', '111', '010', '000'],
+      '(': ['001', '010', '010', '010', '001'],
+      ')': ['100', '010', '010', '010', '100'],
+      ' ': ['000', '000', '000', '000', '000'],
+    };
+
+    const styles = getComputedStyle(document.documentElement);
+    const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
+    const colorPool = [
+      '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
+      '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
+      '#fff0b8', '#d6ff5a', '#6ad84a', '#3ad48a', '#0fbfa8',
+      '#2cc7e0', '#4ad6ff', '#2a6fd6', '#1d3a8a', '#6a1a9a',
+      '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
+    ].map(parseHex).sort((a, b) => luma(a) - luma(b));
+
+    let W = 0;
+    let H = 0;
+    let strong = new Uint8Array();
+    let weak = new Uint8Array();
+    let strongNext = new Uint8Array();
+    let weakNext = new Uint8Array();
+    let seed = 0;
+    let rng = mulberry32(1);
+    let stepCount = 0;
+    let activeCount = 0;
+    let strongColor = [255, 255, 255];
+    let weakColor = [255, 255, 255];
+    let tailColor = [255, 128, 64];
+    let strongConductorColor = [128, 128, 128];
+    let weakConductorColor = [96, 96, 96];
+    const labelColor = [255, 255, 255];
+    let sources = [];
+    let annotations = [];
+    let gateRows = [];
+    let formulaText = '';
+    let resultText = '';
+    let inputCount = 0;
+
+    function parseHex(h) {
+      const s = h.trim().replace('#', '');
+      const full = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
+      const n = parseInt(full, 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+
+    function luma(c) {
+      return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+    }
+
+    function mix(a, b, t) {
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * t),
+        Math.round(a[1] + (b[1] - a[1]) * t),
+        Math.round(a[2] + (b[2] - a[2]) * t),
+      ];
+    }
+
+    function rgb(c) {
+      return `rgb(${c[0]} ${c[1]} ${c[2]})`;
+    }
+
+    function rgba(c, a) {
+      return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${Math.max(0, Math.min(1, a))})`;
+    }
+
+    function hashString(s) {
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    function mulberry32(n) {
+      let t = n >>> 0;
+      return () => {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function pick(items) {
+      return items[Math.floor(rng() * items.length)];
+    }
+
+    function liftColor(c, minLuma) {
+      let out = c;
+      while (luma(out) < minLuma) out = mix(out, [245, 245, 245], 0.18);
+      return out;
+    }
+
+    function chooseSignalColor(palette, index) {
+      return liftColor(mix(paper, palette[index], 0.96), 172);
+    }
+
+    function idx(x, y) {
+      return y * W + x;
+    }
+
+    function inBounds(x, y) {
+      return x > 1 && y > 1 && x < W - 2 && y < H - 2;
+    }
+
+    function layer(kind) {
+      return kind === 'strong' ? strong : weak;
+    }
+
+    function otherLayer(kind) {
+      return kind === 'strong' ? weak : strong;
+    }
+
+    function setCell(x, y, kind, value) {
+      if (!inBounds(x, y)) return;
+      layer(kind)[idx(x, y)] = value;
+      if (value !== EMPTY) otherLayer(kind)[idx(x, y)] = EMPTY;
+    }
+
+    function drawLine(x0, y0, x1, y1, kind) {
+      let x = x0;
+      let y = y0;
+      const dx = Math.abs(x1 - x0);
+      const dy = -Math.abs(y1 - y0);
+      const sx = x0 < x1 ? 1 : -1;
+      const sy = y0 < y1 ? 1 : -1;
+      let err = dx + dy;
+      while (true) {
+        setCell(x, y, kind, CONDUCTOR);
+        if (x === x1 && y === y1) break;
+        const e2 = 2 * err;
+        if (e2 >= dy) {
+          err += dy;
+          x += sx;
+        }
+        if (e2 <= dx) {
+          err += dx;
+          y += sy;
+        }
+      }
+    }
+
+    function annotate(text, x, y, kind) {
+      annotations.push({ text, x, y, kind });
+    }
+
+    function addSource(x, y, kind, enabled, phase) {
+      sources.push({ x, y, kind, enabled, phase });
+    }
+
+    function evalGate(op, a, b) {
+      if (op === 'AND') return a && b;
+      if (op === 'OR') return a || b;
+      return a !== b;
+    }
+
+    function addPaperGate(op, x, y, a, b, phase) {
+      const outX = Math.max(x + 18, Math.min(W - 7, x + Math.floor(W * 0.56)));
+      if (op === 'AND') {
+        drawLine(x, y - 2, x + 8, y - 2, 'strong');
+        drawLine(x, y + 2, x + 8, y + 2, 'strong');
+        setCell(x + 9, y - 1, 'weak', CONDUCTOR);
+        setCell(x + 9, y + 1, 'weak', CONDUCTOR);
+        drawLine(x + 10, y, outX, y, 'strong');
+      } else if (op === 'OR') {
+        drawLine(x, y - 1, x + 8, y - 1, 'strong');
+        drawLine(x, y + 1, x + 8, y + 1, 'strong');
+        drawLine(x + 9, y, outX, y, 'strong');
+      } else {
+        drawLine(x, y - 1, x + 8, y - 1, 'strong');
+        drawLine(x, y + 1, x + 8, y + 1, 'strong');
+        drawLine(x + 9, y, outX, y, 'weak');
+      }
+      addSource(x, op === 'AND' ? y - 2 : y - 1, 'strong', a, phase);
+      addSource(x, op === 'AND' ? y + 2 : y + 1, 'strong', b, phase);
+      annotate(a ? 'T' : 'F', x - 1, (op === 'AND' ? y - 2 : y - 1) - 8, 'strong');
+      annotate(b ? 'T' : 'F', x - 1, (op === 'AND' ? y + 2 : y + 1) + 3, 'strong');
+      annotate(op, x + 7, y - 9, op === 'XOR' ? 'weak' : 'strong');
+      const result = evalGate(op, a, b);
+      annotate(result ? 'T' : 'F', outX - 1, y - 8, op === 'XOR' ? 'weak' : 'strong');
+      gateRows.push({ op, a, b, result });
+      return result;
+    }
+
+    function buildCircuit() {
+      strong.fill(EMPTY);
+      weak.fill(EMPTY);
+      strongNext.fill(EMPTY);
+      weakNext.fill(EMPTY);
+      sources = [];
+      annotations = [];
+      gateRows = [];
+      const rows = Math.max(3, Math.min(6, Math.floor(H / 18)));
+      const top = Math.max(12, Math.floor(H * 0.17));
+      const gap = Math.max(12, Math.floor((Math.floor(H * 0.78) - top) / Math.max(1, rows - 1)));
+      const x = 4;
+      let trueRows = 0;
+      for (let i = 0; i < rows; i++) {
+        const op = pick(OPS);
+        let a = rng() < 0.5;
+        let b = rng() < 0.5;
+        if (i === 0 && !a && !b) a = true;
+        const result = addPaperGate(op, x, top + i * gap, a, b, i * 4);
+        if (result) trueRows++;
+      }
+      inputCount = rows * 2;
+      if (trueRows === 0 && gateRows[0]) resultText = 'false';
+      else resultText = `${trueRows}/${rows} true`;
+      formulaText = gateRows
+        .slice(0, 3)
+        .map((row) => `${row.a ? 'T' : 'F'} ${row.op} ${row.b ? 'T' : 'F'}`)
+        .join('   ');
+    }
+
+    function makeCycle() {
+      seed = hashString(`${Date.now()}:${Math.random()}`);
+      rng = mulberry32(seed);
+      const palette = [];
+      for (let i = 0; i < 5; i++) {
+        const lo = Math.floor((i * colorPool.length) / 5);
+        const hi = Math.floor(((i + 1) * colorPool.length) / 5);
+        palette.push(colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))]);
+      }
+      strongColor = chooseSignalColor(palette, 4);
+      weakColor = chooseSignalColor(palette, 2);
+      tailColor = liftColor(mix(paper, palette[3], 0.78), 142);
+      strongConductorColor = mix(paper, strongColor, 0.32);
+      weakConductorColor = mix(paper, weakColor, 0.32);
+      stepCount = 0;
+      activeCount = 0;
+      buildCircuit();
+      updateLabel();
+    }
+
+    function updateLabel() {
+      if (!label) return;
+      label.innerHTML = `
+        <span>automaton: Wireworld++</span>
+        <span>result: ${resultText}</span>
+        <span>inputs: ${inputCount}</span>
+        <span>active: ${activeCount}</span>
+        <span>seed: ${seed.toString(16).padStart(8, '0')}</span>
+      `;
+    }
+
+    function countHeads(x, y) {
+      let strongHeads = 0;
+      let weakHeads = 0;
+      for (let yy = -1; yy <= 1; yy++) {
+        for (let xx = -1; xx <= 1; xx++) {
+          if (xx === 0 && yy === 0) continue;
+          const i = idx(x + xx, y + yy);
+          if (strong[i] === HEAD) strongHeads++;
+          if (weak[i] === HEAD) weakHeads++;
+        }
+      }
+      return { strongHeads, weakHeads };
+    }
+
+    function injectSource(source) {
+      if (!source.enabled || (stepCount + source.phase) % SIGNAL_PERIOD !== 0) return;
+      setCell(source.x, source.y, source.kind, HEAD);
+      setCell(source.x - 1, source.y, source.kind, TAIL);
+    }
+
+    function stepLayer(src, dst, kind) {
+      dst.fill(EMPTY);
+      for (let y = 1; y < H - 1; y++) {
+        for (let x = 1; x < W - 1; x++) {
+          const i = idx(x, y);
+          const cell = src[i];
+          if (cell === HEAD) {
+            dst[i] = TAIL;
+            activeCount++;
+          } else if (cell === TAIL) {
+            dst[i] = CONDUCTOR;
+          } else if (cell === CONDUCTOR) {
+            const { strongHeads, weakHeads } = countHeads(x, y);
+            if (kind === 'strong') {
+              dst[i] = (strongHeads === 1 || strongHeads === 2 || weakHeads === 2) ? HEAD : CONDUCTOR;
+            } else {
+              dst[i] = (weakHeads === 1 || weakHeads === 2 || strongHeads === 1) ? HEAD : CONDUCTOR;
+            }
+          }
+        }
+      }
+    }
+
+    function step() {
+      activeCount = 0;
+      for (const source of sources) injectSource(source);
+      stepLayer(strong, strongNext, 'strong');
+      stepLayer(weak, weakNext, 'weak');
+      [strong, strongNext] = [strongNext, strong];
+      [weak, weakNext] = [weakNext, weak];
+      if (++stepCount > CYCLE_STEPS) makeCycle();
+      if (stepCount % 12 === 0) updateLabel();
+    }
+
+    function drawBitmapText(text, x, y, color, scale = 1) {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.86)';
+      ctx.fillRect(x - 1, y - 1, text.length * 4 * scale + 1, 7 * scale);
+      drawBitmapGlyphs(text, x, y, color, scale);
+    }
+
+    function drawBitmapGlyphs(text, x, y, color, scale = 1) {
+      ctx.fillStyle = rgb(color);
+      let ox = x;
+      for (const raw of text.toUpperCase()) {
+        const glyph = FONT[raw] ?? FONT[' '];
+        for (let gy = 0; gy < glyph.length; gy++) {
+          for (let gx = 0; gx < glyph[gy].length; gx++) {
+            if (glyph[gy][gx] === '1') ctx.fillRect(ox + gx * scale, y + gy * scale, scale, scale);
+          }
+        }
+        ox += 4 * scale;
+      }
+    }
+
+    function drawFormulaOverlay() {
+      const compact = formulaText.replace(/\s+/g, ' ').slice(0, Math.max(12, Math.floor(W / 4.2)));
+      const width = compact.length * 4 + 2;
+      const x = 3;
+      const y = Math.max(3, H - 9);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.86)';
+      ctx.fillRect(x - 1, y - 1, width, 7);
+      const tokens = compact.match(/AND|OR|NOT|XOR|[TF()]|\s+|./g) ?? [];
+      let ox = x;
+      for (const token of tokens) {
+        const color = ['AND', 'OR', 'NOT', 'XOR'].includes(token)
+          ? weakColor
+          : token === '(' || token === ')'
+            ? tailColor
+            : labelColor;
+        drawBitmapGlyphs(token, ox, y, color, 1);
+        ox += token.length * 4;
+      }
+    }
+
+    function drawAnnotations() {
+      for (const note of annotations) {
+        drawBitmapText(note.text, note.x, note.y, labelColor, 1);
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = rgb(paper);
+      ctx.fillRect(0, 0, W, H);
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const i = idx(x, y);
+          const s = strong[i];
+          const w = weak[i];
+          if (s === EMPTY && w === EMPTY) continue;
+          if (s === HEAD && w === HEAD) ctx.fillStyle = rgb(mix(strongColor, weakColor, 0.5));
+          else if (s === HEAD) ctx.fillStyle = rgb(strongColor);
+          else if (w === HEAD) ctx.fillStyle = rgb(weakColor);
+          else if (s === TAIL || w === TAIL) ctx.fillStyle = rgba(tailColor, 0.86);
+          else if (s === CONDUCTOR && w === CONDUCTOR) ctx.fillStyle = rgba(mix(strongConductorColor, weakConductorColor, 0.5), 0.58);
+          else if (s === CONDUCTOR) ctx.fillStyle = rgba(strongConductorColor, 0.54);
+          else if (w === CONDUCTOR) ctx.fillStyle = rgba(weakConductorColor, 0.54);
+          else ctx.fillStyle = rgba(tailColor, 0.26);
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+      drawFormulaOverlay();
+      drawAnnotations();
+    }
+
+    function inject(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor(((clientX - rect.left) / rect.width) * W);
+      const y = Math.floor(((clientY - rect.top) / rect.height) * H);
+      const kind = rng() < 0.5 ? 'strong' : 'weak';
+      const l = layer(kind);
+      for (let yy = -3; yy <= 3; yy++) {
+        for (let xx = -3; xx <= 3; xx++) {
+          const i = idx(x + xx, y + yy);
+          if (l[i] === CONDUCTOR && rng() < 0.34) l[i] = HEAD;
+        }
+      }
+    }
+
+    function resize() {
+      W = Math.max(48, Math.ceil(window.innerWidth / CELL_PX));
+      H = Math.max(36, Math.ceil(window.innerHeight / CELL_PX));
+      canvas.width = W;
+      canvas.height = H;
+      ctx.imageSmoothingEnabled = false;
+      strong = new Uint8Array(W * H);
+      weak = new Uint8Array(W * H);
+      strongNext = new Uint8Array(W * H);
+      weakNext = new Uint8Array(W * H);
+      makeCycle();
+      draw();
+    }
+
+    resize();
+    if (!reduce) {
+      let last = 0;
+      const loop = (now) => {
+        if (now - last >= TICK_MS) {
+          step();
+          draw();
+          last = now;
+        }
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    } else {
+      for (let i = 0; i < 120; i++) step();
+      draw();
+    }
+
+    window.addEventListener('resize', resize);
+    window.addEventListener('pointerdown', (event) => {
+      const target = event.target;
+      if (target?.closest?.('a, button, dialog')) return;
+      inject(event.clientX, event.clientY);
+    });
+    resetButton?.addEventListener('click', () => {
+      makeCycle();
+      draw();
+    });
+    infoButton?.addEventListener('click', () => aboutDialog?.showModal());
+    aboutClose?.addEventListener('click', () => aboutDialog?.close());
+    aboutDialog?.addEventListener('click', (event) => {
+      if (event.target === aboutDialog) aboutDialog.close();
+    });
+  }
+</script>
