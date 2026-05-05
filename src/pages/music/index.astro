@@ -34,12 +34,12 @@ import Base from '../../layouts/Base.astro';
     </div>
 
     <div class="anim-controls">
-      <button id="lenia-info" type="button" aria-label="About this animation">About this animation</button>
+      <button id="lenia-info" type="button" aria-label="About">About</button>
       <button id="lenia-restart" type="button" aria-label="Reset Particle Lenia">Reset</button>
     </div>
     <dialog id="lenia-about" class="anim-about" aria-labelledby="lenia-about-title">
       <button class="anim-about-close" type="button" aria-label="Close">×</button>
-      <h2 id="lenia-about-title">About this animation</h2>
+      <h2 id="lenia-about-title">About</h2>
       <p>
         This animation is an implementation of <a href="https://google-research.github.io/self-organising-systems/particle-lenia/">Particle Lenia</a>, a system of differential equations that gives rise to lifelike behavior. Each cycle randomly tunes a few parameters of the equations and initializes based on a random template and seed. A flow is also applied according to a randomly generated vector field. The resulting blobs often look like alien cells, brain tissue, or weather radar. Click to perturb the field and push the blobs around.
       </p>
