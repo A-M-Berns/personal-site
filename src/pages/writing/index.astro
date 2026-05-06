@@ -213,7 +213,7 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     border: 1px solid var(--rule);
     border-radius: 3px;
     padding: 0.3rem 0.55rem;
-    cursor: pointer;
+    cursor: default;
   }
   .markov-panel button:hover { color: var(--ink); border-color: var(--muted); }
   .markov-panel-row {
@@ -238,12 +238,12 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     margin: 0.45rem 0 0.1rem;
     font-size: 0.7rem;
     color: var(--muted);
-    cursor: pointer;
+    cursor: default;
   }
   .markov-panel-toggle input[type="checkbox"] {
     accent-color: var(--accent);
     margin: 0;
-    cursor: pointer;
+    cursor: default;
   }
   .markov-panel-toggle:hover { color: var(--ink); }
   .markov-panel-buttons {

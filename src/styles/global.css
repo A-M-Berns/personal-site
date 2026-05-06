@@ -26,6 +26,7 @@ body {
 
 a {
   color: var(--ink);
+  cursor: pointer;
   transition: color 120ms ease;
 }
 a:hover,
@@ -134,7 +135,7 @@ a:focus-visible {
   border: 1px solid var(--rule);
   border-radius: 3px;
   padding: 0.35rem 0.7rem;
-  cursor: pointer;
+  cursor: default;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   transition: color 120ms ease, border-color 120ms ease;
@@ -276,7 +277,7 @@ body.page-taste:has(.cover-wall-page) .page {
   background: var(--cover-accent);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
   contain: layout paint;
-  cursor: pointer;
+  cursor: default;
 }
 .cover-tile:focus-visible {
   outline: 2px solid var(--accent);
@@ -728,7 +729,7 @@ body.page-taste:has(.cover-wall-page) .page {
   border: 1px solid var(--rule);
   border-radius: 3px;
   padding: 0.3rem 0.55rem;
-  cursor: pointer;
+  cursor: default;
 }
 .sandpile-panel button:hover {
   color: var(--ink);
@@ -1012,7 +1013,7 @@ body.page-taste:has(.cover-wall-page) .page {
   border: 1px solid var(--rule);
   border-radius: 3px;
   padding: 0.35rem 0.7rem;
-  cursor: pointer;
+  cursor: default;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   transition: color 120ms ease, border-color 120ms ease;
@@ -1286,7 +1287,7 @@ body.page-taste:has(.cover-wall-page) .page {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  cursor: default;
   padding: 0;
   transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
 }
@@ -1311,7 +1312,7 @@ body.page-taste:has(.cover-wall-page) .page {
   height: 2px;
   background: var(--rule);
   border-radius: 1px;
-  cursor: pointer;
+  cursor: default;
 }
 .audio-track:focus-visible {
   outline: 1px solid var(--accent);
@@ -1543,11 +1544,11 @@ html:not(.dev-mode) .dla-panel {
 
   label.margin-toggle:not(.sidenote-number) {
     display: inline;
-    cursor: pointer;
+    cursor: default;
     color: var(--accent);
   }
   .sidenote-number { display: inline; }
-  .sidenote-number::after { cursor: pointer; }
+  .sidenote-number::after { cursor: default; }
 
   .sidenote, .marginnote {
     display: none;
