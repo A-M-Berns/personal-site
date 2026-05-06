@@ -25,7 +25,7 @@ import https from 'node:https';
 import { createHash } from 'node:crypto';
 
 // ===== Tunables =====================================================
-const ORDER             = 6;     // highest n-gram context kept
+const ORDER             = 8;     // highest n-gram context kept
 const TEMPERATURE       = 0.78;  // only used for the in-script preview generator
 const TARGET_BYTES      = 5_500_000;  // tries to keep markov_model.json near this
 const MIN_SENTENCE_WORDS = 5;
@@ -45,6 +45,8 @@ const ORDER_PRUNING = {
   4: { minTotal: 2, maxTransitions: 6  },
   5: { minTotal: 2, maxTransitions: 5  },
   6: { minTotal: 2, maxTransitions: 4  },
+  7: { minTotal: 2, maxTransitions: 3  },
+  8: { minTotal: 2, maxTransitions: 3  },
 };
 
 // ===== Sources ======================================================

@@ -50,13 +50,16 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     <aside class="markov-panel" aria-label="Markov controls">
       <div class="markov-panel-head">
         <h2>Markov</h2>
-        <button id="markov-restart" type="button">Restart</button>
+        <div class="markov-panel-buttons">
+          <button id="markov-reroll" type="button" title="Re-roll palette only">Reroll</button>
+          <button id="markov-restart" type="button">Restart</button>
+        </div>
       </div>
       <div class="markov-panel-body">
         <div class="markov-panel-row">
           <label for="markov-order">order</label>
-          <input id="markov-order" type="range" min="1" max="6" step="1" value="6" />
-          <span id="markov-order-value">6</span>
+          <input id="markov-order" type="range" min="1" max="8" step="1" value="8" />
+          <span id="markov-order-value">8</span>
         </div>
         <div class="markov-panel-row">
           <label for="markov-temp">temp</label>
@@ -65,23 +68,45 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
         </div>
         <div class="markov-panel-row">
           <label for="markov-speed">speed</label>
-          <input id="markov-speed" type="range" min="1" max="14" step="1" value="6" />
-          <span id="markov-speed-value">6</span>
+          <input id="markov-speed" type="range" min="0.2" max="14" step="0.2" value="6" />
+          <span id="markov-speed-value">6.0</span>
         </div>
         <div class="markov-panel-row">
           <label for="markov-pixel">size</label>
           <input id="markov-pixel" type="range" min="1" max="3" step="1" value="2" />
           <span id="markov-pixel-value">2</span>
         </div>
+        <div class="markov-panel-section">colors</div>
         <div class="markov-panel-row">
           <label for="markov-contrast">lift</label>
-          <input id="markov-contrast" type="range" min="140" max="240" step="2" value="190" />
+          <input id="markov-contrast" type="range" min="120" max="245" step="2" value="190" />
           <span id="markov-contrast-value">190</span>
+        </div>
+        <div class="markov-panel-row">
+          <label for="markov-sat">sat</label>
+          <input id="markov-sat" type="range" min="0" max="1.4" step="0.02" value="1" />
+          <span id="markov-sat-value">1.00</span>
+        </div>
+        <div class="markov-panel-row">
+          <label for="markov-hue">hue</label>
+          <input id="markov-hue" type="range" min="0" max="360" step="2" value="0" />
+          <span id="markov-hue-value">0°</span>
+        </div>
+        <div class="markov-panel-row">
+          <label for="markov-stops">stops</label>
+          <input id="markov-stops" type="range" min="2" max="10" step="1" value="6" />
+          <span id="markov-stops-value">6</span>
+        </div>
+        <div class="markov-panel-row">
+          <label for="markov-bgmix">bg</label>
+          <input id="markov-bgmix" type="range" min="0" max="0.6" step="0.02" value="0" />
+          <span id="markov-bgmix-value">0.00</span>
         </div>
         <label class="markov-panel-toggle" for="markov-repguard">
           <input id="markov-repguard" type="checkbox" checked />
           <span>repetition guard</span>
         </label>
+        <p class="markov-panel-hint">click any word to rewind • space to pause</p>
         <dl class="markov-stats">
           <div><dt>order used</dt><dd id="markov-used">-</dd></div>
           <div><dt>tokens</dt><dd id="markov-tokens">0</dd></div>
@@ -221,6 +246,27 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     cursor: pointer;
   }
   .markov-panel-toggle:hover { color: var(--ink); }
+  .markov-panel-buttons {
+    display: flex;
+    gap: 0.35rem;
+  }
+  .markov-panel-section {
+    margin: 0.55rem 0 0.25rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 0.45rem;
+  }
+  .markov-panel-hint {
+    margin: 0.55rem 0 0;
+    font-size: 0.62rem;
+    color: var(--muted);
+    font-style: italic;
+    letter-spacing: 0.02em;
+  }
   .markov-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -269,10 +315,15 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     const MODEL_ORDER = markovModel.order ?? 6;
     let maxEffectiveOrder = MODEL_ORDER;
     let TEMPERATURE = 0.78;
-    let TYPING_RATE = 6;        // tokens per animation tick
+    let TYPING_RATE = 6;        // tokens per animation tick — may be fractional
     let PIXEL = 2;
-    let MIN_LUMA = 190;          // brightest "lift floor" for paint colors
+    let MIN_LUMA  = 190;        // luma floor for palette colors after lift
+    let SAT_SCALE = 1.0;        // saturation multiplier (0 = grayscale, >1 = boosted)
+    let HUE_SHIFT = 0;          // degrees to rotate the palette
+    let STOPS     = 6;          // number of palette stops
+    let BG_MIX    = 0.0;        // mix paint colors toward paper (dimmer overall)
     let useRepGuard = true;
+    let paused = false;
 
     const orders = markovModel.orders ?? { [String(MODEL_ORDER)]: markovModel.states ?? {} };
     const START = markovModel.startToken ?? '<S>';
@@ -367,21 +418,56 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
       '#d6ff5a',
     ].map(parseHex);
 
-    function liftColor(c) {
-      // Push every paint colour up to MIN_LUMA, mixing toward white.  Keeps
-      // hues distinguishable but lifts the dim end so contrast with paper
-      // stays strong.
-      let out = c;
+    function rgbToHsv([r, g, b]) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      const d = max - min;
+      let h = 0;
+      if (d) {
+        if (max === r) h = ((g - b) / d) % 6;
+        else if (max === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        h *= 60;
+        if (h < 0) h += 360;
+      }
+      const s = max === 0 ? 0 : d / max;
+      return [h, s, max];
+    }
+    function hsvToRgb([h, s, v]) {
+      h = ((h % 360) + 360) % 360;
+      s = Math.max(0, Math.min(1, s));
+      v = Math.max(0, Math.min(1, v));
+      const c = v * s;
+      const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+      const m = v - c;
+      let r = 0, g = 0, b = 0;
+      if (h < 60)       { r = c; g = x; }
+      else if (h < 120) { r = x; g = c; }
+      else if (h < 180) { g = c; b = x; }
+      else if (h < 240) { g = x; b = c; }
+      else if (h < 300) { r = x; b = c; }
+      else              { r = c; b = x; }
+      return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+    }
+
+    function transformColor(c) {
+      // 1) hue rotate, 2) saturation scale, 3) lift to MIN_LUMA, 4) mix
+      // back toward paper by BG_MIX.
+      const [h, s, v] = rgbToHsv(c);
+      let out = hsvToRgb([h + HUE_SHIFT, Math.max(0, Math.min(1, s * SAT_SCALE)), v]);
       let guard = 0;
       while (luma(out) < MIN_LUMA && guard++ < 24) {
         out = mix(out, [255, 255, 255], 0.18);
       }
+      if (BG_MIX > 0) out = mix(out, paper, BG_MIX);
       return out;
     }
 
     // ---------- State ----------
     let W = 0, H = 0;
     let cols = 0, rows = 0;
+    let cellW = (GLYPH_W + LETTER_GAP) * PIXEL;
+    let cellH = (GLYPH_H + LINE_GAP) * PIXEL;
     let x = 0, y = 0;
     let hold = 0;
     let ctxTokens = [];
@@ -392,6 +478,14 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     let palette = [];
     let seed = 0;
     let rng = mulberry32(1);
+    let typeAccum = 0;          // fractional speed accumulator
+
+    // Per-token breadcrumbs for click-to-rewind.  Each entry is the state
+    // *before* drawing that token, plus the cell rects it ended up
+    // covering, so we can hit-test a click and erase forward from there.
+    const MAX_CRUMBS = 6000;
+    let crumbs = [];
+    let activeCrumb = null;     // populated during a drawing pass
 
     function hashString(s) {
       let h = 2166136261;
@@ -423,19 +517,23 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
       stickToPrev = false;
       needCapitalNext = true;
       x = 0; y = 0; hold = 0;
-      palette = pickPalette(6);
+      typeAccum = 0;
+      crumbs = [];
+      activeCrumb = null;
+      palette = pickPalette(STOPS);
       ctx.fillStyle = rgb(paper);
       ctx.fillRect(0, 0, W, H);
       updateStats();
     }
 
     function pickPalette(count) {
-      const lifted = colorPool.map(liftColor).sort((a, b) => luma(a) - luma(b));
+      const transformed = colorPool.map(transformColor).sort((a, b) => luma(a) - luma(b));
       const stops = [];
-      for (let i = 0; i < count; i++) {
-        const lo = Math.floor((i * lifted.length) / count);
-        const hi = Math.floor(((i + 1) * lifted.length) / count);
-        stops.push(lifted[lo + Math.floor(rng() * Math.max(1, hi - lo))]);
+      const n = Math.max(1, count);
+      for (let i = 0; i < n; i++) {
+        const lo = Math.floor((i * transformed.length) / n);
+        const hi = Math.floor(((i + 1) * transformed.length) / n);
+        stops.push(transformed[lo + Math.floor(rng() * Math.max(1, hi - lo))]);
       }
       document.documentElement.style.setProperty('--accent', rgb(stops[Math.floor(stops.length * 0.6)]));
       return stops;
@@ -570,23 +668,34 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     // ---------- Rendering ----------
     function drawChar(ch, col, row, color) {
       const glyph = FONT[ch] ?? FONT[ch.toUpperCase()] ?? FONT['?'];
-      const ox = col * (GLYPH_W + LETTER_GAP) * PIXEL;
-      const oy = row * (GLYPH_H + LINE_GAP) * PIXEL;
+      const ox = col * cellW;
+      const oy = row * cellH;
       ctx.fillStyle = rgb(color);
       for (let gy = 0; gy < GLYPH_H; gy++) {
         for (let gx = 0; gx < GLYPH_W; gx++) {
           if (glyph[gy][gx] === '1') ctx.fillRect(ox + gx * PIXEL, oy + gy * PIXEL, PIXEL, PIXEL);
         }
       }
+      recordCell(row, col);
+    }
+
+    function recordCell(row, col) {
+      if (!activeCrumb) return;
+      const rects = activeCrumb.rects;
+      const last = rects.length ? rects[rects.length - 1] : null;
+      if (last && last.row === row && last.c1 === col) {
+        // extend the current row run
+        last.c1 = col + 1;
+      } else {
+        rects.push({ row, c0: col, c1: col + 1 });
+      }
     }
 
     function emitString(str, color) {
-      // Stream characters into the typewriter grid.  Wrap rule: we keep
-      // emitting characters of a word past the right edge of the screen up
-      // to one column past `cols` (so visually exactly one word straddles
-      // the right edge before continuing on the next line).  When emitting
-      // a *space* past the edge we wrap, ensuring the space is the break
-      // point and the next word starts at column 0.
+      // Stream characters into the typewriter grid.  Wrap rule: characters
+      // of a word may bleed past the right edge of the screen; we only
+      // wrap when a *space* lands past `cols`, so visually exactly one
+      // word straddles the right edge before wrapping.
       for (let i = 0; i < str.length; i++) {
         const ch = str[i];
         if (ch === ' ') {
@@ -598,8 +707,6 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
         if (y >= rows) return;
         drawChar(ch, x, y, color);
         x += 1;
-        // We DO NOT wrap mid-word here.  The line bleeds; the next space
-        // will trigger the wrap on the next iteration.
       }
     }
 
@@ -608,12 +715,25 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
       if (tEl) tEl.textContent = String(totalTokens);
     }
 
+    function snapshotState() {
+      return {
+        ctx: ctxTokens.slice(),
+        recent: recentTokens.slice(),
+        insideQuotes,
+        stickToPrev,
+        needCapitalNext,
+        x, y,
+        rngState: seed, // unused but cheap; the rng has already advanced
+      };
+    }
+
     function typeStep(count) {
       for (let i = 0; i < count; i++) {
         if (y >= rows) {
           if (++hold > HOLD_FRAMES) startCycle();
           return;
         }
+        const before = snapshotState();
         const { token, order: orderUsed } = nextToken();
         const usedEl = document.getElementById('markov-used');
         if (usedEl) usedEl.textContent = String(orderUsed);
@@ -621,23 +741,30 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
         if (totalTokens % 4 === 0) updateStats();
 
         if (token === END) {
-          // sentence ended.  start a fresh padded context, with a hint to
-          // capitalize the next word and a leading space if mid-line.
           ctxTokens = [];
           for (let k = 0; k < MODEL_ORDER; k++) ctxTokens.push(START);
           needCapitalNext = true;
           sentenceTokens = 0;
           continue;
         }
-        const piece = renderTokenString(token, needCapitalNext);
+        const piece = renderTokenString(token, before.needCapitalNext);
         if (!piece) continue;
         needCapitalNext = false;
         sentenceTokens++;
         recentTokens.push(token);
         if (recentTokens.length > 20) recentTokens.shift();
 
-        const str = (piece.leadingSpace && (x > 0 || y > 0)) ? ' ' + piece.text : piece.text;
+        const str = (piece.leadingSpace && (before.x > 0 || before.y > 0)) ? ' ' + piece.text : piece.text;
+
+        // Open a breadcrumb so the click handler can rewind to the state
+        // BEFORE this token was generated.
+        activeCrumb = { before, rects: [], text: piece.text };
         emitString(str, colorForOrder(orderUsed));
+        if (activeCrumb.rects.length) {
+          crumbs.push(activeCrumb);
+          if (crumbs.length > MAX_CRUMBS) crumbs.shift();
+        }
+        activeCrumb = null;
       }
     }
 
@@ -652,16 +779,66 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
       canvas.style.height = `${H}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.imageSmoothingEnabled = false;
-      const cellW = (GLYPH_W + LETTER_GAP) * PIXEL;
-      const cellH = (GLYPH_H + LINE_GAP) * PIXEL;
-      // cols = number of full character cells fitting on screen.  We do
-      // NOT pad +1 here — we want the wrap point to be the screen edge so
-      // that exactly one word straddles it before wrapping.
+      cellW = (GLYPH_W + LETTER_GAP) * PIXEL;
+      cellH = (GLYPH_H + LINE_GAP) * PIXEL;
       cols = Math.max(1, Math.floor(W / cellW));
       rows = Math.max(1, Math.ceil(H / cellH) + 1);
       startCycle();
       if (reduce) typeStep(cols * rows);
     }
+
+    // ---------- Click-to-rewind ----------
+    function findCrumbAt(pxX, pxY) {
+      const col = Math.floor(pxX / cellW);
+      const row = Math.floor(pxY / cellH);
+      // Scan from newest backward — the latest matching word wins.
+      for (let i = crumbs.length - 1; i >= 0; i--) {
+        const cb = crumbs[i];
+        for (const r of cb.rects) {
+          if (r.row === row && col >= r.c0 && col < r.c1) return i;
+        }
+      }
+      return -1;
+    }
+
+    function eraseFrom(crumb) {
+      const sx = crumb.before.x;
+      const sy = crumb.before.y;
+      ctx.fillStyle = rgb(paper);
+      // Clear the tail of the start row from sx onward.
+      ctx.fillRect(sx * cellW, sy * cellH, Math.max(0, W - sx * cellW), cellH);
+      // Clear all rows below up through the current cursor row.
+      const lastRow = Math.max(sy, y);
+      if (lastRow > sy) {
+        ctx.fillRect(0, (sy + 1) * cellH, W, (lastRow - sy) * cellH + cellH);
+      }
+    }
+
+    function rewindToCrumbIndex(idx) {
+      if (idx < 0 || idx >= crumbs.length) return;
+      const cb = crumbs[idx];
+      eraseFrom(cb);
+      // restore generator state
+      ctxTokens     = cb.before.ctx.slice();
+      recentTokens  = cb.before.recent.slice();
+      insideQuotes  = cb.before.insideQuotes;
+      stickToPrev   = cb.before.stickToPrev;
+      needCapitalNext = cb.before.needCapitalNext;
+      x = cb.before.x;
+      y = cb.before.y;
+      hold = 0;
+      // drop this crumb and everything after
+      crumbs.length = idx;
+    }
+
+    canvas.addEventListener('click', (e) => {
+      // Ignore clicks that originated on foreground content (e.g. links).
+      const rect = canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      const idx = findCrumbAt(px, py);
+      if (idx >= 0) rewindToCrumbIndex(idx);
+    });
 
     // ---------- Dev panel wiring ----------
     function bindRange(id, valId, onChange, format = (v) => v) {
@@ -676,14 +853,20 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
       el.addEventListener('input', sync);
       sync();
     }
+    function repalette() { palette = pickPalette(STOPS); }
     bindRange('markov-order', 'markov-order-value', (v) => { maxEffectiveOrder = Math.max(1, Math.min(MODEL_ORDER, v)); });
     bindRange('markov-temp',  'markov-temp-value',  (v) => { TEMPERATURE = v; }, (v) => v.toFixed(2));
-    bindRange('markov-speed', 'markov-speed-value', (v) => { TYPING_RATE = v; });
+    bindRange('markov-speed', 'markov-speed-value', (v) => { TYPING_RATE = v; }, (v) => v.toFixed(1));
     bindRange('markov-pixel', 'markov-pixel-value', (v) => { PIXEL = v; resize(); });
-    bindRange('markov-contrast', 'markov-contrast-value', (v) => { MIN_LUMA = v; palette = pickPalette(6); });
+    bindRange('markov-contrast', 'markov-contrast-value', (v) => { MIN_LUMA = v; repalette(); });
+    bindRange('markov-sat',   'markov-sat-value',   (v) => { SAT_SCALE = v; repalette(); }, (v) => v.toFixed(2));
+    bindRange('markov-hue',   'markov-hue-value',   (v) => { HUE_SHIFT = v; repalette(); }, (v) => `${v}°`);
+    bindRange('markov-stops', 'markov-stops-value', (v) => { STOPS = v; repalette(); });
+    bindRange('markov-bgmix', 'markov-bgmix-value', (v) => { BG_MIX = v; repalette(); }, (v) => v.toFixed(2));
     const repEl = document.getElementById('markov-repguard');
     repEl?.addEventListener('change', () => { useRepGuard = !!repEl.checked; });
     document.getElementById('markov-restart')?.addEventListener('click', startCycle);
+    document.getElementById('markov-reroll')?.addEventListener('click', repalette);
 
     resize();
     resetButton?.addEventListener('click', startCycle);
@@ -696,14 +879,30 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     if (!reduce) {
       let last = 0;
       const loop = (now) => {
+        if (paused) { last = now; requestAnimationFrame(loop); return; }
         if (now - last >= 42) {
-          typeStep(TYPING_RATE);
+          typeAccum += TYPING_RATE;
+          const stepCount = Math.floor(typeAccum);
+          if (stepCount > 0) {
+            typeAccum -= stepCount;
+            typeStep(stepCount);
+          }
           last = now;
         }
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
     }
+
+    // Spacebar toggles pause.  Skipped if focus is on an editable element.
+    document.addEventListener('keydown', (e) => {
+      if (e.code !== 'Space' && e.key !== ' ') return;
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable
+                || t.tagName === 'BUTTON' || t.tagName === 'SELECT')) return;
+      e.preventDefault();
+      paused = !paused;
+    });
     window.addEventListener('resize', resize);
   }
 </script>
