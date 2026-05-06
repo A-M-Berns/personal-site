@@ -1,7 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-import { otherWriting, published } from '../../data/published';
+import { published } from '../../data/published';
 import markovModel from '../../data/markov_model.json';
 
 const sequences: Record<string, { title: string; href?: string }> = {
@@ -26,15 +26,7 @@ const sequenceGroups = Object.entries(sequences)
 
 const otherEssays = essays.filter((n) => !n.data.sequence);
 
-const fmt = new Intl.DateTimeFormat('en', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-  timeZone: 'UTC',
-});
-
 const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.sortDate.valueOf());
-const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf() - a.sortDate.valueOf());
 ---
 <Base title="Writing — A. M. Berns" description="Notes, essays, and cross-posts.">
   <div class="writing-shell">
@@ -44,12 +36,58 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       <button id="writing-reset" type="button" aria-label="Reset Writing animation">Reset</button>
     </div>
     <dialog id="writing-about" class="anim-about" aria-labelledby="writing-about-title">
-      <button class="anim-about-close" type="button" aria-label="Close">×</button>
       <h2 id="writing-about-title">About</h2>
       <p>
-        A simple character-level <a href="https://en.wikipedia.org/wiki/Markov_chain">Markov</a> text model, trained on writing from this site. Each cycle samples a fresh passage by repeatedly picking the next character given the last few.
+        A word-level Markov chain (order 6 with backoff to 1) trained on a small
+        library of public-domain philosophy and 19th-century literature: Carlyle,
+        Spinoza, Melville, Blake, Plotinus, Schopenhauer, Lindsay, Swedenborg,
+        Shelley, Butler, Voltaire, Erasmus, Carroll. The model picks the longest
+        matching context it can find, samples weighted by training counts, and
+        falls back to shorter contexts when the long ones are unfamiliar. Press
+        <kbd>Shift</kbd>+<kbd>D</kbd> for the dev panel.
       </p>
     </dialog>
+    <aside class="markov-panel" aria-label="Markov controls">
+      <div class="markov-panel-head">
+        <h2>Markov</h2>
+        <button id="markov-restart" type="button">Restart</button>
+      </div>
+      <div class="markov-panel-body">
+        <div class="markov-panel-row">
+          <label for="markov-order">order</label>
+          <input id="markov-order" type="range" min="1" max="6" step="1" value="6" />
+          <span id="markov-order-value">6</span>
+        </div>
+        <div class="markov-panel-row">
+          <label for="markov-temp">temp</label>
+          <input id="markov-temp" type="range" min="0.20" max="1.40" step="0.02" value="0.78" />
+          <span id="markov-temp-value">0.78</span>
+        </div>
+        <div class="markov-panel-row">
+          <label for="markov-speed">speed</label>
+          <input id="markov-speed" type="range" min="1" max="14" step="1" value="6" />
+          <span id="markov-speed-value">6</span>
+        </div>
+        <div class="markov-panel-row">
+          <label for="markov-pixel">size</label>
+          <input id="markov-pixel" type="range" min="1" max="3" step="1" value="2" />
+          <span id="markov-pixel-value">2</span>
+        </div>
+        <div class="markov-panel-row">
+          <label for="markov-contrast">lift</label>
+          <input id="markov-contrast" type="range" min="140" max="240" step="2" value="190" />
+          <span id="markov-contrast-value">190</span>
+        </div>
+        <label class="markov-panel-toggle" for="markov-repguard">
+          <input id="markov-repguard" type="checkbox" checked />
+          <span>repetition guard</span>
+        </label>
+        <dl class="markov-stats">
+          <div><dt>order used</dt><dd id="markov-used">-</dd></div>
+          <div><dt>tokens</dt><dd id="markov-tokens">0</dd></div>
+        </dl>
+      </div>
+    </aside>
     <header class="section-head">
       <h1>Writing</h1>
     </header>
@@ -60,7 +98,6 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
           <ul class="note-list">
             {publishedSorted.map((p) => (
               <li>
-                <time datetime={p.sortDate.toISOString()}>{p.displayDate}</time>
                 <a href={p.url}>{p.title}</a>
                 {p.venue && <span class="venue">{p.venue}</span>}
               </li>
@@ -72,8 +109,8 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       </section>
 
       <section class="writing-pane">
-        <h2>Essays</h2>
-        {sequenceGroups.length > 0 ? (
+        <h2>Blog</h2>
+        {sequenceGroups.length > 0 || otherEssays.length > 0 ? (
           <div class="sequence-groups">
             {sequenceGroups.map((g) => (
               <div class="sequence-group">
@@ -89,30 +126,18 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
                 </ol>
               </div>
             ))}
+            {otherEssays.length > 0 && (
+              <div class="sequence-group">
+                <ul class="note-list">
+                  {otherEssays.map((n) => (
+                    <li>
+                      <a href={`/essays/${n.id}/`}>{n.data.title}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-        ) : (
-          <p class="empty">Nothing here yet.</p>
-        )}
-      </section>
-
-      <section class="writing-pane">
-        <h2>Other</h2>
-        {otherWritingSorted.length > 0 || otherEssays.length > 0 ? (
-          <ul class="note-list">
-            {otherWritingSorted.map((p) => (
-              <li>
-                <time datetime={p.sortDate.toISOString()}>{p.displayDate}</time>
-                <a href={p.url}>{p.title}</a>
-                {p.venue && <span class="venue">{p.venue}</span>}
-              </li>
-            ))}
-            {otherEssays.map((n) => (
-              <li>
-                <time datetime={n.data.date.toISOString()}>{fmt.format(n.data.date)}</time>
-                <a href={`/essays/${n.id}/`}>{n.data.title}</a>
-              </li>
-            ))}
-          </ul>
         ) : (
           <p class="empty">Nothing here yet.</p>
         )}
@@ -121,17 +146,139 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
   </div>
 </Base>
 
+<style>
+  .markov-panel {
+    position: fixed;
+    left: 1rem;
+    bottom: 1rem;
+    z-index: 3;
+    width: 16rem;
+    background: rgba(14, 14, 16, 0.92);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.85rem 1rem 0.9rem;
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.78rem;
+    color: var(--muted);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .markov-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.55rem;
+  }
+  .markov-panel-head h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .markov-panel button {
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.3rem 0.55rem;
+    cursor: pointer;
+  }
+  .markov-panel button:hover { color: var(--ink); border-color: var(--muted); }
+  .markov-panel-row {
+    display: grid;
+    grid-template-columns: 4rem 1fr 3.3rem;
+    gap: 0.55rem;
+    align-items: center;
+    margin-bottom: 0.25rem;
+  }
+  .markov-panel-row label { font-size: 0.7rem; color: var(--muted); }
+  .markov-panel-row input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+  .markov-panel-row span {
+    font-size: 0.68rem;
+    color: var(--ink);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .markov-panel-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.45rem 0 0.1rem;
+    font-size: 0.7rem;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .markov-panel-toggle input[type="checkbox"] {
+    accent-color: var(--accent);
+    margin: 0;
+    cursor: pointer;
+  }
+  .markov-panel-toggle:hover { color: var(--ink); }
+  .markov-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    margin: 0.6rem 0 0;
+    font-size: 0.65rem;
+  }
+  .markov-stats div {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 0.3rem;
+    overflow: hidden;
+  }
+  .markov-stats dt {
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .markov-stats dd {
+    margin: 0;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  html:not(.dev-mode) .markov-panel { display: none !important; }
+</style>
+
 <script define:vars={{ markovModel }}>
+  // ---------------------------------------------------------------
+  // Word-level higher-order Markov backoff renderer.
+  //
+  // The model JSON is shaped:
+  //   { kind, order, startToken, endToken, orders: { "1": {...}, ..., "6": {...} } }
+  // Each `orders[N]` maps a tab-joined N-gram to [[nextToken, count], ...].
+  // ---------------------------------------------------------------
   const canvas = document.getElementById('markov-text');
   const resetButton = document.getElementById('writing-reset');
   if (canvas) {
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = false;
-    const model = markovModel.states ?? markovModel;
-    const states = Object.keys(model);
-    const ORDER = markovModel.order ?? 3;
-    const TEMPERATURE = 0.58;
-    const PIXEL = 2;
+
+    // ---------- Tunables (mirrored by the dev panel) ----------
+    const MODEL_ORDER = markovModel.order ?? 6;
+    let maxEffectiveOrder = MODEL_ORDER;
+    let TEMPERATURE = 0.78;
+    let TYPING_RATE = 6;        // tokens per animation tick
+    let PIXEL = 2;
+    let MIN_LUMA = 190;          // brightest "lift floor" for paint colors
+    let useRepGuard = true;
+
+    const orders = markovModel.orders ?? { [String(MODEL_ORDER)]: markovModel.states ?? {} };
+    const START = markovModel.startToken ?? '<S>';
+    const END   = markovModel.endToken   ?? '<E>';
+
+    // ---------- Layout ----------
     const GLYPH_W = 5;
     const GLYPH_H = 7;
     const LETTER_GAP = 1;
@@ -139,6 +286,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     const HOLD_FRAMES = 90;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    // ---------- Pixel font ----------
     const FONT = {
       A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
       B: ['11110', '10001', '10001', '11110', '10001', '10001', '11110'],
@@ -190,39 +338,14 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       ' ': ['00000', '00000', '00000', '00000', '00000', '00000', '00000'],
     };
 
-    const styles = getComputedStyle(document.documentElement);
-    const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
-    const ink = parseHex(styles.getPropertyValue('--ink').trim() || '#ececec');
-    const colorPool = [
-      '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
-      '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
-      '#fff0b8', '#d6ff5a', '#6ad84a', '#3ad48a', '#0fbfa8',
-      '#2cc7e0', '#4ad6ff', '#2a6fd6', '#1d3a8a', '#6a1a9a',
-      '#9a2bd6', '#c83a8a', '#e54a8a', '#ff7aa8',
-    ].map(parseHex).sort((a, b) => luma(a) - luma(b));
-    let W = 0;
-    let H = 0;
-    let cols = 0;
-    let rows = 0;
-    let x = 0;
-    let y = 0;
-    let hold = 0;
-    let stateWords = [];
-    let seed = 0;
-    let rng = mulberry32(1);
-    let palette = [ink];
-
+    // ---------- Color helpers ----------
     function parseHex(h) {
       const s = h.trim().replace('#', '');
       const full = s.length === 3 ? s.split('').map((c) => c + c).join('') : s;
       const n = parseInt(full, 16);
       return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
     }
-
-    function rgb(c) {
-      return `rgb(${c[0]} ${c[1]} ${c[2]})`;
-    }
-
+    function rgb(c) { return `rgb(${c[0]} ${c[1]} ${c[2]})`; }
     function mix(a, b, t) {
       return [
         Math.round(a[0] + (b[0] - a[0]) * t),
@@ -230,16 +353,45 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
         Math.round(a[2] + (b[2] - a[2]) * t),
       ];
     }
+    function luma(c) { return c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722; }
 
-    function luma(c) {
-      return c[0] * 0.2126 + c[1] * 0.7152 + c[2] * 0.0722;
-    }
+    const styles = getComputedStyle(document.documentElement);
+    const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
+    const ink   = parseHex(styles.getPropertyValue('--ink').trim()   || '#ececec');
+    // A wider, more saturated palette than before.  Ordered light→dark; we
+    // re-sort by luma after bright-lifting so the gradient stays monotone.
+    const colorPool = [
+      '#fff8d8', '#fff0a8', '#ffe57a', '#ffc14a', '#ffa645',
+      '#ff7a4a', '#ff5a5a', '#e54a8a', '#c83a8a', '#9a2bd6',
+      '#6a4ad6', '#4a7aff', '#2cc7e0', '#3ad48a', '#a4ff5a',
+      '#d6ff5a',
+    ].map(parseHex);
 
     function liftColor(c) {
+      // Push every paint colour up to MIN_LUMA, mixing toward white.  Keeps
+      // hues distinguishable but lifts the dim end so contrast with paper
+      // stays strong.
       let out = c;
-      while (luma(out) < 150) out = mix(out, ink, 0.18);
+      let guard = 0;
+      while (luma(out) < MIN_LUMA && guard++ < 24) {
+        out = mix(out, [255, 255, 255], 0.18);
+      }
       return out;
     }
+
+    // ---------- State ----------
+    let W = 0, H = 0;
+    let cols = 0, rows = 0;
+    let x = 0, y = 0;
+    let hold = 0;
+    let ctxTokens = [];
+    let recentTokens = [];      // sliding window for repetition guard
+    let totalTokens = 0;
+    let sentenceTokens = 0;
+    let needCapitalNext = true; // capitalize the first letter after sentence break
+    let palette = [];
+    let seed = 0;
+    let rng = mulberry32(1);
 
     function hashString(s) {
       let h = 2166136261;
@@ -249,7 +401,6 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       }
       return h >>> 0;
     }
-
     function mulberry32(seed) {
       let t = seed >>> 0;
       return () => {
@@ -263,77 +414,165 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
     function startCycle() {
       seed = hashString(`${Date.now()}:${Math.random()}`);
       rng = mulberry32(seed);
-      stateWords = states[Math.floor(rng() * states.length)].split('\t');
-      x = 0;
-      y = 0;
-      hold = 0;
-      palette = pickPalette(5);
+      ctxTokens = [];
+      for (let i = 0; i < MODEL_ORDER; i++) ctxTokens.push(START);
+      recentTokens = [];
+      totalTokens = 0;
+      sentenceTokens = 0;
+      insideQuotes = false;
+      stickToPrev = false;
+      needCapitalNext = true;
+      x = 0; y = 0; hold = 0;
+      palette = pickPalette(6);
       ctx.fillStyle = rgb(paper);
       ctx.fillRect(0, 0, W, H);
-    }
-
-    function stateKey(words) {
-      return words.join('\t');
-    }
-
-    function nextWord() {
-      let choices = model[stateKey(stateWords)];
-      if (!choices) {
-        stateWords = states[Math.floor(rng() * states.length)].split('\t');
-        choices = model[stateKey(stateWords)];
-      }
-      const viable = [];
-      for (let i = 0; i < choices.length; i++) {
-        const candidate = choices[i][0];
-        if (model[stateKey([...stateWords.slice(1), candidate])]) viable.push(choices[i]);
-      }
-      const pool = viable.length ? viable : choices;
-      const next = sampleWeighted(pool);
-      const word = next?.word ?? '';
-      stateWords = [...stateWords.slice(1), word];
-      if (!model[stateKey(stateWords)]) stateWords = states[Math.floor(rng() * states.length)].split('\t');
-      return { word, probability: next?.probability ?? 0 };
-    }
-
-    function sampleWeighted(pool) {
-      const totalCount = pool.reduce((sum, entry) => sum + entry[1], 0);
-      let totalWeight = 0;
-      const weighted = pool.map(([word, count]) => {
-        const probability = count / totalCount;
-        const weight = Math.pow(probability, 1 / TEMPERATURE);
-        totalWeight += weight;
-        return { word, probability, weight };
-      });
-      let roll = rng() * totalWeight;
-      for (const entry of weighted) {
-        roll -= entry.weight;
-        if (roll <= 0) return entry;
-      }
-      return weighted[weighted.length - 1];
+      updateStats();
     }
 
     function pickPalette(count) {
+      const lifted = colorPool.map(liftColor).sort((a, b) => luma(a) - luma(b));
       const stops = [];
       for (let i = 0; i < count; i++) {
-        const lo = Math.floor((i * colorPool.length) / count);
-        const hi = Math.floor(((i + 1) * colorPool.length) / count);
-        const color = colorPool[lo + Math.floor(rng() * Math.max(1, hi - lo))];
-        stops.push(liftColor(mix(paper, color, 0.9)));
+        const lo = Math.floor((i * lifted.length) / count);
+        const hi = Math.floor(((i + 1) * lifted.length) / count);
+        stops.push(lifted[lo + Math.floor(rng() * Math.max(1, hi - lo))]);
       }
+      document.documentElement.style.setProperty('--accent', rgb(stops[Math.floor(stops.length * 0.6)]));
       return stops;
     }
 
-    function colorForProbability(probability) {
-      const certainty = Math.min(1, Math.max(0, Math.pow(probability, 0.42)));
-      const idx = Math.min(palette.length - 1, Math.floor((1 - certainty) * palette.length));
+    function colorForOrder(orderUsed) {
+      // Higher matched order = brighter, more confident colour; backoff to
+      // order 1 lands at the dim end of the palette.
+      const t = Math.max(0, Math.min(1, (orderUsed - 1) / Math.max(1, MODEL_ORDER - 1)));
+      const idx = Math.min(palette.length - 1, Math.floor(t * (palette.length - 1) + 0.0001));
       return palette[idx];
     }
 
-    function drawChar(char, col, row, probability) {
-      const glyph = FONT[char] ?? FONT[char.toUpperCase()] ?? FONT['?'];
+    // ---------- Backoff sampler ----------
+    function backoffLookup(ctxArr) {
+      const cap = Math.min(maxEffectiveOrder, ctxArr.length);
+      for (let n = cap; n >= 1; n--) {
+        const slice = ctxArr.slice(ctxArr.length - n);
+        const key = slice.join('\t');
+        const table = orders[String(n)];
+        if (!table) continue;
+        const entries = table[key];
+        if (entries && entries.length) return { entries, order: n };
+      }
+      return null;
+    }
+
+    function sampleWeighted(entries) {
+      let total = 0;
+      for (let i = 0; i < entries.length; i++) total += entries[i][1];
+      const t = Math.max(0.05, TEMPERATURE);
+      let weightSum = 0;
+      const weights = new Array(entries.length);
+      for (let i = 0; i < entries.length; i++) {
+        const p = entries[i][1] / total;
+        weights[i] = Math.pow(p, 1 / t);
+        weightSum += weights[i];
+      }
+      let roll = rng() * weightSum;
+      for (let i = 0; i < entries.length; i++) {
+        roll -= weights[i];
+        if (roll <= 0) return entries[i][0];
+      }
+      return entries[entries.length - 1][0];
+    }
+
+    function violatesRepGuard(candidate) {
+      if (!useRepGuard) return false;
+      // Reject candidate if the (last-N tokens + candidate) sequence has
+      // already appeared earlier in the recent window.  Catches both
+      // immediate cycles and slower phrase-loops.
+      const N = 4;
+      if (recentTokens.length < N) return false;
+      const probe = recentTokens.slice(-N).concat([candidate]).join('\t');
+      for (let i = 0; i + N + 1 <= recentTokens.length; i++) {
+        const slice = recentTokens.slice(i, i + N + 1).join('\t');
+        if (slice === probe) return true;
+      }
+      return false;
+    }
+
+    function nextToken() {
+      let look = backoffLookup(ctxTokens);
+      if (!look) {
+        // Reseed with sentence-start padding.
+        ctxTokens = [];
+        for (let i = 0; i < MODEL_ORDER; i++) ctxTokens.push(START);
+        look = backoffLookup(ctxTokens);
+        if (!look) return { token: END, order: 0 };
+      }
+      let token = sampleWeighted(look.entries);
+      // Repetition guard: try a couple of resamples, otherwise fall back
+      // to a shorter context to escape a loop.
+      if (violatesRepGuard(token)) {
+        for (let tries = 0; tries < 3 && violatesRepGuard(token); tries++) {
+          token = sampleWeighted(look.entries);
+        }
+        if (violatesRepGuard(token) && look.order > 1) {
+          const shorter = backoffLookup(ctxTokens.slice(0, ctxTokens.length - 1));
+          if (shorter) { look = shorter; token = sampleWeighted(shorter.entries); }
+        }
+      }
+      ctxTokens.push(token);
+      if (ctxTokens.length > MODEL_ORDER) ctxTokens.shift();
+      return { token, order: look.order };
+    }
+
+    // ---------- Detokenization for display ----------
+    // We track an "inside quotes" toggle and an "after opener" flag so that
+    // the renderer knows whether the next token glues to the previous one
+    // (no leading space) or is preceded by a space.
+    const SENTENCE_PUNCT = /^[.,;:!?]$/;
+    let insideQuotes = false;
+    let stickToPrev  = false;     // true right after `(`, `[`, or opening `"`
+
+    function renderTokenString(token, justAfterSentenceBreak) {
+      if (token === START || token === END) return null;
+      let text = token;
+      let leadingSpace = true;
+
+      if (SENTENCE_PUNCT.test(text)) {
+        leadingSpace = false;
+        stickToPrev = false;
+      } else if (text === ')' || text === ']') {
+        leadingSpace = false;
+        stickToPrev = false;
+      } else if (text === '(' || text === '[') {
+        // Open paren: normal leading space, but next token sticks.
+        stickToPrev = true;
+      } else if (text === '"') {
+        if (insideQuotes) {
+          // closing quote
+          leadingSpace = false;
+          insideQuotes = false;
+          stickToPrev = false;
+        } else {
+          // opening quote
+          insideQuotes = true;
+          stickToPrev = true;
+        }
+      } else {
+        if (stickToPrev) leadingSpace = false;
+        stickToPrev = false;
+      }
+
+      if (justAfterSentenceBreak && /^[a-z]/.test(text)) {
+        text = text[0].toUpperCase() + text.slice(1);
+      }
+      return { text, leadingSpace };
+    }
+
+    // ---------- Rendering ----------
+    function drawChar(ch, col, row, color) {
+      const glyph = FONT[ch] ?? FONT[ch.toUpperCase()] ?? FONT['?'];
       const ox = col * (GLYPH_W + LETTER_GAP) * PIXEL;
       const oy = row * (GLYPH_H + LINE_GAP) * PIXEL;
-      ctx.fillStyle = rgb(colorForProbability(probability));
+      ctx.fillStyle = rgb(color);
       for (let gy = 0; gy < GLYPH_H; gy++) {
         for (let gx = 0; gx < GLYPH_W; gx++) {
           if (glyph[gy][gx] === '1') ctx.fillRect(ox + gx * PIXEL, oy + gy * PIXEL, PIXEL, PIXEL);
@@ -341,8 +580,32 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       }
     }
 
-    function drawWord(word, col, row, probability) {
-      for (let i = 0; i < word.length; i++) drawChar(word[i], col + i, row, probability);
+    function emitString(str, color) {
+      // Stream characters into the typewriter grid.  Wrap rule: we keep
+      // emitting characters of a word past the right edge of the screen up
+      // to one column past `cols` (so visually exactly one word straddles
+      // the right edge before continuing on the next line).  When emitting
+      // a *space* past the edge we wrap, ensuring the space is the break
+      // point and the next word starts at column 0.
+      for (let i = 0; i < str.length; i++) {
+        const ch = str[i];
+        if (ch === ' ') {
+          if (x >= cols) { x = 0; y++; if (y >= rows) return; continue; }
+          x += 1;
+          if (x >= cols) { x = 0; y++; if (y >= rows) return; }
+          continue;
+        }
+        if (y >= rows) return;
+        drawChar(ch, x, y, color);
+        x += 1;
+        // We DO NOT wrap mid-word here.  The line bleeds; the next space
+        // will trigger the wrap on the next iteration.
+      }
+    }
+
+    function updateStats() {
+      const tEl = document.getElementById('markov-tokens');
+      if (tEl) tEl.textContent = String(totalTokens);
     }
 
     function typeStep(count) {
@@ -351,23 +614,34 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
           if (++hold > HOLD_FRAMES) startCycle();
           return;
         }
-        const next = nextWord();
-        const word = next.word.replace(/\s+/g, ' ');
-        const width = Math.min(cols, Math.max(1, word.length));
-        if (x > 0 && x + width > cols) {
-          x = 0;
-          y++;
-          if (y >= rows) return;
+        const { token, order: orderUsed } = nextToken();
+        const usedEl = document.getElementById('markov-used');
+        if (usedEl) usedEl.textContent = String(orderUsed);
+        totalTokens++;
+        if (totalTokens % 4 === 0) updateStats();
+
+        if (token === END) {
+          // sentence ended.  start a fresh padded context, with a hint to
+          // capitalize the next word and a leading space if mid-line.
+          ctxTokens = [];
+          for (let k = 0; k < MODEL_ORDER; k++) ctxTokens.push(START);
+          needCapitalNext = true;
+          sentenceTokens = 0;
+          continue;
         }
-        drawWord(word.slice(0, cols), x, y, next.probability);
-        x += width + 1;
-        if (x >= cols) {
-          x = 0;
-          y++;
-        }
+        const piece = renderTokenString(token, needCapitalNext);
+        if (!piece) continue;
+        needCapitalNext = false;
+        sentenceTokens++;
+        recentTokens.push(token);
+        if (recentTokens.length > 20) recentTokens.shift();
+
+        const str = (piece.leadingSpace && (x > 0 || y > 0)) ? ' ' + piece.text : piece.text;
+        emitString(str, colorForOrder(orderUsed));
       }
     }
 
+    // ---------- Resize / layout ----------
     function resize() {
       const dpr = Math.max(1, window.devicePixelRatio || 1);
       W = window.innerWidth;
@@ -378,19 +652,44 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       canvas.style.height = `${H}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.imageSmoothingEnabled = false;
-      cols = Math.max(1, Math.ceil(W / ((GLYPH_W + LETTER_GAP) * PIXEL)) + 1);
-      rows = Math.max(1, Math.ceil(H / ((GLYPH_H + LINE_GAP) * PIXEL)) + 1);
+      const cellW = (GLYPH_W + LETTER_GAP) * PIXEL;
+      const cellH = (GLYPH_H + LINE_GAP) * PIXEL;
+      // cols = number of full character cells fitting on screen.  We do
+      // NOT pad +1 here — we want the wrap point to be the screen edge so
+      // that exactly one word straddles it before wrapping.
+      cols = Math.max(1, Math.floor(W / cellW));
+      rows = Math.max(1, Math.ceil(H / cellH) + 1);
       startCycle();
       if (reduce) typeStep(cols * rows);
     }
+
+    // ---------- Dev panel wiring ----------
+    function bindRange(id, valId, onChange, format = (v) => v) {
+      const el = document.getElementById(id);
+      const lab = document.getElementById(valId);
+      if (!el || !lab) return;
+      const sync = () => {
+        const v = Number(el.value);
+        lab.textContent = String(format(v));
+        onChange(v);
+      };
+      el.addEventListener('input', sync);
+      sync();
+    }
+    bindRange('markov-order', 'markov-order-value', (v) => { maxEffectiveOrder = Math.max(1, Math.min(MODEL_ORDER, v)); });
+    bindRange('markov-temp',  'markov-temp-value',  (v) => { TEMPERATURE = v; }, (v) => v.toFixed(2));
+    bindRange('markov-speed', 'markov-speed-value', (v) => { TYPING_RATE = v; });
+    bindRange('markov-pixel', 'markov-pixel-value', (v) => { PIXEL = v; resize(); });
+    bindRange('markov-contrast', 'markov-contrast-value', (v) => { MIN_LUMA = v; palette = pickPalette(6); });
+    const repEl = document.getElementById('markov-repguard');
+    repEl?.addEventListener('change', () => { useRepGuard = !!repEl.checked; });
+    document.getElementById('markov-restart')?.addEventListener('click', startCycle);
 
     resize();
     resetButton?.addEventListener('click', startCycle);
     const infoButton = document.getElementById('writing-info');
     const aboutDialog = document.getElementById('writing-about');
-    const aboutClose = aboutDialog?.querySelector('.anim-about-close');
     infoButton?.addEventListener('click', () => aboutDialog?.showModal());
-    aboutClose?.addEventListener('click', () => aboutDialog?.close());
     aboutDialog?.addEventListener('click', (event) => {
       if (event.target === aboutDialog) aboutDialog.close();
     });
@@ -398,7 +697,7 @@ const otherWritingSorted = [...otherWriting].sort((a, b) => b.sortDate.valueOf()
       let last = 0;
       const loop = (now) => {
         if (now - last >= 42) {
-          typeStep(2);
+          typeStep(TYPING_RATE);
           last = now;
         }
         requestAnimationFrame(loop);

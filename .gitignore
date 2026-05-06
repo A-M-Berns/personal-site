@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# cached corpus downloads for scripts/build-markov-model.mjs
+.cache/
