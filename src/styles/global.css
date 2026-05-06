@@ -1143,12 +1143,10 @@ body.page-taste:has(.cover-wall-page) .page {
      (writing-panes, section-head) sits at z-index 1 above and still
      receives clicks for its own area. */
   pointer-events: auto;
-  cursor: pointer;
   opacity: 0.8;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
-html.animation-only .markov-text { cursor: default; }
 .writing-shell > .section-head,
 .writing-panes {
   position: relative;
