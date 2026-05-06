@@ -89,7 +89,7 @@ import Base from '../layouts/Base.astro';
     type ShapeKind = 'square' | 'triangle' | 'hexagon' | 'circle' | 'parallelogram' | 'rectangle';
     type WangTile = { edges: number[] };
     type TileSet = { name: string; colors: number; edgeCount: number; tiles: WangTile[] };
-    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork' | 'diagonalBars' | 'checker' | 'orbit' | 'splitBands' | 'pinwheel' | 'crosshatch' | 'plusGlyph' | 'nestedBox' | 'strata' | 'zigzag' | 'wedges' | 'petals' | 'target' | 'shards' | 'caps' | 'spokes' | 'rays' | 'slats' | 'steps' | 'frame' | 'arcBands' | 'splitDiag' | 'edgeCorners' | 'iris' | 'triad' | 'hexFan' | 'lanes';
+    type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork' | 'diagonalBars' | 'checker' | 'orbit' | 'splitBands' | 'pinwheel' | 'crosshatch' | 'plusGlyph' | 'nestedBox' | 'strata' | 'zigzag' | 'wedges' | 'petals' | 'target' | 'shards' | 'caps' | 'spokes' | 'rays' | 'slats' | 'steps' | 'frame' | 'arcBands' | 'splitDiag' | 'edgeCorners' | 'iris' | 'triad' | 'hexFan' | 'lanes' | 'leopardSpots' | 'zebraStripes' | 'cowPatches' | 'snakeScales';
     type GrowthMode = 'spores' | 'tendrils' | 'river' | 'rings' | 'islands' | 'lightning' | 'roots' | 'vortex' | 'contours' | 'maze' | 'faults' | 'braid' | 'nebula';
     type SpeedMode = { name: string; divisor: number; minStep: number };
     type Cycle = {
@@ -556,12 +556,12 @@ import Base from '../layouts/Base.astro';
 
     const shapes: ShapeKind[] = ['square', 'triangle', 'hexagon', 'circle', 'parallelogram', 'rectangle'];
     const skinsByShape: Record<ShapeKind, VisualSkin[]> = {
-      square: ['triangles', 'edgeBands', 'cornerCuts', 'diamondWeave', 'isometric', 'lozenges', 'scales', 'chevrons', 'insetDiamonds', 'diagonalBars', 'checker', 'splitBands', 'pinwheel', 'crosshatch', 'shards', 'caps', 'slats', 'steps', 'splitDiag', 'edgeCorners', 'lanes'],
+      square: ['triangles', 'edgeBands', 'cornerCuts', 'diamondWeave', 'isometric', 'lozenges', 'scales', 'chevrons', 'insetDiamonds', 'diagonalBars', 'checker', 'splitBands', 'pinwheel', 'crosshatch', 'shards', 'caps', 'slats', 'steps', 'splitDiag', 'edgeCorners', 'lanes', 'leopardSpots', 'zebraStripes', 'cowPatches', 'snakeScales'],
       triangle: ['facets', 'kite', 'bands', 'strata', 'zigzag', 'splitBands', 'pinwheel', 'shards', 'rays', 'triad', 'lanes'],
       hexagon: ['facets', 'bands', 'mosaic', 'wedges', 'splitBands', 'shards', 'spokes', 'rays', 'hexFan', 'edgeCorners'],
       circle: ['bands', 'mosaic', 'facets', 'splitBands', 'spokes', 'rays', 'arcBands', 'caps', 'iris', 'hexFan'],
       parallelogram: ['facets', 'blocks', 'bands', 'ribbons', 'diagonalBars', 'strata', 'splitBands', 'shards', 'slats', 'steps', 'splitDiag', 'lanes'],
-      rectangle: ['bands', 'brickwork', 'mosaic', 'edgeBands', 'splitBands', 'checker', 'crosshatch', 'slats', 'steps', 'caps', 'splitDiag', 'edgeCorners', 'lanes'],
+      rectangle: ['bands', 'brickwork', 'mosaic', 'edgeBands', 'splitBands', 'checker', 'crosshatch', 'slats', 'steps', 'caps', 'splitDiag', 'edgeCorners', 'lanes', 'leopardSpots', 'zebraStripes', 'cowPatches', 'snakeScales'],
     };
 
     function option(label: string, value: string): HTMLOptionElement {
@@ -736,6 +736,85 @@ import Base from '../layouts/Base.astro';
 
     function fillRectBleed(x: number, y: number, w: number, h: number) {
       ctx.fillRect(Math.floor(x) - 0.5, Math.floor(y) - 0.5, Math.ceil(w) + 1, Math.ceil(h) + 1);
+    }
+
+    function drawAnimalPrintRect(tile: WangTile, col: number, row: number, x: number, y: number, w: number, h: number, palette: RGB[], skin: VisualSkin): boolean {
+      if (skin !== 'leopardSpots' && skin !== 'zebraStripes' && skin !== 'cowPatches' && skin !== 'snakeScales') return false;
+      const { north, east, south, west } = squareColors(tile, palette);
+      const seed = hashString(`${skin}:${col}:${row}:${tile.edges.join(',')}`);
+      const rng = mulberry32(seed);
+      const base = mix(mix(north, south, 0.50), paper, skin === 'cowPatches' ? 0.38 : 0.12);
+      const mark = mix(mix(east, west, 0.50), paper, skin === 'zebraStripes' ? 0.04 : 0.20);
+      const accent = mix(mix(north, east, 0.50), paper, 0.08);
+
+      ctx.fillStyle = rgba(base, 0.90);
+      fillRectBleed(x, y, w, h);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.clip();
+
+      if (skin === 'zebraStripes') {
+        ctx.translate(x + w * 0.5, y + h * 0.5);
+        ctx.rotate((rng() - 0.5) * 0.75 + Math.PI * 0.22);
+        const stripeW = Math.max(2, Math.min(w, h) * 0.18);
+        const span = Math.max(w, h) * 1.85;
+        ctx.fillStyle = rgba(mark, 0.78);
+        for (let i = -5; i <= 5; i++) {
+          const bend = (rng() - 0.5) * stripeW * 0.85;
+          const sx = i * stripeW * 1.65 + bend;
+          ctx.beginPath();
+          ctx.moveTo(sx - stripeW * 0.45, -span);
+          ctx.lineTo(sx + stripeW * (0.35 + rng() * 0.45), -span);
+          ctx.lineTo(sx + stripeW * (0.92 + rng() * 0.45), span);
+          ctx.lineTo(sx - stripeW * (0.12 + rng() * 0.55), span);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (skin === 'snakeScales') {
+        const scaleW = Math.max(3, w * 0.28);
+        const scaleH = Math.max(3, h * 0.38);
+        for (let sy = y - scaleH; sy < y + h + scaleH; sy += scaleH * 0.62) {
+          const stagger = Math.round((sy - y) / (scaleH * 0.62)) & 1 ? scaleW * 0.5 : 0;
+          for (let sx = x - scaleW; sx < x + w + scaleW; sx += scaleW) {
+            const px = sx + stagger;
+            const py = sy;
+            ctx.fillStyle = rgba(mix(mark, accent, rng() * 0.45), 0.58);
+            ctx.beginPath();
+            ctx.ellipse(px, py, scaleW * 0.56, scaleH * 0.42, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = rgba(mix(base, paper, 0.20), 0.50);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      } else {
+        const count = skin === 'leopardSpots' ? 5 : 3;
+        for (let i = 0; i < count; i++) {
+          const px = x + w * (0.15 + rng() * 0.70);
+          const py = y + h * (0.16 + rng() * 0.68);
+          const rx = Math.max(2, w * (skin === 'leopardSpots' ? 0.11 + rng() * 0.08 : 0.18 + rng() * 0.16));
+          const ry = Math.max(2, h * (skin === 'leopardSpots' ? 0.14 + rng() * 0.10 : 0.22 + rng() * 0.22));
+          const rot = rng() * Math.PI;
+          ctx.fillStyle = rgba(mark, skin === 'leopardSpots' ? 0.86 : 0.72);
+          ctx.beginPath();
+          ctx.ellipse(px, py, rx, ry, rot, 0, Math.PI * 2);
+          ctx.fill();
+          if (skin === 'leopardSpots') {
+            ctx.fillStyle = rgba(accent, 0.72);
+            ctx.beginPath();
+            ctx.ellipse(px, py, rx * 0.48, ry * 0.46, rot, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+
+      ctx.restore();
+      ctx.fillStyle = rgba(north, 0.42);
+      fillRectBleed(x, y, w, Math.max(1, h * 0.10));
+      ctx.fillStyle = rgba(south, 0.38);
+      fillRectBleed(x, y + h - Math.max(1, h * 0.10), w, Math.max(1, h * 0.10));
+      return true;
     }
 
     function drawTriangleLattice(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
@@ -1094,7 +1173,9 @@ import Base from '../layouts/Base.astro';
       const cx = x + w * 0.5;
       const cy = y + h * 0.5;
       const { north, east, south, west } = squareColors(tile, palette);
-      if (skin === 'bands') {
+      if (drawAnimalPrintRect(tile, col, row, x, y, w, h, palette, skin)) {
+        return;
+      } else if (skin === 'bands') {
         ctx.fillStyle = rgba(mix(north, south, 0.5), 0.88);
         fillRectBleed(x, y, w, h);
         ctx.fillStyle = rgba(west, 0.76);
@@ -1212,6 +1293,7 @@ import Base from '../layouts/Base.astro';
       const dark = mix(paper, palette[0], 0.10);
       ctx.fillStyle = rgb(dark);
       fillRectBleed(x, y, size, size);
+      if (drawAnimalPrintRect(tile, col, row, x, y, size, size, palette, skin)) return;
 
       if (skin === 'triangles') {
         fillPoly([[x, y], [x2, y], [cx, cy]], north, 0.96);
