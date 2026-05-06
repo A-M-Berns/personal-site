@@ -129,8 +129,6 @@ const labelFor = (cover: (typeof covers)[number]) =>
     const SPEED_BASELINE = 0.7;
     let activeSeed = 1;
     let speedMultiplier = parseSpeed(speedInput?.value);
-    let currentRollCoverIds = new Set<string>();
-    let previousRollCoverIds = new Set<string>();
     let activeLightboxTile: HTMLElement | null = null;
 
     try {
@@ -148,13 +146,13 @@ const labelFor = (cover: (typeof covers)[number]) =>
       if (speedValue) speedValue.textContent = `${speedMultiplier.toFixed(1)}x`;
     }
 
-    function rowDuration(rowIndex: number) {
-      return `${(80 + rowIndex * 11) / (speedMultiplier * SPEED_BASELINE)}s`;
+    function rowDuration(rowIndex: number, travelRatio = 1) {
+      return `${((80 + rowIndex * 11) * travelRatio) / (speedMultiplier * SPEED_BASELINE)}s`;
     }
 
     function applySpeed() {
       document.querySelectorAll<HTMLElement>('.cover-row').forEach((row, rowIndex) => {
-        row.style.setProperty('--cover-row-duration', rowDuration(rowIndex));
+        row.style.setProperty('--cover-row-duration', rowDuration(rowIndex, Number(row.dataset.travelRatio) || 1));
       });
       updateSpeedLabel();
     }
@@ -241,18 +239,13 @@ const labelFor = (cover: (typeof covers)[number]) =>
       return best;
     }
 
-    function chooseCovers(count: number, rng: () => number, avoidIds = new Set<string>()) {
+    function chooseCovers(count: number, rng: () => number) {
       const shuffled = shuffle(covers, rng);
       const seenArtists = new Set<string>();
       const selected: Cover[] = [];
-      const deferredRepeatedCovers: Cover[] = [];
       const overflow: Cover[] = [];
 
       for (const cover of shuffled) {
-        if (avoidIds.has(cover.id)) {
-          deferredRepeatedCovers.push(cover);
-          continue;
-        }
         const artistKey = cover.artist.toLocaleLowerCase();
         if (seenArtists.has(artistKey)) {
           overflow.push(cover);
@@ -267,11 +260,63 @@ const labelFor = (cover: (typeof covers)[number]) =>
         selected.push(cover);
         if (selected.length === count) break;
       }
-      for (const cover of deferredRepeatedCovers) {
-        selected.push(cover);
-        if (selected.length === count) break;
-      }
       return selected;
+    }
+
+    function chooseNextForRow(
+      remaining: Cover[],
+      rowArtistKeys: string[],
+      previousArtistKeys: Set<string>,
+      rng: () => number,
+    ) {
+      let bestIndex = 0;
+      let bestScore = -Infinity;
+      const lastArtist = rowArtistKeys[rowArtistKeys.length - 1];
+
+      for (let i = 0; i < remaining.length; i++) {
+        const cover = remaining[i];
+        const artistKey = cover.artist.toLocaleLowerCase();
+        let score = rng();
+        if (artistKey !== lastArtist) score += 4;
+        if (!previousArtistKeys.has(artistKey)) score += 2;
+        if (!rowArtistKeys.includes(artistKey)) score += 1;
+        if (score > bestScore) {
+          bestScore = score;
+          bestIndex = i;
+        }
+      }
+
+      return remaining.splice(bestIndex, 1)[0];
+    }
+
+    function buildCoverStreams(rowCount: number, minimumPerRow: number, rng: () => number) {
+      const remaining = shuffle(covers, rng);
+      const streams: Cover[][] = Array.from({ length: rowCount }, () => []);
+      const rowArtists: string[][] = Array.from({ length: rowCount }, () => []);
+      let rowIndex = 0;
+
+      while (remaining.length > 0) {
+        const previousArtistKeys = new Set<string>();
+        for (const stream of streams) {
+          const previous = stream[stream.length - 1];
+          if (previous) previousArtistKeys.add(previous.artist.toLocaleLowerCase());
+        }
+        const cover = chooseNextForRow(remaining, rowArtists[rowIndex], previousArtistKeys, rng);
+        streams[rowIndex].push(cover);
+        rowArtists[rowIndex].push(cover.artist.toLocaleLowerCase());
+        rowIndex = (rowIndex + 1) % rowCount;
+      }
+
+      for (const stream of streams) {
+        while (stream.length < minimumPerRow && covers.length > 0) {
+          const additions = chooseCovers(Math.min(covers.length, minimumPerRow - stream.length), rng)
+            .filter((cover) => !stream.some((item) => item.id === cover.id));
+          if (additions.length === 0) break;
+          stream.push(...additions);
+        }
+      }
+
+      return streams;
     }
 
     function labelFor(cover: Cover) {
@@ -356,28 +401,22 @@ const labelFor = (cover: (typeof covers)[number]) =>
     function render(seed: number) {
       const rng = mulberry32(seed);
       const layout = coverLayout();
-      const selected = chooseCovers(
-        Math.min(covers.length, layout.columns * layout.rows),
-        rng,
-        previousRollCoverIds,
-      );
-      currentRollCoverIds = new Set(selected.map((cover) => cover.id));
+      const streams = buildCoverStreams(layout.rows, layout.columns + 2, rng);
       wall.style.setProperty('--cover-tile-size', `${layout.size}px`);
       wall.style.setProperty('--cover-grid-gap', `${layout.gap}px`);
       wall.style.setProperty('--cover-row-count', String(layout.rows));
-      wall.style.setProperty('--cover-set-width', `${layout.width}px`);
       wall.style.width = `${Math.min(window.innerWidth - layout.padding * 2, layout.width)}px`;
       wall.style.height = `${layout.height}px`;
       wall.replaceChildren(
         ...Array.from({ length: layout.rows }, (_, rowIndex) => {
-          const rowCovers = selected.slice(
-            rowIndex * layout.columns,
-            (rowIndex + 1) * layout.columns,
-          );
+          const rowCovers = streams[rowIndex];
+          const setWidth = rowCovers.length * layout.size + Math.max(0, rowCovers.length - 1) * layout.gap;
           const row = document.createElement('div');
           row.className = 'cover-row';
+          row.dataset.travelRatio = String(setWidth / layout.width);
           row.style.setProperty('--cover-row-direction', rowIndex % 2 === 0 ? 'normal' : 'reverse');
-          row.style.setProperty('--cover-row-duration', rowDuration(rowIndex));
+          row.style.setProperty('--cover-row-duration', rowDuration(rowIndex, setWidth / layout.width));
+          row.style.setProperty('--cover-set-width', `${setWidth}px`);
 
           const track = document.createElement('div');
           track.className = 'cover-row-track';
@@ -393,7 +432,6 @@ const labelFor = (cover: (typeof covers)[number]) =>
     }
 
     function reset() {
-      previousRollCoverIds = currentRollCoverIds;
       activeSeed = hashString(`${Date.now()}:${Math.random()}`);
       render(activeSeed);
     }
