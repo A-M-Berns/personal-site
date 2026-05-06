@@ -37,6 +37,7 @@ export default {
             Location: new URL(next, request.url).toString(),
             'Set-Cookie': `${AUTH_COOKIE}=${token}; Path=/; Max-Age=${COOKIE_MAX_AGE}; HttpOnly; Secure; SameSite=Lax`,
             'Cache-Control': 'no-store',
+            'X-Robots-Tag': 'noindex, nofollow',
           },
         });
       }
@@ -48,12 +49,22 @@ export default {
     }
 
     if (await isAuthenticated(request, env)) {
-      return env.ASSETS.fetch(request);
+      return withNoIndex(await env.ASSETS.fetch(request));
     }
 
     return constructionPage(url.pathname + url.search, { status: 401 });
   },
 };
+
+function withNoIndex(res: Response): Response {
+  const headers = new Headers(res.headers);
+  headers.set('X-Robots-Tag', 'noindex, nofollow');
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers,
+  });
+}
 
 async function isAuthenticated(request: Request, env: Env): Promise<boolean> {
   const cookie = request.headers.get('Cookie') ?? '';
@@ -132,6 +143,7 @@ function constructionPage(
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
     <title>Under construction</title>
     <style>
       :root {
@@ -222,6 +234,7 @@ function constructionPage(
     headers: {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
+      'X-Robots-Tag': 'noindex, nofollow',
     },
   });
 }

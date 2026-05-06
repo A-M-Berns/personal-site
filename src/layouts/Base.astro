@@ -26,6 +26,8 @@ const pageClass = `page-${path === '/' ? 'home' : path.split('/')[1]}`;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="googlebot" content="noindex, nofollow" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
     <script is:inline>
@@ -66,6 +68,16 @@ const pageClass = `page-${path === '/' ? 'home' : path.split('/')[1]}`;
         }
         bindToggle(DEV_KEY, 'dev-mode', 'D', 'd');
         bindToggle(ANIM_KEY, 'animation-only', 'A', 'a');
+        document.addEventListener('keydown', function (e) {
+          if (!e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+          if (e.key !== 'R' && e.key !== 'r') return;
+          var t = e.target;
+          if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+          var resetButton = document.querySelector('.anim-controls button[aria-label^="Reset"], .anim-controls button[id$="-reset"], .anim-controls button[id$="-restart"]');
+          if (!resetButton) return;
+          e.preventDefault();
+          resetButton.click();
+        });
       })();
     </script>
   </head>
