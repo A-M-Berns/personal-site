@@ -833,6 +833,10 @@ body.page-taste:has(.cover-wall-page) .page {
   position: relative;
   z-index: 1;
 }
+.other-shell,
+.other-shell * {
+  cursor: default;
+}
 .section-head .other-intro {
   color: var(--ink);
   font-family: var(--font-lexend), var(--sans);
@@ -877,7 +881,7 @@ body.page-taste:has(.cover-wall-page) .page {
   font-family: var(--font-lexend), var(--sans);
   font-size: 1.125rem;
   line-height: 1.45;
-  font-weight: 600;
+  font-weight: 400;
   margin: 0 0 1.75rem 0.6rem;
   max-width: 60ch;
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.85);
