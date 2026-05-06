@@ -789,13 +789,16 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
 
     // ---------- Click-to-rewind ----------
     function findCrumbAt(pxX, pxY) {
-      const col = Math.floor(pxX / cellW);
-      const row = Math.floor(pxY / cellH);
+      const pad = Math.max(2, PIXEL * 2);
       // Scan from newest backward — the latest matching word wins.
       for (let i = crumbs.length - 1; i >= 0; i--) {
         const cb = crumbs[i];
         for (const r of cb.rects) {
-          if (r.row === row && col >= r.c0 && col < r.c1) return i;
+          const left = r.c0 * cellW - pad;
+          const right = r.c1 * cellW + pad;
+          const top = r.row * cellH - pad;
+          const bottom = (r.row + 1) * cellH + pad;
+          if (pxX >= left && pxX < right && pxY >= top && pxY < bottom) return i;
         }
       }
       return -1;
@@ -831,14 +834,20 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
       crumbs.length = idx;
     }
 
-    canvas.addEventListener('click', (e) => {
-      // Ignore clicks that originated on foreground content (e.g. links).
+    function shouldIgnoreRewindClick(target) {
+      return target?.closest?.('a, button, input, select, textarea, label, dialog, .anim-controls, .markov-panel, .writing-pane, .section-head');
+    }
+
+    function handleRewindClick(e) {
+      if (shouldIgnoreRewindClick(e.target)) return;
       const rect = canvas.getBoundingClientRect();
       const px = e.clientX - rect.left;
       const py = e.clientY - rect.top;
       const idx = findCrumbAt(px, py);
       if (idx >= 0) rewindToCrumbIndex(idx);
-    });
+    }
+
+    document.addEventListener('click', handleRewindClick);
 
     // ---------- Dev panel wiring ----------
     function bindRange(id, valId, onChange, format = (v) => v) {
