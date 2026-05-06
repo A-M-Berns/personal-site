@@ -37,15 +37,7 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     </div>
     <dialog id="writing-about" class="anim-about" aria-labelledby="writing-about-title">
       <h2 id="writing-about-title">About</h2>
-      <p>
-        A word-level Markov chain (order 6 with backoff to 1) trained on a small
-        library of public-domain philosophy and 19th-century literature: Carlyle,
-        Spinoza, Melville, Blake, Plotinus, Schopenhauer, Lindsay, Swedenborg,
-        Shelley, Butler, Voltaire, Erasmus, Carroll. The model picks the longest
-        matching context it can find, samples weighted by training counts, and
-        falls back to shorter contexts when the long ones are unfamiliar. Press
-        <kbd>Shift</kbd>+<kbd>D</kbd> for the dev panel.
-      </p>
+      <p>TODO: about copy.</p>
     </dialog>
     <aside class="markov-panel" aria-label="Markov controls">
       <div class="markov-panel-head">
@@ -73,19 +65,19 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
         </div>
         <div class="markov-panel-row">
           <label for="markov-pixel">size</label>
-          <input id="markov-pixel" type="range" min="1" max="3" step="1" value="2" />
-          <span id="markov-pixel-value">2</span>
+          <input id="markov-pixel" type="range" min="1" max="3" step="1" value="3" />
+          <span id="markov-pixel-value">3</span>
         </div>
         <div class="markov-panel-section">colors</div>
         <div class="markov-panel-row">
           <label for="markov-contrast">lift</label>
-          <input id="markov-contrast" type="range" min="120" max="245" step="2" value="190" />
-          <span id="markov-contrast-value">190</span>
+          <input id="markov-contrast" type="range" min="120" max="245" step="2" value="192" />
+          <span id="markov-contrast-value">192</span>
         </div>
         <div class="markov-panel-row">
           <label for="markov-sat">sat</label>
-          <input id="markov-sat" type="range" min="0" max="1.4" step="0.02" value="1" />
-          <span id="markov-sat-value">1.00</span>
+          <input id="markov-sat" type="range" min="0" max="1.4" step="0.02" value="1.40" />
+          <span id="markov-sat-value">1.40</span>
         </div>
         <div class="markov-panel-row">
           <label for="markov-hue">hue</label>
@@ -99,8 +91,8 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
         </div>
         <div class="markov-panel-row">
           <label for="markov-bgmix">bg</label>
-          <input id="markov-bgmix" type="range" min="0" max="0.6" step="0.02" value="0" />
-          <span id="markov-bgmix-value">0.00</span>
+          <input id="markov-bgmix" type="range" min="0" max="0.6" step="0.02" value="0.06" />
+          <span id="markov-bgmix-value">0.06</span>
         </div>
         <label class="markov-panel-toggle" for="markov-repguard">
           <input id="markov-repguard" type="checkbox" checked />

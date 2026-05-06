@@ -57,7 +57,6 @@ const ORDER_PRUNING = {
 const SOURCES = [
   { label: 'Sartor Resartus (Carlyle)',                 url: 'https://www.gutenberg.org/ebooks/1051.txt.utf-8'  },
   { label: 'Ethics (Spinoza)',                          url: 'https://www.gutenberg.org/ebooks/3800.txt.utf-8'  },
-  { label: 'Moby Dick (Melville)',                      url: 'https://www.gutenberg.org/ebooks/2701.txt.utf-8'  },
   { label: 'The Marriage of Heaven and Hell (Blake)',   url: 'https://www.gutenberg.org/ebooks/45315.txt.utf-8' },
   { label: 'Enneads vol. 1 (Plotinus)',                 url: 'https://www.gutenberg.org/ebooks/42930.txt.utf-8' },
   { label: 'Enneads vol. 2 (Plotinus)',                 url: 'https://www.gutenberg.org/ebooks/42931.txt.utf-8' },
@@ -74,6 +73,12 @@ const SOURCES = [
   { label: 'Micromegas (Voltaire)',                     url: 'https://www.gutenberg.org/ebooks/30123.txt.utf-8' },
   { label: 'In Praise of Folly (Erasmus)',              url: 'https://www.gutenberg.org/ebooks/30201.txt.utf-8' },
   { label: 'Sylvie and Bruno (Carroll)',                url: 'https://www.gutenberg.org/ebooks/620.txt.utf-8'   },
+  { label: 'The Purple Cloud (Shiel)',                  url: 'https://www.gutenberg.org/ebooks/11229.txt.utf-8' },
+  { label: 'Miss Lonelyhearts (West)',                  url: 'https://gutenberg.net.au/ebooks06/0608851h.html'  },
+  { label: 'Revelations of Divine Love (Julian)',       url: 'https://www.gutenberg.org/files/52958/52958-h/52958-h.htm' },
+  { label: "Le Morte d'Arthur vol. 1 (Malory)",         url: 'https://www.gutenberg.org/files/1251/1251-h/1251-h.htm'    },
+  { label: 'Kwaidan (Hearn)',                           url: 'https://www.gutenberg.org/cache/epub/1210/pg1210.txt'      },
+  { label: 'Eureka (Poe)',                              url: 'https://www.gutenberg.org/cache/epub/32037/pg32037.txt'    },
 ];
 
 const START = '<S>';
@@ -125,6 +130,30 @@ async function getCached(url) {
 }
 
 // ===== Cleanup ======================================================
+function htmlToText(html) {
+  let s = html;
+  s = s.replace(/<!--[\s\S]*?-->/g, ' ');
+  s = s.replace(/<(script|style|head)[\s\S]*?<\/\1>/gi, ' ');
+  s = s.replace(/<(?:p|br|div|h[1-6]|li|hr|tr|td|blockquote|section|article)\b[^>]*>/gi, '\n\n');
+  s = s.replace(/<\/(?:p|div|h[1-6]|li|tr|td|blockquote|section|article)>/gi, '\n\n');
+  s = s.replace(/<[^>]+>/g, '');
+  s = s
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&apos;/gi, "'")
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)));
+  return s;
+}
+
+function looksLikeHtml(text) {
+  const head = text.slice(0, 4000).toLowerCase();
+  return /<!doctype html|<html[\s>]|<head[\s>]|<body[\s>]/.test(head);
+}
+
 function stripGutenbergFrame(text) {
   // Strip Project Gutenberg license/header preamble and trailing license.
   const startIdx = text.search(/\*\*\*\s*START OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[\s\S]*?\*\*\*/i);
@@ -419,7 +448,8 @@ async function main() {
   for (const src of SOURCES) {
     try {
       const raw = await getCached(src.url);
-      const body = normalizeText(stripGutenbergFrame(raw));
+      const decoded = looksLikeHtml(raw) ? htmlToText(raw) : raw;
+      const body = normalizeText(stripGutenbergFrame(decoded));
       const paras = paragraphs(body);
       let sentencesFromSource = 0;
       let tokensFromSource = 0;

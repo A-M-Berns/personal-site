@@ -69,6 +69,19 @@ a:focus-visible {
   border-bottom-color: var(--accent);
 }
 
+/* Writing page: black highlight extends through the gaps between nav items. */
+.page-writing .site-nav {
+  display: inline-flex;
+  background: #000;
+  gap: 0;
+}
+.page-writing .site-nav a {
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+}
+.page-writing .site-nav a:first-child { padding-left: 0.28em; }
+.page-writing .site-nav a:last-child  { padding-right: 0.28em; }
+
 @media (max-width: 600px) {
   .site-nav { gap: 1.1rem; flex-wrap: wrap; }
 }
