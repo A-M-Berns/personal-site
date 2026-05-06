@@ -259,9 +259,6 @@ body.page-taste:has(.cover-wall-page) .page {
   animation-direction: var(--cover-row-direction, normal);
   will-change: transform;
 }
-.cover-row:hover .cover-row-track {
-  animation-play-state: paused;
-}
 .cover-wall.is-paused .cover-row-track,
 .cover-lightbox-open .cover-row-track {
   animation-play-state: paused;
