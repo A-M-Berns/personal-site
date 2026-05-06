@@ -1,0 +1,481 @@
+---
+import Base from '../../layouts/Base.astro';
+import albumCovers from '../../data/albumCovers.json';
+
+type AlbumCover = {
+  id: string;
+  artist: string;
+  title: string;
+  year: number | null;
+  cover512: string;
+  cover1024?: string;
+  dominantColor?: string;
+};
+
+const covers = (albumCovers as AlbumCover[])
+  .filter((cover) => cover.cover512)
+  .map((cover) => ({
+    id: cover.id,
+    artist: cover.artist,
+    title: cover.title,
+    year: cover.year,
+    src: cover.cover512,
+    hq: cover.cover1024 ?? cover.cover512,
+    dominantColor: cover.dominantColor ?? '#c8c4ba',
+  }));
+
+const initialCovers = covers.slice(0, 36);
+const labelFor = (cover: (typeof covers)[number]) =>
+  `${cover.artist} - ${cover.title}${cover.year ? ` (${cover.year})` : ''}`;
+---
+<Base
+  title="Album Covers - A. M. Berns"
+  description="A changing wall of album covers."
+  showNav={false}
+>
+  <div class="cover-wall-page">
+    <a class="cover-back" href="/taste" aria-label="Back to Taste">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6"></path>
+      </svg>
+    </a>
+
+    <div id="cover-wall" class="cover-wall" aria-label="Album cover gallery">
+      <div class="cover-row">
+        <div class="cover-row-track">
+          <div class="cover-row-set">
+            {initialCovers.slice(0, 12).map((cover) => (
+              <figure class="cover-tile" style={`--cover-accent: ${cover.dominantColor}`}>
+                <img
+                  src={cover.src}
+                  alt={labelFor(cover)}
+                  loading="eager"
+                  decoding="async"
+                />
+                <figcaption>
+                  <span class="cover-title">
+                    {cover.title}
+                  </span>
+                  <span class="cover-artist">
+                    {cover.artist}{cover.year ? ` (${cover.year})` : ''}
+                  </span>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script id="covers-data" type="application/json" set:html={JSON.stringify(covers)}></script>
+
+    <div class="anim-controls cover-controls">
+      <button id="covers-info" type="button" aria-label="About this cover wall">About</button>
+      <button id="covers-reset" type="button" aria-label="Reset cover wall">Reset</button>
+    </div>
+
+    <aside class="cover-dev-panel" aria-label="Cover wall developer controls">
+      <div class="cover-dev-panel-head">Covers</div>
+      <label class="cover-dev-field" for="covers-speed">
+        <span>speed</span>
+        <input id="covers-speed" type="range" min="0.2" max="3" step="0.1" value="1" />
+        <output id="covers-speed-value" for="covers-speed">1.0x</output>
+      </label>
+    </aside>
+
+    <dialog id="covers-about" class="anim-about" aria-labelledby="covers-about-title">
+      <h2 id="covers-about-title">Album covers</h2>
+      <p>
+        This page displays some albums whose covers I think are especially good. I can also vouch
+        for the excellent quality of the music for many of these albums, but I haven't listened to
+        all of them. Currently, {covers.length} albums are included in the display.
+      </p>
+    </dialog>
+
+    <dialog id="cover-lightbox" class="cover-lightbox" aria-label="Album cover preview">
+      <figure class="cover-lightbox-figure">
+        <img id="cover-lightbox-image" alt="" />
+        <figcaption id="cover-lightbox-caption"></figcaption>
+      </figure>
+    </dialog>
+  </div>
+</Base>
+
+<script>
+  type Cover = {
+    id: string;
+    artist: string;
+    title: string;
+    year: number | null;
+    src: string;
+    hq?: string;
+    dominantColor?: string;
+  };
+
+  const wall = document.getElementById('cover-wall') as HTMLElement | null;
+  const dataEl = document.getElementById('covers-data');
+  const resetButton = document.getElementById('covers-reset');
+  const infoButton = document.getElementById('covers-info');
+  const aboutDialog = document.getElementById('covers-about') as HTMLDialogElement | null;
+  const lightboxDialog = document.getElementById('cover-lightbox') as HTMLDialogElement | null;
+  const lightboxImage = document.getElementById('cover-lightbox-image') as HTMLImageElement | null;
+  const lightboxCaption = document.getElementById('cover-lightbox-caption');
+  const speedInput = document.getElementById('covers-speed') as HTMLInputElement | null;
+  const speedValue = document.getElementById('covers-speed-value');
+
+  if (wall) {
+    const covers = JSON.parse(dataEl?.textContent ?? '[]') as Cover[];
+    const SPEED_KEY = 'cover-wall-speed';
+    const SPEED_BASELINE = 0.7;
+    let activeSeed = 1;
+    let speedMultiplier = parseSpeed(speedInput?.value);
+    let currentRollCoverIds = new Set<string>();
+    let previousRollCoverIds = new Set<string>();
+    let activeLightboxTile: HTMLElement | null = null;
+
+    try {
+      speedMultiplier = parseSpeed(window.localStorage.getItem(SPEED_KEY) ?? String(speedMultiplier));
+    } catch (e) {}
+    if (speedInput) speedInput.value = String(speedMultiplier);
+    updateSpeedLabel();
+
+    function parseSpeed(value: string | undefined | null) {
+      const parsed = Number(value);
+      return clamp(Number.isFinite(parsed) ? parsed : 1, 0.2, 3);
+    }
+
+    function updateSpeedLabel() {
+      if (speedValue) speedValue.textContent = `${speedMultiplier.toFixed(1)}x`;
+    }
+
+    function rowDuration(rowIndex: number) {
+      return `${(80 + rowIndex * 11) / (speedMultiplier * SPEED_BASELINE)}s`;
+    }
+
+    function applySpeed() {
+      document.querySelectorAll<HTMLElement>('.cover-row').forEach((row, rowIndex) => {
+        row.style.setProperty('--cover-row-duration', rowDuration(rowIndex));
+      });
+      updateSpeedLabel();
+    }
+
+    function hashString(s: string) {
+      let h = 2166136261;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return h >>> 0;
+    }
+
+    function mulberry32(n: number) {
+      let t = n >>> 0;
+      return () => {
+        t += 0x6D2B79F5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function shuffle<T>(items: T[], rng: () => number) {
+      const next = items.slice();
+      for (let i = next.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [next[i], next[j]] = [next[j], next[i]];
+      }
+      return next;
+    }
+
+    function clamp(value: number, min: number, max: number) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function coverLayout() {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const shortSide = Math.min(viewportWidth, viewportHeight);
+      const padding = Math.round(clamp(shortSide * 0.025, 12, 32));
+      const gap = Math.round(clamp(viewportWidth * 0.011, 8, 18));
+      const minSize = 132;
+      const maxSize = 230;
+      const targetSize = clamp(shortSide / 4, 156, 218);
+      const usableWidth = Math.max(minSize, viewportWidth - padding * 2);
+      const usableHeight = Math.max(minSize, viewportHeight - padding * 2);
+      const maxColumns = Math.max(1, Math.floor((usableWidth + gap) / (minSize + gap)));
+      const maxRows = Math.max(1, Math.floor((usableHeight + gap) / (minSize + gap)));
+      const viewportRatio = viewportWidth / viewportHeight;
+      let best = {
+        columns: 1,
+        rows: 1,
+        size: Math.min(maxSize, usableWidth, usableHeight),
+        width: Math.min(maxSize, usableWidth, usableHeight),
+        height: Math.min(maxSize, usableWidth, usableHeight),
+        gap,
+        padding,
+        score: -Infinity,
+      };
+
+      for (let columns = 1; columns <= maxColumns; columns++) {
+        for (let rows = 1; rows <= maxRows; rows++) {
+          const size = Math.floor(Math.min(
+            maxSize,
+            (usableWidth - gap * (columns - 1)) / columns,
+            (usableHeight - gap * (rows - 1)) / rows,
+          ));
+          if (size < minSize) continue;
+
+          const width = columns * size + (columns - 1) * gap;
+          const height = rows * size + (rows - 1) * gap;
+          const coverage = (width * height) / (usableWidth * usableHeight);
+          const aspectError = Math.abs(width / height - viewportRatio);
+          const sizeError = Math.abs(size - targetSize) / targetSize;
+          const score = coverage * 2 - aspectError * 0.45 - sizeError * 0.65;
+
+          if (score > best.score) {
+            best = { columns, rows, size, width, height, gap, padding, score };
+          }
+        }
+      }
+
+      return best;
+    }
+
+    function chooseCovers(count: number, rng: () => number, avoidIds = new Set<string>()) {
+      const shuffled = shuffle(covers, rng);
+      const seenArtists = new Set<string>();
+      const selected: Cover[] = [];
+      const deferredRepeatedCovers: Cover[] = [];
+      const overflow: Cover[] = [];
+
+      for (const cover of shuffled) {
+        if (avoidIds.has(cover.id)) {
+          deferredRepeatedCovers.push(cover);
+          continue;
+        }
+        const artistKey = cover.artist.toLocaleLowerCase();
+        if (seenArtists.has(artistKey)) {
+          overflow.push(cover);
+        } else {
+          selected.push(cover);
+          seenArtists.add(artistKey);
+        }
+        if (selected.length === count) return selected;
+      }
+
+      for (const cover of overflow) {
+        selected.push(cover);
+        if (selected.length === count) break;
+      }
+      for (const cover of deferredRepeatedCovers) {
+        selected.push(cover);
+        if (selected.length === count) break;
+      }
+      return selected;
+    }
+
+    function labelFor(cover: Cover) {
+      const year = cover.year ? ` (${cover.year})` : '';
+      return `${cover.artist} - ${cover.title}${year}`;
+    }
+
+    function setLightboxCaption(cover: Cover) {
+      if (!lightboxCaption) return;
+      const title = document.createElement('span');
+      title.className = 'cover-title';
+      title.textContent = cover.title;
+
+      const artist = document.createElement('span');
+      artist.className = 'cover-artist';
+      artist.textContent = cover.year ? `${cover.artist} (${cover.year})` : cover.artist;
+
+      lightboxCaption.replaceChildren(title, artist);
+    }
+
+    function makeTile(cover: Cover) {
+      const figure = document.createElement('figure');
+      figure.className = 'cover-tile';
+      figure.tabIndex = 0;
+      figure.setAttribute('role', 'button');
+      figure.setAttribute('aria-label', `Open ${labelFor(cover)}`);
+      figure.dataset.coverId = cover.id;
+      figure.dataset.coverHq = cover.hq ?? cover.src;
+      figure.style.setProperty('--cover-accent', cover.dominantColor ?? '#c8c4ba');
+
+      const image = document.createElement('img');
+      image.src = cover.src;
+      image.alt = labelFor(cover);
+      image.loading = 'eager';
+      image.decoding = 'async';
+
+      const caption = document.createElement('figcaption');
+      const title = document.createElement('span');
+      title.className = 'cover-title';
+      title.textContent = cover.title;
+
+      const artist = document.createElement('span');
+      artist.className = 'cover-artist';
+      artist.textContent = cover.year ? `${cover.artist} (${cover.year})` : cover.artist;
+
+      caption.append(title, artist);
+      figure.append(image, caption);
+      return figure;
+    }
+
+    function setLightboxPaused(paused: boolean) {
+      wall.classList.toggle('is-paused', paused);
+    }
+
+    function releaseActiveTile() {
+      activeLightboxTile?.blur();
+      activeLightboxTile?.classList.remove('is-hovered');
+      activeLightboxTile = null;
+    }
+
+    function openLightbox(cover: Cover) {
+      if (!lightboxDialog || !lightboxImage || !lightboxCaption) return;
+      const previewSrc = cover.src;
+      const fullSrc = cover.hq ?? previewSrc;
+      lightboxImage.removeAttribute('src');
+      lightboxImage.dataset.fallbackSrc = previewSrc;
+      lightboxImage.src = fullSrc;
+      lightboxImage.alt = labelFor(cover);
+      setLightboxCaption(cover);
+      setLightboxPaused(true);
+      document.documentElement.classList.add('cover-lightbox-open');
+      if (!lightboxDialog.open) lightboxDialog.showModal();
+    }
+
+    function closeLightbox() {
+      document.documentElement.classList.remove('cover-lightbox-open');
+      setLightboxPaused(false);
+      releaseActiveTile();
+      if (lightboxDialog?.open) lightboxDialog.close();
+    }
+
+    function render(seed: number) {
+      const rng = mulberry32(seed);
+      const layout = coverLayout();
+      const selected = chooseCovers(
+        Math.min(covers.length, layout.columns * layout.rows),
+        rng,
+        previousRollCoverIds,
+      );
+      currentRollCoverIds = new Set(selected.map((cover) => cover.id));
+      wall.style.setProperty('--cover-tile-size', `${layout.size}px`);
+      wall.style.setProperty('--cover-grid-gap', `${layout.gap}px`);
+      wall.style.setProperty('--cover-row-count', String(layout.rows));
+      wall.style.setProperty('--cover-set-width', `${layout.width}px`);
+      wall.style.width = `${Math.min(window.innerWidth - layout.padding * 2, layout.width)}px`;
+      wall.style.height = `${layout.height}px`;
+      wall.replaceChildren(
+        ...Array.from({ length: layout.rows }, (_, rowIndex) => {
+          const rowCovers = selected.slice(
+            rowIndex * layout.columns,
+            (rowIndex + 1) * layout.columns,
+          );
+          const row = document.createElement('div');
+          row.className = 'cover-row';
+          row.style.setProperty('--cover-row-direction', rowIndex % 2 === 0 ? 'normal' : 'reverse');
+          row.style.setProperty('--cover-row-duration', rowDuration(rowIndex));
+
+          const track = document.createElement('div');
+          track.className = 'cover-row-track';
+          const setA = document.createElement('div');
+          setA.className = 'cover-row-set';
+          setA.replaceChildren(...rowCovers.map(makeTile));
+          const setB = setA.cloneNode(true);
+          track.replaceChildren(setA, setB);
+          row.append(track);
+          return row;
+        }),
+      );
+    }
+
+    function reset() {
+      previousRollCoverIds = currentRollCoverIds;
+      activeSeed = hashString(`${Date.now()}:${Math.random()}`);
+      render(activeSeed);
+    }
+
+    resetButton?.addEventListener('click', reset);
+    speedInput?.addEventListener('input', () => {
+      speedMultiplier = parseSpeed(speedInput.value);
+      try {
+        window.localStorage.setItem(SPEED_KEY, String(speedMultiplier));
+      } catch (e) {}
+      applySpeed();
+    });
+    wall.addEventListener('pointerover', (event) => {
+      const target = event.target as HTMLElement | null;
+      const tile = target?.closest('.cover-tile') as HTMLElement | null;
+      if (!tile || !wall.contains(tile)) return;
+      const relatedTarget = event.relatedTarget as Node | null;
+      if (relatedTarget && tile.contains(relatedTarget)) return;
+      tile.classList.add('is-hovered');
+    });
+    wall.addEventListener('pointerout', (event) => {
+      const target = event.target as HTMLElement | null;
+      const tile = target?.closest('.cover-tile') as HTMLElement | null;
+      if (!tile || !wall.contains(tile)) return;
+      const relatedTarget = event.relatedTarget as Node | null;
+      if (relatedTarget && tile.contains(relatedTarget)) return;
+      tile.classList.remove('is-hovered');
+    });
+    wall.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement | null;
+      const tile = target?.closest('.cover-tile') as HTMLElement | null;
+      if (!tile) return;
+      const coverId = tile.dataset.coverId;
+      if (!coverId) return;
+      const cover = covers.find((item) => item.id === coverId);
+      if (cover) {
+        tile.classList.remove('is-hovered');
+        activeLightboxTile = tile;
+        openLightbox(cover);
+      }
+    });
+    wall.addEventListener('keydown', (event) => {
+      const target = event.target as HTMLElement | null;
+      const tile = target?.closest('.cover-tile') as HTMLElement | null;
+      if (!tile) return;
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      const coverId = tile.dataset.coverId;
+      if (!coverId) return;
+      const cover = covers.find((item) => item.id === coverId);
+      if (cover) {
+        activeLightboxTile = tile;
+        openLightbox(cover);
+      }
+    });
+    window.addEventListener('resize', () => render(activeSeed));
+    infoButton?.addEventListener('click', () => aboutDialog?.showModal());
+    aboutDialog?.addEventListener('click', (event) => {
+      if (event.target === aboutDialog) aboutDialog.close();
+    });
+    lightboxImage?.addEventListener('error', () => {
+      const fallbackSrc = lightboxImage.dataset.fallbackSrc;
+      if (fallbackSrc && lightboxImage.src !== new URL(fallbackSrc, window.location.href).href) {
+        lightboxImage.src = fallbackSrc;
+      }
+    });
+    lightboxDialog?.addEventListener('click', (event) => {
+      if (event.target === lightboxDialog) closeLightbox();
+    });
+    lightboxDialog?.addEventListener('close', () => {
+      document.documentElement.classList.remove('cover-lightbox-open');
+      setLightboxPaused(false);
+      releaseActiveTile();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && lightboxDialog?.open) {
+        event.preventDefault();
+        closeLightbox();
+      }
+    });
+
+    reset();
+    applySpeed();
+  }
+</script>

@@ -1,0 +1,2162 @@
+[
+  {
+    "id": "m83-dead-cities-red-seas-and-lost-ghosts-2003",
+    "artist": "M83",
+    "title": "Dead Cities, Red Seas & Lost Ghosts",
+    "year": 2003,
+    "cover512": "/album-covers/m83-dead-cities-red-seas-and-lost-ghosts-2003-512.webp",
+    "cover1024": "/album-covers/m83-dead-cities-red-seas-and-lost-ghosts-2003.webp",
+    "dominantColor": "#d4e2dd",
+    "averageColor": "#9caaa8"
+  },
+  {
+    "id": "grace-jones-nightclubbing-1981",
+    "artist": "Grace Jones",
+    "title": "Nightclubbing",
+    "year": 1981,
+    "cover512": "/album-covers/grace-jones-nightclubbing-1981-512.webp",
+    "cover1024": "/album-covers/grace-jones-nightclubbing-1981.webp",
+    "dominantColor": "#241d1a",
+    "averageColor": "#604a3f"
+  },
+  {
+    "id": "richard-dawson-nothing-important-2014",
+    "artist": "Richard Dawson",
+    "title": "Nothing Important",
+    "year": 2014,
+    "cover512": "/album-covers/richard-dawson-nothing-important-2014-512.webp",
+    "cover1024": "/album-covers/richard-dawson-nothing-important-2014.webp",
+    "dominantColor": "#010101",
+    "averageColor": "#151413"
+  },
+  {
+    "id": "richard-dawson-peasant-2017",
+    "artist": "Richard Dawson",
+    "title": "Peasant",
+    "year": 2017,
+    "cover512": "/album-covers/richard-dawson-peasant-2017-512.webp",
+    "cover1024": "/album-covers/richard-dawson-peasant-2017.webp",
+    "dominantColor": "#486140",
+    "averageColor": "#5e5c31"
+  },
+  {
+    "id": "planxty-cold-blow-and-the-rainy-night-1974",
+    "artist": "Planxty",
+    "title": "Cold Blow and the Rainy Night",
+    "year": 1974,
+    "cover512": "/album-covers/planxty-cold-blow-and-the-rainy-night-1974-512.webp",
+    "cover1024": "/album-covers/planxty-cold-blow-and-the-rainy-night-1974.webp",
+    "dominantColor": "#172a84",
+    "averageColor": "#34395c"
+  },
+  {
+    "id": "july-july-1968",
+    "artist": "July",
+    "title": "July",
+    "year": 1968,
+    "cover512": "/album-covers/july-july-1968-512.webp",
+    "cover1024": "/album-covers/july-july-1968.webp",
+    "dominantColor": "#685049",
+    "averageColor": "#706c62"
+  },
+  {
+    "id": "the-incredible-string-band-the-5000-spirits-or-the-layers-of-the-onion-1967",
+    "artist": "The Incredible String Band",
+    "title": "The 5000 Spirits or the Layers of the Onion",
+    "year": 1967,
+    "cover512": "/album-covers/the-incredible-string-band-the-5000-spirits-or-the-layers-of-the-onion-1967-512.webp",
+    "cover1024": "/album-covers/the-incredible-string-band-the-5000-spirits-or-the-layers-of-the-onion-1967.webp",
+    "dominantColor": "#7f5842",
+    "averageColor": "#957355"
+  },
+  {
+    "id": "harumi-harumi-1968",
+    "artist": "Harumi",
+    "title": "Harumi",
+    "year": 1968,
+    "cover512": "/album-covers/harumi-harumi-1968-512.webp",
+    "cover1024": "/album-covers/harumi-harumi-1968.webp",
+    "dominantColor": "#4088c9",
+    "averageColor": "#6c7883"
+  },
+  {
+    "id": "grateful-dead-anthem-of-the-sun-1968",
+    "artist": "Grateful Dead",
+    "title": "Anthem of the Sun",
+    "year": 1968,
+    "cover512": "/album-covers/grateful-dead-anthem-of-the-sun-1968-512.webp",
+    "cover1024": "/album-covers/grateful-dead-anthem-of-the-sun-1968.webp",
+    "dominantColor": "#733bb1",
+    "averageColor": "#754980"
+  },
+  {
+    "id": "daau-we-need-new-animals-1998",
+    "artist": "DAAU",
+    "title": "We Need New Animals",
+    "year": 1998,
+    "cover512": "/album-covers/daau-we-need-new-animals-1998-512.webp",
+    "cover1024": "/album-covers/daau-we-need-new-animals-1998.webp",
+    "dominantColor": "#2c8a57",
+    "averageColor": "#526b4f"
+  },
+  {
+    "id": "gleemen-gleemen-1970",
+    "artist": "Gleemen",
+    "title": "Gleemen",
+    "year": 1970,
+    "cover512": "/album-covers/gleemen-gleemen-1970-512.webp",
+    "cover1024": "/album-covers/gleemen-gleemen-1970.webp",
+    "dominantColor": "#1c1c29",
+    "averageColor": "#6a6161"
+  },
+  {
+    "id": "melt-banana-fetch-2013",
+    "artist": "Melt-Banana",
+    "title": "Fetch",
+    "year": 2013,
+    "cover512": "/album-covers/melt-banana-fetch-2013-512.webp",
+    "cover1024": "/album-covers/melt-banana-fetch-2013.webp",
+    "dominantColor": "#445253",
+    "averageColor": "#898d83"
+  },
+  {
+    "id": "mort-garson-the-zodiac-cosmic-sounds-1967",
+    "artist": "Mort Garson",
+    "title": "The Zodiac: Cosmic Sounds",
+    "year": 1967,
+    "cover512": "/album-covers/mort-garson-the-zodiac-cosmic-sounds-1967-512.webp",
+    "cover1024": "/album-covers/mort-garson-the-zodiac-cosmic-sounds-1967.webp",
+    "dominantColor": "#2e2726",
+    "averageColor": "#5c4944"
+  },
+  {
+    "id": "gal-costa-gal-1969",
+    "artist": "Gal",
+    "title": "Gal",
+    "year": 1969,
+    "cover512": "/album-covers/gal-costa-gal-1969-512.webp",
+    "cover1024": "/album-covers/gal-costa-gal-1969.webp",
+    "dominantColor": "#182828",
+    "averageColor": "#684a4a"
+  },
+  {
+    "id": "the-books-the-way-out-2010",
+    "artist": "The Books",
+    "title": "The Way Out",
+    "year": 2010,
+    "cover512": "/album-covers/the-books-the-way-out-2010-512.webp",
+    "cover1024": "/album-covers/the-books-the-way-out-2010.webp",
+    "dominantColor": "#080808",
+    "averageColor": "#323024"
+  },
+  {
+    "id": "l-voag-the-way-out-1979",
+    "artist": "L Voag",
+    "title": "The Way Out",
+    "year": 1979,
+    "cover512": "/album-covers/l-voag-the-way-out-1979-512.webp",
+    "cover1024": "/album-covers/l-voag-the-way-out-1979.webp",
+    "dominantColor": "#363132",
+    "averageColor": "#66544d"
+  },
+  {
+    "id": "big-brother-ernie-joseph-confusion-1970",
+    "artist": "Big Brother Ernie Joseph",
+    "title": "Confusion",
+    "year": 1970,
+    "cover512": "/album-covers/big-brother-ernie-joseph-confusion-1970-512.webp",
+    "cover1024": "/album-covers/big-brother-ernie-joseph-confusion-1970.webp",
+    "dominantColor": "#948f86",
+    "averageColor": "#79746b"
+  },
+  {
+    "id": "albert-ayler-albert-ayler-in-greenwich-village-1967",
+    "artist": "Albert Ayler",
+    "title": "Albert Ayler in Greenwich Village",
+    "year": 1967,
+    "cover512": "/album-covers/albert-ayler-albert-ayler-in-greenwich-village-1967-512.webp",
+    "cover1024": "/album-covers/albert-ayler-albert-ayler-in-greenwich-village-1967.webp",
+    "dominantColor": "#c7471e",
+    "averageColor": "#a0674a"
+  },
+  {
+    "id": "audience-friend-s-friend-s-friend-1970",
+    "artist": "Audience",
+    "title": "Friend's Friend's Friend",
+    "year": 1970,
+    "cover512": "/album-covers/audience-friend-s-friend-s-friend-1970-512.webp",
+    "cover1024": "/album-covers/audience-friend-s-friend-s-friend-1970.webp",
+    "dominantColor": "#416841",
+    "averageColor": "#667449"
+  },
+  {
+    "id": "art-supernatural-fairy-tales-1967",
+    "artist": "Art",
+    "title": "Supernatural Fairy Tales",
+    "year": 1967,
+    "cover512": "/album-covers/art-supernatural-fairy-tales-1967-512.webp",
+    "cover1024": "/album-covers/art-supernatural-fairy-tales-1967.webp",
+    "dominantColor": "#c15916",
+    "averageColor": "#7a5e39"
+  },
+  {
+    "id": "asg-win-us-over-2007",
+    "artist": "ASG",
+    "title": "Win Us Over",
+    "year": 2007,
+    "cover512": "/album-covers/asg-win-us-over-2007-512.webp",
+    "cover1024": "/album-covers/asg-win-us-over-2007.webp",
+    "dominantColor": "#3f5c63",
+    "averageColor": "#776e56"
+  },
+  {
+    "id": "arzachel-arzachel-1969",
+    "artist": "Arzachel",
+    "title": "Arzachel",
+    "year": 1969,
+    "cover512": "/album-covers/arzachel-arzachel-1969-512.webp",
+    "cover1024": "/album-covers/arzachel-arzachel-1969.webp",
+    "dominantColor": "#31607b",
+    "averageColor": "#2a485a"
+  },
+  {
+    "id": "yazz-ahmed-la-saboteuse-2017",
+    "artist": "Yazz Ahmed",
+    "title": "La saboteuse",
+    "year": 2017,
+    "cover512": "/album-covers/yazz-ahmed-la-saboteuse-2017-512.webp",
+    "cover1024": "/album-covers/yazz-ahmed-la-saboteuse-2017.webp",
+    "dominantColor": "#383334",
+    "averageColor": "#6d6159"
+  },
+  {
+    "id": "gentle-giant-gentle-giant-1970",
+    "artist": "Gentle Giant",
+    "title": "Gentle Giant",
+    "year": 1970,
+    "cover512": "/album-covers/gentle-giant-gentle-giant-1970-512.webp",
+    "cover1024": "/album-covers/gentle-giant-gentle-giant-1970.webp",
+    "dominantColor": "#8c613e",
+    "averageColor": "#ae876f"
+  },
+  {
+    "id": "king-crimson-in-the-court-of-the-crimson-king-1969",
+    "artist": "King Crimson",
+    "title": "In the Court of the Crimson King",
+    "year": 1969,
+    "cover512": "/album-covers/king-crimson-in-the-court-of-the-crimson-king-1969-512.webp",
+    "cover1024": "/album-covers/king-crimson-in-the-court-of-the-crimson-king-1969.webp",
+    "dominantColor": "#c39394",
+    "averageColor": "#a9676d"
+  },
+  {
+    "id": "gabestok-n-gang-r-dden-altid-r-dden-2021",
+    "artist": "Gabestok",
+    "title": "Én gang rådden, altid rådden",
+    "year": 2021,
+    "cover512": "/album-covers/gabestok-n-gang-r-dden-altid-r-dden-2021-512.webp",
+    "cover1024": "/album-covers/gabestok-n-gang-r-dden-altid-r-dden-2021.webp",
+    "dominantColor": "#36404e",
+    "averageColor": "#6f565f"
+  },
+  {
+    "id": "david-axelrod-song-of-innocence-1968",
+    "artist": "David Axelrod",
+    "title": "Song of Innocence",
+    "year": 1968,
+    "cover512": "/album-covers/david-axelrod-song-of-innocence-1968-512.webp",
+    "cover1024": "/album-covers/david-axelrod-song-of-innocence-1968.webp",
+    "dominantColor": "#312627",
+    "averageColor": "#755d44"
+  },
+  {
+    "id": "the-golden-dawn-power-plant-1967",
+    "artist": "The Golden Dawn",
+    "title": "Power Plant",
+    "year": 1967,
+    "cover512": "/album-covers/the-golden-dawn-power-plant-1967-512.webp",
+    "cover1024": "/album-covers/the-golden-dawn-power-plant-1967.webp",
+    "dominantColor": "#ea7baf",
+    "averageColor": "#9f707c"
+  },
+  {
+    "id": "the-mothers-the-grand-wazoo-1972",
+    "artist": "The Mothers",
+    "title": "The Grand Wazoo",
+    "year": 1972,
+    "cover512": "/album-covers/the-mothers-the-grand-wazoo-1972-512.webp",
+    "cover1024": "/album-covers/the-mothers-the-grand-wazoo-1972.webp",
+    "dominantColor": "#6d594a",
+    "averageColor": "#746759"
+  },
+  {
+    "id": "the-beach-boys-surf-s-up-1971",
+    "artist": "The Beach Boys",
+    "title": "Surf's Up",
+    "year": 1971,
+    "cover512": "/album-covers/the-beach-boys-surf-s-up-1971-512.webp",
+    "cover1024": "/album-covers/the-beach-boys-surf-s-up-1971.webp",
+    "dominantColor": "#182828",
+    "averageColor": "#314e4e"
+  },
+  {
+    "id": "the-beach-boys-smiley-smile-1967",
+    "artist": "The Beach Boys",
+    "title": "Smiley Smile",
+    "year": 1967,
+    "cover512": "/album-covers/the-beach-boys-smiley-smile-1967-512.webp",
+    "cover1024": "/album-covers/the-beach-boys-smiley-smile-1967.webp",
+    "dominantColor": "#5e6138",
+    "averageColor": "#777e58"
+  },
+  {
+    "id": "the-beach-boys-friends-1968",
+    "artist": "The Beach Boys",
+    "title": "Friends",
+    "year": 1968,
+    "cover512": "/album-covers/the-beach-boys-friends-1968-512.webp",
+    "cover1024": "/album-covers/the-beach-boys-friends-1968.webp",
+    "dominantColor": "#f8f8f8",
+    "averageColor": "#989a7b"
+  },
+  {
+    "id": "sweet-smoke-just-a-poke-1970",
+    "artist": "Sweet Smoke",
+    "title": "Just a Poke",
+    "year": 1970,
+    "cover512": "/album-covers/sweet-smoke-just-a-poke-1970-512.webp",
+    "cover1024": "/album-covers/sweet-smoke-just-a-poke-1970.webp",
+    "dominantColor": "#5e7880",
+    "averageColor": "#9c9185"
+  },
+  {
+    "id": "miles-davis-filles-de-kilimanjaro-1969",
+    "artist": "Miles Davis",
+    "title": "Filles de Kilimanjaro",
+    "year": 1969,
+    "cover512": "/album-covers/miles-davis-filles-de-kilimanjaro-1969-512.webp",
+    "cover1024": "/album-covers/miles-davis-filles-de-kilimanjaro-1969.webp",
+    "dominantColor": "#463023",
+    "averageColor": "#4a2b1c"
+  },
+  {
+    "id": "moonbow-chiaroscuro-2015",
+    "artist": "Moonbow",
+    "title": "Chiaroscuro",
+    "year": 2015,
+    "cover512": "/album-covers/moonbow-chiaroscuro-2015-512.webp",
+    "cover1024": "/album-covers/moonbow-chiaroscuro-2015.webp",
+    "dominantColor": "#070711",
+    "averageColor": "#4e5056"
+  },
+  {
+    "id": "quella-vecchia-locanda-il-tempo-della-gioia-1974",
+    "artist": "Quella Vecchia Locanda",
+    "title": "Il tempo della gioia",
+    "year": 1974,
+    "cover512": "/album-covers/quella-vecchia-locanda-il-tempo-della-gioia-1974-512.webp",
+    "cover1024": "/album-covers/quella-vecchia-locanda-il-tempo-della-gioia-1974.webp",
+    "dominantColor": "#db8257",
+    "averageColor": "#b47959"
+  },
+  {
+    "id": "kate-bush-never-for-ever-1980",
+    "artist": "Kate Bush",
+    "title": "Never for Ever",
+    "year": 1980,
+    "cover512": "/album-covers/kate-bush-never-for-ever-1980-512.webp",
+    "cover1024": "/album-covers/kate-bush-never-for-ever-1980.webp",
+    "dominantColor": "#252525",
+    "averageColor": "#615f4a"
+  },
+  {
+    "id": "premiata-forneria-marconi-storia-di-un-minuto-1972",
+    "artist": "Premiata Forneria Marconi",
+    "title": "Storia di un minuto",
+    "year": 1972,
+    "cover512": "/album-covers/premiata-forneria-marconi-storia-di-un-minuto-1972-512.webp",
+    "cover1024": "/album-covers/premiata-forneria-marconi-storia-di-un-minuto-1972.webp",
+    "dominantColor": "#b21818",
+    "averageColor": "#a85339"
+  },
+  {
+    "id": "premiata-forneria-marconi-per-un-amico-1972",
+    "artist": "Premiata Forneria Marconi",
+    "title": "Per un amico",
+    "year": 1972,
+    "cover512": "/album-covers/premiata-forneria-marconi-per-un-amico-1972-512.webp",
+    "cover1024": "/album-covers/premiata-forneria-marconi-per-un-amico-1972.webp",
+    "dominantColor": "#e8b9a9",
+    "averageColor": "#a09f80"
+  },
+  {
+    "id": "camel-mirage-1974",
+    "artist": "Camel",
+    "title": "Mirage",
+    "year": 1974,
+    "cover512": "/album-covers/camel-mirage-1974-512.webp",
+    "cover1024": "/album-covers/camel-mirage-1974.webp",
+    "dominantColor": "#fbde8e",
+    "averageColor": "#e5c580"
+  },
+  {
+    "id": "camel-camel-1973",
+    "artist": "Camel",
+    "title": "Camel",
+    "year": 1973,
+    "cover512": "/album-covers/camel-camel-1973-512.webp",
+    "cover1024": "/album-covers/camel-camel-1973.webp",
+    "dominantColor": "#9cb59a",
+    "averageColor": "#9da391"
+  },
+  {
+    "id": "van-der-graaf-generator-the-least-we-can-do-is-wave-to-each-other-1970",
+    "artist": "Van der Graaf Generator",
+    "title": "The Least We Can Do Is Wave to Each Other",
+    "year": 1970,
+    "cover512": "/album-covers/van-der-graaf-generator-the-least-we-can-do-is-wave-to-each-other-1970-512.webp",
+    "cover1024": "/album-covers/van-der-graaf-generator-the-least-we-can-do-is-wave-to-each-other-1970.webp",
+    "dominantColor": "#584f42",
+    "averageColor": "#6b5049"
+  },
+  {
+    "id": "king-crimson-larks-tongues-in-aspic-1973",
+    "artist": "King Crimson",
+    "title": "Larks' Tongues in Aspic",
+    "year": 1973,
+    "cover512": "/album-covers/king-crimson-larks-tongues-in-aspic-1973-512.webp",
+    "cover1024": "/album-covers/king-crimson-larks-tongues-in-aspic-1973.webp",
+    "dominantColor": "#ffffff",
+    "averageColor": "#e6d3c3"
+  },
+  {
+    "id": "genesis-foxtrot-1972",
+    "artist": "Genesis",
+    "title": "Foxtrot",
+    "year": 1972,
+    "cover512": "/album-covers/genesis-foxtrot-1972-512.webp",
+    "cover1024": "/album-covers/genesis-foxtrot-1972.webp",
+    "dominantColor": "#b4e7da",
+    "averageColor": "#99b7a6"
+  },
+  {
+    "id": "hawkwind-space-ritual-1973",
+    "artist": "Hawkwind",
+    "title": "Space Ritual",
+    "year": 1973,
+    "cover512": "/album-covers/hawkwind-space-ritual-1973-512.webp",
+    "cover1024": "/album-covers/hawkwind-space-ritual-1973.webp",
+    "dominantColor": "#eb9a69",
+    "averageColor": "#757a6d"
+  },
+  {
+    "id": "hawkwind-in-search-of-space-1971",
+    "artist": "Hawkwind",
+    "title": "In Search of Space",
+    "year": 1971,
+    "cover512": "/album-covers/hawkwind-in-search-of-space-1971-512.webp",
+    "cover1024": "/album-covers/hawkwind-in-search-of-space-1971.webp",
+    "dominantColor": "#100b06",
+    "averageColor": "#422d1a"
+  },
+  {
+    "id": "pavement-watery-domestic-1992",
+    "artist": "Pavement",
+    "title": "Watery, Domestic",
+    "year": 1992,
+    "cover512": "/album-covers/pavement-watery-domestic-1992-512.webp",
+    "cover1024": "/album-covers/pavement-watery-domestic-1992.webp",
+    "dominantColor": "#8e2b2e",
+    "averageColor": "#8d5b4f"
+  },
+  {
+    "id": "glenn-branca-the-ascension-1981",
+    "artist": "Glenn Branca",
+    "title": "The Ascension",
+    "year": 1981,
+    "cover512": "/album-covers/glenn-branca-the-ascension-1981-512.webp",
+    "cover1024": "/album-covers/glenn-branca-the-ascension-1981.webp",
+    "dominantColor": "#fdfefc",
+    "averageColor": "#bec0bf"
+  },
+  {
+    "id": "sufjan-stevens-the-ascension-2020",
+    "artist": "Sufjan Stevens",
+    "title": "The Ascension",
+    "year": 2020,
+    "cover512": "/album-covers/sufjan-stevens-the-ascension-2020-512.webp",
+    "cover1024": "/album-covers/sufjan-stevens-the-ascension-2020.webp",
+    "dominantColor": "#ae7969",
+    "averageColor": "#7b6663"
+  },
+  {
+    "id": "nisennenmondai-rockon-2006",
+    "artist": "Nisennenmondai",
+    "title": "ろくおん [Rockon]",
+    "year": 2006,
+    "cover512": "/album-covers/nisennenmondai-rockon-2006-512.webp",
+    "cover1024": "/album-covers/nisennenmondai-rockon-2006.webp",
+    "dominantColor": "#83b137",
+    "averageColor": "#809b36"
+  },
+  {
+    "id": "geese-getting-killed-2025",
+    "artist": "Geese",
+    "title": "Getting Killed",
+    "year": 2025,
+    "cover512": "/album-covers/geese-getting-killed-2025-512.webp",
+    "cover1024": "/album-covers/geese-getting-killed-2025.webp",
+    "dominantColor": "#f8f8f8",
+    "averageColor": "#a4c1dc"
+  },
+  {
+    "id": "boredoms-vision-creation-newsun-1999",
+    "artist": "Boredoms",
+    "title": "Vision Creation Newsun",
+    "year": 1999,
+    "cover512": "/album-covers/boredoms-vision-creation-newsun-1999-512.webp",
+    "cover1024": "/album-covers/boredoms-vision-creation-newsun-1999.webp",
+    "dominantColor": "#d8d8e8",
+    "averageColor": "#a8bcc5"
+  },
+  {
+    "id": "dead-kennedys-frankenchrist-1985",
+    "artist": "Dead Kennedys",
+    "title": "Frankenchrist",
+    "year": 1985,
+    "cover512": "/album-covers/dead-kennedys-frankenchrist-1985-512.webp",
+    "cover1024": "/album-covers/dead-kennedys-frankenchrist-1985.webp",
+    "dominantColor": "#9eada3",
+    "averageColor": "#797a6e"
+  },
+  {
+    "id": "avey-tare-and-panda-bear-spirit-they-re-gone-spirit-they-ve-vanished-2000",
+    "artist": "Avey Tare and Panda Bear",
+    "title": "Spirit They're Gone Spirit They've Vanished",
+    "year": 2000,
+    "cover512": "/album-covers/avey-tare-and-panda-bear-spirit-they-re-gone-spirit-they-ve-vanished-2000-512.webp",
+    "cover1024": "/album-covers/avey-tare-and-panda-bear-spirit-they-re-gone-spirit-they-ve-vanished-2000.webp",
+    "dominantColor": "#2a2732",
+    "averageColor": "#3d3840"
+  },
+  {
+    "id": "roland-kayn-tektra-1984",
+    "artist": "Roland Kayn",
+    "title": "Tektra",
+    "year": 1984,
+    "cover512": "/album-covers/roland-kayn-tektra-1984-512.webp",
+    "cover1024": "/album-covers/roland-kayn-tektra-1984.webp",
+    "dominantColor": "#000026",
+    "averageColor": "#3a2f3e"
+  },
+  {
+    "id": "vince-staples-big-fish-theory-2017",
+    "artist": "Vince Staples",
+    "title": "Big Fish Theory",
+    "year": 2017,
+    "cover512": "/album-covers/vince-staples-big-fish-theory-2017-512.webp",
+    "cover1024": "/album-covers/vince-staples-big-fish-theory-2017.webp",
+    "dominantColor": "#104fa1",
+    "averageColor": "#8a4d53"
+  },
+  {
+    "id": "santana-abraxas-1970",
+    "artist": "Santana",
+    "title": "Abraxas",
+    "year": 1970,
+    "cover512": "/album-covers/santana-abraxas-1970-512.webp",
+    "cover1024": "/album-covers/santana-abraxas-1970.webp",
+    "dominantColor": "#ada0a6",
+    "averageColor": "#80757b"
+  },
+  {
+    "id": "geordie-greep-the-new-sound-2024",
+    "artist": "Geordie Greep",
+    "title": "The New Sound",
+    "year": 2024,
+    "cover512": "/album-covers/geordie-greep-the-new-sound-2024-512.webp",
+    "cover1024": "/album-covers/geordie-greep-the-new-sound-2024.webp",
+    "dominantColor": "#ffca08",
+    "averageColor": "#8e772d"
+  },
+  {
+    "id": "visible-cloaks-reassemblage-2017",
+    "artist": "Visible Cloaks",
+    "title": "Reassemblage",
+    "year": 2017,
+    "cover512": "/album-covers/visible-cloaks-reassemblage-2017-512.webp",
+    "cover1024": "/album-covers/visible-cloaks-reassemblage-2017.webp",
+    "dominantColor": "#f4f3f9",
+    "averageColor": "#d0d1d9"
+  },
+  {
+    "id": "miles-davis-bitches-brew-1970",
+    "artist": "Miles Davis",
+    "title": "Bitches Brew",
+    "year": 1970,
+    "cover512": "/album-covers/miles-davis-bitches-brew-1970-512.webp",
+    "cover1024": "/album-covers/miles-davis-bitches-brew-1970.webp",
+    "dominantColor": "#dcc077",
+    "averageColor": "#8a8c7c"
+  },
+  {
+    "id": "tom-z-fabrication-defect-com-defeito-de-fabrica-o-1998",
+    "artist": "Tom Zé",
+    "title": "Fabrication Defect: Com defeito de fabricação",
+    "year": 1998,
+    "cover512": "/album-covers/tom-z-fabrication-defect-com-defeito-de-fabrica-o-1998-512.webp",
+    "cover1024": "/album-covers/tom-z-fabrication-defect-com-defeito-de-fabrica-o-1998.webp",
+    "dominantColor": "#ee622f",
+    "averageColor": "#b47956"
+  },
+  {
+    "id": "the-necks-body-2018",
+    "artist": "The Necks",
+    "title": "Body",
+    "year": 2018,
+    "cover512": "/album-covers/the-necks-body-2018-512.webp",
+    "cover1024": "/album-covers/the-necks-body-2018.webp",
+    "dominantColor": "#192b52",
+    "averageColor": "#3f4a4a"
+  },
+  {
+    "id": "tetsu-inoue-ambiant-otaku-1994",
+    "artist": "Tetsu Inoue",
+    "title": "Ambiant Otaku",
+    "year": 1994,
+    "cover512": "/album-covers/tetsu-inoue-ambiant-otaku-1994-512.webp",
+    "cover1024": "/album-covers/tetsu-inoue-ambiant-otaku-1994.webp",
+    "dominantColor": "#010101",
+    "averageColor": "#522817"
+  },
+  {
+    "id": "popol-vuh-in-den-g-rten-pharaos-1971",
+    "artist": "Popol Vuh",
+    "title": "In den Gärten Pharaos",
+    "year": 1971,
+    "cover512": "/album-covers/popol-vuh-in-den-g-rten-pharaos-1971-512.webp",
+    "cover1024": "/album-covers/popol-vuh-in-den-g-rten-pharaos-1971.webp",
+    "dominantColor": "#cc5827",
+    "averageColor": "#dc6228"
+  },
+  {
+    "id": "fennesz-knoxville-2010",
+    "artist": "Fennesz",
+    "title": "Knoxville",
+    "year": 2010,
+    "cover512": "/album-covers/fennesz-knoxville-2010-512.webp",
+    "cover1024": "/album-covers/fennesz-knoxville-2010.webp",
+    "dominantColor": "#181e1f",
+    "averageColor": "#545959"
+  },
+  {
+    "id": "don-caballero-don-caballero-2-2020",
+    "artist": "Don Caballero",
+    "title": "Don Caballero 2",
+    "year": 2020,
+    "cover512": "/album-covers/don-caballero-don-caballero-2-2020-512.webp",
+    "cover1024": "/album-covers/don-caballero-don-caballero-2-2020.webp",
+    "dominantColor": "#173957",
+    "averageColor": "#3e5f72"
+  },
+  {
+    "id": "cecil-taylor-unit-structures-1977",
+    "artist": "Cecil Taylor",
+    "title": "Unit Structures",
+    "year": 1977,
+    "cover512": "/album-covers/cecil-taylor-unit-structures-1977-512.webp",
+    "cover1024": "/album-covers/cecil-taylor-unit-structures-1977.webp",
+    "dominantColor": "#4f3b62",
+    "averageColor": "#a99290"
+  },
+  {
+    "id": "dura-mercury-2021",
+    "artist": "Dura",
+    "title": "Mercury",
+    "year": 2021,
+    "cover512": "/album-covers/dura-mercury-2021-512.webp",
+    "cover1024": "/album-covers/dura-mercury-2021.webp",
+    "dominantColor": "#435384",
+    "averageColor": "#6a6e84"
+  },
+  {
+    "id": "shoeb-ahmad-breather-loops-2022",
+    "artist": "Shoeb Ahmad",
+    "title": "Breather Loops",
+    "year": 2022,
+    "cover512": "/album-covers/shoeb-ahmad-breather-loops-2022-512.webp",
+    "cover1024": "/album-covers/shoeb-ahmad-breather-loops-2022.webp",
+    "dominantColor": "#c09736",
+    "averageColor": "#ce8e21"
+  },
+  {
+    "id": "curved-light-reversion-2017",
+    "artist": "Curved Light",
+    "title": "Reversion",
+    "year": 2017,
+    "cover512": "/album-covers/curved-light-reversion-2017-512.webp",
+    "cover1024": "/album-covers/curved-light-reversion-2017.webp",
+    "dominantColor": "#217a94",
+    "averageColor": "#446b75"
+  },
+  {
+    "id": "ryoji-ikeda-test-pattern-2008",
+    "artist": "Ryoji Ikeda",
+    "title": "Test Pattern",
+    "year": 2008,
+    "cover512": "/album-covers/ryoji-ikeda-test-pattern-2008-512.webp",
+    "cover1024": "/album-covers/ryoji-ikeda-test-pattern-2008.webp",
+    "dominantColor": "#fafafa",
+    "averageColor": "#9e9e9e"
+  },
+  {
+    "id": "howard-finster-man-of-many-voices-1985",
+    "artist": "Howard Finster",
+    "title": "Man of Many Voices",
+    "year": 1985,
+    "cover512": "/album-covers/howard-finster-man-of-many-voices-1985-512.webp",
+    "cover1024": "/album-covers/howard-finster-man-of-many-voices-1985.webp",
+    "dominantColor": "#ad1b04",
+    "averageColor": "#9e3c2d"
+  },
+  {
+    "id": "faith-coloccia-smelter-2025",
+    "artist": "Faith Coloccia",
+    "title": "Smelter",
+    "year": 2025,
+    "cover512": "/album-covers/faith-coloccia-smelter-2025-512.webp",
+    "cover1024": "/album-covers/faith-coloccia-smelter-2025.webp",
+    "dominantColor": "#717fa5",
+    "averageColor": "#4c6295"
+  },
+  {
+    "id": "skee-mask-pool-2021",
+    "artist": "Skee Mask",
+    "title": "Pool",
+    "year": 2021,
+    "cover512": "/album-covers/skee-mask-pool-2021-512.webp",
+    "cover1024": "/album-covers/skee-mask-pool-2021.webp",
+    "dominantColor": "#9b9745",
+    "averageColor": "#7d7b39"
+  },
+  {
+    "id": "julia-holter-something-in-the-room-she-moves-2024",
+    "artist": "Julia Holter",
+    "title": "Something in the Room She Moves",
+    "year": 2024,
+    "cover512": "/album-covers/julia-holter-something-in-the-room-she-moves-2024-512.webp",
+    "cover1024": "/album-covers/julia-holter-something-in-the-room-she-moves-2024.webp",
+    "dominantColor": "#020305",
+    "averageColor": "#412b1e"
+  },
+  {
+    "id": "various-artists-miniatures-1980",
+    "artist": "Various Artists",
+    "title": "Miniatures",
+    "year": 1980,
+    "cover512": "/album-covers/various-artists-miniatures-1980-512.webp",
+    "cover1024": "/album-covers/various-artists-miniatures-1980.webp",
+    "dominantColor": "#efdbcd",
+    "averageColor": "#867972"
+  },
+  {
+    "id": "robert-turman-way-down-1987",
+    "artist": "Robert Turman",
+    "title": "Way Down",
+    "year": 1987,
+    "cover512": "/album-covers/robert-turman-way-down-1987-512.webp",
+    "cover1024": "/album-covers/robert-turman-way-down-1987.webp",
+    "dominantColor": "#6f6f6f",
+    "averageColor": "#656565"
+  },
+  {
+    "id": "anthony-davis-variations-in-dream-time-1983",
+    "artist": "Anthony Davis",
+    "title": "Variations in Dream-Time",
+    "year": 1983,
+    "cover512": "/album-covers/anthony-davis-variations-in-dream-time-1983-512.webp",
+    "cover1024": "/album-covers/anthony-davis-variations-in-dream-time-1983.webp",
+    "dominantColor": "#dfddde",
+    "averageColor": "#77645b"
+  },
+  {
+    "id": "anthony-davis-lady-of-the-mirrors-1991",
+    "artist": "Anthony Davis",
+    "title": "Lady of the Mirrors",
+    "year": 1991,
+    "cover512": "/album-covers/anthony-davis-lady-of-the-mirrors-1991-512.webp",
+    "cover1024": "/album-covers/anthony-davis-lady-of-the-mirrors-1991.webp",
+    "dominantColor": "#ffffff",
+    "averageColor": "#808384"
+  },
+  {
+    "id": "boris-flood-2000",
+    "artist": "Boris",
+    "title": "Flood",
+    "year": 2000,
+    "cover512": "/album-covers/boris-flood-2000-512.webp",
+    "cover1024": "/album-covers/boris-flood-2000.webp",
+    "dominantColor": "#2579a5",
+    "averageColor": "#328db4"
+  },
+  {
+    "id": "oneohtrix-point-never-tranquilizer-2025",
+    "artist": "Oneohtrix Point Never",
+    "title": "Tranquilizer",
+    "year": 2025,
+    "cover512": "/album-covers/oneohtrix-point-never-tranquilizer-2025-512.webp",
+    "cover1024": "/album-covers/oneohtrix-point-never-tranquilizer-2025.webp",
+    "dominantColor": "#0e366b",
+    "averageColor": "#65757d"
+  },
+  {
+    "id": "jega-spectrum-1998",
+    "artist": "Jega",
+    "title": "Spectrum",
+    "year": 1998,
+    "cover512": "/album-covers/jega-spectrum-1998-512.webp",
+    "cover1024": "/album-covers/jega-spectrum-1998.webp",
+    "dominantColor": "#000000",
+    "averageColor": "#4d3b28"
+  },
+  {
+    "id": "bull-of-heaven-024-some-vast-unknown-2008",
+    "artist": "Bull of Heaven",
+    "title": "024: Some Vast Unknown",
+    "year": 2008,
+    "cover512": "/album-covers/bull-of-heaven-024-some-vast-unknown-2008-512.webp",
+    "cover1024": "/album-covers/bull-of-heaven-024-some-vast-unknown-2008.webp",
+    "dominantColor": "#020202",
+    "averageColor": "#555a5e"
+  },
+  {
+    "id": "bull-of-heaven-008-a-wall-between-two-gardens-2008",
+    "artist": "Bull of Heaven",
+    "title": "008: A Wall Between Two Gardens",
+    "year": 2008,
+    "cover512": "/album-covers/bull-of-heaven-008-a-wall-between-two-gardens-2008-512.webp",
+    "cover1024": "/album-covers/bull-of-heaven-008-a-wall-between-two-gardens-2008.webp",
+    "dominantColor": "#5d5d5d",
+    "averageColor": "#717171"
+  },
+  {
+    "id": "the-rolling-stones-their-satanic-majesties-request-1967",
+    "artist": "The Rolling Stones",
+    "title": "Their Satanic Majesties Request",
+    "year": 1967,
+    "cover512": "/album-covers/the-rolling-stones-their-satanic-majesties-request-1967-512.webp",
+    "cover1024": "/album-covers/the-rolling-stones-their-satanic-majesties-request-1967.webp",
+    "dominantColor": "#5b94bd",
+    "averageColor": "#7685a0"
+  },
+  {
+    "id": "lightning-bolt-hypermagic-mountain-2005",
+    "artist": "Lightning Bolt",
+    "title": "Hypermagic Mountain",
+    "year": 2005,
+    "cover512": "/album-covers/lightning-bolt-hypermagic-mountain-2005-512.webp",
+    "cover1024": "/album-covers/lightning-bolt-hypermagic-mountain-2005.webp",
+    "dominantColor": "#727c42",
+    "averageColor": "#966f2e"
+  },
+  {
+    "id": "cream-disraeli-gears-1967",
+    "artist": "Cream",
+    "title": "Disraeli Gears",
+    "year": 1967,
+    "cover512": "/album-covers/cream-disraeli-gears-1967-512.webp",
+    "cover1024": "/album-covers/cream-disraeli-gears-1967.webp",
+    "dominantColor": "#e24167",
+    "averageColor": "#9b4455"
+  },
+  {
+    "id": "comus-first-utterance-1995",
+    "artist": "Comus",
+    "title": "First Utterance",
+    "year": 1995,
+    "cover512": "/album-covers/comus-first-utterance-1995-512.webp",
+    "cover1024": "/album-covers/comus-first-utterance-1995.webp",
+    "dominantColor": "#202122",
+    "averageColor": "#7c7a79"
+  },
+  {
+    "id": "frank-bretschneider-suite-nuit-2014",
+    "artist": "Frank Bretschneider",
+    "title": "Suite Nuit",
+    "year": 2014,
+    "cover512": "/album-covers/frank-bretschneider-suite-nuit-2014-512.webp",
+    "cover1024": "/album-covers/frank-bretschneider-suite-nuit-2014.webp",
+    "dominantColor": "#987956",
+    "averageColor": "#6d644a"
+  },
+  {
+    "id": "acid-mothers-temple-and-the-melting-paraiso-u-f-o-iao-chant-from-the-melting-paraiso-underground-freak-out-2012",
+    "artist": "Acid Mothers Temple & The Melting Paraiso U.F.O.",
+    "title": "IAO Chant From the Melting Paraiso Underground Freak Out",
+    "year": 2012,
+    "cover512": "/album-covers/acid-mothers-temple-and-the-melting-paraiso-u-f-o-iao-chant-from-the-melting-paraiso-underground-freak-out-2012-512.webp",
+    "cover1024": "/album-covers/acid-mothers-temple-and-the-melting-paraiso-u-f-o-iao-chant-from-the-melting-paraiso-underground-freak-out-2012.webp",
+    "dominantColor": "#c50805",
+    "averageColor": "#642736"
+  },
+  {
+    "id": "charles-mingus-let-my-children-hear-music-1972",
+    "artist": "Charles Mingus",
+    "title": "Let My Children Hear Music",
+    "year": 1972,
+    "cover512": "/album-covers/charles-mingus-let-my-children-hear-music-1972-512.webp",
+    "cover1024": "/album-covers/charles-mingus-let-my-children-hear-music-1972.webp",
+    "dominantColor": "#3b271e",
+    "averageColor": "#30231b"
+  },
+  {
+    "id": "flying-lotus-pattern-grid-world",
+    "artist": "Flying Lotus",
+    "title": "Pattern+Grid World",
+    "year": null,
+    "cover512": "/album-covers/flying-lotus-pattern-grid-world-512.webp",
+    "cover1024": "/album-covers/flying-lotus-pattern-grid-world.webp",
+    "dominantColor": "#7a7239",
+    "averageColor": "#777740"
+  },
+  {
+    "id": "duke-ellington-anatomy-of-a-murder-1959",
+    "artist": "Duke Ellington",
+    "title": "Anatomy of a Murder",
+    "year": 1959,
+    "cover512": "/album-covers/duke-ellington-anatomy-of-a-murder-1959-512.webp",
+    "cover1024": "/album-covers/duke-ellington-anatomy-of-a-murder-1959.webp",
+    "dominantColor": "#f87831",
+    "averageColor": "#e36c49"
+  },
+  {
+    "id": "miles-davis-quintet-relaxin-with-the-miles-davis-quintet-1958",
+    "artist": "Miles Davis Quintet",
+    "title": "Relaxin' With the Miles Davis Quintet",
+    "year": 1958,
+    "cover512": "/album-covers/miles-davis-quintet-relaxin-with-the-miles-davis-quintet-1958-512.webp",
+    "cover1024": "/album-covers/miles-davis-quintet-relaxin-with-the-miles-davis-quintet-1958.webp",
+    "dominantColor": "#151512",
+    "averageColor": "#7e6d17"
+  },
+  {
+    "id": "brainticket-cottonwoodhill-2011",
+    "artist": "Brainticket",
+    "title": "Cottonwoodhill",
+    "year": 2011,
+    "cover512": "/album-covers/brainticket-cottonwoodhill-2011-512.webp",
+    "cover1024": "/album-covers/brainticket-cottonwoodhill-2011.webp",
+    "dominantColor": "#525a4d",
+    "averageColor": "#6e5647"
+  },
+  {
+    "id": "the-samuel-jackson-five-easily-misunderstood-2005",
+    "artist": "The Samuel Jackson Five",
+    "title": "Easily Misunderstood",
+    "year": 2005,
+    "cover512": "/album-covers/the-samuel-jackson-five-easily-misunderstood-2005-512.webp",
+    "cover1024": "/album-covers/the-samuel-jackson-five-easily-misunderstood-2005.webp",
+    "dominantColor": "#ffffff",
+    "averageColor": "#eab874"
+  },
+  {
+    "id": "mark-fell-manitutshu-2011",
+    "artist": "Mark Fell",
+    "title": "Manitutshu",
+    "year": 2011,
+    "cover512": "/album-covers/mark-fell-manitutshu-2011-512.webp",
+    "cover1024": "/album-covers/mark-fell-manitutshu-2011.webp",
+    "dominantColor": "#909090",
+    "averageColor": "#6e6e6e"
+  },
+  {
+    "id": "oren-ambarchi-intermission-2000-2008-2009",
+    "artist": "Oren Ambarchi",
+    "title": "Intermission 2000-2008",
+    "year": 2009,
+    "cover512": "/album-covers/oren-ambarchi-intermission-2000-2008-2009-512.webp",
+    "cover1024": "/album-covers/oren-ambarchi-intermission-2000-2008-2009.webp",
+    "dominantColor": "#817047",
+    "averageColor": "#7c755e"
+  },
+  {
+    "id": "king-gizzard-and-the-lizard-wizard-flying-microtonal-banana-2017",
+    "artist": "King Gizzard and The Lizard Wizard",
+    "title": "Flying Microtonal Banana",
+    "year": 2017,
+    "cover512": "/album-covers/king-gizzard-and-the-lizard-wizard-flying-microtonal-banana-2017-512.webp",
+    "cover1024": "/album-covers/king-gizzard-and-the-lizard-wizard-flying-microtonal-banana-2017.webp",
+    "dominantColor": "#232122",
+    "averageColor": "#56554e"
+  },
+  {
+    "id": "king-gizzard-and-the-lizard-wizard-quarters-2015",
+    "artist": "King Gizzard & The Lizard Wizard",
+    "title": "Quarters!",
+    "year": 2015,
+    "cover512": "/album-covers/king-gizzard-and-the-lizard-wizard-quarters-2015-512.webp",
+    "cover1024": "/album-covers/king-gizzard-and-the-lizard-wizard-quarters-2015.webp",
+    "dominantColor": "#282828",
+    "averageColor": "#9c7c67"
+  },
+  {
+    "id": "thinking-fellers-union-local-282-strangers-from-the-universe-1994",
+    "artist": "Thinking Fellers Union Local 282",
+    "title": "Strangers From the Universe",
+    "year": 1994,
+    "cover512": "/album-covers/thinking-fellers-union-local-282-strangers-from-the-universe-1994-512.webp",
+    "cover1024": "/album-covers/thinking-fellers-union-local-282-strangers-from-the-universe-1994.webp",
+    "dominantColor": "#f7a3cb",
+    "averageColor": "#ca92a9"
+  },
+  {
+    "id": "vanishing-twin-afternoon-x-2023",
+    "artist": "Vanishing Twin",
+    "title": "Afternoon X",
+    "year": 2023,
+    "cover512": "/album-covers/vanishing-twin-afternoon-x-2023-512.webp",
+    "cover1024": "/album-covers/vanishing-twin-afternoon-x-2023.webp",
+    "dominantColor": "#236362",
+    "averageColor": "#4e524a"
+  },
+  {
+    "id": "vanishing-twin-ookii-gekkou-2021",
+    "artist": "Vanishing Twin",
+    "title": "Ookii Gekkou",
+    "year": 2021,
+    "cover512": "/album-covers/vanishing-twin-ookii-gekkou-2021-512.webp",
+    "cover1024": "/album-covers/vanishing-twin-ookii-gekkou-2021.webp",
+    "dominantColor": "#fd5eac",
+    "averageColor": "#9e607f"
+  },
+  {
+    "id": "autechre-garbage-1995",
+    "artist": "Autechre",
+    "title": "Garbage",
+    "year": 1995,
+    "cover512": "/album-covers/autechre-garbage-1995-512.webp",
+    "cover1024": "/album-covers/autechre-garbage-1995.webp",
+    "dominantColor": "#191c5a",
+    "averageColor": "#342c5b"
+  },
+  {
+    "id": "organized-konfusion-stress-the-extinction-agenda-1994",
+    "artist": "Organized Konfusion",
+    "title": "Stress: The Extinction Agenda",
+    "year": 1994,
+    "cover512": "/album-covers/organized-konfusion-stress-the-extinction-agenda-1994-512.webp",
+    "cover1024": "/album-covers/organized-konfusion-stress-the-extinction-agenda-1994.webp",
+    "dominantColor": "#583d34",
+    "averageColor": "#6e5345"
+  },
+  {
+    "id": "the-jimi-hendrix-experience-axis-bold-as-love-1967",
+    "artist": "The Jimi Hendrix Experience",
+    "title": "Axis: Bold as Love",
+    "year": 1967,
+    "cover512": "/album-covers/the-jimi-hendrix-experience-axis-bold-as-love-1967-512.webp",
+    "cover1024": "/album-covers/the-jimi-hendrix-experience-axis-bold-as-love-1967.webp",
+    "dominantColor": "#da7353",
+    "averageColor": "#b06467"
+  },
+  {
+    "id": "moonshake-the-sound-your-eyes-can-follow-1994",
+    "artist": "Moonshake",
+    "title": "The Sound Your Eyes Can Follow",
+    "year": 1994,
+    "cover512": "/album-covers/moonshake-the-sound-your-eyes-can-follow-1994-512.webp",
+    "cover1024": "/album-covers/moonshake-the-sound-your-eyes-can-follow-1994.webp",
+    "dominantColor": "#403c7f",
+    "averageColor": "#8e7567"
+  },
+  {
+    "id": "liquid-liquid-optimo-1983",
+    "artist": "Liquid Liquid",
+    "title": "Optimo",
+    "year": 1983,
+    "cover512": "/album-covers/liquid-liquid-optimo-1983-512.webp",
+    "cover1024": "/album-covers/liquid-liquid-optimo-1983.webp",
+    "dominantColor": "#58510f",
+    "averageColor": "#a74f0d"
+  },
+  {
+    "id": "fripp-and-eno-no-pussyfooting-1973",
+    "artist": "Fripp & Eno",
+    "title": "(No Pussyfooting)",
+    "year": 1973,
+    "cover512": "/album-covers/fripp-and-eno-no-pussyfooting-1973-512.webp",
+    "cover1024": "/album-covers/fripp-and-eno-no-pussyfooting-1973.webp",
+    "dominantColor": "#86afad",
+    "averageColor": "#77867b"
+  },
+  {
+    "id": "dirty-three-toward-the-low-sun-2012",
+    "artist": "Dirty Three",
+    "title": "Toward the Low Sun",
+    "year": 2012,
+    "cover512": "/album-covers/dirty-three-toward-the-low-sun-2012-512.webp",
+    "cover1024": "/album-covers/dirty-three-toward-the-low-sun-2012.webp",
+    "dominantColor": "#4a2f2b",
+    "averageColor": "#54504a"
+  },
+  {
+    "id": "dirty-three-love-changes-everything-2024",
+    "artist": "Dirty Three",
+    "title": "Love Changes Everything",
+    "year": 2024,
+    "cover512": "/album-covers/dirty-three-love-changes-everything-2024-512.webp",
+    "cover1024": "/album-covers/dirty-three-love-changes-everything-2024.webp",
+    "dominantColor": "#a66d70",
+    "averageColor": "#825e59"
+  },
+  {
+    "id": "dirty-three-horse-stories-1996",
+    "artist": "Dirty Three",
+    "title": "Horse Stories",
+    "year": 1996,
+    "cover512": "/album-covers/dirty-three-horse-stories-1996-512.webp",
+    "cover1024": "/album-covers/dirty-three-horse-stories-1996.webp",
+    "dominantColor": "#272228",
+    "averageColor": "#91888c"
+  },
+  {
+    "id": "oneohtrix-point-never-replica-2011",
+    "artist": "Oneohtrix Point Never",
+    "title": "Replica",
+    "year": 2011,
+    "cover512": "/album-covers/oneohtrix-point-never-replica-2011-512.webp",
+    "cover1024": "/album-covers/oneohtrix-point-never-replica-2011.webp",
+    "dominantColor": "#ffffff",
+    "averageColor": "#9f9f9f"
+  },
+  {
+    "id": "susumu-yokota-symbol-2004",
+    "artist": "Susumu Yokota",
+    "title": "Symbol",
+    "year": 2004,
+    "cover512": "/album-covers/susumu-yokota-symbol-2004-512.webp",
+    "cover1024": "/album-covers/susumu-yokota-symbol-2004.webp",
+    "dominantColor": "#282808",
+    "averageColor": "#836339"
+  },
+  {
+    "id": "coil-black-antlers-2004",
+    "artist": "Coil",
+    "title": "Black Antlers",
+    "year": 2004,
+    "cover512": "/album-covers/coil-black-antlers-2004-512.webp",
+    "cover1024": "/album-covers/coil-black-antlers-2004.webp",
+    "dominantColor": "#d9d8df",
+    "averageColor": "#bebabe"
+  },
+  {
+    "id": "laurie-anderson-landfall-2018",
+    "artist": "Laurie Anderson",
+    "title": "Landfall",
+    "year": 2018,
+    "cover512": "/album-covers/laurie-anderson-landfall-2018-512.webp",
+    "cover1024": "/album-covers/laurie-anderson-landfall-2018.webp",
+    "dominantColor": "#494949",
+    "averageColor": "#373737"
+  },
+  {
+    "id": "annea-lockwood-thousand-year-dreaming-floating-world-2007",
+    "artist": "Annea Lockwood",
+    "title": "Thousand Year Dreaming / Floating World",
+    "year": 2007,
+    "cover512": "/album-covers/annea-lockwood-thousand-year-dreaming-floating-world-2007-512.webp",
+    "cover1024": "/album-covers/annea-lockwood-thousand-year-dreaming-floating-world-2007.webp",
+    "dominantColor": "#544684",
+    "averageColor": "#713d4f"
+  },
+  {
+    "id": "songs-ohia-didn-t-it-rain-2002",
+    "artist": "Songs: Ohia",
+    "title": "Didn't It Rain",
+    "year": 2002,
+    "cover512": "/album-covers/songs-ohia-didn-t-it-rain-2002-512.webp",
+    "cover1024": "/album-covers/songs-ohia-didn-t-it-rain-2002.webp",
+    "dominantColor": "#000000",
+    "averageColor": "#282a2a"
+  },
+  {
+    "id": "songs-ohia-the-magnolia-electric-co-2003",
+    "artist": "Songs: Ohia",
+    "title": "The Magnolia Electric Co.",
+    "year": 2003,
+    "cover512": "/album-covers/songs-ohia-the-magnolia-electric-co-2003-512.webp",
+    "cover1024": "/album-covers/songs-ohia-the-magnolia-electric-co-2003.webp",
+    "dominantColor": "#2d2a26",
+    "averageColor": "#827c81"
+  },
+  {
+    "id": "laika-good-looking-blues-2000",
+    "artist": "Laika",
+    "title": "Good Looking Blues",
+    "year": 2000,
+    "cover512": "/album-covers/laika-good-looking-blues-2000-512.webp",
+    "cover1024": "/album-covers/laika-good-looking-blues-2000.webp",
+    "dominantColor": "#ffffff",
+    "averageColor": "#bec1d8"
+  },
+  {
+    "id": "mariah-utakata-no-hibi-1983",
+    "artist": "Mariah",
+    "title": "うたかたの日々 [Utakata no hibi]",
+    "year": 1983,
+    "cover512": "/album-covers/mariah-utakata-no-hibi-1983-512.webp",
+    "cover1024": "/album-covers/mariah-utakata-no-hibi-1983.webp",
+    "dominantColor": "#f0bdae",
+    "averageColor": "#cd927c"
+  },
+  {
+    "id": "hala-strana-hala-strana-2003",
+    "artist": "Hala Strana",
+    "title": "Hala Strana",
+    "year": 2003,
+    "cover512": "/album-covers/hala-strana-hala-strana-2003-512.webp",
+    "cover1024": "/album-covers/hala-strana-hala-strana-2003.webp",
+    "dominantColor": "#f7f6e9",
+    "averageColor": "#8e8385"
+  },
+  {
+    "id": "yasuaki-shimizu-kakashi-2017",
+    "artist": "清水靖晃 [Yasuaki Shimizu]",
+    "title": "Kakashi",
+    "year": 2017,
+    "cover512": "/album-covers/yasuaki-shimizu-kakashi-2017-512.webp",
+    "cover1024": "/album-covers/yasuaki-shimizu-kakashi-2017.webp",
+    "dominantColor": "#ca2728",
+    "averageColor": "#b64237"
+  },
+  {
+    "id": "pharoah-sanders-love-in-us-all-2003",
+    "artist": "Pharoah Sanders",
+    "title": "Love in Us All",
+    "year": 2003,
+    "cover512": "/album-covers/pharoah-sanders-love-in-us-all-2003-512.webp",
+    "cover1024": "/album-covers/pharoah-sanders-love-in-us-all-2003.webp",
+    "dominantColor": "#5567c2",
+    "averageColor": "#444d87"
+  },
+  {
+    "id": "pharoah-sanders-elevation-1974",
+    "artist": "Pharoah Sanders",
+    "title": "Elevation",
+    "year": 1974,
+    "cover512": "/album-covers/pharoah-sanders-elevation-1974-512.webp",
+    "cover1024": "/album-covers/pharoah-sanders-elevation-1974.webp",
+    "dominantColor": "#41b8ee",
+    "averageColor": "#439ccb"
+  },
+  {
+    "id": "andrew-hill-compulsion-1967",
+    "artist": "Andrew Hill",
+    "title": "Compulsion",
+    "year": 1967,
+    "cover512": "/album-covers/andrew-hill-compulsion-1967-512.webp",
+    "cover1024": "/album-covers/andrew-hill-compulsion-1967.webp",
+    "dominantColor": "#dad5c6",
+    "averageColor": "#817d73"
+  },
+  {
+    "id": "seefeel-pure-impure-1993",
+    "artist": "Seefeel",
+    "title": "Pure, Impure",
+    "year": 1993,
+    "cover512": "/album-covers/seefeel-pure-impure-1993-512.webp",
+    "cover1024": "/album-covers/seefeel-pure-impure-1993.webp",
+    "dominantColor": "#4a7572",
+    "averageColor": "#796d53"
+  },
+  {
+    "id": "mccoy-tyner-extensions-1973",
+    "artist": "McCoy Tyner",
+    "title": "Extensions",
+    "year": 1973,
+    "cover512": "/album-covers/mccoy-tyner-extensions-1973-512.webp",
+    "cover1024": "/album-covers/mccoy-tyner-extensions-1973.webp",
+    "dominantColor": "#965941",
+    "averageColor": "#94704c"
+  },
+  {
+    "id": "mccoy-tyner-focal-point-1976",
+    "artist": "McCoy Tyner",
+    "title": "Focal Point",
+    "year": 1976,
+    "cover512": "/album-covers/mccoy-tyner-focal-point-1976-512.webp",
+    "cover1024": "/album-covers/mccoy-tyner-focal-point-1976.webp",
+    "dominantColor": "#8d8070",
+    "averageColor": "#807972"
+  },
+  {
+    "id": "sun-city-girls-bright-surroundings-dark-beginnings-1993",
+    "artist": "Sun City Girls",
+    "title": "Bright Surroundings Dark Beginnings",
+    "year": 1993,
+    "cover512": "/album-covers/sun-city-girls-bright-surroundings-dark-beginnings-1993-512.webp",
+    "cover1024": "/album-covers/sun-city-girls-bright-surroundings-dark-beginnings-1993.webp",
+    "dominantColor": "#ffffff",
+    "averageColor": "#a6a6a6"
+  },
+  {
+    "id": "don-cherry-organic-music-society-1972",
+    "artist": "Don Cherry",
+    "title": "Organic Music Society",
+    "year": 1972,
+    "cover512": "/album-covers/don-cherry-organic-music-society-1972-512.webp",
+    "cover1024": "/album-covers/don-cherry-organic-music-society-1972.webp",
+    "dominantColor": "#dddedc",
+    "averageColor": "#a0807d"
+  },
+  {
+    "id": "the-beatles-sgt-pepper-s-lonely-hearts-club-band-1967",
+    "artist": "The Beatles",
+    "title": "Sgt. Pepper's Lonely Hearts Club Band",
+    "year": 1967,
+    "cover512": "/album-covers/the-beatles-sgt-pepper-s-lonely-hearts-club-band-1967-512.webp",
+    "cover1024": "/album-covers/the-beatles-sgt-pepper-s-lonely-hearts-club-band-1967.webp",
+    "dominantColor": "#906c53",
+    "averageColor": "#675b53"
+  },
+  {
+    "id": "amanaz-africa-2008",
+    "artist": "Amanaz",
+    "title": "Africa",
+    "year": 2008,
+    "cover512": "/album-covers/amanaz-africa-2008-512.webp",
+    "cover1024": "/album-covers/amanaz-africa-2008.webp",
+    "dominantColor": "#ead32c",
+    "averageColor": "#837a2e"
+  },
+  {
+    "id": "funkadelic-cosmic-slop-1973",
+    "artist": "Funkadelic",
+    "title": "Cosmic Slop",
+    "year": 1973,
+    "cover512": "/album-covers/funkadelic-cosmic-slop-1973-512.webp",
+    "cover1024": "/album-covers/funkadelic-cosmic-slop-1973.webp",
+    "dominantColor": "#b98955",
+    "averageColor": "#775741"
+  },
+  {
+    "id": "weyes-blood-titanic-rising-2019",
+    "artist": "Weyes Blood",
+    "title": "Titanic Rising",
+    "year": 2019,
+    "cover512": "/album-covers/weyes-blood-titanic-rising-2019-512.webp",
+    "cover1024": "/album-covers/weyes-blood-titanic-rising-2019.webp",
+    "dominantColor": "#181818",
+    "averageColor": "#626a6d"
+  },
+  {
+    "id": "animal-collective-sung-tongs-2004",
+    "artist": "Animal Collective",
+    "title": "Sung Tongs",
+    "year": 2004,
+    "cover512": "/album-covers/animal-collective-sung-tongs-2004-512.webp",
+    "cover1024": "/album-covers/animal-collective-sung-tongs-2004.webp",
+    "dominantColor": "#7e0d08",
+    "averageColor": "#762e16"
+  },
+  {
+    "id": "women-women-2008",
+    "artist": "Women",
+    "title": "Women",
+    "year": 2008,
+    "cover512": "/album-covers/women-women-2008-512.webp",
+    "cover1024": "/album-covers/women-women-2008.webp",
+    "dominantColor": "#888387",
+    "averageColor": "#6b696e"
+  },
+  {
+    "id": "women-public-strain-2010",
+    "artist": "Women",
+    "title": "Public Strain",
+    "year": 2010,
+    "cover512": "/album-covers/women-public-strain-2010-512.webp",
+    "cover1024": "/album-covers/women-public-strain-2010.webp",
+    "dominantColor": "#71684b",
+    "averageColor": "#aaa182"
+  },
+  {
+    "id": "the-olivia-tremor-control-black-foliage-animation-music-volume-1-1999",
+    "artist": "The Olivia Tremor Control",
+    "title": "Black Foliage: Animation Music Volume 1",
+    "year": 1999,
+    "cover512": "/album-covers/the-olivia-tremor-control-black-foliage-animation-music-volume-1-1999-512.webp",
+    "cover1024": "/album-covers/the-olivia-tremor-control-black-foliage-animation-music-volume-1-1999.webp",
+    "dominantColor": "#536d50",
+    "averageColor": "#82693a"
+  },
+  {
+    "id": "doom-born-like-this-2009",
+    "artist": "DOOM",
+    "title": "Born Like This",
+    "year": 2009,
+    "cover512": "/album-covers/doom-born-like-this-2009-512.webp",
+    "cover1024": "/album-covers/doom-born-like-this-2009.webp",
+    "dominantColor": "#282818",
+    "averageColor": "#554b37"
+  },
+  {
+    "id": "exuma-exuma-1970",
+    "artist": "Exuma",
+    "title": "Exuma",
+    "year": 1970,
+    "cover512": "/album-covers/exuma-exuma-1970-512.webp",
+    "cover1024": "/album-covers/exuma-exuma-1970.webp",
+    "dominantColor": "#70412a",
+    "averageColor": "#5e3725"
+  },
+  {
+    "id": "mekons-heaven-and-hell-the-very-best-of-the-mekons-2004",
+    "artist": "Mekons",
+    "title": "Heaven & Hell: The Very Best of The Mekons",
+    "year": 2004,
+    "cover512": "/album-covers/mekons-heaven-and-hell-the-very-best-of-the-mekons-2004-512.webp",
+    "cover1024": "/album-covers/mekons-heaven-and-hell-the-very-best-of-the-mekons-2004.webp",
+    "dominantColor": "#5d7e7f",
+    "averageColor": "#5f564f"
+  },
+  {
+    "id": "mekons-exquisite-2020",
+    "artist": "Mekons",
+    "title": "Exquisite",
+    "year": 2020,
+    "cover512": "/album-covers/mekons-exquisite-2020-512.webp",
+    "cover1024": "/album-covers/mekons-exquisite-2020.webp",
+    "dominantColor": "#95957c",
+    "averageColor": "#878772"
+  },
+  {
+    "id": "mekons-so-good-it-hurts-1988",
+    "artist": "Mekons",
+    "title": "So Good It Hurts",
+    "year": 1988,
+    "cover512": "/album-covers/mekons-so-good-it-hurts-1988-512.webp",
+    "cover1024": "/album-covers/mekons-so-good-it-hurts-1988.webp",
+    "dominantColor": "#1f2820",
+    "averageColor": "#4d4d3c"
+  },
+  {
+    "id": "the-red-krayola-the-parable-of-arable-land-1967",
+    "artist": "The Red Krayola",
+    "title": "The Parable of Arable Land",
+    "year": 1967,
+    "cover512": "/album-covers/the-red-krayola-the-parable-of-arable-land-1967-512.webp",
+    "cover1024": "/album-covers/the-red-krayola-the-parable-of-arable-land-1967.webp",
+    "dominantColor": "#472327",
+    "averageColor": "#67544a"
+  },
+  {
+    "id": "magazine-real-life-1978",
+    "artist": "Magazine",
+    "title": "Real Life",
+    "year": 1978,
+    "cover512": "/album-covers/magazine-real-life-1978-512.webp",
+    "cover1024": "/album-covers/magazine-real-life-1978.webp",
+    "dominantColor": "#364041",
+    "averageColor": "#6f726d"
+  },
+  {
+    "id": "panda-bear-person-pitch-2007",
+    "artist": "Panda Bear",
+    "title": "Person Pitch",
+    "year": 2007,
+    "cover512": "/album-covers/panda-bear-person-pitch-2007-512.webp",
+    "cover1024": "/album-covers/panda-bear-person-pitch-2007.webp",
+    "dominantColor": "#9a8f76",
+    "averageColor": "#6f6656"
+  },
+  {
+    "id": "do-make-say-think-winter-hymn-country-hymn-secret-hymn-2003",
+    "artist": "Do Make Say Think",
+    "title": "Winter Hymn Country Hymn Secret Hymn",
+    "year": 2003,
+    "cover512": "/album-covers/do-make-say-think-winter-hymn-country-hymn-secret-hymn-2003-512.webp",
+    "cover1024": "/album-covers/do-make-say-think-winter-hymn-country-hymn-secret-hymn-2003.webp",
+    "dominantColor": "#656166",
+    "averageColor": "#454045"
+  },
+  {
+    "id": "tradition-captain-ganja-and-the-space-patrol-1980",
+    "artist": "Tradition",
+    "title": "Captain Ganja & the Space Patrol",
+    "year": 1980,
+    "cover512": "/album-covers/tradition-captain-ganja-and-the-space-patrol-1980-512.webp",
+    "cover1024": "/album-covers/tradition-captain-ganja-and-the-space-patrol-1980.webp",
+    "dominantColor": "#d3c092",
+    "averageColor": "#848174"
+  },
+  {
+    "id": "keith-hudson-flesh-of-my-skin-blood-of-my-blood-1975",
+    "artist": "Keith Hudson",
+    "title": "Flesh of My Skin: Blood of My Blood",
+    "year": 1975,
+    "cover512": "/album-covers/keith-hudson-flesh-of-my-skin-blood-of-my-blood-1975-512.webp",
+    "cover1024": "/album-covers/keith-hudson-flesh-of-my-skin-blood-of-my-blood-1975.webp",
+    "dominantColor": "#9f9ea3",
+    "averageColor": "#686568"
+  },
+  {
+    "id": "james-holden-and-the-animal-spirits-the-animal-spirits-2017",
+    "artist": "James Holden & The Animal Spirits",
+    "title": "The Animal Spirits",
+    "year": 2017,
+    "cover512": "/album-covers/james-holden-and-the-animal-spirits-the-animal-spirits-2017-512.webp",
+    "cover1024": "/album-covers/james-holden-and-the-animal-spirits-the-animal-spirits-2017.webp",
+    "dominantColor": "#354e42",
+    "averageColor": "#46473a"
+  },
+  {
+    "id": "big-brother-and-the-holding-company-cheap-thrills-1990",
+    "artist": "Big Brother & The Holding Company",
+    "title": "Cheap Thrills",
+    "year": 1990,
+    "cover512": "/album-covers/big-brother-and-the-holding-company-cheap-thrills-1990-512.webp",
+    "cover1024": "/album-covers/big-brother-and-the-holding-company-cheap-thrills-1990.webp",
+    "dominantColor": "#987a5e",
+    "averageColor": "#988b76"
+  },
+  {
+    "id": "william-parker-trencadis-a-selection-from-migration-of-silence-into-and-out-of-the-tone-world-2020",
+    "artist": "William Parker",
+    "title": "Trencadis: A Selection From Migration of Silence Into and Out of the Tone World",
+    "year": 2020,
+    "cover512": "/album-covers/william-parker-trencadis-a-selection-from-migration-of-silence-into-and-out-of-the-tone-world-2020-512.webp",
+    "cover1024": "/album-covers/william-parker-trencadis-a-selection-from-migration-of-silence-into-and-out-of-the-tone-world-2020.webp",
+    "dominantColor": "#f1f1f4",
+    "averageColor": "#989ca5"
+  },
+  {
+    "id": "sonic-youth-goo-1990",
+    "artist": "Sonic Youth",
+    "title": "Goo",
+    "year": 1990,
+    "cover512": "/album-covers/sonic-youth-goo-1990-512.webp",
+    "cover1024": "/album-covers/sonic-youth-goo-1990.webp",
+    "dominantColor": "#ffffff",
+    "averageColor": "#9a9a9a"
+  },
+  {
+    "id": "boards-of-canada-geogaddi-2002",
+    "artist": "Boards of Canada",
+    "title": "Geogaddi",
+    "year": 2002,
+    "cover512": "/album-covers/boards-of-canada-geogaddi-2002-512.webp",
+    "cover1024": "/album-covers/boards-of-canada-geogaddi-2002.webp",
+    "dominantColor": "#b82818",
+    "averageColor": "#c2461b"
+  },
+  {
+    "id": "pram-sargasso-sea-1995",
+    "artist": "Pram",
+    "title": "Sargasso Sea",
+    "year": 1995,
+    "cover512": "/album-covers/pram-sargasso-sea-1995-512.webp",
+    "cover1024": "/album-covers/pram-sargasso-sea-1995.webp",
+    "dominantColor": "#2c2929",
+    "averageColor": "#6c5f4e"
+  },
+  {
+    "id": "quickspace-precious-falling-1998",
+    "artist": "Quickspace",
+    "title": "Precious Falling",
+    "year": 1998,
+    "cover512": "/album-covers/quickspace-precious-falling-1998-512.webp",
+    "cover1024": "/album-covers/quickspace-precious-falling-1998.webp",
+    "dominantColor": "#757964",
+    "averageColor": "#57594c"
+  },
+  {
+    "id": "natural-information-society-since-time-is-gravity-2023",
+    "artist": "Natural Information Society",
+    "title": "Since Time Is Gravity",
+    "year": 2023,
+    "cover512": "/album-covers/natural-information-society-since-time-is-gravity-2023-512.webp",
+    "cover1024": "/album-covers/natural-information-society-since-time-is-gravity-2023.webp",
+    "dominantColor": "#080618",
+    "averageColor": "#6c6463"
+  },
+  {
+    "id": "natural-information-society-totality-2025",
+    "artist": "Natural Information Society",
+    "title": "Totality",
+    "year": 2025,
+    "cover512": "/album-covers/natural-information-society-totality-2025-512.webp",
+    "cover1024": "/album-covers/natural-information-society-totality-2025.webp",
+    "dominantColor": "#c0a39e",
+    "averageColor": "#746a5c"
+  },
+  {
+    "id": "natural-information-society-with-evan-parker-descension-out-of-our-constrictions-2021",
+    "artist": "Natural Information Society with Evan Parker",
+    "title": "descension (Out of Our Constrictions)",
+    "year": 2021,
+    "cover512": "/album-covers/natural-information-society-with-evan-parker-descension-out-of-our-constrictions-2021-512.webp",
+    "cover1024": "/album-covers/natural-information-society-with-evan-parker-descension-out-of-our-constrictions-2021.webp",
+    "dominantColor": "#2c3131",
+    "averageColor": "#6d5851"
+  },
+  {
+    "id": "the-avalanches-since-i-left-you-2000",
+    "artist": "The Avalanches",
+    "title": "Since I Left You",
+    "year": 2000,
+    "cover512": "/album-covers/the-avalanches-since-i-left-you-2000-512.webp",
+    "cover1024": "/album-covers/the-avalanches-since-i-left-you-2000.webp",
+    "dominantColor": "#46535d",
+    "averageColor": "#474e56"
+  },
+  {
+    "id": "ornette-coleman-science-fiction-1972",
+    "artist": "Ornette Coleman",
+    "title": "Science Fiction",
+    "year": 1972,
+    "cover512": "/album-covers/ornette-coleman-science-fiction-1972-512.webp",
+    "cover1024": "/album-covers/ornette-coleman-science-fiction-1972.webp",
+    "dominantColor": "#7c625e",
+    "averageColor": "#41302d"
+  },
+  {
+    "id": "marty-robbins-gunfighter-ballads-and-trail-songs-1959",
+    "artist": "Marty Robbins",
+    "title": "Gunfighter Ballads and Trail Songs",
+    "year": 1959,
+    "cover512": "/album-covers/marty-robbins-gunfighter-ballads-and-trail-songs-1959-512.webp",
+    "cover1024": "/album-covers/marty-robbins-gunfighter-ballads-and-trail-songs-1959.webp",
+    "dominantColor": "#ea3157",
+    "averageColor": "#bb2236"
+  },
+  {
+    "id": "bruno-pernadas-those-who-throw-objects-at-the-crocodiles-will-be-asked-to-retrieve-them-2016",
+    "artist": "Bruno Pernadas",
+    "title": "Those Who Throw Objects at the Crocodiles Will Be Asked to Retrieve Them",
+    "year": 2016,
+    "cover512": "/album-covers/bruno-pernadas-those-who-throw-objects-at-the-crocodiles-will-be-asked-to-retrieve-them-2016-512.webp",
+    "cover1024": "/album-covers/bruno-pernadas-those-who-throw-objects-at-the-crocodiles-will-be-asked-to-retrieve-them-2016.webp",
+    "dominantColor": "#8a5727",
+    "averageColor": "#855f2c"
+  },
+  {
+    "id": "blue-gene-tyranny-out-of-the-blue-1978",
+    "artist": "\"Blue\" Gene Tyranny",
+    "title": "Out of the Blue",
+    "year": 1978,
+    "cover512": "/album-covers/blue-gene-tyranny-out-of-the-blue-1978-512.webp",
+    "cover1024": "/album-covers/blue-gene-tyranny-out-of-the-blue-1978.webp",
+    "dominantColor": "#f8a257",
+    "averageColor": "#e5a06c"
+  },
+  {
+    "id": "robert-wyatt-shleep-1997",
+    "artist": "Robert Wyatt",
+    "title": "Shleep",
+    "year": 1997,
+    "cover512": "/album-covers/robert-wyatt-shleep-1997-512.webp",
+    "cover1024": "/album-covers/robert-wyatt-shleep-1997.webp",
+    "dominantColor": "#678fbe",
+    "averageColor": "#96a8ba"
+  },
+  {
+    "id": "miles-davis-on-the-corner-2007",
+    "artist": "Miles Davis",
+    "title": "On the Corner",
+    "year": 2007,
+    "cover512": "/album-covers/miles-davis-on-the-corner-2007-512.webp",
+    "cover1024": "/album-covers/miles-davis-on-the-corner-2007.webp",
+    "dominantColor": "#e8d828",
+    "averageColor": "#9f8729"
+  },
+  {
+    "id": "sun-ra-the-nubians-of-plutonia-1967",
+    "artist": "Sun Ra",
+    "title": "The Nubians of Plutonia",
+    "year": 1967,
+    "cover512": "/album-covers/sun-ra-the-nubians-of-plutonia-1967-512.webp",
+    "cover1024": "/album-covers/sun-ra-the-nubians-of-plutonia-1967.webp",
+    "dominantColor": "#e54234",
+    "averageColor": "#e87266"
+  },
+  {
+    "id": "john-abercrombie-timeless",
+    "artist": "John Abercrombie",
+    "title": "Timeless",
+    "year": null,
+    "cover512": "/album-covers/john-abercrombie-timeless-512.webp",
+    "cover1024": "/album-covers/john-abercrombie-timeless.webp",
+    "dominantColor": "#2d86ab",
+    "averageColor": "#1f5473"
+  },
+  {
+    "id": "nick-drake-five-leaves-left-1989",
+    "artist": "Nick Drake",
+    "title": "Five Leaves Left",
+    "year": 1989,
+    "cover512": "/album-covers/nick-drake-five-leaves-left-1989-512.webp",
+    "cover1024": "/album-covers/nick-drake-five-leaves-left-1989.webp",
+    "dominantColor": "#258d46",
+    "averageColor": "#487a48"
+  },
+  {
+    "id": "hailu-mergia-lala-belu-2018",
+    "artist": "Hailu Mergia",
+    "title": "Lala Belu",
+    "year": 2018,
+    "cover512": "/album-covers/hailu-mergia-lala-belu-2018-512.webp",
+    "cover1024": "/album-covers/hailu-mergia-lala-belu-2018.webp",
+    "dominantColor": "#0e3c5e",
+    "averageColor": "#183341"
+  },
+  {
+    "id": "prefab-sprout-i-trawl-the-megahertz-2019",
+    "artist": "Prefab Sprout",
+    "title": "I Trawl the Megahertz",
+    "year": 2019,
+    "cover512": "/album-covers/prefab-sprout-i-trawl-the-megahertz-2019-512.webp",
+    "cover1024": "/album-covers/prefab-sprout-i-trawl-the-megahertz-2019.webp",
+    "dominantColor": "#5b4d44",
+    "averageColor": "#443d39"
+  },
+  {
+    "id": "this-heat-health-and-efficiency-1980",
+    "artist": "This Heat",
+    "title": "Health and Efficiency",
+    "year": 1980,
+    "cover512": "/album-covers/this-heat-health-and-efficiency-1980-512.webp",
+    "cover1024": "/album-covers/this-heat-health-and-efficiency-1980.webp",
+    "dominantColor": "#ffffff",
+    "averageColor": "#7676d4"
+  },
+  {
+    "id": "jorge-ben-a-t-bua-de-esmeralda-1974",
+    "artist": "Jorge Ben",
+    "title": "A Tábua de Esmeralda",
+    "year": 1974,
+    "cover512": "/album-covers/jorge-ben-a-t-bua-de-esmeralda-1974-512.webp",
+    "cover1024": "/album-covers/jorge-ben-a-t-bua-de-esmeralda-1974.webp",
+    "dominantColor": "#977f67",
+    "averageColor": "#c1ae96"
+  },
+  {
+    "id": "hiatus-kaiyote-mood-valiant-2021",
+    "artist": "Hiatus Kaiyote",
+    "title": "Mood Valiant",
+    "year": 2021,
+    "cover512": "/album-covers/hiatus-kaiyote-mood-valiant-2021-512.webp",
+    "cover1024": "/album-covers/hiatus-kaiyote-mood-valiant-2021.webp",
+    "dominantColor": "#000000",
+    "averageColor": "#352420"
+  },
+  {
+    "id": "kikagaku-moyo-masana-temples-2018",
+    "artist": "Kikagaku Moyo",
+    "title": "Masana Temples",
+    "year": 2018,
+    "cover512": "/album-covers/kikagaku-moyo-masana-temples-2018-512.webp",
+    "cover1024": "/album-covers/kikagaku-moyo-masana-temples-2018.webp",
+    "dominantColor": "#f7f7f7",
+    "averageColor": "#a2938b"
+  },
+  {
+    "id": "talking-heads-remain-in-light-1980",
+    "artist": "Talking Heads",
+    "title": "Remain in Light",
+    "year": 1980,
+    "cover512": "/album-covers/talking-heads-remain-in-light-1980-512.webp",
+    "cover1024": "/album-covers/talking-heads-remain-in-light-1980.webp",
+    "dominantColor": "#b23226",
+    "averageColor": "#77494c"
+  },
+  {
+    "id": "can-ege-bamyas-1972",
+    "artist": "Can",
+    "title": "Ege Bamyası",
+    "year": 1972,
+    "cover512": "/album-covers/can-ege-bamyas-1972-512.webp",
+    "cover1024": "/album-covers/can-ege-bamyas-1972.webp",
+    "dominantColor": "#568b1c",
+    "averageColor": "#51662d"
+  },
+  {
+    "id": "girl-band-the-talkies-2019",
+    "artist": "Girl Band",
+    "title": "The Talkies",
+    "year": 2019,
+    "cover512": "/album-covers/girl-band-the-talkies-2019-512.webp",
+    "cover1024": "/album-covers/girl-band-the-talkies-2019.webp",
+    "dominantColor": "#87b79a",
+    "averageColor": "#7db393"
+  },
+  {
+    "id": "stereolab-emperor-tomato-ketchup-1996",
+    "artist": "Stereolab",
+    "title": "Emperor Tomato Ketchup",
+    "year": 1996,
+    "cover512": "/album-covers/stereolab-emperor-tomato-ketchup-1996-512.webp",
+    "cover1024": "/album-covers/stereolab-emperor-tomato-ketchup-1996.webp",
+    "dominantColor": "#bca411",
+    "averageColor": "#aa8d2a"
+  },
+  {
+    "id": "broadcast-haha-sound-2003",
+    "artist": "Broadcast",
+    "title": "Haha Sound",
+    "year": 2003,
+    "cover512": "/album-covers/broadcast-haha-sound-2003-512.webp",
+    "cover1024": "/album-covers/broadcast-haha-sound-2003.webp",
+    "dominantColor": "#000000",
+    "averageColor": "#6b605f"
+  },
+  {
+    "id": "broadcast-the-future-crayon-2006",
+    "artist": "Broadcast",
+    "title": "The Future Crayon",
+    "year": 2006,
+    "cover512": "/album-covers/broadcast-the-future-crayon-2006-512.webp",
+    "cover1024": "/album-covers/broadcast-the-future-crayon-2006.webp",
+    "dominantColor": "#583d3c",
+    "averageColor": "#91837f"
+  },
+  {
+    "id": "the-beatles-revolver-1966",
+    "artist": "The Beatles",
+    "title": "Revolver",
+    "year": 1966,
+    "cover512": "/album-covers/the-beatles-revolver-1966-512.webp",
+    "cover1024": "/album-covers/the-beatles-revolver-1966.webp",
+    "dominantColor": "#b0ac93",
+    "averageColor": "#a8a58c"
+  },
+  {
+    "id": "spacemen-3-taking-drugs-to-make-music-to-take-drugs-to-1990",
+    "artist": "Spacemen 3",
+    "title": "Taking Drugs to Make Music to Take Drugs To",
+    "year": 1990,
+    "cover512": "/album-covers/spacemen-3-taking-drugs-to-make-music-to-take-drugs-to-1990-512.webp",
+    "cover1024": "/album-covers/spacemen-3-taking-drugs-to-make-music-to-take-drugs-to-1990.webp",
+    "dominantColor": "#491f34",
+    "averageColor": "#861e4c"
+  },
+  {
+    "id": "enon-believo-2000",
+    "artist": "Enon",
+    "title": "Believo!",
+    "year": 2000,
+    "cover512": "/album-covers/enon-believo-2000-512.webp",
+    "cover1024": "/album-covers/enon-believo-2000.webp",
+    "dominantColor": "#d9e50c",
+    "averageColor": "#bcb749"
+  },
+  {
+    "id": "the-white-noise-an-electric-storm-1973",
+    "artist": "The White Noise",
+    "title": "An Electric Storm",
+    "year": 1973,
+    "cover512": "/album-covers/the-white-noise-an-electric-storm-1973-512.webp",
+    "cover1024": "/album-covers/the-white-noise-an-electric-storm-1973.webp",
+    "dominantColor": "#020202",
+    "averageColor": "#252525"
+  },
+  {
+    "id": "late-of-the-pier-fantasy-black-channel-2008",
+    "artist": "Late of the Pier",
+    "title": "Fantasy Black Channel",
+    "year": 2008,
+    "cover512": "/album-covers/late-of-the-pier-fantasy-black-channel-2008-512.webp",
+    "cover1024": "/album-covers/late-of-the-pier-fantasy-black-channel-2008.webp",
+    "dominantColor": "#493e3e",
+    "averageColor": "#5d5061"
+  },
+  {
+    "id": "the-heliocentrics-a-world-of-masks-2017",
+    "artist": "The Heliocentrics",
+    "title": "A World of Masks",
+    "year": 2017,
+    "cover512": "/album-covers/the-heliocentrics-a-world-of-masks-2017-512.webp",
+    "cover1024": "/album-covers/the-heliocentrics-a-world-of-masks-2017.webp",
+    "dominantColor": "#e3cd9f",
+    "averageColor": "#947459"
+  },
+  {
+    "id": "pram-north-pole-radio-station-1998",
+    "artist": "Pram",
+    "title": "North Pole Radio Station",
+    "year": 1998,
+    "cover512": "/album-covers/pram-north-pole-radio-station-1998-512.webp",
+    "cover1024": "/album-covers/pram-north-pole-radio-station-1998.webp",
+    "dominantColor": "#2d1e5b",
+    "averageColor": "#6d6384"
+  },
+  {
+    "id": "the-go-team-thunder-lightning-strike-2004",
+    "artist": "The Go! Team",
+    "title": "Thunder, Lightning, Strike",
+    "year": 2004,
+    "cover512": "/album-covers/the-go-team-thunder-lightning-strike-2004-512.webp",
+    "cover1024": "/album-covers/the-go-team-thunder-lightning-strike-2004.webp",
+    "dominantColor": "#e5684a",
+    "averageColor": "#9f592e"
+  },
+  {
+    "id": "horse-lords-interventions-2016",
+    "artist": "Horse Lords",
+    "title": "Interventions",
+    "year": 2016,
+    "cover512": "/album-covers/horse-lords-interventions-2016-512.webp",
+    "cover1024": "/album-covers/horse-lords-interventions-2016.webp",
+    "dominantColor": "#e53283",
+    "averageColor": "#b13e6c"
+  },
+  {
+    "id": "boat-roro-2001",
+    "artist": "BOaT",
+    "title": "RORO",
+    "year": 2001,
+    "cover512": "/album-covers/boat-roro-2001-512.webp",
+    "cover1024": "/album-covers/boat-roro-2001.webp",
+    "dominantColor": "#dad9d6",
+    "averageColor": "#ced7cb"
+  },
+  {
+    "id": "terry-riley-a-rainbow-in-curved-air-1969",
+    "artist": "Terry Riley",
+    "title": "A Rainbow in Curved Air",
+    "year": 1969,
+    "cover512": "/album-covers/terry-riley-a-rainbow-in-curved-air-1969-512.webp",
+    "cover1024": "/album-covers/terry-riley-a-rainbow-in-curved-air-1969.webp",
+    "dominantColor": "#a06c3c",
+    "averageColor": "#8c7861"
+  },
+  {
+    "id": "mach-hommy-pray-for-haiti-2021",
+    "artist": "Mach-Hommy",
+    "title": "Pray for Haiti",
+    "year": 2021,
+    "cover512": "/album-covers/mach-hommy-pray-for-haiti-2021-512.webp",
+    "cover1024": "/album-covers/mach-hommy-pray-for-haiti-2021.webp",
+    "dominantColor": "#e6bd53",
+    "averageColor": "#a29b72"
+  },
+  {
+    "id": "freddie-hubbard-red-clay-1970",
+    "artist": "Freddie Hubbard",
+    "title": "Red Clay",
+    "year": 1970,
+    "cover512": "/album-covers/freddie-hubbard-red-clay-1970-512.webp",
+    "cover1024": "/album-covers/freddie-hubbard-red-clay-1970.webp",
+    "dominantColor": "#000000",
+    "averageColor": "#582421"
+  },
+  {
+    "id": "elysian-fields-dreams-that-breathe-your-name-2003",
+    "artist": "Elysian Fields",
+    "title": "Dreams That Breathe Your Name",
+    "year": 2003,
+    "cover512": "/album-covers/elysian-fields-dreams-that-breathe-your-name-2003-512.webp",
+    "cover1024": "/album-covers/elysian-fields-dreams-that-breathe-your-name-2003.webp",
+    "dominantColor": "#151411",
+    "averageColor": "#403121"
+  },
+  {
+    "id": "the-ex-turn-2004",
+    "artist": "The Ex",
+    "title": "Turn",
+    "year": 2004,
+    "cover512": "/album-covers/the-ex-turn-2004-512.webp",
+    "cover1024": "/album-covers/the-ex-turn-2004.webp",
+    "dominantColor": "#3f322c",
+    "averageColor": "#766659"
+  },
+  {
+    "id": "primal-scream-screamadelica-1991",
+    "artist": "Primal Scream",
+    "title": "Screamadelica",
+    "year": 1991,
+    "cover512": "/album-covers/primal-scream-screamadelica-1991-512.webp",
+    "cover1024": "/album-covers/primal-scream-screamadelica-1991.webp",
+    "dominantColor": "#fe0b07",
+    "averageColor": "#d65935"
+  },
+  {
+    "id": "caribou-swim-2010",
+    "artist": "Caribou",
+    "title": "Swim",
+    "year": 2010,
+    "cover512": "/album-covers/caribou-swim-2010-512.webp",
+    "cover1024": "/album-covers/caribou-swim-2010.webp",
+    "dominantColor": "#000d16",
+    "averageColor": "#896032"
+  },
+  {
+    "id": "danger-mouse-cheat-codes-2022",
+    "artist": "Danger Mouse",
+    "title": "Cheat Codes",
+    "year": 2022,
+    "cover512": "/album-covers/danger-mouse-cheat-codes-2022-512.webp",
+    "cover1024": "/album-covers/danger-mouse-cheat-codes-2022.webp",
+    "dominantColor": "#010103",
+    "averageColor": "#423e32"
+  },
+  {
+    "id": "rake-the-art-ensemble-of-rake-the-tell-tale-moog-1995",
+    "artist": "Rake.",
+    "title": "The Art Ensemble of Rake / The Tell-Tale Moog",
+    "year": 1995,
+    "cover512": "/album-covers/rake-the-art-ensemble-of-rake-the-tell-tale-moog-1995-512.webp",
+    "cover1024": "/album-covers/rake-the-art-ensemble-of-rake-the-tell-tale-moog-1995.webp",
+    "dominantColor": "#baab85",
+    "averageColor": "#907b5a"
+  },
+  {
+    "id": "mccoy-tyner-extensions-1973-2",
+    "artist": "McCoy Tyner",
+    "title": "Extensions",
+    "year": 1973,
+    "cover512": "/album-covers/mccoy-tyner-extensions-1973-2-512.webp",
+    "cover1024": "/album-covers/mccoy-tyner-extensions-1973-2.webp",
+    "dominantColor": "#965941",
+    "averageColor": "#94704c"
+  },
+  {
+    "id": "out-of-focus-out-of-focus-1991",
+    "artist": "Out of Focus",
+    "title": "Out of Focus",
+    "year": 1991,
+    "cover512": "/album-covers/out-of-focus-out-of-focus-1991-512.webp",
+    "cover1024": "/album-covers/out-of-focus-out-of-focus-1991.webp",
+    "dominantColor": "#b7a649",
+    "averageColor": "#867537"
+  },
+  {
+    "id": "can-tago-mago-1971",
+    "artist": "Can",
+    "title": "Tago Mago",
+    "year": 1971,
+    "cover512": "/album-covers/can-tago-mago-1971-512.webp",
+    "cover1024": "/album-covers/can-tago-mago-1971.webp",
+    "dominantColor": "#f8f8f8",
+    "averageColor": "#eec5b6"
+  },
+  {
+    "id": "bardo-pond-amanita-1996",
+    "artist": "Bardo Pond",
+    "title": "Amanita",
+    "year": 1996,
+    "cover512": "/album-covers/bardo-pond-amanita-1996-512.webp",
+    "cover1024": "/album-covers/bardo-pond-amanita-1996.webp",
+    "dominantColor": "#725d37",
+    "averageColor": "#886b47"
+  },
+  {
+    "id": "sun-ra-and-his-myth-science-arkestra-cosmic-tones-for-mental-therapy-1967",
+    "artist": "Sun Ra and His Myth Science Arkestra",
+    "title": "Cosmic Tones for Mental Therapy",
+    "year": 1967,
+    "cover512": "/album-covers/sun-ra-and-his-myth-science-arkestra-cosmic-tones-for-mental-therapy-1967-512.webp",
+    "cover1024": "/album-covers/sun-ra-and-his-myth-science-arkestra-cosmic-tones-for-mental-therapy-1967.webp",
+    "dominantColor": "#54569b",
+    "averageColor": "#6d6aa2"
+  },
+  {
+    "id": "eno-another-green-world-1975",
+    "artist": "Eno",
+    "title": "Another Green World",
+    "year": 1975,
+    "cover512": "/album-covers/eno-another-green-world-1975-512.webp",
+    "cover1024": "/album-covers/eno-another-green-world-1975.webp",
+    "dominantColor": "#ffffff",
+    "averageColor": "#bab0a2"
+  },
+  {
+    "id": "fire-orchestra-ritual-2016",
+    "artist": "Fire! Orchestra",
+    "title": "Ritual",
+    "year": 2016,
+    "cover512": "/album-covers/fire-orchestra-ritual-2016-512.webp",
+    "cover1024": "/album-covers/fire-orchestra-ritual-2016.webp",
+    "dominantColor": "#252722",
+    "averageColor": "#6b664e"
+  },
+  {
+    "id": "talk-talk-spirit-of-eden-1988",
+    "artist": "Talk Talk",
+    "title": "Spirit of Eden",
+    "year": 1988,
+    "cover512": "/album-covers/talk-talk-spirit-of-eden-1988-512.webp",
+    "cover1024": "/album-covers/talk-talk-spirit-of-eden-1988.webp",
+    "dominantColor": "#f8f8f8",
+    "averageColor": "#c7c8cc"
+  },
+  {
+    "id": "talk-talk-laughing-stock-1991",
+    "artist": "Talk Talk",
+    "title": "Laughing Stock",
+    "year": 1991,
+    "cover512": "/album-covers/talk-talk-laughing-stock-1991-512.webp",
+    "cover1024": "/album-covers/talk-talk-laughing-stock-1991.webp",
+    "dominantColor": "#2c2b28",
+    "averageColor": "#7e7c8a"
+  },
+  {
+    "id": "sun-city-girls-torch-of-the-mystics-1990",
+    "artist": "Sun City Girls",
+    "title": "Torch of the Mystics",
+    "year": 1990,
+    "cover512": "/album-covers/sun-city-girls-torch-of-the-mystics-1990-512.webp",
+    "cover1024": "/album-covers/sun-city-girls-torch-of-the-mystics-1990.webp",
+    "dominantColor": "#a17d46",
+    "averageColor": "#a78c64"
+  },
+  {
+    "id": "pram-helium-1994",
+    "artist": "Pram",
+    "title": "Helium",
+    "year": 1994,
+    "cover512": "/album-covers/pram-helium-1994-512.webp",
+    "cover1024": "/album-covers/pram-helium-1994.webp",
+    "dominantColor": "#282828",
+    "averageColor": "#7e4029"
+  },
+  {
+    "id": "roland-kayn-infra-1981",
+    "artist": "Roland Kayn",
+    "title": "Infra",
+    "year": 1981,
+    "cover512": "/album-covers/roland-kayn-infra-1981-512.webp",
+    "cover1024": "/album-covers/roland-kayn-infra-1981.webp",
+    "dominantColor": "#fae108",
+    "averageColor": "#948b50"
+  },
+  {
+    "id": "aine-odwyer-music-for-church-cleaners-vol-i-and-ii-2015",
+    "artist": "Áine O'Dwyer",
+    "title": "Music for Church Cleaners Vol. I and II",
+    "year": 2015,
+    "cover512": "/album-covers/aine-odwyer-music-for-church-cleaners-vol-i-and-ii-2015-512.webp",
+    "cover1024": "/album-covers/aine-odwyer-music-for-church-cleaners-vol-i-and-ii-2015.webp",
+    "dominantColor": "#6d6d6d",
+    "averageColor": "#919191"
+  },
+  {
+    "id": "annette-peacock-i-m-the-one-1972",
+    "artist": "Annette Peacock",
+    "title": "I'm the One",
+    "year": 1972,
+    "cover512": "/album-covers/annette-peacock-i-m-the-one-1972-512.webp",
+    "cover1024": "/album-covers/annette-peacock-i-m-the-one-1972.webp",
+    "dominantColor": "#587838",
+    "averageColor": "#51291d"
+  },
+  {
+    "id": "basil-kirchin-worlds-within-worlds-1971",
+    "artist": "Basil Kirchin",
+    "title": "Worlds Within Worlds",
+    "year": 1971,
+    "cover512": "/album-covers/basil-kirchin-worlds-within-worlds-1971-512.webp",
+    "cover1024": "/album-covers/basil-kirchin-worlds-within-worlds-1971.webp",
+    "dominantColor": "#e8d8c8",
+    "averageColor": "#a39174"
+  }
+]

@@ -8,33 +8,48 @@ import Base from '../../layouts/Base.astro';
       <h1><span class="hl">Taste</span></h1>
     </header>
     <div class="taste-panes">
-      <section class="writing-pane">
-        <h2>Music</h2>
-        <p class="empty">More to come.</p>
-      </section>
-      <section class="writing-pane">
-        <h2>Film</h2>
-        <p class="empty">More to come.</p>
-      </section>
-      <section class="writing-pane">
-        <h2>Art</h2>
-        <p class="empty">More to come.</p>
-      </section>
-      <section class="writing-pane">
-        <h2>Fiction</h2>
-        <p class="empty">More to come.</p>
-      </section>
-      <section class="writing-pane">
-        <h2>Philosophy</h2>
-        <p class="empty">More to come.</p>
-      </section>
+      <div class="taste-column">
+        <section class="writing-pane">
+          <h2>Music</h2>
+          <p>
+            A lot of my music taste can be seen on my
+            <a href="https://rateyourmusic.com/~hautboy">Rate Your Music profile</a>, although I
+            don't necessarily stand by every rating. In particular, you can see a list of my
+            favorite albums of all time <a href="https://rateyourmusic.com/collection/hautboy/r5.0">here</a>.
+          </p>
+        </section>
+        <section class="writing-pane">
+          <h2>Fiction</h2>
+          <p>
+            <a href="/taste/fiction">This page</a> catalogs some films, novels, and short stories
+            that I like.
+          </p>
+        </section>
+      </div>
+      <div class="taste-column">
+        <section class="writing-pane">
+          <h2>Art</h2>
+          <p>
+            Some paintings I enjoy are collected in
+            <a href="https://www.are.na/anson-berns/art-n3r49vapnpc">this list</a>.
+            <a href="/taste/covers">This page</a> displays some album covers I like.
+          </p>
+        </section>
+        <section class="writing-pane">
+          <h2>Philosophy</h2>
+          <p>
+            <a href="/taste/philosophy">This page</a> documents some works of philosophy and theory
+            that were particularly formative for me. I also briefly sketch some of my most deeply
+            held philosophical views there.
+          </p>
+        </section>
+      </div>
     </div>
     <div class="anim-controls">
       <button id="sandpile-info" type="button" aria-label="About">About</button>
       <button id="sandpile-restart" type="button" aria-label="Reset sandpile">Reset</button>
     </div>
     <dialog id="sandpile-about" class="anim-about" aria-labelledby="sandpile-about-title">
-      <button class="anim-about-close" type="button" aria-label="Close">×</button>
       <h2 id="sandpile-about-title">About</h2>
       <p>
         This page implements an <a href="https://en.wikipedia.org/wiki/Abelian_sandpile_model">Abelian sandpile model</a>.
@@ -216,6 +231,7 @@ import Base from '../../layouts/Base.astro';
         stops.push(usable[idx]);
       }
       palette = stops;
+      document.documentElement.style.setProperty('--accent', `rgb(${stops[stops.length - 1].join(', ')})`);
     }
 
     function seedCycle() {
@@ -543,7 +559,6 @@ import Base from '../../layouts/Base.astro';
     const aboutDlg = document.getElementById('sandpile-about') as HTMLDialogElement | null;
     const infoButton = document.getElementById('sandpile-info') as HTMLButtonElement | null;
     infoButton?.addEventListener('click', () => aboutDlg?.showModal());
-    aboutDlg?.querySelector('.anim-about-close')?.addEventListener('click', () => aboutDlg.close());
     aboutDlg?.addEventListener('click', (e) => {
       if (e.target === aboutDlg) aboutDlg.close();
     });

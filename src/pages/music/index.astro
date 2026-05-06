@@ -7,7 +7,7 @@ import Base from '../../layouts/Base.astro';
     <header class="section-head">
       <h1><span class="hl">Music</span></h1>
     </header>
-    <p class="music-intro">I make sample-based experimental music. More to come.</p>
+    <p class="music-intro"><span class="hl">I make sample-based experimental music. More to come.</span></p>
     <div class="music-panes">
       <section class="writing-pane">
         <h2>Released</h2>
@@ -38,7 +38,6 @@ import Base from '../../layouts/Base.astro';
       <button id="lenia-restart" type="button" aria-label="Reset Particle Lenia">Reset</button>
     </div>
     <dialog id="lenia-about" class="anim-about" aria-labelledby="lenia-about-title">
-      <button class="anim-about-close" type="button" aria-label="Close">×</button>
       <h2 id="lenia-about-title">About</h2>
       <p>
         This animation is an implementation of <a href="https://google-research.github.io/self-organising-systems/particle-lenia/">Particle Lenia</a>, a system of differential equations that gives rise to lifelike behavior. Each cycle randomly tunes a few parameters of the equations and initializes based on a random template and seed. A flow is also applied according to a randomly generated vector field. The resulting blobs often look like alien cells, brain tissue, or weather radar. Click to perturb the field and push the blobs around.
@@ -349,6 +348,10 @@ import Base from '../../layouts/Base.astro';
 
     function luma(c: RGB): number {
       return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+    }
+
+    function rgb(c: RGB): string {
+      return `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
     }
 
     const paper = parseHex(paperHex);
@@ -1248,7 +1251,9 @@ import Base from '../../layouts/Base.astro';
       flowWaves = pickFlowWaves();
       lastSeeder = nextSeeder();
       seeders[lastSeeder].fn();
-      palette = buildPalette(pickStops());
+      const stops = pickStops();
+      palette = buildPalette(stops);
+      document.documentElement.style.setProperty('--accent', rgb(stops[stops.length - 1]));
       stepCount = 0;
       velocities.fill(0);
       prevField.fill(0);
@@ -1562,7 +1567,6 @@ import Base from '../../layouts/Base.astro';
     const aboutDlg = document.getElementById('lenia-about') as HTMLDialogElement | null;
     const infoBtn = document.getElementById('lenia-info');
     infoBtn?.addEventListener('click', () => aboutDlg?.showModal());
-    aboutDlg?.querySelector('.anim-about-close')?.addEventListener('click', () => aboutDlg.close());
     aboutDlg?.addEventListener('click', (e) => {
       if (e.target === aboutDlg) aboutDlg.close();
     });

@@ -7,7 +7,7 @@ import Base from '../../layouts/Base.astro';
     <header class="section-head">
       <h1><span class="hl">Formalization</span></h1>
     </header>
-    <p class="formalization-intro">Formalization projects in Lean 4.</p>
+    <p class="formalization-intro"><span class="hl">Formalization projects in Lean 4.</span></p>
     <div class="formalization-panes">
       <section class="writing-pane">
         <h2>Mathlib</h2>
@@ -24,10 +24,9 @@ import Base from '../../layouts/Base.astro';
       <button id="ant-restart" type="button" aria-label="Reset ant">Reset</button>
     </div>
     <dialog id="ant-about" class="anim-about" aria-labelledby="ant-about-title">
-      <button class="anim-about-close" type="button" aria-label="Close">×</button>
       <h2 id="ant-about-title">About</h2>
       <p>
-        This animation is an implementation of <a href="https://en.wikipedia.org/wiki/Turmite">turmites</a> — generalizations of <a href="https://en.wikipedia.org/wiki/Langton%27s_ant">Langton's ant</a>. Each cycle picks a fresh rule-string, palette, and lattice (square or hex). For some rule-strings the ant traces a bilaterally-symmetric track that grows forever while the ant keeps returning to its starting cell.
+        More to come.
       </p>
     </dialog>
     <aside class="ant-panel" aria-label="Ant controls">
@@ -91,8 +90,8 @@ import Base from '../../layouts/Base.astro';
         </div>
         <div class="ant-panel-row">
           <label for="ant-cell">cell</label>
-          <input id="ant-cell" type="range" min="3" max="7" step="1" value="5" />
-          <span id="ant-cell-value">5</span>
+          <input id="ant-cell" type="range" min="3" max="7" step="1" value="4" />
+          <span id="ant-cell-value">4</span>
         </div>
         <label class="ant-panel-field truchet-only">
           <span>skin</span>
@@ -321,7 +320,6 @@ import Base from '../../layouts/Base.astro';
     const restartButton = document.getElementById('ant-restart') as HTMLButtonElement | null;
     const infoButton = document.getElementById('ant-info');
     const aboutDialog = document.getElementById('ant-about') as HTMLDialogElement | null;
-    const aboutClose = aboutDialog?.querySelector('.anim-about-close');
     const nReadout = document.getElementById('ant-n');
     const stepReadout = document.getElementById('ant-step');
     const seedReadout = document.getElementById('ant-seed');
@@ -393,7 +391,7 @@ import Base from '../../layouts/Base.astro';
     }
     let rng = mulberry32(1);
 
-    let CELL_PX = Number(cellInput?.value ?? 5);
+    let CELL_PX = Number(cellInput?.value ?? 4);
     let stepsPerFrame = Number(speedInput?.value ?? 1500);
     let antCount = Number(countInput?.value ?? 1);
     let cycleSeconds = Number(cycleInput?.value ?? 60);
@@ -482,6 +480,7 @@ import Base from '../../layouts/Base.astro';
         out.push(colorPool[lo + Math.floor(rng() * span)]);
       }
       palette = out;
+      document.documentElement.style.setProperty('--accent', rgb(out[out.length - 1]));
     }
 
     // Weighted pick from RULE_POOL — high-interest rules show up more
@@ -1156,7 +1155,6 @@ import Base from '../../layouts/Base.astro';
       scheduleAutoCycle();
     });
     infoButton?.addEventListener('click', () => aboutDialog?.showModal());
-    aboutClose?.addEventListener('click', () => aboutDialog?.close());
     aboutDialog?.addEventListener('click', (e) => {
       if (e.target === aboutDialog) aboutDialog.close();
     });
