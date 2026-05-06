@@ -63,13 +63,13 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
         </div>
         <div class="markov-panel-row">
           <label for="markov-temp">temp</label>
-          <input id="markov-temp" type="range" min="0.20" max="1.40" step="0.02" value="0.78" />
-          <span id="markov-temp-value">0.78</span>
+          <input id="markov-temp" type="range" min="0.20" max="1.40" step="0.02" value="1.00" />
+          <span id="markov-temp-value">1.00</span>
         </div>
         <div class="markov-panel-row">
           <label for="markov-speed">speed</label>
-          <input id="markov-speed" type="range" min="0.2" max="14" step="0.2" value="6" />
-          <span id="markov-speed-value">6.0</span>
+          <input id="markov-speed" type="range" min="0.2" max="14" step="0.2" value="1" />
+          <span id="markov-speed-value">1.0</span>
         </div>
         <div class="markov-panel-row">
           <label for="markov-pixel">size</label>
@@ -314,8 +314,8 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     // ---------- Tunables (mirrored by the dev panel) ----------
     const MODEL_ORDER = markovModel.order ?? 6;
     let maxEffectiveOrder = MODEL_ORDER;
-    let TEMPERATURE = 0.78;
-    let TYPING_RATE = 6;        // tokens per animation tick — may be fractional
+    let TEMPERATURE = 1.0;
+    let TYPING_RATE = 1;        // tokens per animation tick — may be fractional
     let PIXEL = 2;
     let MIN_LUMA  = 190;        // luma floor for palette colors after lift
     let SAT_SCALE = 1.0;        // saturation multiplier (0 = grayscale, >1 = boosted)
