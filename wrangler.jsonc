@@ -3,6 +3,13 @@
   "name": "personal-site",
   "main": "src/worker.ts",
   "compatibility_date": "2026-04-18",
+  "routes": [
+    {
+      "pattern": "amberns.com",
+      "zone_name": "amberns.com",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",

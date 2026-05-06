@@ -3,19 +3,21 @@ type Env = {
     fetch: (request: Request) => Promise<Response>;
   };
   SITE_PASSWORD?: string;
+  SITE_PASSWORDS?: string;
   SESSION_SECRET?: string;
 };
 
 const AUTH_COOKIE = 'amberns_auth';
 const AUTH_MESSAGE = 'personal-site-under-construction:v1';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30;
+const BUILT_IN_PASSWORDS: string[] = [];
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    const password = env.SITE_PASSWORD;
+    const passwords = allowedPasswords(env);
 
-    if (!password) {
+    if (passwords.length === 0) {
       return constructionPage(url.pathname + url.search, {
         status: 503,
         setup: true,
@@ -27,7 +29,7 @@ export default {
       const submitted = String(form.get('password') ?? '');
       const next = normalizeNext(String(form.get('next') ?? '/'));
 
-      if (constantTimeEqual(submitted, password)) {
+      if (passwordMatches(submitted, passwords)) {
         const token = await authToken(env);
         return new Response(null, {
           status: 303,
@@ -61,7 +63,7 @@ async function isAuthenticated(request: Request, env: Env): Promise<boolean> {
 }
 
 async function authToken(env: Env): Promise<string> {
-  const secret = env.SESSION_SECRET || env.SITE_PASSWORD || '';
+  const secret = env.SESSION_SECRET || env.SITE_PASSWORD || allowedPasswords(env)[0] || '';
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),
@@ -71,6 +73,20 @@ async function authToken(env: Env): Promise<string> {
   );
   const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(AUTH_MESSAGE));
   return base64Url(sig);
+}
+
+function allowedPasswords(env: Env): string[] {
+  const configured = [env.SITE_PASSWORDS, env.SITE_PASSWORD, ...BUILT_IN_PASSWORDS]
+    .flatMap((value) => String(value ?? '').split(/[\n,]/))
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return Array.from(new Set(configured));
+}
+
+function passwordMatches(submitted: string, passwords: string[]): boolean {
+  let matched = false;
+  for (const password of passwords) matched = constantTimeEqual(submitted, password) || matched;
+  return matched;
 }
 
 function base64Url(buffer: ArrayBuffer): string {
