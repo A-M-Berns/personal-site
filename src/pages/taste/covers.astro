@@ -10,6 +10,7 @@ type AlbumCover = {
   cover512: string;
   cover1024?: string;
   dominantColor?: string;
+  cropZoom?: number;
 };
 
 const covers = (albumCovers as AlbumCover[])
@@ -22,6 +23,7 @@ const covers = (albumCovers as AlbumCover[])
     src: cover.cover512,
     hq: cover.cover1024 ?? cover.cover512,
     dominantColor: cover.dominantColor ?? '#c8c4ba',
+    cropZoom: cover.cropZoom,
   }));
 
 const initialCovers = covers.slice(0, 36);
@@ -45,7 +47,7 @@ const labelFor = (cover: (typeof covers)[number]) =>
         <div class="cover-row-track">
           <div class="cover-row-set">
             {initialCovers.slice(0, 12).map((cover) => (
-              <figure class="cover-tile" style={`--cover-accent: ${cover.dominantColor}`}>
+              <figure class="cover-tile" style={`--cover-accent: ${cover.dominantColor}${cover.cropZoom ? `; --cover-zoom: ${cover.cropZoom}` : ''}`}>
                 <img
                   src={cover.src}
                   alt={labelFor(cover)}
@@ -110,6 +112,7 @@ const labelFor = (cover: (typeof covers)[number]) =>
     src: string;
     hq?: string;
     dominantColor?: string;
+    cropZoom?: number;
   };
 
   const wall = document.getElementById('cover-wall') as HTMLElement | null;
@@ -346,6 +349,7 @@ const labelFor = (cover: (typeof covers)[number]) =>
       figure.dataset.coverId = cover.id;
       figure.dataset.coverHq = cover.hq ?? cover.src;
       figure.style.setProperty('--cover-accent', cover.dominantColor ?? '#c8c4ba');
+      if (cover.cropZoom) figure.style.setProperty('--cover-zoom', String(cover.cropZoom));
 
       const image = document.createElement('img');
       image.src = cover.src;

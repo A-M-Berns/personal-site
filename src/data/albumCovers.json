@@ -477,7 +477,8 @@
     "cover512": "/album-covers/glenn-branca-the-ascension-1981-512.webp",
     "cover1024": "/album-covers/glenn-branca-the-ascension-1981.webp",
     "dominantColor": "#fdfefc",
-    "averageColor": "#bec0bf"
+    "averageColor": "#bec0bf",
+    "cropZoom": 1.05
   },
   {
     "id": "sufjan-stevens-the-ascension-2020",
@@ -487,7 +488,8 @@
     "cover512": "/album-covers/sufjan-stevens-the-ascension-2020-512.webp",
     "cover1024": "/album-covers/sufjan-stevens-the-ascension-2020.webp",
     "dominantColor": "#ae7969",
-    "averageColor": "#7b6663"
+    "averageColor": "#7b6663",
+    "cropZoom": 1.05
   },
   {
     "id": "nisennenmondai-rockon-2006",
@@ -1997,7 +1999,8 @@
     "cover512": "/album-covers/danger-mouse-cheat-codes-2022-512.webp",
     "cover1024": "/album-covers/danger-mouse-cheat-codes-2022.webp",
     "dominantColor": "#010103",
-    "averageColor": "#423e32"
+    "averageColor": "#423e32",
+    "cropZoom": 1.05
   },
   {
     "id": "rake-the-art-ensemble-of-rake-the-tell-tale-moog-1995",
