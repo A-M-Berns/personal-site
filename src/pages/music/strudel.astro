@@ -1,11 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 
-const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
-  .sound("sawtooth")
-  .slow(2)
-  .lpf(sine.range(500, 2200).slow(8))
-  .gain(0.55)`;
+const defaultPattern = '';
 ---
 <Base title="Strudel — A. M. Berns" description="A small Strudel live-coding workspace.">
   <div class="strudel-shell">
@@ -331,11 +327,11 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     margin-inline: -0.25rem;
     padding-inline: 0.25rem;
     border-radius: 2px;
-    transition: background 120ms ease, box-shadow 120ms ease;
   }
-  .strudel-code-wrap.is-running #strudel-highlight :global(.code-line.is-active) {
-    background: color-mix(in srgb, var(--accent) 14%, transparent);
-    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent) 75%, transparent);
+  #strudel-highlight :global(.tok-play) {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+    border-radius: 2px;
   }
   #strudel-code {
     position: relative;
@@ -539,12 +535,19 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     const lines = codeEl.value.split('\n');
     highlightEl.innerHTML = lines
       .map((line, index) => {
-        const activeClass = index === activeLineIndex ? ' is-active' : '';
-        return `<span class="code-line${activeClass}">${highlightStrudel(line) || ' '}</span>`;
+        const highlighted = highlightStrudel(line);
+        const activeLine = index === activeLineIndex && line.trim().length > 0;
+        return `<span class="code-line">${activeLine ? markActiveToken(highlighted) : highlighted || ' '}</span>`;
       })
       .join('');
     highlightEl.scrollTop = codeEl.scrollTop;
     highlightEl.scrollLeft = codeEl.scrollLeft;
+  }
+
+  function markActiveToken(html: string) {
+    if (!html.trim()) return html;
+    const tokenPattern = /(<span class="tok-(?:fn|method|string|number)">.*?<\/span>|[A-Za-z_][\w]*|"(?:\\.|[^"\\])*")/;
+    return html.replace(tokenPattern, '<span class="tok-play">$1</span>');
   }
 
   function stopPlayIndicator() {
@@ -573,6 +576,8 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     if (!codeEl) return;
     const evaluate = getStrudelFunction('evaluate');
     if (typeof evaluate !== 'function') return;
+    const audioContext = getStrudelFunction('getAudioContext')?.();
+    if (typeof audioContext?.resume === 'function') audioContext.resume();
     evaluate(codeEl.value);
     setStatus(status);
     try {
@@ -583,7 +588,10 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   function scheduleLiveApply() {
     if (!isRunning) return;
     if (liveApplyTimer !== null) window.clearTimeout(liveApplyTimer);
-    liveApplyTimer = window.setTimeout(() => evaluateCurrentPattern(), 120);
+    liveApplyTimer = window.setTimeout(async () => {
+      await loadStrudel();
+      evaluateCurrentPattern();
+    }, 120);
   }
 
   function loadStrudel() {
@@ -604,7 +612,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
       script.onerror = () => reject(new Error('Could not load Strudel.'));
       document.head.append(script);
     }).then(async () => {
-      const initStrudel = (window as any).initStrudel;
+      const initStrudel = getStrudelFunction('initStrudel');
       if (typeof initStrudel !== 'function') throw new Error('Strudel did not initialize.');
       await initStrudel();
       setStatus('Ready.');
@@ -617,7 +625,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     return typeof win[name] === 'function'
       ? win[name]
       : typeof win.strudel?.[name] === 'function'
-        ? win.strudel[name]
+        ? win.strudel[name].bind(win.strudel)
         : null;
   }
 
@@ -639,10 +647,18 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     try {
       await loadStrudel();
       const hush = getStrudelFunction('hush');
-      if (typeof hush !== 'function') throw new Error('Strudel stop function is unavailable.');
-      hush();
+      const evaluate = getStrudelFunction('evaluate');
+      const audioContext = getStrudelFunction('getAudioContext')?.();
+      if (typeof hush === 'function') hush();
       const silence = getStrudelFunction('silence');
       if (typeof silence === 'function') silence();
+      if (typeof evaluate === 'function') {
+        try { evaluate('silence'); } catch (e) {}
+        try { evaluate('silence()'); } catch (e) {}
+      }
+      const scheduler = (window as any).strudelMirror?.repl?.scheduler;
+      if (typeof scheduler?.stop === 'function') scheduler.stop();
+      if (typeof audioContext?.suspend === 'function') audioContext.suspend();
       isRunning = false;
       stopPlayIndicator();
       setStatus('Stopped.');
@@ -658,7 +674,9 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
       .split('\n')
       .map((line) => `  ${line}`)
       .join('\n');
-    if (current.trimStart().startsWith('stack(')) {
+    if (!current.trim()) {
+      codeEl.value = `stack(\n${next}\n)`;
+    } else if (current.trimStart().startsWith('stack(')) {
       const closeIndex = current.lastIndexOf('\n)');
       codeEl.value = closeIndex >= 0
         ? `${current.slice(0, closeIndex).trimEnd()},\n\n${next}\n)`
