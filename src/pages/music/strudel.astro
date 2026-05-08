@@ -26,113 +26,61 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
 
       <aside class="strudel-side-pane">
         <section>
-          <h2>Templates</h2>
-          <div class="strudel-preset-list">
-            <button type="button" data-preset="drums">Drums</button>
-            <button type="button" data-preset="bass">Bass</button>
-            <button type="button" data-preset="melodic">Lead</button>
-            <button type="button" data-preset="texture">Chords</button>
-            <button type="button" data-preset="ambient">Ambient</button>
-            <button type="button" data-preset="breakbeat">Breakbeat</button>
-          </div>
-        </section>
-
-        <section>
-          <h2>Add Part</h2>
-          <div class="strudel-preset-list">
-            <button type="button" data-layer="drums">Drums</button>
-            <button type="button" data-layer="bass">Bass</button>
-            <button type="button" data-layer="lead">Lead</button>
-            <button type="button" data-layer="chords">Chords</button>
-            <button type="button" data-layer="pad">Pad</button>
-          </div>
-        </section>
-
-        <section>
-          <h2>Tone</h2>
-          <label class="strudel-field" for="strudel-sound">
-            <span>sound</span>
-            <select id="strudel-sound">
-              <option value="sawtooth">saw</option>
-              <option value="square">square</option>
-              <option value="triangle">triangle</option>
-              <option value="sine">sine</option>
-            </select>
-            <output></output>
-          </label>
-        </section>
-
-        <section>
-          <h2>Drum Grid</h2>
+          <h2>Drums</h2>
           <div id="strudel-drum-grid" class="strudel-step-grid" aria-label="Drum step grid"></div>
           <div class="strudel-preset-list">
-            <button id="strudel-drum-apply" type="button">Append Drums</button>
+            <button id="strudel-drum-apply" type="button">Add Drums</button>
             <button id="strudel-drum-clear" type="button">Clear</button>
           </div>
         </section>
 
         <section>
-          <h2>Lead Grid</h2>
+          <h2>Arp</h2>
           <div id="strudel-arp-grid" class="strudel-arp-grid" aria-label="Arpeggio step grid"></div>
           <div class="strudel-preset-list">
-            <button id="strudel-arp-apply" type="button">Append Lead</button>
+            <button id="strudel-arp-apply" type="button">Add Arp</button>
             <button id="strudel-arp-clear" type="button">Clear</button>
           </div>
         </section>
 
         <section>
           <h2>Chords</h2>
-          <label class="strudel-field" for="strudel-chord-root">
-            <span>root</span>
-            <select id="strudel-chord-root">
-              <option value="c">C</option>
-              <option value="d">D</option>
-              <option value="eb">Eb</option>
-              <option value="f">F</option>
-              <option value="g">G</option>
-              <option value="ab">Ab</option>
-              <option value="bb">Bb</option>
-            </select>
-            <output></output>
-          </label>
-          <label class="strudel-field" for="strudel-chord-shape">
-            <span>shape</span>
-            <select id="strudel-chord-shape">
-              <option value="minor">minor</option>
-              <option value="major">major</option>
-              <option value="modal">modal</option>
-              <option value="wide">wide</option>
-            </select>
-            <output></output>
-          </label>
+          <div id="strudel-chord-grid" class="strudel-chord-grid" aria-label="Chord progression builder"></div>
           <div class="strudel-preset-list">
-            <button id="strudel-chord-apply" type="button">Append Chords</button>
+            <button id="strudel-chord-apply" type="button">Add Chords</button>
           </div>
         </section>
 
         <section>
-          <h2>Effects</h2>
-          <div class="strudel-preset-list">
-            <button type="button" data-insert=".rev()">rev</button>
-            <button type="button" data-insert=".jux(rev)">jux</button>
-            <button type="button" data-insert=".sometimes(x => x.fast(2))">sometimes</button>
-            <button type="button" data-insert=".every(4, rev)">every 4</button>
-            <button type="button" data-insert=".off(0.25, x => x.gain(0.35))">echo</button>
-          </div>
-        </section>
-
-        <section>
-          <h2>Samples</h2>
+          <h2>Lead</h2>
+          <label class="strudel-field" for="strudel-lead-sound">
+            <span>sound</span>
+            <select id="strudel-lead-sound">
+              <option value="square">square</option>
+              <option value="sawtooth">saw</option>
+              <option value="triangle">triangle</option>
+              <option value="sine">sine</option>
+            </select>
+            <output></output>
+          </label>
           <label id="strudel-drop" class="strudel-drop" for="strudel-sample-file">
             <input id="strudel-sample-file" type="file" accept="audio/*" />
             <span id="strudel-drop-label">Drop audio or choose file</span>
           </label>
           <div class="strudel-preset-list">
-            <button type="button" data-sample="bd sd hh*4">kit</button>
-            <button type="button" data-sample="[bd ~] [~ sd] hh*8">backbeat</button>
-            <button type="button" data-sample="bd*4">four</button>
-            <button type="button" data-sample="[cp ~] hh [~ sd] hh">clap</button>
-            <button type="button" data-sample="bd [~ sd] <hh*4 hh*8> [cp ~]">break</button>
+            <button id="strudel-lead-apply" type="button">Add Lead</button>
+            <button type="button" data-lead-effect=".delay(0.25)">delay</button>
+            <button type="button" data-lead-effect=".jux(rev)">jux</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Bass</h2>
+          <div class="strudel-preset-list">
+            <button id="strudel-bass-apply" type="button">Add Bass</button>
+            <button type="button" data-bass-pattern="steady">steady</button>
+            <button type="button" data-bass-pattern="syncopated">sync</button>
+            <button type="button" data-bass-pattern="octaves">octaves</button>
           </div>
         </section>
       </aside>
@@ -159,8 +107,9 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
 <style>
   .strudel-shell {
     position: relative;
-    min-height: calc(100vh - 11.25rem);
-    --strudel-panel-height: min(78vh, 54rem);
+    height: calc(100vh - 11.25rem);
+    overflow: hidden;
+    --strudel-panel-height: 100%;
   }
   .strudel-workspace {
     display: grid;
@@ -168,6 +117,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     gap: 1.25rem;
     align-items: stretch;
     max-width: 112rem;
+    height: 100%;
   }
   .strudel-editor-pane,
   .strudel-side-pane {
@@ -293,6 +243,32 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     padding: 0.2rem 0;
     font-size: 0.62rem;
   }
+  .strudel-chord-grid {
+    display: grid;
+    gap: 0.35rem;
+    margin: 0.85rem 0;
+  }
+  .strudel-chord-row {
+    display: grid;
+    grid-template-columns: 1.4rem minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: 0.35rem;
+    align-items: center;
+  }
+  .strudel-chord-row span {
+    color: var(--muted);
+    font: 0.66rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    text-align: center;
+  }
+  .strudel-chord-row select {
+    min-width: 0;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--ink);
+    padding: 0.25rem 0.35rem;
+    font-size: 0.7rem;
+  }
   .strudel-code-wrap {
     position: relative;
     width: 100%;
@@ -355,6 +331,11 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     margin-inline: -0.25rem;
     padding-inline: 0.25rem;
     border-radius: 2px;
+    transition: background 120ms ease, box-shadow 120ms ease;
+  }
+  .strudel-code-wrap.is-running #strudel-highlight :global(.code-line.is-active) {
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    box-shadow: inset 2px 0 0 color-mix(in srgb, var(--accent) 75%, transparent);
   }
   #strudel-code {
     position: relative;
@@ -460,8 +441,13 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     text-underline-offset: 2px;
   }
   @media (max-width: 880px) {
+    .strudel-shell {
+      height: auto;
+      overflow: visible;
+    }
     .strudel-workspace {
       grid-template-columns: 1fr;
+      height: auto;
     }
     .strudel-side-pane {
       height: auto;
@@ -480,9 +466,8 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   const infoButton = document.getElementById('strudel-info') as HTMLButtonElement | null;
   const resetButton = document.getElementById('strudel-reset') as HTMLButtonElement | null;
   const aboutDialog = document.getElementById('strudel-about') as HTMLDialogElement | null;
-  const soundInput = document.getElementById('strudel-sound') as HTMLSelectElement | null;
-  const chordRoot = document.getElementById('strudel-chord-root') as HTMLSelectElement | null;
-  const chordShape = document.getElementById('strudel-chord-shape') as HTMLSelectElement | null;
+  const leadSound = document.getElementById('strudel-lead-sound') as HTMLSelectElement | null;
+  const chordGrid = document.getElementById('strudel-chord-grid');
   const chordApply = document.getElementById('strudel-chord-apply') as HTMLButtonElement | null;
   const sampleFileInput = document.getElementById('strudel-sample-file') as HTMLInputElement | null;
   const sampleDrop = document.getElementById('strudel-drop') as HTMLElement | null;
@@ -493,89 +478,9 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   const drumClear = document.getElementById('strudel-drum-clear') as HTMLButtonElement | null;
   const arpApply = document.getElementById('strudel-arp-apply') as HTMLButtonElement | null;
   const arpClear = document.getElementById('strudel-arp-clear') as HTMLButtonElement | null;
+  const leadApply = document.getElementById('strudel-lead-apply') as HTMLButtonElement | null;
+  const bassApply = document.getElementById('strudel-bass-apply') as HTMLButtonElement | null;
   const defaultCode = codeEl?.defaultValue ?? '';
-
-  const presets: Record<string, string> = {
-    melodic: `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
-  .sound("sawtooth")
-  .slow(2)
-  .lpf(sine.range(500, 2200).slow(8))
-  .gain(0.55)`,
-    pulse: `note("<c2 c3> [g2 bb2] <f2 ab2> [eb2 g3]")
-  .sound("square")
-  .slow(3)
-  .room(0.35)
-  .gain(0.45)`,
-    drums: `s("bd*2 [~ sd] <hh*4 hh*8> [cp ~]")
-  .bank("RolandTR909")
-  .slow(1.5)
-  .gain(0.65)`,
-    texture: `note("c3 eb3 g3 bb3")
-  .sound("triangle")
-  .fast("<1 1.5 2>")
-  .delay(0.45)
-  .room(0.75)
-  .gain(0.35)`,
-    bass: `note("<c1 c2> [~ eb1] <bb0 bb1> [f1 ab1]")
-  .sound("sawtooth")
-  .struct("x [~ x] x [x ~]")
-  .lpf(900)
-  .gain(0.62)`,
-    bell: `note("c5 <eb5 g5> bb4 [ab5 c6]")
-  .sound("sine")
-  .slow(4)
-  .delay(0.35)
-  .room(0.8)
-  .gain(0.42)`,
-    breaks: `s("[bd ~] [~ sd] hh*8 [bd sd]")
-  .slow(1)
-  .sometimes(x => x.fast(2))
-  .room(0.25)
-  .gain(0.68)`,
-    ambient: `note("c2 eb2 g2 bb2")
-  .sound("triangle")
-  .slow(8)
-  .lpf(sine.range(400, 2600).slow(12))
-  .delay(0.55)
-  .room(0.9)
-  .gain(0.38)`,
-    sampleKit: `s("bd sd hh*4 [cp ~]")
-  .bank("RolandTR909")
-  .slow(1)
-  .gain(0.62)`,
-    breakbeat: `s("[bd ~] [~ sd] <hh*8 hh*4> [bd cp]")
-  .bank("RolandTR909")
-  .sometimes(x => x.fast(2))
-  .room(0.25)
-  .gain(0.66)`,
-  };
-
-  const layerSnippets: Record<string, string> = {
-    drums: `s("bd [~ sd] hh*8 [cp ~]")
-  .bank("RolandTR909")
-  .gain(0.65)`,
-    bass: `note("c1 [~ eb1] <bb0 bb1> [f1 ab1]")
-  .sound("sawtooth")
-  .struct("x [~ x] x [x ~]")
-  .lpf(800)
-  .gain(0.56)`,
-    lead: `note("c4 eb4 g4 <bb4 c5>")
-  .sound("square")
-  .fast(2)
-  .delay(0.25)
-  .gain(0.42)`,
-    chords: `note("<c3 eb3 g3> <bb2 d3 f3> <ab2 c3 eb3> <g2 bb2 d3>")
-  .sound("triangle")
-  .slow(2)
-  .room(0.55)
-  .gain(0.38)`,
-    pad: `note("<c2 eb2 g2 bb2> <ab2 c3 eb3 g3>")
-  .sound("sine")
-  .slow(4)
-  .lpf(sine.range(500, 2500).slow(8))
-  .room(0.85)
-  .gain(0.34)`,
-  };
 
   const drumRows = [
     { label: 'bd', hits: [0, 4, 8, 12] },
@@ -585,6 +490,16 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   ];
   const arpNotes = ['~', 'c3', 'eb3', 'g3', 'bb3', 'c4'];
   const arpDefault = ['c3', '~', 'eb3', 'g3', 'bb3', 'g3', 'c4', 'eb3'];
+  const chordRoots = ['c', 'd', 'eb', 'f', 'g', 'ab', 'bb'];
+  const chordQualities = ['minor', 'major', 'sus', 'wide'];
+  const chordDefault = [
+    { root: 'c', quality: 'minor' },
+    { root: 'bb', quality: 'major' },
+    { root: 'ab', quality: 'major' },
+    { root: 'g', quality: 'minor' },
+  ];
+  let bassPattern = 'syncopated';
+  let leadEffect = '.delay(0.25)';
 
   let strudelReady: Promise<void> | null = null;
   let droppedSampleUrl: string | null = null;
@@ -656,7 +571,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
 
   function evaluateCurrentPattern(status = 'Updated.') {
     if (!codeEl) return;
-    const evaluate = (window as any).evaluate;
+    const evaluate = getStrudelFunction('evaluate');
     if (typeof evaluate !== 'function') return;
     evaluate(codeEl.value);
     setStatus(status);
@@ -697,11 +612,20 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     return strudelReady;
   }
 
+  function getStrudelFunction(name: string) {
+    const win = window as any;
+    return typeof win[name] === 'function'
+      ? win[name]
+      : typeof win.strudel?.[name] === 'function'
+        ? win.strudel[name]
+        : null;
+  }
+
   async function runPattern() {
     if (!codeEl) return;
     try {
       await loadStrudel();
-      const evaluate = (window as any).evaluate;
+      const evaluate = getStrudelFunction('evaluate');
       if (typeof evaluate !== 'function') throw new Error('Strudel evaluator is unavailable.');
       isRunning = true;
       evaluateCurrentPattern('Running.');
@@ -714,9 +638,11 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   async function stopPattern() {
     try {
       await loadStrudel();
-      const hush = (window as any).hush;
+      const hush = getStrudelFunction('hush');
       if (typeof hush !== 'function') throw new Error('Strudel stop function is unavailable.');
       hush();
+      const silence = getStrudelFunction('silence');
+      if (typeof silence === 'function') silence();
       isRunning = false;
       stopPlayIndicator();
       setStatus('Stopped.');
@@ -770,33 +696,60 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     ));
     const pattern = notes.join(' ');
     return `note("${pattern}")
-  .sound("${soundInput?.value ?? 'sine'}")
+  .sound("sine")
   .fast(2)
   .delay(0.2)
   .gain(0.42)`;
   }
 
   function chordCodeFromPanel() {
-    const root = chordRoot?.value ?? 'c';
-    const shape = chordShape?.value ?? 'minor';
+    const selected = Array.from({ length: 4 }, (_unused, index) => ({
+      root: chordGrid?.querySelector<HTMLSelectElement>(`select[data-chord-root="${index}"]`)?.value ?? chordDefault[index].root,
+      quality: chordGrid?.querySelector<HTMLSelectElement>(`select[data-chord-quality="${index}"]`)?.value ?? chordDefault[index].quality,
+    }));
     const names = ['c', 'db', 'd', 'eb', 'e', 'f', 'gb', 'g', 'ab', 'a', 'bb', 'b'];
-    const rootIndex = Math.max(0, names.indexOf(root));
-    const noteAt = (semitones: number, octave = 3) => {
+    const noteAt = (root: string, semitones: number, octave = 3) => {
+      const rootIndex = Math.max(0, names.indexOf(root));
       const index = rootIndex + semitones;
       return `${names[((index % 12) + 12) % 12]}${octave + Math.floor(index / 12)}`;
     };
-    const chord = (offset: number, intervals: number[], octave = 3) => `<${intervals.map((interval) => noteAt(offset + interval, octave)).join(' ')}>`;
-    const progressions: Record<string, string> = {
-      minor: [chord(0, [0, 3, 7]), chord(10, [0, 4, 7], 2), chord(8, [0, 4, 7], 2), chord(7, [0, 3, 7], 2)].join(' '),
-      major: [chord(0, [0, 4, 7]), chord(7, [0, 4, 7], 2), chord(9, [0, 3, 7], 2), chord(5, [0, 4, 7], 2)].join(' '),
-      modal: [chord(0, [0, 5, 7]), chord(10, [0, 5, 7], 2), chord(8, [0, 4, 7], 2), chord(10, [0, 4, 7], 2)].join(' '),
-      wide: [chord(0, [0, 7, 15], 2), chord(10, [0, 7, 16], 1), chord(8, [0, 7, 16], 1), chord(7, [0, 7, 15], 1)].join(' '),
+    const intervals: Record<string, number[]> = {
+      minor: [0, 3, 7],
+      major: [0, 4, 7],
+      sus: [0, 5, 7],
+      wide: [0, 7, 15],
     };
-    return `note("${progressions[shape] ?? progressions.minor}")
+    const progression = selected.map(({ root, quality }) => {
+      const octave = quality === 'wide' ? 2 : 3;
+      return `<${(intervals[quality] ?? intervals.minor).map((interval) => noteAt(root, interval, octave)).join(' ')}>`;
+    }).join(' ');
+    return `note("${progression}")
   .sound("triangle")
   .slow(2)
   .room(0.55)
   .gain(0.38)`;
+  }
+
+  function leadCode() {
+    const sound = leadSound?.value ?? 'square';
+    return `note("c4 eb4 g4 <bb4 c5>")
+  .sound("${sound}")
+  .fast(2)
+  ${leadEffect}
+  .gain(0.42)`;
+  }
+
+  function bassCode() {
+    const patterns: Record<string, string> = {
+      steady: 'c1 c1 bb0 ab0',
+      syncopated: 'c1 [~ eb1] <bb0 bb1> [f1 ab1]',
+      octaves: '<c1 c2> [~ eb1] <bb0 bb1> [ab0 ab1]',
+    };
+    return `note("${patterns[bassPattern] ?? patterns.syncopated}")
+  .sound("sawtooth")
+  .struct("x [~ x] x [x ~]")
+  .lpf(800)
+  .gain(0.56)`;
   }
 
   function setStepState(button: HTMLButtonElement, force?: boolean) {
@@ -868,11 +821,40 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     });
   }
 
+  function renderChordGrid() {
+    if (!chordGrid) return;
+    chordGrid.innerHTML = '';
+    chordDefault.forEach((chord, index) => {
+      const row = document.createElement('div');
+      row.className = 'strudel-chord-row';
+      const label = document.createElement('span');
+      label.textContent = String(index + 1);
+      const rootSelect = document.createElement('select');
+      rootSelect.dataset.chordRoot = String(index);
+      chordRoots.forEach((root) => {
+        const option = document.createElement('option');
+        option.value = root;
+        option.textContent = root.toUpperCase();
+        option.selected = root === chord.root;
+        rootSelect.append(option);
+      });
+      const qualitySelect = document.createElement('select');
+      qualitySelect.dataset.chordQuality = String(index);
+      chordQualities.forEach((quality) => {
+        const option = document.createElement('option');
+        option.value = quality;
+        option.textContent = quality;
+        option.selected = quality === chord.quality;
+        qualitySelect.append(option);
+      });
+      row.append(label, rootSelect, qualitySelect);
+      chordGrid.append(row);
+    });
+  }
+
   function resetEditor() {
     if (codeEl) codeEl.value = defaultCode;
-    if (soundInput) soundInput.value = 'sawtooth';
-    if (chordRoot) chordRoot.value = 'c';
-    if (chordShape) chordShape.value = 'minor';
+    if (leadSound) leadSound.value = 'square';
     if (sampleFileInput) sampleFileInput.value = '';
     if (sampleDropLabel) sampleDropLabel.textContent = 'Drop audio or choose file';
     if (droppedSampleUrl) URL.revokeObjectURL(droppedSampleUrl);
@@ -881,6 +863,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     stopPlayIndicator();
     renderDrumGrid();
     renderArpGrid();
+    renderChordGrid();
     syncHighlight();
     try {
       window.localStorage.removeItem('strudel-code');
@@ -922,26 +905,26 @@ s("${sampleName}")
 
   renderDrumGrid();
   renderArpGrid();
+  renderChordGrid();
   syncHighlight();
   codeEl?.addEventListener('input', syncHighlight);
   codeEl?.addEventListener('scroll', syncHighlight);
   window.addEventListener('pointerup', () => {
     isPaintingSteps = false;
   });
-  soundInput?.addEventListener('input', () => {
-    setStatus(`Tone set to ${soundInput.value}.`);
-  });
   drumApply?.addEventListener('click', () => appendCodeLayer(drumCodeFromGrid(), 'Drums'));
   drumClear?.addEventListener('click', () => {
     drumGrid?.querySelectorAll<HTMLButtonElement>('button').forEach((button) => setStepState(button, false));
     setStatus('Cleared drum grid.');
   });
-  arpApply?.addEventListener('click', () => appendCodeLayer(arpCodeFromGrid(), 'Lead'));
+  arpApply?.addEventListener('click', () => appendCodeLayer(arpCodeFromGrid(), 'Arp'));
   arpClear?.addEventListener('click', () => {
     arpGrid?.querySelectorAll<HTMLButtonElement>('button').forEach((button) => setStepState(button, false));
     setStatus('Cleared arp grid.');
   });
   chordApply?.addEventListener('click', () => appendCodeLayer(chordCodeFromPanel(), 'Chords'));
+  leadApply?.addEventListener('click', () => appendCodeLayer(leadCode(), 'Lead'));
+  bassApply?.addEventListener('click', () => appendCodeLayer(bassCode(), 'Bass'));
   resetButton?.addEventListener('click', resetEditor);
   infoButton?.addEventListener('click', () => aboutDialog?.showModal());
   aboutDialog?.addEventListener('click', (event) => {
@@ -949,36 +932,16 @@ s("${sampleName}")
   });
   runButton?.addEventListener('click', runPattern);
   stopButton?.addEventListener('click', stopPattern);
-  document.querySelectorAll<HTMLButtonElement>('[data-layer]').forEach((button) => {
+  document.querySelectorAll<HTMLButtonElement>('[data-lead-effect]').forEach((button) => {
     button.addEventListener('click', () => {
-      const layer = button.dataset.layer;
-      if (layer && layerSnippets[layer]) appendCodeLayer(layerSnippets[layer], button.textContent?.trim() ?? 'Part');
+      if (!button.dataset.leadEffect) return;
+      leadEffect = button.dataset.leadEffect;
     });
   });
-  document.querySelectorAll<HTMLButtonElement>('[data-insert]').forEach((button) => {
+  document.querySelectorAll<HTMLButtonElement>('[data-bass-pattern]').forEach((button) => {
     button.addEventListener('click', () => {
-      if (!codeEl || !button.dataset.insert) return;
-      codeEl.value = `${codeEl.value.trimEnd()}\n\n// Effect\n${button.dataset.insert}`;
-      syncHighlight();
-      setStatus(`Inserted ${button.textContent?.trim() ?? 'transform'}.`);
-    });
-  });
-  document.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((button) => {
-    button.addEventListener('click', () => {
-      if (!button.dataset.sample) return;
-      appendCodeLayer(`s("${button.dataset.sample}")
-  .bank("RolandTR909")
-  .gain(0.62)`, button.textContent?.trim() ?? 'Samples');
-    });
-  });
-  document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const preset = button.dataset.preset;
-      if (preset && presets[preset] && codeEl) {
-        codeEl.value = presets[preset];
-        syncHighlight();
-        setStatus(`Loaded ${button.textContent?.trim() ?? 'preset'}.`);
-      }
+      if (!button.dataset.bassPattern) return;
+      bassPattern = button.dataset.bassPattern;
     });
   });
   sampleFileInput?.addEventListener('change', () => {
