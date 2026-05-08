@@ -22,7 +22,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
           <pre id="strudel-highlight" aria-hidden="true"></pre>
           <textarea id="strudel-code" spellcheck="false" autocomplete="off">{defaultPattern}</textarea>
         </div>
-        <p id="strudel-status" class="strudel-status" aria-live="polite">Audio starts after Run.</p>
+        <p id="strudel-status" class="strudel-status" aria-live="polite"></p>
       </section>
 
       <aside class="strudel-side-pane">
@@ -167,19 +167,24 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .strudel-shell {
     position: relative;
     min-height: calc(100vh - 11.25rem);
-    --strudel-editor-height: min(74vh, 52rem);
+    --strudel-panel-height: min(78vh, 54rem);
   }
   .strudel-workspace {
     display: grid;
     grid-template-columns: minmax(38rem, 1.9fr) minmax(17rem, 22rem);
     gap: 1.25rem;
-    align-items: start;
+    align-items: stretch;
     max-width: 112rem;
   }
   .strudel-editor-pane,
-  .strudel-side-pane section {
+  .strudel-side-pane {
     background: #000;
     padding: 0.95rem;
+  }
+  .strudel-editor-pane {
+    display: flex;
+    flex-direction: column;
+    min-height: var(--strudel-panel-height);
   }
   .strudel-pane-head {
     display: flex;
@@ -237,21 +242,36 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .strudel-code-wrap {
     position: relative;
     width: 100%;
-    min-height: var(--strudel-editor-height);
+    flex: 1;
+    min-height: 0;
     border: 1px solid var(--rule);
     border-radius: 3px;
     background: rgba(255, 255, 255, 0.035);
     overflow: hidden;
-    transition: border-color 140ms ease, box-shadow 180ms ease;
+    transition: border-color 140ms ease, box-shadow 180ms ease, background 180ms ease;
   }
-  .strudel-code-wrap.is-playing {
+  .strudel-code-wrap.is-running {
     border-color: var(--accent);
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 48%, transparent), 0 0 22px color-mix(in srgb, var(--accent) 18%, transparent);
+    background:
+      linear-gradient(90deg, transparent 0 46%, color-mix(in srgb, var(--accent) 14%, transparent) 49% 51%, transparent 54% 100%),
+      rgba(255, 255, 255, 0.035);
+    background-size: 240% 100%, auto;
+    animation: strudel-play-scan 1.8s linear infinite;
+  }
+  .strudel-code-wrap.is-running #strudel-highlight .tok-fn,
+  .strudel-code-wrap.is-running #strudel-highlight .tok-method {
+    text-shadow: 0 0 0.75rem color-mix(in srgb, var(--accent) 48%, transparent);
+  }
+  @keyframes strudel-play-scan {
+    from { background-position: 120% 0, 0 0; }
+    to { background-position: -120% 0, 0 0; }
   }
   #strudel-code,
   #strudel-highlight {
     box-sizing: border-box;
-    min-height: var(--strudel-editor-height);
+    min-height: 100%;
+    height: 100%;
     margin: 0;
     padding: 0.85rem;
     font: 0.94rem/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -262,7 +282,8 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   #strudel-highlight {
     position: absolute;
     inset: 0;
-    overflow: hidden;
+    z-index: 2;
+    overflow: auto;
     pointer-events: none;
     color: var(--ink);
   }
@@ -271,12 +292,22 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   #strudel-highlight .tok-number { color: #d6ff5a; }
   #strudel-highlight .tok-method { color: #4ad6ff; }
   #strudel-highlight .tok-symbol { color: var(--muted); }
+  #strudel-highlight .code-line {
+    display: block;
+    min-height: 1.55em;
+    margin-inline: -0.25rem;
+    padding-inline: 0.25rem;
+    border-radius: 2px;
+  }
+  .strudel-code-wrap.is-running #strudel-highlight .code-line.is-active {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+  }
   #strudel-code {
     position: relative;
     z-index: 1;
     display: block;
     width: 100%;
-    resize: vertical;
+    resize: none;
     border: 0;
     background: transparent;
     color: transparent;
@@ -292,14 +323,20 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     font-size: 0.85rem;
     line-height: 1.5;
   }
+  .strudel-status:empty {
+    display: none;
+  }
   .strudel-side-pane {
     display: grid;
     gap: 1.25rem;
-    max-height: var(--strudel-editor-height);
+    height: var(--strudel-panel-height);
     overflow-y: auto;
     padding-right: 0.25rem;
     scrollbar-width: thin;
     scrollbar-color: var(--rule) transparent;
+  }
+  .strudel-side-pane section {
+    padding: 0;
   }
   .strudel-field {
     display: grid;
@@ -382,7 +419,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
       grid-template-columns: 1fr;
     }
     .strudel-side-pane {
-      max-height: none;
+      height: auto;
       overflow: visible;
       padding-right: 0;
     }
@@ -479,6 +516,10 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
 
   let strudelReady: Promise<void> | null = null;
   let droppedSampleUrl: string | null = null;
+  let activeLineIndex = -1;
+  let playIndicatorTimer: number | null = null;
+  let isRunning = false;
+  let liveApplyTimer: number | null = null;
 
   function setStatus(message: string) {
     if (statusEl) statusEl.textContent = message;
@@ -508,17 +549,54 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
 
   function syncHighlight() {
     if (!codeEl || !highlightEl) return;
-    highlightEl.innerHTML = `${highlightStrudel(codeEl.value)}\n`;
+    const lines = codeEl.value.split('\n');
+    highlightEl.innerHTML = lines
+      .map((line, index) => {
+        const activeClass = index === activeLineIndex ? ' is-active' : '';
+        return `<span class="code-line${activeClass}">${highlightStrudel(line) || ' '}</span>`;
+      })
+      .join('');
     highlightEl.scrollTop = codeEl.scrollTop;
     highlightEl.scrollLeft = codeEl.scrollLeft;
   }
 
-  function pulseEditor() {
-    editorEl?.classList.remove('is-playing');
-    window.requestAnimationFrame(() => {
-      editorEl?.classList.add('is-playing');
-      window.setTimeout(() => editorEl?.classList.remove('is-playing'), 700);
-    });
+  function stopPlayIndicator() {
+    if (playIndicatorTimer !== null) window.clearInterval(playIndicatorTimer);
+    playIndicatorTimer = null;
+    activeLineIndex = -1;
+    editorEl?.classList.remove('is-running');
+    syncHighlight();
+  }
+
+  function startPlayIndicator() {
+    if (!codeEl) return;
+    if (playIndicatorTimer !== null) window.clearInterval(playIndicatorTimer);
+    editorEl?.classList.add('is-running');
+    const step = () => {
+      const lineCount = Math.max(1, codeEl.value.split('\n').length);
+      activeLineIndex = (activeLineIndex + 1) % lineCount;
+      syncHighlight();
+    };
+    activeLineIndex = -1;
+    step();
+    playIndicatorTimer = window.setInterval(step, 650);
+  }
+
+  function evaluateCurrentPattern(status = 'Updated.') {
+    if (!codeEl) return;
+    const evaluate = (window as any).evaluate;
+    if (typeof evaluate !== 'function') return;
+    evaluate(codeEl.value);
+    setStatus(status);
+    try {
+      window.localStorage.setItem('strudel-code', codeEl.value);
+    } catch (e) {}
+  }
+
+  function scheduleLiveApply() {
+    if (!isRunning) return;
+    if (liveApplyTimer !== null) window.clearTimeout(liveApplyTimer);
+    liveApplyTimer = window.setTimeout(() => evaluateCurrentPattern(), 120);
   }
 
   function loadStrudel() {
@@ -561,12 +639,9 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
       await loadStrudel();
       const evaluate = (window as any).evaluate;
       if (typeof evaluate !== 'function') throw new Error('Strudel evaluator is unavailable.');
-      evaluate(codeEl.value);
-      setStatus('Running.');
-      pulseEditor();
-      try {
-        window.localStorage.setItem('strudel-code', codeEl.value);
-      } catch (e) {}
+      isRunning = true;
+      evaluateCurrentPattern('Running.');
+      startPlayIndicator();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not run pattern.');
     }
@@ -578,6 +653,8 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
       const hush = (window as any).hush;
       if (typeof hush !== 'function') throw new Error('Strudel stop function is unavailable.');
       hush();
+      isRunning = false;
+      stopPlayIndicator();
       setStatus('Stopped.');
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Could not stop pattern.');
@@ -601,6 +678,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
       .replace(/\n\s*\.lpf\([^)]*\)/g, '');
     codeEl.value = `${base}\n  .sound("${sound}")\n  .slow(${slow})\n  .lpf(${cutoff})\n  .delay(${delay})\n  .room(${room})\n  .gain(${gain})`;
     syncHighlight();
+    scheduleLiveApply();
   }
 
   function builderExpression() {
@@ -657,6 +735,8 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     if (sampleDropLabel) sampleDropLabel.textContent = 'Drop audio or choose file';
     if (droppedSampleUrl) URL.revokeObjectURL(droppedSampleUrl);
     droppedSampleUrl = null;
+    isRunning = false;
+    stopPlayIndicator();
     updateControlLabels();
     syncHighlight();
     try {
@@ -703,11 +783,12 @@ s("${sampleName}")
   syncHighlight();
   codeEl?.addEventListener('input', syncHighlight);
   codeEl?.addEventListener('scroll', syncHighlight);
-  gainInput?.addEventListener('input', updateControlLabels);
-  slowInput?.addEventListener('input', updateControlLabels);
-  roomInput?.addEventListener('input', updateControlLabels);
-  delayInput?.addEventListener('input', updateControlLabels);
-  cutoffInput?.addEventListener('input', updateControlLabels);
+  [gainInput, slowInput, roomInput, delayInput, cutoffInput, soundInput].forEach((input) => {
+    input?.addEventListener('input', () => {
+      updateControlLabels();
+      applyEditorControls();
+    });
+  });
   applyControls?.addEventListener('click', applyEditorControls);
   buildReplace?.addEventListener('click', replaceFromBuilder);
   buildAppend?.addEventListener('click', appendFromBuilder);
