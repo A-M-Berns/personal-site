@@ -22,7 +22,6 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
           <pre id="strudel-highlight" aria-hidden="true"></pre>
           <textarea id="strudel-code" spellcheck="false" autocomplete="off">{defaultPattern}</textarea>
         </div>
-        <p id="strudel-status" class="strudel-status" aria-live="polite"></p>
       </section>
 
       <aside class="strudel-side-pane">
@@ -248,7 +247,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     font: 0.62rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     text-transform: uppercase;
   }
-  .strudel-step-grid button {
+  .strudel-step-grid :global(button) {
     min-width: 0;
     min-height: 1.35rem;
     padding: 0;
@@ -257,19 +256,19 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     touch-action: none;
     user-select: none;
   }
-  .strudel-step-grid button.is-on,
-  .strudel-arp-grid button.is-on {
+  .strudel-step-grid :global(button.is-on),
+  .strudel-arp-grid :global(button.is-on) {
     color: #000;
     background: var(--accent);
     border-color: var(--accent);
   }
-  .strudel-step-grid button:nth-child(17n + 2),
-  .strudel-step-grid button:nth-child(17n + 6),
-  .strudel-step-grid button:nth-child(17n + 10),
-  .strudel-step-grid button:nth-child(17n + 14) {
+  .strudel-step-grid :global(button:nth-child(17n + 2)),
+  .strudel-step-grid :global(button:nth-child(17n + 6)),
+  .strudel-step-grid :global(button:nth-child(17n + 10)),
+  .strudel-step-grid :global(button:nth-child(17n + 14)) {
     border-color: color-mix(in srgb, var(--accent) 42%, var(--rule));
   }
-  .strudel-step-grid button.is-on::after {
+  .strudel-step-grid :global(button.is-on)::after {
     content: "";
     display: block;
     width: 0.45rem;
@@ -288,7 +287,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     display: grid;
     gap: 0.2rem;
   }
-  .strudel-arp-grid button {
+  .strudel-arp-grid :global(button) {
     min-width: 0;
     min-height: 1.55rem;
     padding: 0.2rem 0;
@@ -303,24 +302,26 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     border-radius: 3px;
     background: rgba(255, 255, 255, 0.035);
     overflow: hidden;
-    transition: border-color 140ms ease, box-shadow 180ms ease, background 180ms ease;
+    transition: border-color 140ms ease, box-shadow 180ms ease;
   }
   .strudel-code-wrap.is-running {
     border-color: var(--accent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 48%, transparent), 0 0 22px color-mix(in srgb, var(--accent) 18%, transparent);
-    background:
-      linear-gradient(90deg, transparent 0 46%, color-mix(in srgb, var(--accent) 14%, transparent) 49% 51%, transparent 54% 100%),
-      rgba(255, 255, 255, 0.035);
-    background-size: 240% 100%, auto;
-    animation: strudel-play-scan 1.8s linear infinite;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
   }
-  .strudel-code-wrap.is-running #strudel-highlight .tok-fn,
-  .strudel-code-wrap.is-running #strudel-highlight .tok-method {
-    text-shadow: 0 0 0.75rem color-mix(in srgb, var(--accent) 48%, transparent);
+  .strudel-code-wrap.is-running::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    border-radius: 2px;
+    border-left: 2px solid var(--accent);
+    opacity: 0.7;
+    animation: strudel-edge-pulse 1.8s ease-in-out infinite;
   }
-  @keyframes strudel-play-scan {
-    from { background-position: 120% 0, 0 0; }
-    to { background-position: -120% 0, 0 0; }
+  @keyframes strudel-edge-pulse {
+    0%, 100% { opacity: 0.32; }
+    50% { opacity: 0.82; }
   }
   #strudel-code,
   #strudel-highlight {
@@ -342,20 +343,18 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     pointer-events: none;
     color: var(--ink);
   }
-  #strudel-highlight .tok-fn { color: var(--accent); }
-  #strudel-highlight .tok-string { color: color-mix(in srgb, var(--accent) 72%, #fff); }
-  #strudel-highlight .tok-number { color: #d6ff5a; }
-  #strudel-highlight .tok-method { color: #4ad6ff; }
-  #strudel-highlight .tok-symbol { color: var(--muted); }
-  #strudel-highlight .code-line {
+  #strudel-highlight :global(.tok-fn) { color: var(--accent); }
+  #strudel-highlight :global(.tok-string) { color: color-mix(in srgb, var(--accent) 72%, #fff); }
+  #strudel-highlight :global(.tok-number) { color: #d6ff5a; }
+  #strudel-highlight :global(.tok-method) { color: #4ad6ff; }
+  #strudel-highlight :global(.tok-symbol) { color: var(--muted); }
+  #strudel-highlight :global(.tok-comment) { color: color-mix(in srgb, var(--muted) 78%, transparent); }
+  #strudel-highlight :global(.code-line) {
     display: block;
     min-height: 1.55em;
     margin-inline: -0.25rem;
     padding-inline: 0.25rem;
     border-radius: 2px;
-  }
-  .strudel-code-wrap.is-running #strudel-highlight .code-line.is-active {
-    background: color-mix(in srgb, var(--accent) 16%, transparent);
   }
   #strudel-code {
     position: relative;
@@ -371,15 +370,6 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   }
   #strudel-code:focus {
     outline: none;
-  }
-  .strudel-status {
-    margin: 0.75rem 0 0;
-    color: var(--muted);
-    font-size: 0.85rem;
-    line-height: 1.5;
-  }
-  .strudel-status:empty {
-    display: none;
   }
   .strudel-side-pane {
     display: grid;
@@ -487,7 +477,6 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   const highlightEl = document.getElementById('strudel-highlight');
   const runButton = document.getElementById('strudel-run') as HTMLButtonElement | null;
   const stopButton = document.getElementById('strudel-stop') as HTMLButtonElement | null;
-  const statusEl = document.getElementById('strudel-status');
   const infoButton = document.getElementById('strudel-info') as HTMLButtonElement | null;
   const resetButton = document.getElementById('strudel-reset') as HTMLButtonElement | null;
   const aboutDialog = document.getElementById('strudel-about') as HTMLDialogElement | null;
@@ -605,9 +594,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   let liveApplyTimer: number | null = null;
   let isPaintingSteps = false;
 
-  function setStatus(message: string) {
-    if (statusEl) statusEl.textContent = message;
-  }
+  function setStatus(_message: string) {}
 
   function escapeHtml(value: string) {
     return value
@@ -619,8 +606,9 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   function highlightStrudel(code: string) {
     const escaped = escapeHtml(code);
     return escaped.replace(
-      /("(?:\\.|[^"\\])*")|(\.[a-zA-Z_]\w*)|(\b(?:note|s|n|sound|samples|stack|cat|seq|slow|fast|gain|room|delay|lpf|hpf|rev|jux|sometimes|every|off|struct|bank|sine|saw|square|tri|rand|range)\b)|(\b\d+(?:\.\d+)?\b)|([()[\]{}<>*,])/g,
-      (_match, stringToken, methodToken, functionToken, numberToken, symbolToken) => {
+      /(\/\/.*$)|("(?:\\.|[^"\\])*")|(\.[a-zA-Z_]\w*)|(\b(?:note|s|n|sound|samples|stack|cat|seq|slow|fast|gain|room|delay|lpf|hpf|rev|jux|sometimes|every|off|struct|bank|sine|saw|square|tri|rand|range)\b)|(\b\d+(?:\.\d+)?\b)|([()[\]{}<>*,])/gm,
+      (_match, commentToken, stringToken, methodToken, functionToken, numberToken, symbolToken) => {
+        if (commentToken) return `<span class="tok-comment">${commentToken}</span>`;
         if (stringToken) return `<span class="tok-string">${stringToken}</span>`;
         if (methodToken) return `<span class="tok-method">${methodToken}</span>`;
         if (functionToken) return `<span class="tok-fn">${functionToken}</span>`;
@@ -739,14 +727,19 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
 
   function appendCodeLayer(layerCode: string, sectionName = 'Part') {
     if (!codeEl) return;
-    const current = codeEl.value.trim();
+    const current = codeEl.value.trimEnd();
     const next = `// ${sectionName}\n${layerCode.trim()}`
       .split('\n')
       .map((line) => `  ${line}`)
       .join('\n');
-    codeEl.value = current.startsWith('stack(')
-      ? current.replace(/\)\s*$/, `,\n\n${next}\n)`)
-      : `stack(\n  // Starting pattern\n  ${current.replace(/\n/g, '\n  ')},\n\n${next}\n)`;
+    if (current.trimStart().startsWith('stack(')) {
+      const closeIndex = current.lastIndexOf('\n)');
+      codeEl.value = closeIndex >= 0
+        ? `${current.slice(0, closeIndex).trimEnd()},\n\n${next}\n)`
+        : `${current},\n\n${next}`;
+    } else {
+      codeEl.value = `stack(\n  // Starting pattern\n  ${current.trim().replace(/\n/g, '\n  ')},\n\n${next}\n)`;
+    }
     syncHighlight();
     setStatus(`Appended ${sectionName.toLowerCase()}.`);
     scheduleLiveApply();
@@ -965,7 +958,7 @@ s("${sampleName}")
   document.querySelectorAll<HTMLButtonElement>('[data-insert]').forEach((button) => {
     button.addEventListener('click', () => {
       if (!codeEl || !button.dataset.insert) return;
-      codeEl.value = `${codeEl.value.trimEnd()}\n  ${button.dataset.insert}`;
+      codeEl.value = `${codeEl.value.trimEnd()}\n\n// Effect\n${button.dataset.insert}`;
       syncHighlight();
       setStatus(`Inserted ${button.textContent?.trim() ?? 'transform'}.`);
     });
