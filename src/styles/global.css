@@ -1195,6 +1195,9 @@ body.page-taste:has(.cover-wall-page) .page {
   background: #000;
   padding: 0.85rem 0.95rem 0.95rem;
 }
+.writing-pane--college {
+  grid-column: 2;
+}
 .writing-pane h2 {
   font-family: var(--display);
   font-size: 1rem;
@@ -1264,6 +1267,9 @@ body.page-taste:has(.cover-wall-page) .page {
   .writing-panes {
     grid-template-columns: 1fr;
     gap: 2.5rem;
+  }
+  .writing-pane--college {
+    grid-column: auto;
   }
 }
 
