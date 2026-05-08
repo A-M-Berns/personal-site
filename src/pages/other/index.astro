@@ -508,13 +508,13 @@ import Base from '../../layouts/Base.astro';
     }
 
     function seedCycle() {
+      seedHash = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+      rng = mulberry32(seedHash);
       if (preset === 'random') {
         applyPreset(pickRandomPreset());
         seedMode = pickRandomSeedMode();
         if (seedSelect) seedSelect.value = seedMode;
       }
-      seedHash = (Date.now() ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
-      rng = mulberry32(seedHash);
       pickPalette();
       rollSpawnWeights();
       state.fill(0);
