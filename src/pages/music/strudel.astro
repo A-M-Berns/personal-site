@@ -1,0 +1,323 @@
+---
+import Base from '../../layouts/Base.astro';
+
+const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
+  .sound("sawtooth")
+  .slow(2)
+  .lpf(sine.range(500, 2200).slow(8))
+  .gain(0.55)`;
+---
+<Base title="Strudel — A. M. Berns" description="A small Strudel live-coding workspace.">
+  <div class="strudel-shell">
+    <header class="section-head">
+      <h1><span class="hl">Strudel</span></h1>
+      <p>A small browser workspace for live-coded patterns.</p>
+    </header>
+
+    <main class="strudel-workspace" aria-label="Strudel workspace">
+      <section class="strudel-editor-pane">
+        <div class="strudel-pane-head">
+          <h2>Pattern</h2>
+          <div class="strudel-actions">
+            <button id="strudel-run" type="button">Run</button>
+            <button id="strudel-stop" type="button">Stop</button>
+          </div>
+        </div>
+        <textarea id="strudel-code" spellcheck="false" autocomplete="off">{defaultPattern}</textarea>
+        <p id="strudel-status" class="strudel-status" aria-live="polite">Audio starts after Run.</p>
+      </section>
+
+      <aside class="strudel-side-pane">
+        <section>
+          <h2>Presets</h2>
+          <div class="strudel-preset-list">
+            <button type="button" data-preset="melodic">Melodic</button>
+            <button type="button" data-preset="pulse">Pulse</button>
+            <button type="button" data-preset="drums">Drums</button>
+            <button type="button" data-preset="texture">Texture</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Controls</h2>
+          <label class="strudel-field" for="strudel-gain">
+            <span>gain</span>
+            <input id="strudel-gain" type="range" min="0.15" max="0.9" step="0.05" value="0.55" />
+            <output id="strudel-gain-value" for="strudel-gain">0.55</output>
+          </label>
+          <label class="strudel-field" for="strudel-slow">
+            <span>slow</span>
+            <input id="strudel-slow" type="range" min="0.5" max="6" step="0.5" value="2" />
+            <output id="strudel-slow-value" for="strudel-slow">2</output>
+          </label>
+          <button id="strudel-apply-controls" type="button">Apply to editor</button>
+        </section>
+
+        <section class="strudel-legal">
+          <h2>Source</h2>
+          <p>
+            This page loads the unmodified <a href="https://www.npmjs.com/package/@strudel/web">@strudel/web</a>
+            browser package, part of <a href="https://codeberg.org/uzu/strudel">Strudel</a>,
+            licensed under <a href="https://codeberg.org/uzu/strudel/src/branch/main/LICENSE">AGPL-3.0-or-later</a>.
+            Strudel is provided without warranty. Site source is available at
+            <a href="https://github.com/A-M-Berns/personal-site">GitHub</a>.
+          </p>
+        </section>
+      </aside>
+    </main>
+  </div>
+</Base>
+
+<style>
+  .strudel-shell {
+    position: relative;
+  }
+  .strudel-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    gap: 1.25rem;
+    align-items: start;
+    max-width: 88rem;
+  }
+  .strudel-editor-pane,
+  .strudel-side-pane section {
+    background: #000;
+    padding: 0.95rem;
+  }
+  .strudel-pane-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+  }
+  .strudel-pane-head h2,
+  .strudel-side-pane h2 {
+    font-family: var(--display);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  .strudel-actions,
+  .strudel-preset-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+  .strudel-actions button,
+  .strudel-preset-list button,
+  #strudel-apply-controls {
+    font-family: var(--font-lexend), var(--sans);
+    font-size: 0.72rem;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.35rem 0.6rem;
+  }
+  .strudel-actions button:hover,
+  .strudel-actions button:focus-visible,
+  .strudel-preset-list button:hover,
+  .strudel-preset-list button:focus-visible,
+  #strudel-apply-controls:hover,
+  #strudel-apply-controls:focus-visible {
+    color: var(--accent);
+    border-color: var(--accent);
+    outline: none;
+  }
+  #strudel-code {
+    display: block;
+    width: 100%;
+    min-height: min(54vh, 34rem);
+    resize: vertical;
+    box-sizing: border-box;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.035);
+    color: var(--ink);
+    padding: 0.85rem;
+    font: 0.94rem/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  #strudel-code:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+  .strudel-status,
+  .strudel-legal p {
+    margin: 0.75rem 0 0;
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .strudel-side-pane {
+    display: grid;
+    gap: 1.25rem;
+  }
+  .strudel-field {
+    display: grid;
+    grid-template-columns: 3.25rem 1fr 3rem;
+    gap: 0.55rem;
+    align-items: center;
+    margin: 0.8rem 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+  .strudel-field input {
+    width: 100%;
+    margin: 0;
+    accent-color: var(--accent);
+  }
+  .strudel-field output {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .strudel-legal a {
+    text-decoration: underline;
+    text-decoration-color: var(--muted);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+  @media (max-width: 880px) {
+    .strudel-workspace {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  const codeEl = document.getElementById('strudel-code') as HTMLTextAreaElement | null;
+  const runButton = document.getElementById('strudel-run') as HTMLButtonElement | null;
+  const stopButton = document.getElementById('strudel-stop') as HTMLButtonElement | null;
+  const statusEl = document.getElementById('strudel-status');
+  const gainInput = document.getElementById('strudel-gain') as HTMLInputElement | null;
+  const gainValue = document.getElementById('strudel-gain-value');
+  const slowInput = document.getElementById('strudel-slow') as HTMLInputElement | null;
+  const slowValue = document.getElementById('strudel-slow-value');
+  const applyControls = document.getElementById('strudel-apply-controls') as HTMLButtonElement | null;
+
+  const presets: Record<string, string> = {
+    melodic: `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
+  .sound("sawtooth")
+  .slow(2)
+  .lpf(sine.range(500, 2200).slow(8))
+  .gain(0.55)`,
+    pulse: `note("<c2 c3> [g2 bb2] <f2 ab2> [eb2 g3]")
+  .sound("square")
+  .slow(3)
+  .room(0.35)
+  .gain(0.45)`,
+    drums: `s("bd*2 [~ sd] <hh*4 hh*8> [cp ~]")
+  .bank("RolandTR909")
+  .slow(1.5)
+  .gain(0.65)`,
+    texture: `note("c3 eb3 g3 bb3")
+  .sound("triangle")
+  .fast("<1 1.5 2>")
+  .delay(0.45)
+  .room(0.75)
+  .gain(0.35)`,
+  };
+
+  let strudelReady: Promise<void> | null = null;
+
+  function setStatus(message: string) {
+    if (statusEl) statusEl.textContent = message;
+  }
+
+  function loadStrudel() {
+    if (strudelReady) return strudelReady;
+    setStatus('Loading Strudel...');
+    strudelReady = new Promise((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>('script[data-strudel-web]');
+      if (existing) {
+        existing.addEventListener('load', () => resolve(), { once: true });
+        existing.addEventListener('error', () => reject(new Error('Could not load Strudel.')), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/@strudel/web@1.3.0';
+      script.async = true;
+      script.dataset.strudelWeb = 'true';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Could not load Strudel.'));
+      document.head.append(script);
+    }).then(async () => {
+      const initStrudel = (window as any).initStrudel;
+      if (typeof initStrudel !== 'function') throw new Error('Strudel did not initialize.');
+      await initStrudel();
+      setStatus('Ready.');
+    });
+    return strudelReady;
+  }
+
+  function updateControlLabels() {
+    if (gainInput && gainValue) gainValue.textContent = Number(gainInput.value).toFixed(2);
+    if (slowInput && slowValue) slowValue.textContent = Number(slowInput.value).toString();
+  }
+
+  async function runPattern() {
+    if (!codeEl) return;
+    try {
+      await loadStrudel();
+      const evaluate = (window as any).evaluate;
+      if (typeof evaluate !== 'function') throw new Error('Strudel evaluator is unavailable.');
+      evaluate(codeEl.value);
+      setStatus('Running.');
+      try {
+        window.localStorage.setItem('strudel-code', codeEl.value);
+      } catch (e) {}
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not run pattern.');
+    }
+  }
+
+  async function stopPattern() {
+    try {
+      await loadStrudel();
+      const hush = (window as any).hush;
+      if (typeof hush !== 'function') throw new Error('Strudel stop function is unavailable.');
+      hush();
+      setStatus('Stopped.');
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Could not stop pattern.');
+    }
+  }
+
+  function applyEditorControls() {
+    if (!codeEl || !gainInput || !slowInput) return;
+    const gain = Number(gainInput.value).toFixed(2);
+    const slow = Number(slowInput.value).toString();
+    const base = codeEl.value
+      .replace(/\n\s*\.gain\([^)]*\)/g, '')
+      .replace(/\n\s*\.slow\([^)]*\)/g, '');
+    codeEl.value = `${base}\n  .slow(${slow})\n  .gain(${gain})`;
+  }
+
+  try {
+    const saved = window.localStorage.getItem('strudel-code');
+    if (saved && codeEl) codeEl.value = saved;
+  } catch (e) {}
+
+  updateControlLabels();
+  gainInput?.addEventListener('input', updateControlLabels);
+  slowInput?.addEventListener('input', updateControlLabels);
+  applyControls?.addEventListener('click', applyEditorControls);
+  runButton?.addEventListener('click', runPattern);
+  stopButton?.addEventListener('click', stopPattern);
+  document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const preset = button.dataset.preset;
+      if (preset && presets[preset] && codeEl) {
+        codeEl.value = presets[preset];
+        setStatus(`Loaded ${button.textContent?.trim() ?? 'preset'}.`);
+      }
+    });
+  });
+</script>
