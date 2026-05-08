@@ -130,6 +130,10 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
 
         <section>
           <h2>Samples</h2>
+          <label id="strudel-drop" class="strudel-drop" for="strudel-sample-file">
+            <input id="strudel-sample-file" type="file" accept="audio/*" />
+            <span id="strudel-drop-label">Drop audio or choose file</span>
+          </label>
           <div class="strudel-preset-list">
             <button type="button" data-sample="bd sd hh*4">kit</button>
             <button type="button" data-sample="[bd ~] [~ sd] hh*8">backbeat</button>
@@ -163,13 +167,14 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .strudel-shell {
     position: relative;
     min-height: calc(100vh - 11.25rem);
+    --strudel-editor-height: min(74vh, 52rem);
   }
   .strudel-workspace {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+    grid-template-columns: minmax(38rem, 1.9fr) minmax(17rem, 22rem);
     gap: 1.25rem;
     align-items: start;
-    max-width: 96rem;
+    max-width: 112rem;
   }
   .strudel-editor-pane,
   .strudel-side-pane section {
@@ -232,7 +237,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .strudel-code-wrap {
     position: relative;
     width: 100%;
-    min-height: min(68vh, 46rem);
+    min-height: var(--strudel-editor-height);
     border: 1px solid var(--rule);
     border-radius: 3px;
     background: rgba(255, 255, 255, 0.035);
@@ -246,7 +251,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   #strudel-code,
   #strudel-highlight {
     box-sizing: border-box;
-    min-height: min(68vh, 46rem);
+    min-height: var(--strudel-editor-height);
     margin: 0;
     padding: 0.85rem;
     font: 0.94rem/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -290,6 +295,11 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .strudel-side-pane {
     display: grid;
     gap: 1.25rem;
+    max-height: var(--strudel-editor-height);
+    overflow-y: auto;
+    padding-right: 0.25rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule) transparent;
   }
   .strudel-field {
     display: grid;
@@ -336,6 +346,31 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     font-variant-numeric: tabular-nums;
     text-align: right;
   }
+  .strudel-drop {
+    display: grid;
+    place-items: center;
+    min-height: 4.25rem;
+    margin: 0.75rem 0;
+    border: 1px dashed var(--rule);
+    border-radius: 3px;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.025);
+    font-size: 0.78rem;
+    text-align: center;
+  }
+  .strudel-drop.is-dragging,
+  .strudel-drop:hover,
+  .strudel-drop:focus-within {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .strudel-drop input {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
   .strudel-legal a {
     text-decoration: underline;
     text-decoration-color: var(--muted);
@@ -345,6 +380,11 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   @media (max-width: 880px) {
     .strudel-workspace {
       grid-template-columns: 1fr;
+    }
+    .strudel-side-pane {
+      max-height: none;
+      overflow: visible;
+      padding-right: 0;
     }
   }
 </style>
@@ -366,6 +406,9 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   const builderBank = document.getElementById('strudel-builder-bank') as HTMLSelectElement | null;
   const buildReplace = document.getElementById('strudel-build-replace') as HTMLButtonElement | null;
   const buildAppend = document.getElementById('strudel-build-append') as HTMLButtonElement | null;
+  const sampleFileInput = document.getElementById('strudel-sample-file') as HTMLInputElement | null;
+  const sampleDrop = document.getElementById('strudel-drop') as HTMLElement | null;
+  const sampleDropLabel = document.getElementById('strudel-drop-label');
   const gainInput = document.getElementById('strudel-gain') as HTMLInputElement | null;
   const gainValue = document.getElementById('strudel-gain-value');
   const slowInput = document.getElementById('strudel-slow') as HTMLInputElement | null;
@@ -435,6 +478,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   };
 
   let strudelReady: Promise<void> | null = null;
+  let droppedSampleUrl: string | null = null;
 
   function setStatus(message: string) {
     if (statusEl) statusEl.textContent = message;
@@ -609,12 +653,45 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     if (roomInput) roomInput.value = '0.3';
     if (delayInput) delayInput.value = '0.15';
     if (cutoffInput) cutoffInput.value = '1800';
+    if (sampleFileInput) sampleFileInput.value = '';
+    if (sampleDropLabel) sampleDropLabel.textContent = 'Drop audio or choose file';
+    if (droppedSampleUrl) URL.revokeObjectURL(droppedSampleUrl);
+    droppedSampleUrl = null;
     updateControlLabels();
     syncHighlight();
     try {
       window.localStorage.removeItem('strudel-code');
     } catch (e) {}
     setStatus('Reset.');
+  }
+
+  function sampleNameFromFile(file: File) {
+    const base = file.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18);
+    return base || 'drop';
+  }
+
+  function loadDroppedSample(file: File) {
+    if (!codeEl || !file.type.startsWith('audio/')) {
+      setStatus('Choose an audio file.');
+      return;
+    }
+    if (droppedSampleUrl) URL.revokeObjectURL(droppedSampleUrl);
+    droppedSampleUrl = URL.createObjectURL(file);
+    const sampleName = sampleNameFromFile(file);
+    codeEl.value = `samples({
+  ${sampleName}: '${droppedSampleUrl}',
+})
+
+s("${sampleName}")
+  .loopAt(4)
+  .slice(8, "0 1 2 3 4 5 6 7")
+  .gain(${gainInput?.value ?? '0.55'})`;
+    if (builderMode) builderMode.value = 'sample';
+    if (builderPattern) builderPattern.value = sampleName;
+    if (builderStruct) builderStruct.value = 'x*8';
+    if (sampleDropLabel) sampleDropLabel.textContent = file.name;
+    syncHighlight();
+    setStatus(`Loaded local sample: ${file.name}`);
   }
 
   try {
@@ -666,5 +743,25 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
         setStatus(`Loaded ${button.textContent?.trim() ?? 'preset'}.`);
       }
     });
+  });
+  sampleFileInput?.addEventListener('change', () => {
+    const file = sampleFileInput.files?.[0];
+    if (file) loadDroppedSample(file);
+  });
+  sampleDrop?.addEventListener('dragenter', (event) => {
+    event.preventDefault();
+    sampleDrop.classList.add('is-dragging');
+  });
+  sampleDrop?.addEventListener('dragover', (event) => {
+    event.preventDefault();
+  });
+  sampleDrop?.addEventListener('dragleave', (event) => {
+    if (!sampleDrop.contains(event.relatedTarget as Node | null)) sampleDrop.classList.remove('is-dragging');
+  });
+  sampleDrop?.addEventListener('drop', (event) => {
+    event.preventDefault();
+    sampleDrop.classList.remove('is-dragging');
+    const file = event.dataTransfer?.files?.[0];
+    if (file) loadDroppedSample(file);
   });
 </script>
