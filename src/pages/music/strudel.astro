@@ -43,6 +43,35 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
         </section>
 
         <section>
+          <h2>Layers</h2>
+          <div class="strudel-preset-list">
+            <button type="button" data-layer="drums">Drums</button>
+            <button type="button" data-layer="bass">Bass</button>
+            <button type="button" data-layer="lead">Lead</button>
+            <button type="button" data-layer="chords">Chords</button>
+            <button type="button" data-layer="pad">Pad</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Drum Grid</h2>
+          <div id="strudel-drum-grid" class="strudel-step-grid" aria-label="Drum step grid"></div>
+          <div class="strudel-preset-list">
+            <button id="strudel-drum-apply" type="button">Append Drums</button>
+            <button id="strudel-drum-clear" type="button">Clear</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Arp Grid</h2>
+          <div id="strudel-arp-grid" class="strudel-arp-grid" aria-label="Arpeggio step grid"></div>
+          <div class="strudel-preset-list">
+            <button id="strudel-arp-apply" type="button">Append Arp</button>
+            <button id="strudel-arp-clear" type="button">Clear</button>
+          </div>
+        </section>
+
+        <section>
           <h2>Builder</h2>
           <label class="strudel-field" for="strudel-builder-mode">
             <span>mode</span>
@@ -211,6 +240,8 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   }
   .strudel-actions button,
   .strudel-preset-list button,
+  .strudel-step-grid button,
+  .strudel-arp-grid button,
   #strudel-build-replace,
   #strudel-build-append,
   #strudel-apply-controls {
@@ -229,6 +260,10 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .strudel-actions button:focus-visible,
   .strudel-preset-list button:hover,
   .strudel-preset-list button:focus-visible,
+  .strudel-step-grid button:hover,
+  .strudel-step-grid button:focus-visible,
+  .strudel-arp-grid button:hover,
+  .strudel-arp-grid button:focus-visible,
   #strudel-build-replace:hover,
   #strudel-build-replace:focus-visible,
   #strudel-build-append:hover,
@@ -238,6 +273,55 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     color: var(--accent);
     border-color: var(--accent);
     outline: none;
+  }
+  .strudel-step-grid {
+    display: grid;
+    grid-template-columns: 2.25rem repeat(16, minmax(0, 1fr));
+    gap: 0.22rem;
+    margin: 0.85rem 0;
+  }
+  .strudel-step-label,
+  .strudel-arp-label {
+    display: grid;
+    place-items: center;
+    min-height: 1.35rem;
+    color: var(--muted);
+    font: 0.62rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    text-transform: uppercase;
+  }
+  .strudel-step-grid button {
+    min-width: 0;
+    min-height: 1.35rem;
+    padding: 0;
+    border-color: color-mix(in srgb, var(--rule) 72%, transparent);
+  }
+  .strudel-step-grid button.is-on,
+  .strudel-arp-grid button.is-on {
+    color: #000;
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .strudel-step-grid button:nth-child(17n + 2),
+  .strudel-step-grid button:nth-child(17n + 6),
+  .strudel-step-grid button:nth-child(17n + 10),
+  .strudel-step-grid button:nth-child(17n + 14) {
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--rule));
+  }
+  .strudel-arp-grid {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0.3rem;
+    margin: 0.85rem 0;
+  }
+  .strudel-arp-cell {
+    display: grid;
+    gap: 0.2rem;
+  }
+  .strudel-arp-grid button {
+    min-width: 0;
+    min-height: 1.55rem;
+    padding: 0.2rem 0;
+    font-size: 0.62rem;
   }
   .strudel-code-wrap {
     position: relative;
@@ -457,6 +541,12 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   const cutoffInput = document.getElementById('strudel-cutoff') as HTMLInputElement | null;
   const cutoffValue = document.getElementById('strudel-cutoff-value');
   const applyControls = document.getElementById('strudel-apply-controls') as HTMLButtonElement | null;
+  const drumGrid = document.getElementById('strudel-drum-grid');
+  const arpGrid = document.getElementById('strudel-arp-grid');
+  const drumApply = document.getElementById('strudel-drum-apply') as HTMLButtonElement | null;
+  const drumClear = document.getElementById('strudel-drum-clear') as HTMLButtonElement | null;
+  const arpApply = document.getElementById('strudel-arp-apply') as HTMLButtonElement | null;
+  const arpClear = document.getElementById('strudel-arp-clear') as HTMLButtonElement | null;
   const defaultCode = codeEl?.defaultValue ?? '';
 
   const presets: Record<string, string> = {
@@ -514,12 +604,49 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .gain(0.66)`,
   };
 
+  const layerSnippets: Record<string, string> = {
+    drums: `s("bd [~ sd] hh*8 [cp ~]")
+  .bank("RolandTR909")
+  .gain(0.65)`,
+    bass: `note("c1 [~ eb1] <bb0 bb1> [f1 ab1]")
+  .sound("sawtooth")
+  .struct("x [~ x] x [x ~]")
+  .lpf(800)
+  .gain(0.56)`,
+    lead: `note("c4 eb4 g4 <bb4 c5>")
+  .sound("square")
+  .fast(2)
+  .delay(0.25)
+  .gain(0.42)`,
+    chords: `note("<c3 eb3 g3> <bb2 d3 f3> <ab2 c3 eb3> <g2 bb2 d3>")
+  .sound("triangle")
+  .slow(2)
+  .room(0.55)
+  .gain(0.38)`,
+    pad: `note("<c2 eb2 g2 bb2> <ab2 c3 eb3 g3>")
+  .sound("sine")
+  .slow(4)
+  .lpf(sine.range(500, 2500).slow(8))
+  .room(0.85)
+  .gain(0.34)`,
+  };
+
+  const drumRows = [
+    { label: 'bd', hits: [0, 4, 8, 12] },
+    { label: 'sd', hits: [4, 12] },
+    { label: 'hh', hits: [2, 6, 10, 14] },
+    { label: 'cp', hits: [7, 15] },
+  ];
+  const arpNotes = ['~', 'c3', 'eb3', 'g3', 'bb3', 'c4'];
+  const arpDefault = ['c3', '~', 'eb3', 'g3', 'bb3', 'g3', 'c4', 'eb3'];
+
   let strudelReady: Promise<void> | null = null;
   let droppedSampleUrl: string | null = null;
   let activeLineIndex = -1;
   let playIndicatorTimer: number | null = null;
   let isRunning = false;
   let liveApplyTimer: number | null = null;
+  let isPaintingSteps = false;
 
   function setStatus(message: string) {
     if (statusEl) statusEl.textContent = message;
@@ -681,6 +808,117 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     scheduleLiveApply();
   }
 
+  function appendCodeLayer(layerCode: string, status = 'Appended layer.') {
+    if (!codeEl) return;
+    const current = codeEl.value.trim();
+    const next = layerCode.trim()
+      .split('\n')
+      .map((line) => `  ${line}`)
+      .join('\n');
+    codeEl.value = current.startsWith('stack(')
+      ? current.replace(/\)\s*$/, `,\n${next}\n)`)
+      : `stack(\n  ${current.replace(/\n/g, '\n  ')},\n${next}\n)`;
+    syncHighlight();
+    setStatus(status);
+    scheduleLiveApply();
+  }
+
+  function activeStepTokens(rowLabels: string[], stepCount: number, getIsOn: (row: string, step: number) => boolean) {
+    return Array.from({ length: stepCount }, (_unused, step) => {
+      const hits = rowLabels.filter((row) => getIsOn(row, step));
+      if (hits.length === 0) return '~';
+      return hits.length === 1 ? hits[0] : `[${hits.join(' ')}]`;
+    });
+  }
+
+  function drumCodeFromGrid() {
+    const tokens = activeStepTokens(
+      drumRows.map((row) => row.label),
+      16,
+      (row, step) => drumGrid?.querySelector<HTMLButtonElement>(`button[data-row="${row}"][data-step="${step}"]`)?.classList.contains('is-on') ?? false,
+    );
+    return `s("${tokens.join(' ')}")
+  .bank("RolandTR909")
+  .gain(0.65)`;
+  }
+
+  function arpCodeFromGrid() {
+    const notes = Array.from({ length: 8 }, (_unused, step) => (
+      arpGrid?.querySelector<HTMLButtonElement>(`button.is-on[data-step="${step}"]`)?.dataset.note || '~'
+    ));
+    const pattern = notes.join(' ');
+    return `note("${pattern}")
+  .sound("${soundInput?.value ?? 'sine'}")
+  .fast(2)
+  .delay(0.2)
+  .gain(0.42)`;
+  }
+
+  function setStepState(button: HTMLButtonElement, force?: boolean) {
+    const next = force ?? !button.classList.contains('is-on');
+    button.classList.toggle('is-on', next);
+    button.setAttribute('aria-pressed', String(next));
+  }
+
+  function renderDrumGrid() {
+    if (!drumGrid) return;
+    drumGrid.innerHTML = '';
+    drumRows.forEach((row) => {
+      const label = document.createElement('span');
+      label.className = 'strudel-step-label';
+      label.textContent = row.label;
+      drumGrid.append(label);
+      Array.from({ length: 16 }, (_unused, step) => {
+        const button = document.createElement('button');
+        const isOn = row.hits.includes(step);
+        button.type = 'button';
+        button.dataset.row = row.label;
+        button.dataset.step = String(step);
+        button.classList.toggle('is-on', isOn);
+        button.setAttribute('aria-label', `${row.label} step ${step + 1}`);
+        button.setAttribute('aria-pressed', String(isOn));
+        button.addEventListener('pointerdown', (event) => {
+          event.preventDefault();
+          isPaintingSteps = true;
+          setStepState(button);
+        });
+        button.addEventListener('pointerenter', () => {
+          if (isPaintingSteps) setStepState(button, true);
+        });
+        drumGrid.append(button);
+      });
+    });
+  }
+
+  function renderArpGrid() {
+    if (!arpGrid) return;
+    arpGrid.innerHTML = '';
+    arpDefault.forEach((activeNote, step) => {
+      const cell = document.createElement('div');
+      cell.className = 'strudel-arp-cell';
+      const label = document.createElement('span');
+      label.className = 'strudel-arp-label';
+      label.textContent = String(step + 1);
+      cell.append(label);
+      arpNotes.forEach((note) => {
+        const button = document.createElement('button');
+        const isOn = note === activeNote;
+        button.type = 'button';
+        button.textContent = note;
+        button.dataset.note = note;
+        button.dataset.step = String(step);
+        button.classList.toggle('is-on', isOn);
+        button.setAttribute('aria-pressed', String(isOn));
+        button.addEventListener('click', () => {
+          cell.querySelectorAll<HTMLButtonElement>('button').forEach((other) => setStepState(other, false));
+          setStepState(button, true);
+        });
+        cell.append(button);
+      });
+      arpGrid.append(cell);
+    });
+  }
+
   function builderExpression() {
     const mode = builderMode?.value ?? 'note';
     const pattern = builderPattern?.value.trim() || 'c2 eb2 g2 bb2';
@@ -710,17 +948,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   }
 
   function appendFromBuilder() {
-    if (!codeEl) return;
-    const current = codeEl.value.trim();
-    const next = builderExpression()
-      .split('\n')
-      .map((line) => `  ${line}`)
-      .join('\n');
-    codeEl.value = current.startsWith('stack(')
-      ? current.replace(/\)\s*$/, `,\n${next}\n)`)
-      : `stack(\n  ${current.replace(/\n/g, '\n  ')},\n${next}\n)`;
-    syncHighlight();
-    setStatus('Appended layer.');
+    appendCodeLayer(builderExpression());
   }
 
   function resetEditor() {
@@ -737,6 +965,8 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     droppedSampleUrl = null;
     isRunning = false;
     stopPlayIndicator();
+    renderDrumGrid();
+    renderArpGrid();
     updateControlLabels();
     syncHighlight();
     try {
@@ -780,9 +1010,14 @@ s("${sampleName}")
   } catch (e) {}
 
   updateControlLabels();
+  renderDrumGrid();
+  renderArpGrid();
   syncHighlight();
   codeEl?.addEventListener('input', syncHighlight);
   codeEl?.addEventListener('scroll', syncHighlight);
+  window.addEventListener('pointerup', () => {
+    isPaintingSteps = false;
+  });
   [gainInput, slowInput, roomInput, delayInput, cutoffInput, soundInput].forEach((input) => {
     input?.addEventListener('input', () => {
       updateControlLabels();
@@ -792,6 +1027,16 @@ s("${sampleName}")
   applyControls?.addEventListener('click', applyEditorControls);
   buildReplace?.addEventListener('click', replaceFromBuilder);
   buildAppend?.addEventListener('click', appendFromBuilder);
+  drumApply?.addEventListener('click', () => appendCodeLayer(drumCodeFromGrid(), 'Appended drum grid.'));
+  drumClear?.addEventListener('click', () => {
+    drumGrid?.querySelectorAll<HTMLButtonElement>('button').forEach((button) => setStepState(button, false));
+    setStatus('Cleared drum grid.');
+  });
+  arpApply?.addEventListener('click', () => appendCodeLayer(arpCodeFromGrid(), 'Appended arp grid.'));
+  arpClear?.addEventListener('click', () => {
+    arpGrid?.querySelectorAll<HTMLButtonElement>('button').forEach((button) => setStepState(button, false));
+    setStatus('Cleared arp grid.');
+  });
   resetButton?.addEventListener('click', resetEditor);
   infoButton?.addEventListener('click', () => aboutDialog?.showModal());
   aboutDialog?.addEventListener('click', (event) => {
@@ -799,6 +1044,12 @@ s("${sampleName}")
   });
   runButton?.addEventListener('click', runPattern);
   stopButton?.addEventListener('click', stopPattern);
+  document.querySelectorAll<HTMLButtonElement>('[data-layer]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const layer = button.dataset.layer;
+      if (layer && layerSnippets[layer]) appendCodeLayer(layerSnippets[layer], `Appended ${button.textContent?.trim() ?? 'layer'}.`);
+    });
+  });
   document.querySelectorAll<HTMLButtonElement>('[data-insert]').forEach((button) => {
     button.addEventListener('click', () => {
       if (!codeEl || !button.dataset.insert) return;
