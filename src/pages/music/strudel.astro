@@ -27,23 +27,19 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
 
       <aside class="strudel-side-pane">
         <section>
-          <h2>Presets</h2>
+          <h2>Templates</h2>
           <div class="strudel-preset-list">
-            <button type="button" data-preset="melodic">Melodic</button>
-            <button type="button" data-preset="pulse">Pulse</button>
             <button type="button" data-preset="drums">Drums</button>
-            <button type="button" data-preset="texture">Texture</button>
             <button type="button" data-preset="bass">Bass</button>
-            <button type="button" data-preset="bell">Bell</button>
-            <button type="button" data-preset="breaks">Breaks</button>
+            <button type="button" data-preset="melodic">Lead</button>
+            <button type="button" data-preset="texture">Chords</button>
             <button type="button" data-preset="ambient">Ambient</button>
-            <button type="button" data-preset="sampleKit">Sample Kit</button>
             <button type="button" data-preset="breakbeat">Breakbeat</button>
           </div>
         </section>
 
         <section>
-          <h2>Layers</h2>
+          <h2>Add Part</h2>
           <div class="strudel-preset-list">
             <button type="button" data-layer="drums">Drums</button>
             <button type="button" data-layer="bass">Bass</button>
@@ -51,6 +47,20 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
             <button type="button" data-layer="chords">Chords</button>
             <button type="button" data-layer="pad">Pad</button>
           </div>
+        </section>
+
+        <section>
+          <h2>Tone</h2>
+          <label class="strudel-field" for="strudel-sound">
+            <span>sound</span>
+            <select id="strudel-sound">
+              <option value="sawtooth">saw</option>
+              <option value="square">square</option>
+              <option value="triangle">triangle</option>
+              <option value="sine">sine</option>
+            </select>
+            <output></output>
+          </label>
         </section>
 
         <section>
@@ -63,91 +73,46 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
         </section>
 
         <section>
-          <h2>Arp Grid</h2>
+          <h2>Lead Grid</h2>
           <div id="strudel-arp-grid" class="strudel-arp-grid" aria-label="Arpeggio step grid"></div>
           <div class="strudel-preset-list">
-            <button id="strudel-arp-apply" type="button">Append Arp</button>
+            <button id="strudel-arp-apply" type="button">Append Lead</button>
             <button id="strudel-arp-clear" type="button">Clear</button>
           </div>
         </section>
 
         <section>
-          <h2>Builder</h2>
-          <label class="strudel-field" for="strudel-builder-mode">
-            <span>mode</span>
-            <select id="strudel-builder-mode">
-              <option value="note">note</option>
-              <option value="sample">sample</option>
-              <option value="stack">stack</option>
+          <h2>Chords</h2>
+          <label class="strudel-field" for="strudel-chord-root">
+            <span>root</span>
+            <select id="strudel-chord-root">
+              <option value="c">C</option>
+              <option value="d">D</option>
+              <option value="eb">Eb</option>
+              <option value="f">F</option>
+              <option value="g">G</option>
+              <option value="ab">Ab</option>
+              <option value="bb">Bb</option>
             </select>
             <output></output>
           </label>
-          <label class="strudel-field strudel-field--wide" for="strudel-builder-pattern">
-            <span>pattern</span>
-            <input id="strudel-builder-pattern" type="text" value='c2 [eb3 g3] <bb2 f3> [ab2 c4]' />
-          </label>
-          <label class="strudel-field strudel-field--wide" for="strudel-builder-struct">
-            <span>struct</span>
-            <input id="strudel-builder-struct" type="text" value='x [~ x] x [x ~]' />
-          </label>
-          <label class="strudel-field" for="strudel-builder-bank">
-            <span>bank</span>
-            <select id="strudel-builder-bank">
-              <option value="">none</option>
-              <option value="RolandTR909">909</option>
-              <option value="RolandTR808">808</option>
-              <option value="CasioRZ1">RZ1</option>
+          <label class="strudel-field" for="strudel-chord-shape">
+            <span>shape</span>
+            <select id="strudel-chord-shape">
+              <option value="minor">minor</option>
+              <option value="major">major</option>
+              <option value="modal">modal</option>
+              <option value="wide">wide</option>
             </select>
             <output></output>
           </label>
           <div class="strudel-preset-list">
-            <button id="strudel-build-replace" type="button">Replace</button>
-            <button id="strudel-build-append" type="button">Append Layer</button>
+            <button id="strudel-chord-apply" type="button">Append Chords</button>
           </div>
         </section>
 
         <section>
-          <h2>Controls</h2>
-          <label class="strudel-field" for="strudel-sound">
-            <span>sound</span>
-            <select id="strudel-sound">
-              <option value="sawtooth">saw</option>
-              <option value="square">square</option>
-              <option value="triangle">triangle</option>
-              <option value="sine">sine</option>
-            </select>
-            <output></output>
-          </label>
-          <label class="strudel-field" for="strudel-gain">
-            <span>gain</span>
-            <input id="strudel-gain" type="range" min="0.15" max="0.9" step="0.05" value="0.55" />
-            <output id="strudel-gain-value" for="strudel-gain">0.55</output>
-          </label>
-          <label class="strudel-field" for="strudel-slow">
-            <span>slow</span>
-            <input id="strudel-slow" type="range" min="0.5" max="6" step="0.5" value="2" />
-            <output id="strudel-slow-value" for="strudel-slow">2</output>
-          </label>
-          <label class="strudel-field" for="strudel-room">
-            <span>room</span>
-            <input id="strudel-room" type="range" min="0" max="0.9" step="0.05" value="0.3" />
-            <output id="strudel-room-value" for="strudel-room">0.30</output>
-          </label>
-          <label class="strudel-field" for="strudel-delay">
-            <span>delay</span>
-            <input id="strudel-delay" type="range" min="0" max="0.8" step="0.05" value="0.15" />
-            <output id="strudel-delay-value" for="strudel-delay">0.15</output>
-          </label>
-          <label class="strudel-field" for="strudel-cutoff">
-            <span>lpf</span>
-            <input id="strudel-cutoff" type="range" min="300" max="4000" step="100" value="1800" />
-            <output id="strudel-cutoff-value" for="strudel-cutoff">1800</output>
-          </label>
-          <button id="strudel-apply-controls" type="button">Apply to editor</button>
-        </section>
-
-        <section>
-          <h2>Transforms</h2>
+          <h2>Effects</h2>
           <div class="strudel-preset-list">
             <button type="button" data-insert=".rev()">rev</button>
             <button type="button" data-insert=".jux(rev)">jux</button>
@@ -242,9 +207,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .strudel-preset-list button,
   .strudel-step-grid button,
   .strudel-arp-grid button,
-  #strudel-build-replace,
-  #strudel-build-append,
-  #strudel-apply-controls {
+  #strudel-chord-apply {
     font-family: var(--font-lexend), var(--sans);
     font-size: 0.72rem;
     font-weight: 650;
@@ -264,12 +227,8 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .strudel-step-grid button:focus-visible,
   .strudel-arp-grid button:hover,
   .strudel-arp-grid button:focus-visible,
-  #strudel-build-replace:hover,
-  #strudel-build-replace:focus-visible,
-  #strudel-build-append:hover,
-  #strudel-build-append:focus-visible,
-  #strudel-apply-controls:hover,
-  #strudel-apply-controls:focus-visible {
+  #strudel-chord-apply:hover,
+  #strudel-chord-apply:focus-visible {
     color: var(--accent);
     border-color: var(--accent);
     outline: none;
@@ -294,6 +253,9 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     min-height: 1.35rem;
     padding: 0;
     border-color: color-mix(in srgb, var(--rule) 72%, transparent);
+    color: transparent;
+    touch-action: none;
+    user-select: none;
   }
   .strudel-step-grid button.is-on,
   .strudel-arp-grid button.is-on {
@@ -306,6 +268,15 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .strudel-step-grid button:nth-child(17n + 10),
   .strudel-step-grid button:nth-child(17n + 14) {
     border-color: color-mix(in srgb, var(--accent) 42%, var(--rule));
+  }
+  .strudel-step-grid button.is-on::after {
+    content: "";
+    display: block;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin: auto;
+    border-radius: 999px;
+    background: #000;
   }
   .strudel-arp-grid {
     display: grid;
@@ -521,26 +492,12 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   const resetButton = document.getElementById('strudel-reset') as HTMLButtonElement | null;
   const aboutDialog = document.getElementById('strudel-about') as HTMLDialogElement | null;
   const soundInput = document.getElementById('strudel-sound') as HTMLSelectElement | null;
-  const builderMode = document.getElementById('strudel-builder-mode') as HTMLSelectElement | null;
-  const builderPattern = document.getElementById('strudel-builder-pattern') as HTMLInputElement | null;
-  const builderStruct = document.getElementById('strudel-builder-struct') as HTMLInputElement | null;
-  const builderBank = document.getElementById('strudel-builder-bank') as HTMLSelectElement | null;
-  const buildReplace = document.getElementById('strudel-build-replace') as HTMLButtonElement | null;
-  const buildAppend = document.getElementById('strudel-build-append') as HTMLButtonElement | null;
+  const chordRoot = document.getElementById('strudel-chord-root') as HTMLSelectElement | null;
+  const chordShape = document.getElementById('strudel-chord-shape') as HTMLSelectElement | null;
+  const chordApply = document.getElementById('strudel-chord-apply') as HTMLButtonElement | null;
   const sampleFileInput = document.getElementById('strudel-sample-file') as HTMLInputElement | null;
   const sampleDrop = document.getElementById('strudel-drop') as HTMLElement | null;
   const sampleDropLabel = document.getElementById('strudel-drop-label');
-  const gainInput = document.getElementById('strudel-gain') as HTMLInputElement | null;
-  const gainValue = document.getElementById('strudel-gain-value');
-  const slowInput = document.getElementById('strudel-slow') as HTMLInputElement | null;
-  const slowValue = document.getElementById('strudel-slow-value');
-  const roomInput = document.getElementById('strudel-room') as HTMLInputElement | null;
-  const roomValue = document.getElementById('strudel-room-value');
-  const delayInput = document.getElementById('strudel-delay') as HTMLInputElement | null;
-  const delayValue = document.getElementById('strudel-delay-value');
-  const cutoffInput = document.getElementById('strudel-cutoff') as HTMLInputElement | null;
-  const cutoffValue = document.getElementById('strudel-cutoff-value');
-  const applyControls = document.getElementById('strudel-apply-controls') as HTMLButtonElement | null;
   const drumGrid = document.getElementById('strudel-drum-grid');
   const arpGrid = document.getElementById('strudel-arp-grid');
   const drumApply = document.getElementById('strudel-drum-apply') as HTMLButtonElement | null;
@@ -752,14 +709,6 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     return strudelReady;
   }
 
-  function updateControlLabels() {
-    if (gainInput && gainValue) gainValue.textContent = Number(gainInput.value).toFixed(2);
-    if (slowInput && slowValue) slowValue.textContent = Number(slowInput.value).toString();
-    if (roomInput && roomValue) roomValue.textContent = Number(roomInput.value).toFixed(2);
-    if (delayInput && delayValue) delayValue.textContent = Number(delayInput.value).toFixed(2);
-    if (cutoffInput && cutoffValue) cutoffValue.textContent = Number(cutoffInput.value).toString();
-  }
-
   async function runPattern() {
     if (!codeEl) return;
     try {
@@ -788,38 +737,18 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     }
   }
 
-  function applyEditorControls() {
-    if (!codeEl || !gainInput || !slowInput || !soundInput || !roomInput || !delayInput || !cutoffInput) return;
-    const gain = Number(gainInput.value).toFixed(2);
-    const slow = Number(slowInput.value).toString();
-    const room = Number(roomInput.value).toFixed(2);
-    const delay = Number(delayInput.value).toFixed(2);
-    const cutoff = Number(cutoffInput.value).toString();
-    const sound = soundInput.value;
-    const base = codeEl.value
-      .replace(/\n\s*\.gain\([^)]*\)/g, '')
-      .replace(/\n\s*\.slow\([^)]*\)/g, '')
-      .replace(/\n\s*\.sound\([^)]*\)/g, '')
-      .replace(/\n\s*\.room\([^)]*\)/g, '')
-      .replace(/\n\s*\.delay\([^)]*\)/g, '')
-      .replace(/\n\s*\.lpf\([^)]*\)/g, '');
-    codeEl.value = `${base}\n  .sound("${sound}")\n  .slow(${slow})\n  .lpf(${cutoff})\n  .delay(${delay})\n  .room(${room})\n  .gain(${gain})`;
-    syncHighlight();
-    scheduleLiveApply();
-  }
-
-  function appendCodeLayer(layerCode: string, status = 'Appended layer.') {
+  function appendCodeLayer(layerCode: string, sectionName = 'Part') {
     if (!codeEl) return;
     const current = codeEl.value.trim();
-    const next = layerCode.trim()
+    const next = `// ${sectionName}\n${layerCode.trim()}`
       .split('\n')
       .map((line) => `  ${line}`)
       .join('\n');
     codeEl.value = current.startsWith('stack(')
-      ? current.replace(/\)\s*$/, `,\n${next}\n)`)
-      : `stack(\n  ${current.replace(/\n/g, '\n  ')},\n${next}\n)`;
+      ? current.replace(/\)\s*$/, `,\n\n${next}\n)`)
+      : `stack(\n  // Starting pattern\n  ${current.replace(/\n/g, '\n  ')},\n\n${next}\n)`;
     syncHighlight();
-    setStatus(status);
+    setStatus(`Appended ${sectionName.toLowerCase()}.`);
     scheduleLiveApply();
   }
 
@@ -854,6 +783,29 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .gain(0.42)`;
   }
 
+  function chordCodeFromPanel() {
+    const root = chordRoot?.value ?? 'c';
+    const shape = chordShape?.value ?? 'minor';
+    const names = ['c', 'db', 'd', 'eb', 'e', 'f', 'gb', 'g', 'ab', 'a', 'bb', 'b'];
+    const rootIndex = Math.max(0, names.indexOf(root));
+    const noteAt = (semitones: number, octave = 3) => {
+      const index = rootIndex + semitones;
+      return `${names[((index % 12) + 12) % 12]}${octave + Math.floor(index / 12)}`;
+    };
+    const chord = (offset: number, intervals: number[], octave = 3) => `<${intervals.map((interval) => noteAt(offset + interval, octave)).join(' ')}>`;
+    const progressions: Record<string, string> = {
+      minor: [chord(0, [0, 3, 7]), chord(10, [0, 4, 7], 2), chord(8, [0, 4, 7], 2), chord(7, [0, 3, 7], 2)].join(' '),
+      major: [chord(0, [0, 4, 7]), chord(7, [0, 4, 7], 2), chord(9, [0, 3, 7], 2), chord(5, [0, 4, 7], 2)].join(' '),
+      modal: [chord(0, [0, 5, 7]), chord(10, [0, 5, 7], 2), chord(8, [0, 4, 7], 2), chord(10, [0, 4, 7], 2)].join(' '),
+      wide: [chord(0, [0, 7, 15], 2), chord(10, [0, 7, 16], 1), chord(8, [0, 7, 16], 1), chord(7, [0, 7, 15], 1)].join(' '),
+    };
+    return `note("${progressions[shape] ?? progressions.minor}")
+  .sound("triangle")
+  .slow(2)
+  .room(0.55)
+  .gain(0.38)`;
+  }
+
   function setStepState(button: HTMLButtonElement, force?: boolean) {
     const next = force ?? !button.classList.contains('is-on');
     button.classList.toggle('is-on', next);
@@ -880,6 +832,10 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
         button.addEventListener('pointerdown', (event) => {
           event.preventDefault();
           isPaintingSteps = true;
+          setStepState(button);
+        });
+        button.addEventListener('click', (event) => {
+          if (event.detail !== 0) return;
           setStepState(button);
         });
         button.addEventListener('pointerenter', () => {
@@ -919,46 +875,11 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     });
   }
 
-  function builderExpression() {
-    const mode = builderMode?.value ?? 'note';
-    const pattern = builderPattern?.value.trim() || 'c2 eb2 g2 bb2';
-    const struct = builderStruct?.value.trim();
-    const bank = builderBank?.value;
-    if (mode === 'sample') {
-      const base = [`s("${pattern}")`];
-      if (bank) base.push(`  .bank("${bank}")`);
-      if (struct) base.push(`  .struct("${struct}")`);
-      return base.join('\n');
-    }
-    if (mode === 'stack') {
-      return `stack(
-  note("${pattern}").sound("${soundInput?.value ?? 'sawtooth'}"),
-  s("${struct || 'bd [~ sd] hh*4'}")
-)`;
-    }
-    const base = `note("${pattern}")\n  .sound("${soundInput?.value ?? 'sawtooth'}")`;
-    return struct ? `${base}\n  .struct("${struct}")` : base;
-  }
-
-  function replaceFromBuilder() {
-    if (!codeEl) return;
-    codeEl.value = `${builderExpression()}\n  .gain(${gainInput?.value ?? '0.55'})`;
-    syncHighlight();
-    setStatus('Built pattern.');
-  }
-
-  function appendFromBuilder() {
-    appendCodeLayer(builderExpression());
-  }
-
   function resetEditor() {
     if (codeEl) codeEl.value = defaultCode;
     if (soundInput) soundInput.value = 'sawtooth';
-    if (gainInput) gainInput.value = '0.55';
-    if (slowInput) slowInput.value = '2';
-    if (roomInput) roomInput.value = '0.3';
-    if (delayInput) delayInput.value = '0.15';
-    if (cutoffInput) cutoffInput.value = '1800';
+    if (chordRoot) chordRoot.value = 'c';
+    if (chordShape) chordShape.value = 'minor';
     if (sampleFileInput) sampleFileInput.value = '';
     if (sampleDropLabel) sampleDropLabel.textContent = 'Drop audio or choose file';
     if (droppedSampleUrl) URL.revokeObjectURL(droppedSampleUrl);
@@ -967,7 +888,6 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     stopPlayIndicator();
     renderDrumGrid();
     renderArpGrid();
-    updateControlLabels();
     syncHighlight();
     try {
       window.localStorage.removeItem('strudel-code');
@@ -992,13 +912,11 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   ${sampleName}: '${droppedSampleUrl}',
 })
 
+// Dropped sample
 s("${sampleName}")
   .loopAt(4)
   .slice(8, "0 1 2 3 4 5 6 7")
-  .gain(${gainInput?.value ?? '0.55'})`;
-    if (builderMode) builderMode.value = 'sample';
-    if (builderPattern) builderPattern.value = sampleName;
-    if (builderStruct) builderStruct.value = 'x*8';
+  .gain(0.55)`;
     if (sampleDropLabel) sampleDropLabel.textContent = file.name;
     syncHighlight();
     setStatus(`Loaded local sample: ${file.name}`);
@@ -1009,7 +927,6 @@ s("${sampleName}")
     if (saved && codeEl) codeEl.value = saved;
   } catch (e) {}
 
-  updateControlLabels();
   renderDrumGrid();
   renderArpGrid();
   syncHighlight();
@@ -1018,25 +935,20 @@ s("${sampleName}")
   window.addEventListener('pointerup', () => {
     isPaintingSteps = false;
   });
-  [gainInput, slowInput, roomInput, delayInput, cutoffInput, soundInput].forEach((input) => {
-    input?.addEventListener('input', () => {
-      updateControlLabels();
-      applyEditorControls();
-    });
+  soundInput?.addEventListener('input', () => {
+    setStatus(`Tone set to ${soundInput.value}.`);
   });
-  applyControls?.addEventListener('click', applyEditorControls);
-  buildReplace?.addEventListener('click', replaceFromBuilder);
-  buildAppend?.addEventListener('click', appendFromBuilder);
-  drumApply?.addEventListener('click', () => appendCodeLayer(drumCodeFromGrid(), 'Appended drum grid.'));
+  drumApply?.addEventListener('click', () => appendCodeLayer(drumCodeFromGrid(), 'Drums'));
   drumClear?.addEventListener('click', () => {
     drumGrid?.querySelectorAll<HTMLButtonElement>('button').forEach((button) => setStepState(button, false));
     setStatus('Cleared drum grid.');
   });
-  arpApply?.addEventListener('click', () => appendCodeLayer(arpCodeFromGrid(), 'Appended arp grid.'));
+  arpApply?.addEventListener('click', () => appendCodeLayer(arpCodeFromGrid(), 'Lead'));
   arpClear?.addEventListener('click', () => {
     arpGrid?.querySelectorAll<HTMLButtonElement>('button').forEach((button) => setStepState(button, false));
     setStatus('Cleared arp grid.');
   });
+  chordApply?.addEventListener('click', () => appendCodeLayer(chordCodeFromPanel(), 'Chords'));
   resetButton?.addEventListener('click', resetEditor);
   infoButton?.addEventListener('click', () => aboutDialog?.showModal());
   aboutDialog?.addEventListener('click', (event) => {
@@ -1047,7 +959,7 @@ s("${sampleName}")
   document.querySelectorAll<HTMLButtonElement>('[data-layer]').forEach((button) => {
     button.addEventListener('click', () => {
       const layer = button.dataset.layer;
-      if (layer && layerSnippets[layer]) appendCodeLayer(layerSnippets[layer], `Appended ${button.textContent?.trim() ?? 'layer'}.`);
+      if (layer && layerSnippets[layer]) appendCodeLayer(layerSnippets[layer], button.textContent?.trim() ?? 'Part');
     });
   });
   document.querySelectorAll<HTMLButtonElement>('[data-insert]').forEach((button) => {
@@ -1060,10 +972,10 @@ s("${sampleName}")
   });
   document.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((button) => {
     button.addEventListener('click', () => {
-      if (builderMode) builderMode.value = 'sample';
-      if (builderPattern && button.dataset.sample) builderPattern.value = button.dataset.sample;
-      if (builderBank && !builderBank.value) builderBank.value = 'RolandTR909';
-      replaceFromBuilder();
+      if (!button.dataset.sample) return;
+      appendCodeLayer(`s("${button.dataset.sample}")
+  .bank("RolandTR909")
+  .gain(0.62)`, button.textContent?.trim() ?? 'Samples');
     });
   });
   document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) => {
