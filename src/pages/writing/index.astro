@@ -4,29 +4,21 @@ import { getCollection } from 'astro:content';
 import { published } from '../../data/published';
 import markovModel from '../../data/markov_model.json';
 
-const sequences: Record<string, { title: string; href?: string }> = {
-  cooperation: {
-    title: 'Verification for Cooperation',
-    href: '/essays/verification-for-cooperation/',
-  },
-};
-
 const essays = (await getCollection('essays', ({ data }) => !data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
-const sequenceGroups = Object.entries(sequences)
-  .map(([id, meta]) => ({
-    id,
-    meta,
-    items: essays
-      .filter((n) => n.data.sequence === id && n.data.sequenceOrder !== 0)
-      .sort((a, b) => (a.data.sequenceOrder ?? 0) - (b.data.sequenceOrder ?? 0)),
-  }))
-  .filter((g) => g.items.length > 0);
-
-const otherEssays = essays.filter((n) => !n.data.sequence);
+const blogEssays = essays
+  .filter((n) => n.id !== 'verification-for-cooperation' && n.data.sequence === 'cooperation')
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
 const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.sortDate.valueOf());
+
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
 ---
 <Base title="Writing — A. M. Berns" description="Notes, essays, and cross-posts.">
   <div class="writing-shell">
@@ -111,6 +103,7 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     <div class="writing-panes">
       <section class="writing-pane">
         <h2>Published</h2>
+        <p class="pane-tagline">Essays published in undergraduate journals.</p>
         {publishedSorted.length > 0 ? (
           <ul class="note-list">
             {publishedSorted.map((p) => (
@@ -127,37 +120,25 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
 
       <section class="writing-pane">
         <h2>Blog</h2>
-        {sequenceGroups.length > 0 || otherEssays.length > 0 ? (
-          <div class="sequence-groups">
-            {sequenceGroups.map((g) => (
-              <div class="sequence-group">
-                <h3>
-                  {g.meta.href ? <a href={g.meta.href}>{g.meta.title}</a> : g.meta.title}
-                </h3>
-                <ol class="note-list note-list--ordered">
-                  {g.items.map((n) => (
-                    <li>
-                      <a href={`/essays/${n.id}/`}>{n.data.title}</a>
-                    </li>
-                  ))}
-                </ol>
-              </div>
+        <p class="pane-tagline">Essays on AI cooperation and alignment.</p>
+        {blogEssays.length > 0 ? (
+          <ul class="note-list">
+            {blogEssays.map((n) => (
+              <li>
+                <a href={`/essays/${n.id}/`}>{n.data.title}</a>
+                <time datetime={n.data.date.toISOString()}>{dateFormatter.format(n.data.date)}</time>
+              </li>
             ))}
-            {otherEssays.length > 0 && (
-              <div class="sequence-group">
-                <ul class="note-list">
-                  {otherEssays.map((n) => (
-                    <li>
-                      <a href={`/essays/${n.id}/`}>{n.data.title}</a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+          </ul>
         ) : (
           <p class="empty">Nothing here yet.</p>
         )}
+      </section>
+
+      <section class="writing-pane">
+        <h2>College</h2>
+        <p class="pane-tagline">Essays originally written for college philosophy classes.</p>
+        <p class="empty">More to come.</p>
       </section>
     </div>
   </div>
@@ -205,7 +186,7 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     border: 1px solid var(--rule);
     border-radius: 3px;
     padding: 0.3rem 0.55rem;
-    cursor: default;
+    cursor: pointer;
   }
   .markov-panel button:hover { color: var(--ink); border-color: var(--muted); }
   .markov-panel-row {
@@ -230,12 +211,12 @@ const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.s
     margin: 0.45rem 0 0.1rem;
     font-size: 0.7rem;
     color: var(--muted);
-    cursor: default;
+    cursor: pointer;
   }
   .markov-panel-toggle input[type="checkbox"] {
     accent-color: var(--accent);
     margin: 0;
-    cursor: default;
+    cursor: pointer;
   }
   .markov-panel-toggle:hover { color: var(--ink); }
   .markov-panel-buttons {

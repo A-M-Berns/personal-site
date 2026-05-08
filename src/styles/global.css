@@ -33,6 +33,31 @@ a:hover,
 a:focus-visible {
   color: var(--accent);
 }
+button,
+select,
+input,
+textarea,
+summary,
+label[for],
+[role="button"] {
+  cursor: pointer;
+}
+button:disabled,
+select:disabled,
+input:disabled,
+textarea:disabled {
+  cursor: default;
+}
+.bg-canvas,
+.markov-text,
+.sandpile-sim,
+.wang-tiles,
+.lenia-sim,
+.dla-sim,
+.ant-sim,
+.wireworld {
+  cursor: default;
+}
 
 /* --- Site header --- */
 .site-header {
@@ -45,45 +70,32 @@ a:focus-visible {
 
 
 .site-nav {
-  display: flex;
-  gap: 1.5rem;
+  display: inline-flex;
+  gap: 0;
   font-family: var(--display);
   font-size: 0.9375rem;
   font-weight: 600;
+  background: #000;
+  padding: 0.08rem 0.18rem 0.1rem;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 .site-nav a {
   color: var(--muted);
   text-decoration: none;
-  padding-bottom: 0.15rem;
+  padding: 0.08em 0.75rem 0.2rem;
   border-bottom: 1px solid transparent;
-}
-.site-nav a {
-  background: #000;
-  padding: 0.05em 0.28em 0.15rem;
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
 }
 .site-nav a:hover { color: var(--ink); }
 .site-nav a.active {
   color: var(--ink);
   border-bottom-color: var(--accent);
 }
-
-/* Writing page: black highlight extends through the gaps between nav items. */
-.page-writing .site-nav {
-  display: inline-flex;
-  background: #000;
-  gap: 0;
-}
-.page-writing .site-nav a {
-  padding-left: 0.75rem;
-  padding-right: 0.75rem;
-}
-.page-writing .site-nav a:first-child { padding-left: 0.28em; }
-.page-writing .site-nav a:last-child  { padding-right: 0.28em; }
+.site-nav a:first-child { padding-left: 0.5rem; }
+.site-nav a:last-child  { padding-right: 0.5rem; }
 
 @media (max-width: 600px) {
-  .site-nav { gap: 1.1rem; flex-wrap: wrap; }
+  .site-nav { flex-wrap: wrap; }
 }
 
 /* --- Page shell --- */
@@ -148,7 +160,7 @@ a:focus-visible {
   border: 1px solid var(--rule);
   border-radius: 3px;
   padding: 0.35rem 0.7rem;
-  cursor: default;
+  cursor: pointer;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   transition: color 120ms ease, border-color 120ms ease;
@@ -288,7 +300,7 @@ body.page-taste:has(.cover-wall-page) .page {
   background: var(--cover-accent);
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
   contain: layout paint;
-  cursor: default;
+  cursor: pointer;
 }
 .cover-tile:focus-visible {
   outline: 2px solid var(--accent);
@@ -741,7 +753,7 @@ body.page-taste:has(.cover-wall-page) .page {
   border: 1px solid var(--rule);
   border-radius: 3px;
   padding: 0.3rem 0.55rem;
-  cursor: default;
+  cursor: pointer;
 }
 .sandpile-panel button:hover {
   color: var(--ink);
@@ -845,10 +857,6 @@ body.page-taste:has(.cover-wall-page) .page {
 .other-shell > .other-panes {
   position: relative;
   z-index: 1;
-}
-.other-shell,
-.other-shell * {
-  cursor: default;
 }
 .section-head .other-intro {
   color: var(--ink);
@@ -1025,7 +1033,7 @@ body.page-taste:has(.cover-wall-page) .page {
   border: 1px solid var(--rule);
   border-radius: 3px;
   padding: 0.35rem 0.7rem;
-  cursor: default;
+  cursor: pointer;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   transition: color 120ms ease, border-color 120ms ease;
@@ -1210,6 +1218,10 @@ body.page-taste:has(.cover-wall-page) .page {
   font-size: 0.95rem;
   line-height: 1.55;
 }
+.writing-pane .pane-tagline {
+  color: var(--muted);
+  margin: -0.35rem 0 0.85rem;
+}
 .writing-pane p:last-child { margin-bottom: 0; }
 .writing-pane a {
   color: var(--ink);
@@ -1299,7 +1311,7 @@ body.page-taste:has(.cover-wall-page) .page {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: default;
+  cursor: pointer;
   padding: 0;
   transition: color 120ms ease, border-color 120ms ease, background-color 120ms ease;
 }
@@ -1324,7 +1336,7 @@ body.page-taste:has(.cover-wall-page) .page {
   height: 2px;
   background: var(--rule);
   border-radius: 1px;
-  cursor: default;
+  cursor: pointer;
 }
 .audio-track:focus-visible {
   outline: 1px solid var(--accent);
@@ -1459,7 +1471,7 @@ label.margin-toggle:not(.sidenote-number):focus-visible + input.margin-toggle + 
 
 .sidenote-number {
   counter-increment: sidenote-counter;
-  cursor: default;
+  cursor: pointer;
   transition: color 120ms ease;
 }
 .sidenote-number::after,
@@ -1556,11 +1568,11 @@ html:not(.dev-mode) .dla-panel {
 
   label.margin-toggle:not(.sidenote-number) {
     display: inline;
-    cursor: default;
+    cursor: pointer;
     color: var(--accent);
   }
   .sidenote-number { display: inline; }
-  .sidenote-number::after { cursor: default; }
+  .sidenote-number::after { cursor: pointer; }
 
   .sidenote, .marginnote {
     display: none;
