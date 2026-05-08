@@ -9,11 +9,6 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
 ---
 <Base title="Strudel — A. M. Berns" description="A small Strudel live-coding workspace.">
   <div class="strudel-shell">
-    <header class="section-head">
-      <h1><span class="hl">Strudel</span></h1>
-      <p>A small browser workspace for live-coded patterns.</p>
-    </header>
-
     <main class="strudel-workspace" aria-label="Strudel workspace">
       <section class="strudel-editor-pane">
         <div class="strudel-pane-head">
@@ -23,7 +18,10 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
             <button id="strudel-stop" type="button">Stop</button>
           </div>
         </div>
-        <textarea id="strudel-code" spellcheck="false" autocomplete="off">{defaultPattern}</textarea>
+        <div id="strudel-editor" class="strudel-code-wrap">
+          <pre id="strudel-highlight" aria-hidden="true"></pre>
+          <textarea id="strudel-code" spellcheck="false" autocomplete="off">{defaultPattern}</textarea>
+        </div>
         <p id="strudel-status" class="strudel-status" aria-live="polite">Audio starts after Run.</p>
       </section>
 
@@ -35,11 +33,62 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
             <button type="button" data-preset="pulse">Pulse</button>
             <button type="button" data-preset="drums">Drums</button>
             <button type="button" data-preset="texture">Texture</button>
+            <button type="button" data-preset="bass">Bass</button>
+            <button type="button" data-preset="bell">Bell</button>
+            <button type="button" data-preset="breaks">Breaks</button>
+            <button type="button" data-preset="ambient">Ambient</button>
+            <button type="button" data-preset="sampleKit">Sample Kit</button>
+            <button type="button" data-preset="breakbeat">Breakbeat</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Builder</h2>
+          <label class="strudel-field" for="strudel-builder-mode">
+            <span>mode</span>
+            <select id="strudel-builder-mode">
+              <option value="note">note</option>
+              <option value="sample">sample</option>
+              <option value="stack">stack</option>
+            </select>
+            <output></output>
+          </label>
+          <label class="strudel-field strudel-field--wide" for="strudel-builder-pattern">
+            <span>pattern</span>
+            <input id="strudel-builder-pattern" type="text" value='c2 [eb3 g3] <bb2 f3> [ab2 c4]' />
+          </label>
+          <label class="strudel-field strudel-field--wide" for="strudel-builder-struct">
+            <span>struct</span>
+            <input id="strudel-builder-struct" type="text" value='x [~ x] x [x ~]' />
+          </label>
+          <label class="strudel-field" for="strudel-builder-bank">
+            <span>bank</span>
+            <select id="strudel-builder-bank">
+              <option value="">none</option>
+              <option value="RolandTR909">909</option>
+              <option value="RolandTR808">808</option>
+              <option value="CasioRZ1">RZ1</option>
+            </select>
+            <output></output>
+          </label>
+          <div class="strudel-preset-list">
+            <button id="strudel-build-replace" type="button">Replace</button>
+            <button id="strudel-build-append" type="button">Append Layer</button>
           </div>
         </section>
 
         <section>
           <h2>Controls</h2>
+          <label class="strudel-field" for="strudel-sound">
+            <span>sound</span>
+            <select id="strudel-sound">
+              <option value="sawtooth">saw</option>
+              <option value="square">square</option>
+              <option value="triangle">triangle</option>
+              <option value="sine">sine</option>
+            </select>
+            <output></output>
+          </label>
           <label class="strudel-field" for="strudel-gain">
             <span>gain</span>
             <input id="strudel-gain" type="range" min="0.15" max="0.9" step="0.05" value="0.55" />
@@ -50,34 +99,77 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
             <input id="strudel-slow" type="range" min="0.5" max="6" step="0.5" value="2" />
             <output id="strudel-slow-value" for="strudel-slow">2</output>
           </label>
+          <label class="strudel-field" for="strudel-room">
+            <span>room</span>
+            <input id="strudel-room" type="range" min="0" max="0.9" step="0.05" value="0.3" />
+            <output id="strudel-room-value" for="strudel-room">0.30</output>
+          </label>
+          <label class="strudel-field" for="strudel-delay">
+            <span>delay</span>
+            <input id="strudel-delay" type="range" min="0" max="0.8" step="0.05" value="0.15" />
+            <output id="strudel-delay-value" for="strudel-delay">0.15</output>
+          </label>
+          <label class="strudel-field" for="strudel-cutoff">
+            <span>lpf</span>
+            <input id="strudel-cutoff" type="range" min="300" max="4000" step="100" value="1800" />
+            <output id="strudel-cutoff-value" for="strudel-cutoff">1800</output>
+          </label>
           <button id="strudel-apply-controls" type="button">Apply to editor</button>
         </section>
 
-        <section class="strudel-legal">
-          <h2>Source</h2>
-          <p>
-            This page loads the unmodified <a href="https://www.npmjs.com/package/@strudel/web">@strudel/web</a>
-            browser package, part of <a href="https://codeberg.org/uzu/strudel">Strudel</a>,
-            licensed under <a href="https://codeberg.org/uzu/strudel/src/branch/main/LICENSE">AGPL-3.0-or-later</a>.
-            Strudel is provided without warranty. Site source is available at
-            <a href="https://github.com/A-M-Berns/personal-site">GitHub</a>.
-          </p>
+        <section>
+          <h2>Transforms</h2>
+          <div class="strudel-preset-list">
+            <button type="button" data-insert=".rev()">rev</button>
+            <button type="button" data-insert=".jux(rev)">jux</button>
+            <button type="button" data-insert=".sometimes(x => x.fast(2))">sometimes</button>
+            <button type="button" data-insert=".every(4, rev)">every 4</button>
+            <button type="button" data-insert=".off(0.25, x => x.gain(0.35))">echo</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>Samples</h2>
+          <div class="strudel-preset-list">
+            <button type="button" data-sample="bd sd hh*4">kit</button>
+            <button type="button" data-sample="[bd ~] [~ sd] hh*8">backbeat</button>
+            <button type="button" data-sample="bd*4">four</button>
+            <button type="button" data-sample="[cp ~] hh [~ sd] hh">clap</button>
+            <button type="button" data-sample="bd [~ sd] <hh*4 hh*8> [cp ~]">break</button>
+          </div>
         </section>
       </aside>
     </main>
+
+    <div class="anim-controls">
+      <button id="strudel-info" type="button" aria-label="About this Strudel page">About</button>
+      <button id="strudel-reset" type="button" aria-label="Reset Strudel editor">Reset</button>
+    </div>
+
+    <dialog id="strudel-about" class="anim-about" aria-labelledby="strudel-about-title">
+      <h2 id="strudel-about-title">About</h2>
+      <p>
+        This page loads the unmodified <a href="https://www.npmjs.com/package/@strudel/web">@strudel/web</a>
+        browser package, part of <a href="https://codeberg.org/uzu/strudel">Strudel</a>,
+        licensed under <a href="https://codeberg.org/uzu/strudel/src/branch/main/LICENSE">AGPL-3.0-or-later</a>.
+        Strudel is provided without warranty. Site source is available at
+        <a href="https://github.com/A-M-Berns/personal-site">GitHub</a>.
+      </p>
+    </dialog>
   </div>
 </Base>
 
 <style>
   .strudel-shell {
     position: relative;
+    min-height: calc(100vh - 11.25rem);
   }
   .strudel-workspace {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
     gap: 1.25rem;
     align-items: start;
-    max-width: 88rem;
+    max-width: 96rem;
   }
   .strudel-editor-pane,
   .strudel-side-pane section {
@@ -109,6 +201,8 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   }
   .strudel-actions button,
   .strudel-preset-list button,
+  #strudel-build-replace,
+  #strudel-build-append,
   #strudel-apply-controls {
     font-family: var(--font-lexend), var(--sans);
     font-size: 0.72rem;
@@ -125,31 +219,69 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .strudel-actions button:focus-visible,
   .strudel-preset-list button:hover,
   .strudel-preset-list button:focus-visible,
+  #strudel-build-replace:hover,
+  #strudel-build-replace:focus-visible,
+  #strudel-build-append:hover,
+  #strudel-build-append:focus-visible,
   #strudel-apply-controls:hover,
   #strudel-apply-controls:focus-visible {
     color: var(--accent);
     border-color: var(--accent);
     outline: none;
   }
-  #strudel-code {
-    display: block;
+  .strudel-code-wrap {
+    position: relative;
     width: 100%;
-    min-height: min(54vh, 34rem);
-    resize: vertical;
-    box-sizing: border-box;
+    min-height: min(68vh, 46rem);
     border: 1px solid var(--rule);
     border-radius: 3px;
     background: rgba(255, 255, 255, 0.035);
-    color: var(--ink);
+    overflow: hidden;
+    transition: border-color 140ms ease, box-shadow 180ms ease;
+  }
+  .strudel-code-wrap.is-playing {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 48%, transparent), 0 0 22px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  #strudel-code,
+  #strudel-highlight {
+    box-sizing: border-box;
+    min-height: min(68vh, 46rem);
+    margin: 0;
     padding: 0.85rem;
     font: 0.94rem/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    tab-size: 2;
+  }
+  #strudel-highlight {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    color: var(--ink);
+  }
+  #strudel-highlight .tok-fn { color: var(--accent); }
+  #strudel-highlight .tok-string { color: color-mix(in srgb, var(--accent) 72%, #fff); }
+  #strudel-highlight .tok-number { color: #d6ff5a; }
+  #strudel-highlight .tok-method { color: #4ad6ff; }
+  #strudel-highlight .tok-symbol { color: var(--muted); }
+  #strudel-code {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 100%;
+    resize: vertical;
+    border: 0;
+    background: transparent;
+    color: transparent;
+    caret-color: var(--ink);
+    -webkit-text-fill-color: transparent;
   }
   #strudel-code:focus {
-    border-color: var(--accent);
     outline: none;
   }
-  .strudel-status,
-  .strudel-legal p {
+  .strudel-status {
     margin: 0.75rem 0 0;
     color: var(--muted);
     font-size: 0.85rem;
@@ -161,7 +293,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   }
   .strudel-field {
     display: grid;
-    grid-template-columns: 3.25rem 1fr 3rem;
+    grid-template-columns: 3.25rem minmax(0, 1fr) 3.2rem;
     gap: 0.55rem;
     align-items: center;
     margin: 0.8rem 0;
@@ -172,6 +304,32 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
     width: 100%;
     margin: 0;
     accent-color: var(--accent);
+  }
+  .strudel-field input[type="text"] {
+    min-width: 0;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--ink);
+    padding: 0.28rem 0.35rem;
+    font: 0.76rem/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+  .strudel-field input[type="text"]:focus {
+    border-color: var(--accent);
+    outline: none;
+  }
+  .strudel-field--wide {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+  }
+  .strudel-field select {
+    width: 100%;
+    min-width: 0;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--ink);
+    padding: 0.25rem 0.35rem;
   }
   .strudel-field output {
     color: var(--ink);
@@ -193,14 +351,33 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
 
 <script>
   const codeEl = document.getElementById('strudel-code') as HTMLTextAreaElement | null;
+  const editorEl = document.getElementById('strudel-editor') as HTMLElement | null;
+  const highlightEl = document.getElementById('strudel-highlight');
   const runButton = document.getElementById('strudel-run') as HTMLButtonElement | null;
   const stopButton = document.getElementById('strudel-stop') as HTMLButtonElement | null;
   const statusEl = document.getElementById('strudel-status');
+  const infoButton = document.getElementById('strudel-info') as HTMLButtonElement | null;
+  const resetButton = document.getElementById('strudel-reset') as HTMLButtonElement | null;
+  const aboutDialog = document.getElementById('strudel-about') as HTMLDialogElement | null;
+  const soundInput = document.getElementById('strudel-sound') as HTMLSelectElement | null;
+  const builderMode = document.getElementById('strudel-builder-mode') as HTMLSelectElement | null;
+  const builderPattern = document.getElementById('strudel-builder-pattern') as HTMLInputElement | null;
+  const builderStruct = document.getElementById('strudel-builder-struct') as HTMLInputElement | null;
+  const builderBank = document.getElementById('strudel-builder-bank') as HTMLSelectElement | null;
+  const buildReplace = document.getElementById('strudel-build-replace') as HTMLButtonElement | null;
+  const buildAppend = document.getElementById('strudel-build-append') as HTMLButtonElement | null;
   const gainInput = document.getElementById('strudel-gain') as HTMLInputElement | null;
   const gainValue = document.getElementById('strudel-gain-value');
   const slowInput = document.getElementById('strudel-slow') as HTMLInputElement | null;
   const slowValue = document.getElementById('strudel-slow-value');
+  const roomInput = document.getElementById('strudel-room') as HTMLInputElement | null;
+  const roomValue = document.getElementById('strudel-room-value');
+  const delayInput = document.getElementById('strudel-delay') as HTMLInputElement | null;
+  const delayValue = document.getElementById('strudel-delay-value');
+  const cutoffInput = document.getElementById('strudel-cutoff') as HTMLInputElement | null;
+  const cutoffValue = document.getElementById('strudel-cutoff-value');
   const applyControls = document.getElementById('strudel-apply-controls') as HTMLButtonElement | null;
+  const defaultCode = codeEl?.defaultValue ?? '';
 
   const presets: Record<string, string> = {
     melodic: `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
@@ -223,12 +400,81 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   .delay(0.45)
   .room(0.75)
   .gain(0.35)`,
+    bass: `note("<c1 c2> [~ eb1] <bb0 bb1> [f1 ab1]")
+  .sound("sawtooth")
+  .struct("x [~ x] x [x ~]")
+  .lpf(900)
+  .gain(0.62)`,
+    bell: `note("c5 <eb5 g5> bb4 [ab5 c6]")
+  .sound("sine")
+  .slow(4)
+  .delay(0.35)
+  .room(0.8)
+  .gain(0.42)`,
+    breaks: `s("[bd ~] [~ sd] hh*8 [bd sd]")
+  .slow(1)
+  .sometimes(x => x.fast(2))
+  .room(0.25)
+  .gain(0.68)`,
+    ambient: `note("c2 eb2 g2 bb2")
+  .sound("triangle")
+  .slow(8)
+  .lpf(sine.range(400, 2600).slow(12))
+  .delay(0.55)
+  .room(0.9)
+  .gain(0.38)`,
+    sampleKit: `s("bd sd hh*4 [cp ~]")
+  .bank("RolandTR909")
+  .slow(1)
+  .gain(0.62)`,
+    breakbeat: `s("[bd ~] [~ sd] <hh*8 hh*4> [bd cp]")
+  .bank("RolandTR909")
+  .sometimes(x => x.fast(2))
+  .room(0.25)
+  .gain(0.66)`,
   };
 
   let strudelReady: Promise<void> | null = null;
 
   function setStatus(message: string) {
     if (statusEl) statusEl.textContent = message;
+  }
+
+  function escapeHtml(value: string) {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function highlightStrudel(code: string) {
+    const escaped = escapeHtml(code);
+    return escaped.replace(
+      /("(?:\\.|[^"\\])*")|(\.[a-zA-Z_]\w*)|(\b(?:note|s|n|sound|samples|stack|cat|seq|slow|fast|gain|room|delay|lpf|hpf|rev|jux|sometimes|every|off|struct|bank|sine|saw|square|tri|rand|range)\b)|(\b\d+(?:\.\d+)?\b)|([()[\]{}<>*,])/g,
+      (_match, stringToken, methodToken, functionToken, numberToken, symbolToken) => {
+        if (stringToken) return `<span class="tok-string">${stringToken}</span>`;
+        if (methodToken) return `<span class="tok-method">${methodToken}</span>`;
+        if (functionToken) return `<span class="tok-fn">${functionToken}</span>`;
+        if (numberToken) return `<span class="tok-number">${numberToken}</span>`;
+        if (symbolToken) return `<span class="tok-symbol">${symbolToken}</span>`;
+        return _match;
+      },
+    );
+  }
+
+  function syncHighlight() {
+    if (!codeEl || !highlightEl) return;
+    highlightEl.innerHTML = `${highlightStrudel(codeEl.value)}\n`;
+    highlightEl.scrollTop = codeEl.scrollTop;
+    highlightEl.scrollLeft = codeEl.scrollLeft;
+  }
+
+  function pulseEditor() {
+    editorEl?.classList.remove('is-playing');
+    window.requestAnimationFrame(() => {
+      editorEl?.classList.add('is-playing');
+      window.setTimeout(() => editorEl?.classList.remove('is-playing'), 700);
+    });
   }
 
   function loadStrudel() {
@@ -260,6 +506,9 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   function updateControlLabels() {
     if (gainInput && gainValue) gainValue.textContent = Number(gainInput.value).toFixed(2);
     if (slowInput && slowValue) slowValue.textContent = Number(slowInput.value).toString();
+    if (roomInput && roomValue) roomValue.textContent = Number(roomInput.value).toFixed(2);
+    if (delayInput && delayValue) delayValue.textContent = Number(delayInput.value).toFixed(2);
+    if (cutoffInput && cutoffValue) cutoffValue.textContent = Number(cutoffInput.value).toString();
   }
 
   async function runPattern() {
@@ -270,6 +519,7 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
       if (typeof evaluate !== 'function') throw new Error('Strudel evaluator is unavailable.');
       evaluate(codeEl.value);
       setStatus('Running.');
+      pulseEditor();
       try {
         window.localStorage.setItem('strudel-code', codeEl.value);
       } catch (e) {}
@@ -291,13 +541,80 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   }
 
   function applyEditorControls() {
-    if (!codeEl || !gainInput || !slowInput) return;
+    if (!codeEl || !gainInput || !slowInput || !soundInput || !roomInput || !delayInput || !cutoffInput) return;
     const gain = Number(gainInput.value).toFixed(2);
     const slow = Number(slowInput.value).toString();
+    const room = Number(roomInput.value).toFixed(2);
+    const delay = Number(delayInput.value).toFixed(2);
+    const cutoff = Number(cutoffInput.value).toString();
+    const sound = soundInput.value;
     const base = codeEl.value
       .replace(/\n\s*\.gain\([^)]*\)/g, '')
-      .replace(/\n\s*\.slow\([^)]*\)/g, '');
-    codeEl.value = `${base}\n  .slow(${slow})\n  .gain(${gain})`;
+      .replace(/\n\s*\.slow\([^)]*\)/g, '')
+      .replace(/\n\s*\.sound\([^)]*\)/g, '')
+      .replace(/\n\s*\.room\([^)]*\)/g, '')
+      .replace(/\n\s*\.delay\([^)]*\)/g, '')
+      .replace(/\n\s*\.lpf\([^)]*\)/g, '');
+    codeEl.value = `${base}\n  .sound("${sound}")\n  .slow(${slow})\n  .lpf(${cutoff})\n  .delay(${delay})\n  .room(${room})\n  .gain(${gain})`;
+    syncHighlight();
+  }
+
+  function builderExpression() {
+    const mode = builderMode?.value ?? 'note';
+    const pattern = builderPattern?.value.trim() || 'c2 eb2 g2 bb2';
+    const struct = builderStruct?.value.trim();
+    const bank = builderBank?.value;
+    if (mode === 'sample') {
+      const base = [`s("${pattern}")`];
+      if (bank) base.push(`  .bank("${bank}")`);
+      if (struct) base.push(`  .struct("${struct}")`);
+      return base.join('\n');
+    }
+    if (mode === 'stack') {
+      return `stack(
+  note("${pattern}").sound("${soundInput?.value ?? 'sawtooth'}"),
+  s("${struct || 'bd [~ sd] hh*4'}")
+)`;
+    }
+    const base = `note("${pattern}")\n  .sound("${soundInput?.value ?? 'sawtooth'}")`;
+    return struct ? `${base}\n  .struct("${struct}")` : base;
+  }
+
+  function replaceFromBuilder() {
+    if (!codeEl) return;
+    codeEl.value = `${builderExpression()}\n  .gain(${gainInput?.value ?? '0.55'})`;
+    syncHighlight();
+    setStatus('Built pattern.');
+  }
+
+  function appendFromBuilder() {
+    if (!codeEl) return;
+    const current = codeEl.value.trim();
+    const next = builderExpression()
+      .split('\n')
+      .map((line) => `  ${line}`)
+      .join('\n');
+    codeEl.value = current.startsWith('stack(')
+      ? current.replace(/\)\s*$/, `,\n${next}\n)`)
+      : `stack(\n  ${current.replace(/\n/g, '\n  ')},\n${next}\n)`;
+    syncHighlight();
+    setStatus('Appended layer.');
+  }
+
+  function resetEditor() {
+    if (codeEl) codeEl.value = defaultCode;
+    if (soundInput) soundInput.value = 'sawtooth';
+    if (gainInput) gainInput.value = '0.55';
+    if (slowInput) slowInput.value = '2';
+    if (roomInput) roomInput.value = '0.3';
+    if (delayInput) delayInput.value = '0.15';
+    if (cutoffInput) cutoffInput.value = '1800';
+    updateControlLabels();
+    syncHighlight();
+    try {
+      window.localStorage.removeItem('strudel-code');
+    } catch (e) {}
+    setStatus('Reset.');
   }
 
   try {
@@ -306,16 +623,46 @@ const defaultPattern = `note("c2 [eb3 g3] <bb2 f3> [ab2 c4]")
   } catch (e) {}
 
   updateControlLabels();
+  syncHighlight();
+  codeEl?.addEventListener('input', syncHighlight);
+  codeEl?.addEventListener('scroll', syncHighlight);
   gainInput?.addEventListener('input', updateControlLabels);
   slowInput?.addEventListener('input', updateControlLabels);
+  roomInput?.addEventListener('input', updateControlLabels);
+  delayInput?.addEventListener('input', updateControlLabels);
+  cutoffInput?.addEventListener('input', updateControlLabels);
   applyControls?.addEventListener('click', applyEditorControls);
+  buildReplace?.addEventListener('click', replaceFromBuilder);
+  buildAppend?.addEventListener('click', appendFromBuilder);
+  resetButton?.addEventListener('click', resetEditor);
+  infoButton?.addEventListener('click', () => aboutDialog?.showModal());
+  aboutDialog?.addEventListener('click', (event) => {
+    if (event.target === aboutDialog) aboutDialog.close();
+  });
   runButton?.addEventListener('click', runPattern);
   stopButton?.addEventListener('click', stopPattern);
+  document.querySelectorAll<HTMLButtonElement>('[data-insert]').forEach((button) => {
+    button.addEventListener('click', () => {
+      if (!codeEl || !button.dataset.insert) return;
+      codeEl.value = `${codeEl.value.trimEnd()}\n  ${button.dataset.insert}`;
+      syncHighlight();
+      setStatus(`Inserted ${button.textContent?.trim() ?? 'transform'}.`);
+    });
+  });
+  document.querySelectorAll<HTMLButtonElement>('[data-sample]').forEach((button) => {
+    button.addEventListener('click', () => {
+      if (builderMode) builderMode.value = 'sample';
+      if (builderPattern && button.dataset.sample) builderPattern.value = button.dataset.sample;
+      if (builderBank && !builderBank.value) builderBank.value = 'RolandTR909';
+      replaceFromBuilder();
+    });
+  });
   document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((button) => {
     button.addEventListener('click', () => {
       const preset = button.dataset.preset;
       if (preset && presets[preset] && codeEl) {
         codeEl.value = presets[preset];
+        syncHighlight();
         setStatus(`Loaded ${button.textContent?.trim() ?? 'preset'}.`);
       }
     });
