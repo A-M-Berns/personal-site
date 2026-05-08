@@ -95,6 +95,13 @@ import Base from '../layouts/Base.astro';
     type VisualSkin = 'triangles' | 'edgeBands' | 'cornerCuts' | 'centerGlyphs' | 'diamondWeave' | 'isometric' | 'lozenges' | 'beads' | 'scales' | 'ribbons' | 'chevrons' | 'insetDiamonds' | 'pixelGlyphs' | 'quarterArcs' | 'ladder' | 'facets' | 'kite' | 'mesh' | 'blocks' | 'mosaic' | 'bands' | 'brickwork' | 'diagonalBars' | 'checker' | 'orbit' | 'splitBands' | 'pinwheel' | 'crosshatch' | 'plusGlyph' | 'nestedBox' | 'strata' | 'zigzag' | 'wedges' | 'petals' | 'target' | 'shards' | 'caps' | 'spokes' | 'rays' | 'slats' | 'steps' | 'frame' | 'arcBands' | 'splitDiag' | 'edgeCorners' | 'iris' | 'triad' | 'hexFan' | 'lanes';
     type GrowthMode = 'spores' | 'tendrils' | 'river' | 'rings' | 'islands' | 'lightning' | 'roots' | 'vortex' | 'contours' | 'maze' | 'faults' | 'braid' | 'nebula';
     type SpeedMode = { name: string; divisor: number; minStep: number };
+    type TileGeometry = {
+      rectW: number;
+      rectH: number;
+      paraW: number;
+      paraH: number;
+      paraSkew: number;
+    };
     type Cycle = {
       seed: number;
       rng: () => number;
@@ -105,6 +112,7 @@ import Base from '../layouts/Base.astro';
       speed: SpeedMode;
       revealStep: number;
       tileSize: number;
+      geometry: TileGeometry;
       cols: number;
       rows: number;
       grid: Int16Array;
@@ -176,6 +184,16 @@ import Base from '../layouts/Base.astro';
         [out[i], out[j]] = [out[j], out[i]];
       }
       return out;
+    }
+
+    function randomTileGeometry(tileSize: number, rng: () => number): TileGeometry {
+      const rectPortrait = rng() < 0.38;
+      const rectW = tileSize * (rectPortrait ? 0.72 + rng() * 0.34 : 1.18 + rng() * 0.70);
+      const rectH = tileSize * (rectPortrait ? 1.12 + rng() * 0.60 : 0.58 + rng() * 0.38);
+      const paraH = tileSize * (0.78 + rng() * 0.52);
+      const paraW = tileSize * (0.90 + rng() * 0.72);
+      const paraSkew = tileSize * (0.18 + rng() * 0.78) * (rng() < 0.5 ? -1 : 1);
+      return { rectW, rectH, paraW, paraH, paraSkew };
     }
 
     const paper = parseHex(paperHex);
@@ -627,6 +645,7 @@ import Base from '../layouts/Base.astro';
         { name: 'quick', divisor: 230, minStep: 3 },
       ];
       const tileSize = MIN_TILE + Math.floor(rng() * (MAX_TILE - MIN_TILE + 1));
+      const geometry = randomTileGeometry(tileSize, rng);
       const randomShapes = shapes.filter((shape) => shape !== cycle?.shape);
       const shape = selectedShape === 'random' ? pick(randomShapes.length ? randomShapes : shapes, rng) : selectedShape;
       const skin = selectedSkin === 'random' ? pick(skinsByShape[shape], rng) : selectedSkin;
@@ -635,19 +654,20 @@ import Base from '../layouts/Base.astro';
       const circleShape = shape === 'circle';
       const rectangleShape = shape === 'rectangle';
       const parallelogramShape = shape === 'parallelogram';
+      const paraRows = Math.ceil(H / geometry.paraH) + 12;
       const cols = rectangleShape
-        ? Math.ceil(W / (tileSize * 1.55)) + 8
+        ? Math.ceil(W / geometry.rectW) + 8
         : triangleShape
           ? Math.ceil(W / (tileSize * 0.74)) + 16
           : parallelogramShape
-          ? Math.ceil(W / (tileSize * 1.18)) + Math.ceil(H / (tileSize * 2.2)) + 18
+          ? Math.ceil((W + Math.abs(geometry.paraSkew) * paraRows) / geometry.paraW) + 14
           : Math.ceil(W / tileSize) + (hexShape || circleShape ? 10 : 1);
       const rows = rectangleShape
-        ? Math.ceil(H / (tileSize * 0.72)) + 8
+        ? Math.ceil(H / geometry.rectH) + 8
         : triangleShape
           ? Math.ceil(H / (tileSize * 1.33)) + 8
         : parallelogramShape
-          ? Math.ceil(H / tileSize) + 12
+          ? paraRows
           : Math.ceil(H / tileSize) + (hexShape || circleShape ? 10 : 1);
       const growth = pick(growthModes, rng);
       const speed = pick(speeds, rng);
@@ -674,6 +694,7 @@ import Base from '../layouts/Base.astro';
         speed,
         revealStep: Math.ceil(Math.max(speed.minStep, Math.ceil((cols * rows) / speed.divisor)) * 1.5),
         tileSize,
+        geometry,
         cols,
         rows,
         grid,
@@ -1022,13 +1043,15 @@ import Base from '../layouts/Base.astro';
       ctx.restore();
     }
 
-    function drawParallelogramTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
-      const w = size * 1.24;
-      const skew = size * 0.46;
-      const x = col * w + row * skew - H * 0.62 - size * 6;
-      const y = row * size - size * 6;
-      const points: Array<[number, number]> = [[x, y], [x + w, y], [x + w + skew, y + size], [x + skew, y + size]];
-      const center: [number, number] = [x + w * 0.5 + skew * 0.5, y + size * 0.5];
+    function drawParallelogramTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin, geometry: TileGeometry) {
+      const w = geometry.paraW;
+      const h = geometry.paraH;
+      const skew = geometry.paraSkew;
+      const xOffset = -Math.max(0, skew * (cycle?.rows ?? 0)) - Math.abs(skew) - w * 4;
+      const x = col * w + row * skew + xOffset;
+      const y = row * h - h * 4;
+      const points: Array<[number, number]> = [[x, y], [x + w, y], [x + w + skew, y + h], [x + skew, y + h]];
+      const center: [number, number] = [x + w * 0.5 + skew * 0.5, y + h * 0.5];
       const { north, east, south, west } = squareColors(tile, palette);
       if (skin === 'blocks') {
         fillPoly(points, mix(north, south, 0.45), 0.94);
@@ -1086,9 +1109,9 @@ import Base from '../layouts/Base.astro';
       }
     }
 
-    function drawRectangleTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin) {
-      const w = size * 1.55;
-      const h = size * 0.72;
+    function drawRectangleTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], skin: VisualSkin, geometry: TileGeometry) {
+      const w = geometry.rectW;
+      const h = geometry.rectH;
       const offset = skin === 'brickwork' && (row & 1) ? w * 0.5 : 0;
       const x = col * w - offset - w * 3;
       const y = row * h - h * 3;
@@ -1184,7 +1207,7 @@ import Base from '../layouts/Base.astro';
       }
     }
 
-    function drawTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], shape: ShapeKind, skin: VisualSkin) {
+    function drawTile(tile: WangTile, col: number, row: number, size: number, palette: RGB[], shape: ShapeKind, skin: VisualSkin, geometry: TileGeometry) {
       if (shape === 'triangle') {
         drawTriangleLattice(tile, col, row, size, palette, skin);
         return;
@@ -1198,11 +1221,11 @@ import Base from '../layouts/Base.astro';
         return;
       }
       if (shape === 'parallelogram') {
-        drawParallelogramTile(tile, col, row, size, palette, skin);
+        drawParallelogramTile(tile, col, row, size, palette, skin, geometry);
         return;
       }
       if (shape === 'rectangle') {
-        drawRectangleTile(tile, col, row, size, palette, skin);
+        drawRectangleTile(tile, col, row, size, palette, skin, geometry);
         return;
       }
       const x = col * size;
@@ -1432,7 +1455,7 @@ import Base from '../layouts/Base.astro';
         if (tileIdx < 0) continue;
         const col = pos % cycle.cols;
         const row = Math.floor(pos / cycle.cols);
-        drawTile(cycle.tileset.tiles[tileIdx], col, row, cycle.tileSize, cycle.palette, cycle.shape, cycle.skin);
+        drawTile(cycle.tileset.tiles[tileIdx], col, row, cycle.tileSize, cycle.palette, cycle.shape, cycle.skin, cycle.geometry);
       }
     }
 
