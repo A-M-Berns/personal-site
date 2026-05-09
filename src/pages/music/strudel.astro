@@ -937,6 +937,7 @@ import Base from '../../layouts/Base.astro';
   async function pushCode() {
     const code = buildCode();
     try { window.localStorage.setItem('strudel-state-v2', JSON.stringify(state)); } catch (e) {}
+    try { await ensureEditor(); } catch (e) { setStatus('editor unavailable'); return; }
     if (!editorRef) return;
     editorRef.setCode(code);
     if (isRunning) {
@@ -1283,4 +1284,8 @@ import Base from '../../layouts/Base.astro';
   renderChords();
   renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply);
   renderRoll(document.getElementById('strudel-lead-roll'), state.lead.cells, LEAD_STEPS, scheduleLiveApply);
+
+  // Eagerly load the editor so the code panel reflects state immediately,
+  // not only after the user clicks Run.
+  ensureEditor().catch(() => setStatus('editor unavailable'));
 </script>
