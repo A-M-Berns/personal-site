@@ -459,6 +459,7 @@ import Base from '../../layouts/Base.astro';
   }
   .strudel-piano-roll {
     display: grid;
+    grid-template-columns: 2.25rem 1fr;
     gap: 1px;
     margin-top: 0.55rem;
     background: var(--rule);
@@ -466,9 +467,10 @@ import Base from '../../layouts/Base.astro';
     border-radius: 2px;
     overflow: hidden;
   }
-  .strudel-piano-roll-row {
+  .strudel-piano-roll :global(.strudel-piano-roll-row) {
     display: grid;
     gap: 1px;
+    min-height: 1.2rem;
   }
   .strudel-piano-roll :global(.strudel-roll-cell) {
     min-height: 1.2rem;
@@ -476,6 +478,9 @@ import Base from '../../layouts/Base.astro';
     border: 0;
     cursor: pointer;
     padding: 0;
+  }
+  .strudel-piano-roll :global(.strudel-roll-cell:hover) {
+    background: rgba(255, 255, 255, 0.1);
   }
   .strudel-piano-roll :global(.strudel-roll-cell.is-on) {
     background: var(--accent);
