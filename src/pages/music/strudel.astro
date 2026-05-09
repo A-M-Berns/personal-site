@@ -45,11 +45,17 @@ import Base from '../../layouts/Base.astro';
           <option value="harmonic minor">harmonic minor</option>
         </select>
       </label>
+      <label class="strudel-knob">
+        <span>swing</span>
+        <input id="strudel-swing" type="range" min="0" max="0.5" step="0.01" value="0" />
+        <output id="strudel-swing-out">0</output>
+      </label>
       <div class="strudel-presets">
         <button type="button" data-preset="lofi">lo-fi</button>
         <button type="button" data-preset="techno">techno</button>
         <button type="button" data-preset="ambient">ambient</button>
         <button type="button" data-preset="empty">clear</button>
+        <button id="strudel-share" type="button" title="Copy a link with this patch">share</button>
       </div>
     </header>
 
@@ -71,12 +77,23 @@ import Base from '../../layouts/Base.astro';
               <select data-bank>
                 <option value="RolandTR909">909</option>
                 <option value="RolandTR808">808</option>
+                <option value="RolandTR707">707</option>
+                <option value="RolandTR606">606</option>
+                <option value="AlesisHR16">HR16</option>
+                <option value="AkaiLinn">linn</option>
                 <option value="ViscoSpaceDrum">visco</option>
+                <option value="bossanova">bossa</option>
+                <option value="casio">casio</option>
                 <option value="">default</option>
               </select>
             </div>
           </header>
           <div id="strudel-drum-grid" class="strudel-step-grid" aria-label="Drum step grid"></div>
+          <div class="strudel-fx-row">
+            <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label>
+            <label class="fx-toggle"><input type="checkbox" data-fx-vary /><span>vary</span></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
+          </div>
         </section>
 
         <section class="strudel-part" data-part="chords">
@@ -94,6 +111,12 @@ import Base from '../../layouts/Base.astro';
             </div>
           </header>
           <div id="strudel-chord-grid" class="strudel-chord-grid" aria-label="Chord progression"></div>
+          <div class="strudel-fx-row">
+            <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>room</span><input type="range" min="0" max="1" step="0.05" data-fx-room /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label>
+            <label class="fx-toggle"><input type="checkbox" data-fx-vary /><span>vary</span></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
+          </div>
         </section>
 
         <section class="strudel-part" data-part="bass">
@@ -118,6 +141,11 @@ import Base from '../../layouts/Base.astro';
               <option value="walking">walking</option>
             </select>
             <label><input type="checkbox" data-follow checked /><span>follow chords</span></label>
+          </div>
+          <div class="strudel-fx-row">
+            <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label>
+            <label class="fx-toggle"><input type="checkbox" data-fx-vary /><span>vary</span></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
           </div>
         </section>
 
@@ -144,6 +172,11 @@ import Base from '../../layouts/Base.astro';
             </select>
           </div>
           <div id="strudel-arp-roll" class="strudel-piano-roll" aria-label="Arp piano roll"></div>
+          <div class="strudel-fx-row">
+            <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label>
+            <label class="fx-toggle"><input type="checkbox" data-fx-vary /><span>vary</span></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
+          </div>
         </section>
 
         <section class="strudel-part" data-part="lead">
@@ -161,11 +194,18 @@ import Base from '../../layouts/Base.astro';
             </div>
           </header>
           <div class="strudel-roll-row strudel-roll-row--effects">
-            <label><input type="checkbox" data-fx="delay" /><span>delay</span></label>
-            <label><input type="checkbox" data-fx="room" /><span>room</span></label>
-            <label><input type="checkbox" data-fx="jux" /><span>jux</span></label>
+            <label><input type="checkbox" data-effect="delay" /><span>delay</span></label>
+            <label><input type="checkbox" data-effect="room" /><span>room</span></label>
+            <label><input type="checkbox" data-effect="jux" /><span>jux</span></label>
+            <label><input type="checkbox" data-effect="ghost" /><span>ghost</span></label>
+            <label><input type="checkbox" data-effect="shape" /><span>shape</span></label>
           </div>
           <div id="strudel-lead-roll" class="strudel-piano-roll" aria-label="Lead piano roll"></div>
+          <div class="strudel-fx-row">
+            <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label>
+            <label class="fx-toggle"><input type="checkbox" data-fx-vary /><span>vary</span></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
+          </div>
         </section>
 
         <section class="strudel-part" data-part="sample">
@@ -396,6 +436,7 @@ import Base from '../../layouts/Base.astro';
   .strudel-part-controls select,
   .strudel-bass-row select,
   .strudel-roll-row select,
+  .strudel-fx-row select,
   .strudel-knob select {
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--rule);
@@ -404,6 +445,37 @@ import Base from '../../layouts/Base.astro';
     padding: 0.2rem 0.3rem;
     font-size: 0.72rem;
   }
+  .strudel-fx-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+    margin-top: 0.55rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed color-mix(in srgb, var(--rule) 70%, transparent);
+    color: var(--muted);
+    font-size: 0.7rem;
+  }
+  .strudel-fx-row .fx-knob {
+    display: grid;
+    grid-template-columns: auto 5rem auto;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .strudel-fx-row .fx-knob input[type="range"] { width: 100%; accent-color: var(--accent); }
+  .strudel-fx-row .fx-knob output {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    min-width: 2.4rem;
+    text-align: right;
+  }
+  .strudel-fx-row .fx-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+  }
+  .strudel-fx-row .fx-toggle input { accent-color: var(--accent); }
   .strudel-bass-row,
   .strudel-roll-row {
     display: flex;
@@ -587,16 +659,20 @@ import Base from '../../layouts/Base.astro';
 
   interface ChordSlot { root: string; quality: Quality; octave: number; }
 
+  interface PartFx { lpf: number; drop: number; vary: boolean; every: string; }
+  const defaultFx = (): PartFx => ({ lpf: 8000, drop: 0, vary: false, every: '' });
+
   interface State {
     bpm: number;
     master: number;
+    swing: number;
     key: string;
     scale: string;
-    drums: { enabled: boolean; gain: number; bank: string; steps: Record<DrumRow, boolean[]> };
-    chords: { enabled: boolean; gain: number; sound: string; slots: ChordSlot[] };
-    bass: { enabled: boolean; gain: number; sound: string; rhythm: string; follow: boolean };
-    arp: { enabled: boolean; gain: number; sound: string; speed: number; follow: boolean; cells: boolean[][] };
-    lead: { enabled: boolean; gain: number; sound: string; cells: boolean[][]; fx: { delay: boolean; room: boolean; jux: boolean } };
+    drums: { enabled: boolean; gain: number; bank: string; steps: Record<DrumRow, boolean[]>; fx: PartFx };
+    chords: { enabled: boolean; gain: number; sound: string; slots: ChordSlot[]; room: number; fx: PartFx };
+    bass: { enabled: boolean; gain: number; sound: string; rhythm: string; follow: boolean; fx: PartFx };
+    arp: { enabled: boolean; gain: number; sound: string; speed: number; follow: boolean; cells: boolean[][]; fx: PartFx };
+    lead: { enabled: boolean; gain: number; sound: string; cells: boolean[][]; effects: { delay: boolean; room: boolean; jux: boolean; ghost: boolean; shape: boolean }; fx: PartFx };
     sample: { enabled: boolean; gain: number; name: string; url: string | null };
   }
 
@@ -683,29 +759,32 @@ import Base from '../../layouts/Base.astro';
   const initialState: State = {
     bpm: 110,
     master: 0.85,
+    swing: 0,
     key: 'c',
     scale: 'minor',
-    drums: { enabled: true, gain: 0.65, bank: 'RolandTR909', steps: defaultDrums() },
+    drums: { enabled: true, gain: 0.65, bank: 'RolandTR909', steps: defaultDrums(), fx: defaultFx() },
     chords: {
       enabled: true,
       gain: 0.4,
       sound: 'piano',
+      room: 0.5,
       slots: [
         { root: 'c', quality: 'min', octave: 3 },
         { root: 'ab', quality: 'maj', octave: 3 },
         { root: 'eb', quality: 'maj', octave: 3 },
         { root: 'bb', quality: 'maj', octave: 3 },
       ],
+      fx: defaultFx(),
     },
-    bass: { enabled: true, gain: 0.55, sound: 'sawtooth', rhythm: 'syncopated', follow: true },
-    arp: { enabled: false, gain: 0.42, sound: 'sine', speed: 2, follow: true, cells: defaultArp() },
-    lead: { enabled: false, gain: 0.42, sound: 'square', cells: defaultLead(), fx: { delay: false, room: false, jux: false } },
+    bass: { enabled: true, gain: 0.55, sound: 'sawtooth', rhythm: 'syncopated', follow: true, fx: { lpf: 800, drop: 0, vary: false } },
+    arp: { enabled: false, gain: 0.42, sound: 'sine', speed: 2, follow: true, cells: defaultArp(), fx: defaultFx() },
+    lead: { enabled: false, gain: 0.42, sound: 'square', cells: defaultLead(), effects: { delay: false, room: false, jux: false, ghost: false, shape: false }, fx: defaultFx() },
     sample: { enabled: false, gain: 0.55, name: '', url: null },
   };
 
   const presets: Record<string, Partial<State>> = {
     empty: {
-      drums: { enabled: false, gain: 0.65, bank: '', steps: emptySteps() },
+      drums: { ...initialState.drums, enabled: false, steps: emptySteps() },
       chords: { ...initialState.chords, enabled: false },
       bass: { ...initialState.bass, enabled: false },
       arp: { ...initialState.arp, enabled: false },
@@ -713,57 +792,94 @@ import Base from '../../layouts/Base.astro';
     },
     lofi: {
       bpm: 82,
+      swing: 0.18,
       key: 'eb',
       scale: 'minor',
-      drums: { enabled: true, gain: 0.55, bank: 'RolandTR808', steps: (() => { const s = emptySteps(); [0, 8].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); [0, 2, 4, 6, 8, 10, 12, 14].forEach((i) => (s.hh[i] = true)); return s; })() },
-      chords: { enabled: true, gain: 0.42, sound: 'piano', slots: [
+      drums: { ...initialState.drums, gain: 0.55, bank: 'RolandTR808', steps: (() => { const s = emptySteps(); [0, 8].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); [0, 2, 4, 6, 8, 10, 12, 14].forEach((i) => (s.hh[i] = true)); return s; })(), fx: { lpf: 3000, drop: 0.1, vary: false } },
+      chords: { ...initialState.chords, gain: 0.42, sound: 'piano', room: 0.7, slots: [
         { root: 'eb', quality: 'min7', octave: 3 },
         { root: 'ab', quality: 'maj7', octave: 3 },
         { root: 'gb', quality: 'maj7', octave: 3 },
         { root: 'bb', quality: 'min7', octave: 3 },
-      ] },
-      bass: { enabled: true, gain: 0.5, sound: 'sine', rhythm: 'root', follow: true },
-      arp: { enabled: false, gain: 0.3, sound: 'piano', speed: 1, follow: true, cells: emptyCells(ARP_STEPS) },
-      lead: { enabled: false, gain: 0.4, sound: 'sine', cells: emptyCells(LEAD_STEPS), fx: { delay: true, room: true, jux: false } },
+      ], fx: { lpf: 4000, drop: 0, vary: false } },
+      bass: { ...initialState.bass, gain: 0.5, sound: 'sine', rhythm: 'root', follow: true, fx: { lpf: 600, drop: 0, vary: false } },
     },
     techno: {
       bpm: 128,
+      swing: 0,
       key: 'a',
       scale: 'minor',
-      drums: { enabled: true, gain: 0.7, bank: 'RolandTR909', steps: (() => { const s = emptySteps(); [0, 4, 8, 12].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); for (let i = 0; i < 16; i += 2) s.hh[i] = true; [3, 11].forEach((i) => (s.cp[i] = true)); return s; })() },
-      chords: { enabled: false, gain: 0.3, sound: 'sawtooth', slots: initialState.chords.slots },
-      bass: { enabled: true, gain: 0.6, sound: 'sawtooth', rhythm: 'octaves', follow: false },
-      arp: { enabled: true, gain: 0.4, sound: 'square', speed: 4, follow: false, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 4, 8, 12].forEach((s, i) => (c[ROLL_PITCHES - 1 - [7, 5, 7, 4][i]][s] = true)); return c; })() },
-      lead: { ...initialState.lead, enabled: false },
+      drums: { ...initialState.drums, gain: 0.7, bank: 'RolandTR909', steps: (() => { const s = emptySteps(); [0, 4, 8, 12].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); for (let i = 0; i < 16; i += 2) s.hh[i] = true; [3, 11].forEach((i) => (s.cp[i] = true)); return s; })(), fx: defaultFx() },
+      chords: { ...initialState.chords, enabled: false },
+      bass: { ...initialState.bass, gain: 0.6, sound: 'sawtooth', rhythm: 'octaves', follow: false, fx: { lpf: 1200, drop: 0, vary: false } },
+      arp: { ...initialState.arp, enabled: true, gain: 0.4, sound: 'square', speed: 4, follow: false, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 4, 8, 12].forEach((s, i) => (c[ROLL_PITCHES - 1 - [7, 5, 7, 4][i]][s] = true)); return c; })(), fx: { lpf: 2000, drop: 0.15, vary: true } },
     },
     ambient: {
       bpm: 70,
+      swing: 0,
       key: 'd',
       scale: 'dorian',
-      drums: { enabled: false, gain: 0.5, bank: 'RolandTR909', steps: emptySteps() },
-      chords: { enabled: true, gain: 0.32, sound: 'triangle', slots: [
+      drums: { ...initialState.drums, enabled: false },
+      chords: { ...initialState.chords, gain: 0.32, sound: 'triangle', room: 0.85, slots: [
         { root: 'd', quality: 'min7', octave: 3 },
         { root: 'g', quality: 'maj7', octave: 3 },
         { root: 'a', quality: 'min7', octave: 3 },
         { root: 'f', quality: 'maj7', octave: 3 },
-      ] },
-      bass: { enabled: true, gain: 0.42, sound: 'sine', rhythm: 'root', follow: true },
-      arp: { enabled: true, gain: 0.32, sound: 'sine', speed: 1, follow: true, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 3, 6, 9, 12, 15].forEach((s, i) => (c[ROLL_PITCHES - 1 - [0, 2, 4, 7, 4, 2][i]][s] = true)); return c; })() },
-      lead: { enabled: false, gain: 0.3, sound: 'piano', cells: emptyCells(LEAD_STEPS), fx: { delay: true, room: true, jux: false } },
+      ], fx: { lpf: 5000, drop: 0, vary: false } },
+      bass: { ...initialState.bass, gain: 0.42, sound: 'sine', rhythm: 'root', follow: true, fx: { lpf: 500, drop: 0, vary: false } },
+      arp: { ...initialState.arp, enabled: true, gain: 0.32, sound: 'sine', speed: 1, follow: true, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 3, 6, 9, 12, 15].forEach((s, i) => (c[ROLL_PITCHES - 1 - [0, 2, 4, 7, 4, 2][i]][s] = true)); return c; })(), fx: { lpf: 4000, drop: 0.2, vary: true } },
     },
   };
 
   function clone<T>(value: T): T { return JSON.parse(JSON.stringify(value)); }
+  function mergeState(saved: any): State {
+    const base = clone(initialState) as any;
+    if (!saved || typeof saved !== 'object') return base;
+    for (const k of Object.keys(base)) {
+      if (saved[k] === undefined) continue;
+      if (typeof base[k] === 'object' && base[k] !== null && !Array.isArray(base[k])) {
+        base[k] = { ...base[k], ...saved[k] };
+        if (base[k].fx) base[k].fx = { ...defaultFx(), ...(saved[k].fx ?? {}) };
+      } else {
+        base[k] = saved[k];
+      }
+    }
+    return base as State;
+  }
   let state: State = clone(initialState);
-  try {
-    const saved = window.localStorage.getItem('strudel-state-v2');
-    if (saved) state = { ...clone(initialState), ...JSON.parse(saved) };
-  } catch (e) {}
+  function loadFromHash(): State | null {
+    if (!window.location.hash || window.location.hash.length < 2) return null;
+    try {
+      const raw = decodeURIComponent(window.location.hash.slice(1));
+      const decoded = atob(raw);
+      return mergeState(JSON.parse(decoded));
+    } catch (e) { return null; }
+  }
+  const fromHash = loadFromHash();
+  if (fromHash) {
+    state = fromHash;
+  } else {
+    try {
+      const saved = window.localStorage.getItem('strudel-state-v3');
+      if (saved) state = mergeState(JSON.parse(saved));
+    } catch (e) {}
+  }
 
   // ===== Code generation =====
   function indent(code: string, n = 2) {
     const pad = ' '.repeat(n);
     return code.split('\n').map((l) => pad + l).join('\n');
+  }
+  function applyFx(code: string, fx: PartFx): string {
+    let out = code;
+    if (fx.lpf < 8000) out += `\n  .lpf(${fx.lpf})`;
+    if (fx.drop > 0) out += `\n  .degradeBy(${fx.drop.toFixed(2)})`;
+    if (fx.vary) out += `\n  .sometimes(rev)`;
+    if (fx.every === '4fast') out += `\n  .every(4, x => x.fast(2))`;
+    else if (fx.every === '8jux') out += `\n  .every(8, x => x.jux(rev))`;
+    else if (fx.every === '4rev') out += `\n  .every(4, rev)`;
+    else if (fx.every === '8slow') out += `\n  .every(8, x => x.slow(2))`;
+    return out;
   }
   function drumCode(): string | null {
     if (!state.drums.enabled) return null;
@@ -774,6 +890,7 @@ import Base from '../../layouts/Base.astro';
     }
     let code = `s("${tokens.join(' ')}")`;
     if (state.drums.bank) code += `\n  .bank("${state.drums.bank}")`;
+    code = applyFx(code, state.drums.fx);
     code += `\n  .gain(${state.drums.gain.toFixed(2)})`;
     return code;
   }
@@ -782,7 +899,9 @@ import Base from '../../layouts/Base.astro';
     const slotStrs = state.chords.slots.map((s) => `<${chordNotes(s).join(',')}>`);
     let code = `note("${slotStrs.join(' ')}")`;
     code += `\n  .${state.chords.sound === 'piano' ? 'piano()' : `s("${state.chords.sound}").release(0.5)`}`;
-    code += `\n  .room(0.5)\n  .gain(${state.chords.gain.toFixed(2)})`;
+    if (state.chords.room > 0) code += `\n  .room(${state.chords.room.toFixed(2)})`;
+    code = applyFx(code, state.chords.fx);
+    code += `\n  .gain(${state.chords.gain.toFixed(2)})`;
     return code;
   }
   function bassCode(): string | null {
@@ -809,7 +928,9 @@ import Base from '../../layouts/Base.astro';
         return `[${r} ${r} ${next} ${r}]`;
       }).join(' ');
     }
-    let code = `note("${pattern}")\n  .s("${state.bass.sound}")\n  .lpf(800)\n  .gain(${state.bass.gain.toFixed(2)})`;
+    let code = `note("${pattern}")\n  .s("${state.bass.sound}")`;
+    code = applyFx(code, state.bass.fx);
+    code += `\n  .gain(${state.bass.gain.toFixed(2)})`;
     return code;
   }
 
@@ -836,6 +957,7 @@ import Base from '../../layouts/Base.astro';
     let code = `note("${pattern}")`;
     code += `\n  .${state.arp.sound === 'piano' ? 'piano()' : `s("${state.arp.sound}")`}`;
     if (state.arp.speed !== 1) code += `\n  .fast(${state.arp.speed})`;
+    code = applyFx(code, state.arp.fx);
     code += `\n  .delay(0.25)\n  .gain(${state.arp.gain.toFixed(2)})`;
     return code;
   }
@@ -844,9 +966,12 @@ import Base from '../../layouts/Base.astro';
     const pattern = rollNotes(state.lead.cells, LEAD_STEPS, state.scale, state.key, 5, state.chords.slots, false);
     let code = `note("${pattern}")`;
     code += `\n  .${state.lead.sound === 'piano' ? 'piano()' : `s("${state.lead.sound}")`}`;
-    if (state.lead.fx.delay) code += `\n  .delay(0.4)`;
-    if (state.lead.fx.room) code += `\n  .room(0.6)`;
-    if (state.lead.fx.jux) code += `\n  .jux(rev)`;
+    if (state.lead.effects.delay) code += `\n  .delay(0.4)`;
+    if (state.lead.effects.room) code += `\n  .room(0.6)`;
+    if (state.lead.effects.jux) code += `\n  .jux(rev)`;
+    if (state.lead.effects.ghost) code += `\n  .off(1/8, x => x.fast(2).gain(0.5))`;
+    if (state.lead.effects.shape) code += `\n  .shape(0.4)`;
+    code = applyFx(code, state.lead.fx);
     code += `\n  .gain(${state.lead.gain.toFixed(2)})`;
     return code;
   }
@@ -862,13 +987,17 @@ import Base from '../../layouts/Base.astro';
     if (state.sample.enabled && state.sample.url && state.sample.name) {
       header = `samples({ ${state.sample.name}: '${state.sample.url}' })\n${header}`;
     }
+    const tail: string[] = [];
+    if (state.swing > 0) tail.push(`.swingBy(${state.swing.toFixed(2)}, 4)`);
+    tail.push(`.gain(${state.master.toFixed(2)})`);
+    const tailStr = tail.map((t) => `  ${t}`).join('\n');
     if (parts.length === 0) {
       return `${header}\nsilence`;
     }
     if (parts.length === 1) {
-      return `${header}\n${parts[0]}\n  .gain(${state.master.toFixed(2)})`;
+      return `${header}\n${parts[0]}\n${tailStr}`;
     }
-    return `${header}\nstack(\n${parts.map((p) => indent(p)).join(',\n\n')}\n)\n  .gain(${state.master.toFixed(2)})`;
+    return `${header}\nstack(\n${parts.map((p) => indent(p)).join(',\n\n')}\n)\n${tailStr}`;
   }
 
   // ===== Editor wiring =====
@@ -936,7 +1065,7 @@ import Base from '../../layouts/Base.astro';
 
   async function pushCode() {
     const code = buildCode();
-    try { window.localStorage.setItem('strudel-state-v2', JSON.stringify(state)); } catch (e) {}
+    try { window.localStorage.setItem('strudel-state-v3', JSON.stringify(state)); } catch (e) {}
     try { await ensureEditor(); } catch (e) { setStatus('editor unavailable'); return; }
     if (!editorRef) return;
     editorRef.setCode(code);
@@ -1110,22 +1239,18 @@ import Base from '../../layouts/Base.astro';
   function bindPart(partName: keyof State) {
     const section = document.querySelector<HTMLElement>(`.strudel-part[data-part="${partName}"]`);
     if (!section) return;
-    const partState: any = state[partName];
     const muteEl = section.querySelector<HTMLInputElement>('input[data-mute]');
     const gainEl = section.querySelector<HTMLInputElement>('input[data-gain]');
     if (muteEl) {
-      muteEl.checked = !!partState.enabled;
-      section.classList.toggle('is-muted', !partState.enabled);
       muteEl.addEventListener('change', () => {
-        partState.enabled = muteEl.checked;
+        (state[partName] as any).enabled = muteEl.checked;
         section.classList.toggle('is-muted', !muteEl.checked);
         scheduleLiveApply();
       });
     }
     if (gainEl) {
-      gainEl.value = String(partState.gain ?? 0.5);
       gainEl.addEventListener('input', () => {
-        partState.gain = Number(gainEl.value);
+        (state[partName] as any).gain = Number(gainEl.value);
         scheduleLiveApply();
       });
     }
@@ -1165,10 +1290,64 @@ import Base from '../../layouts/Base.astro';
   function bindLeadExtras() {
     const soundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="lead"] select[data-sound]');
     if (soundSel) { soundSel.value = state.lead.sound; soundSel.addEventListener('change', () => { state.lead.sound = soundSel.value; scheduleLiveApply(); }); }
-    document.querySelectorAll<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-fx]').forEach((input) => {
-      const key = input.dataset.fx as keyof State['lead']['fx'];
-      input.checked = state.lead.fx[key];
-      input.addEventListener('change', () => { state.lead.fx[key] = input.checked; scheduleLiveApply(); });
+    document.querySelectorAll<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-effect]').forEach((input) => {
+      const key = input.dataset.effect as keyof State['lead']['effects'];
+      input.checked = !!state.lead.effects[key];
+      input.addEventListener('change', () => { state.lead.effects[key] = input.checked; scheduleLiveApply(); });
+    });
+  }
+  function bindChordsRoom() {
+    const roomEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="chords"] input[data-fx-room]');
+    if (!roomEl) return;
+    const out = roomEl.parentElement?.querySelector('output');
+    roomEl.value = String(state.chords.room);
+    if (out) out.textContent = state.chords.room.toFixed(2);
+    roomEl.addEventListener('input', () => {
+      state.chords.room = Number(roomEl.value);
+      if (out) out.textContent = state.chords.room.toFixed(2);
+      scheduleLiveApply();
+    });
+  }
+  const FX_PARTS: (keyof State)[] = ['drums', 'chords', 'bass', 'arp', 'lead'];
+  function bindFx() {
+    FX_PARTS.forEach((part) => {
+      const section = document.querySelector<HTMLElement>(`.strudel-part[data-part="${part}"]`);
+      if (!section) return;
+      const lpfEl = section.querySelector<HTMLInputElement>('input[data-fx-lpf]');
+      const dropEl = section.querySelector<HTMLInputElement>('input[data-fx-drop]');
+      const varyEl = section.querySelector<HTMLInputElement>('input[data-fx-vary]');
+      const everySel = section.querySelector<HTMLSelectElement>('select[data-fx-every]');
+      const getFx = () => ((state[part] as any).fx as PartFx | undefined);
+      if (lpfEl) {
+        lpfEl.addEventListener('input', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.lpf = Number(lpfEl.value);
+          const out = lpfEl.parentElement?.querySelector('output');
+          if (out) out.textContent = fx.lpf >= 8000 ? 'off' : `${fx.lpf}`;
+          scheduleLiveApply();
+        });
+      }
+      if (dropEl) {
+        dropEl.addEventListener('input', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.drop = Number(dropEl.value);
+          const out = dropEl.parentElement?.querySelector('output');
+          if (out) out.textContent = fx.drop === 0 ? 'off' : fx.drop.toFixed(2);
+          scheduleLiveApply();
+        });
+      }
+      if (varyEl) {
+        varyEl.addEventListener('change', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.vary = varyEl.checked; scheduleLiveApply();
+        });
+      }
+      if (everySel) {
+        everySel.addEventListener('change', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.every = everySel.value; scheduleLiveApply();
+        });
+      }
     });
   }
 
@@ -1204,6 +1383,9 @@ import Base from '../../layouts/Base.astro';
   const masterOut = document.getElementById('strudel-master-out');
   const keySel = document.getElementById('strudel-key') as HTMLSelectElement | null;
   const scaleSel = document.getElementById('strudel-scale') as HTMLSelectElement | null;
+  const swingEl = document.getElementById('strudel-swing') as HTMLInputElement | null;
+  const swingOut = document.getElementById('strudel-swing-out');
+  const shareBtn = document.getElementById('strudel-share') as HTMLButtonElement | null;
 
   if (bpmEl && bpmOut) {
     bpmEl.value = String(state.bpm); bpmOut.textContent = String(state.bpm);
@@ -1213,6 +1395,10 @@ import Base from '../../layouts/Base.astro';
     masterEl.value = String(state.master); masterOut.textContent = state.master.toFixed(2);
     masterEl.addEventListener('input', () => { state.master = Number(masterEl.value); masterOut.textContent = state.master.toFixed(2); scheduleLiveApply(); });
   }
+  if (swingEl && swingOut) {
+    swingEl.value = String(state.swing); swingOut.textContent = state.swing.toFixed(2);
+    swingEl.addEventListener('input', () => { state.swing = Number(swingEl.value); swingOut.textContent = state.swing.toFixed(2); scheduleLiveApply(); });
+  }
   if (keySel) {
     keySel.value = state.key;
     keySel.addEventListener('change', () => { state.key = keySel.value; renderChords(); scheduleLiveApply(); });
@@ -1221,6 +1407,33 @@ import Base from '../../layouts/Base.astro';
     scaleSel.value = state.scale;
     scaleSel.addEventListener('change', () => { state.scale = scaleSel.value; renderChords(); scheduleLiveApply(); });
   }
+  shareBtn?.addEventListener('click', async () => {
+    const shareable: any = clone(state);
+    if (shareable.sample) shareable.sample = { ...shareable.sample, url: null, name: '', enabled: false };
+    const hash = btoa(JSON.stringify(shareable));
+    const url = `${window.location.origin}${window.location.pathname}#${hash}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setStatus('link copied');
+    } catch (e) {
+      window.prompt('share link', url);
+    }
+  });
+
+  // --- Keyboard shortcuts
+  window.addEventListener('keydown', (e) => {
+    const target = e.target as HTMLElement | null;
+    const inField = target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+    if (e.key === ' ' && !inField) {
+      e.preventDefault();
+      isRunning ? stop() : run();
+    } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      run();
+    } else if (e.key === 'Escape') {
+      stop();
+    }
+  });
 
   // --- Presets
   document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((btn) => {
@@ -1239,7 +1452,7 @@ import Base from '../../layouts/Base.astro';
   resetBtn?.addEventListener('click', () => {
     if (state.sample.url) URL.revokeObjectURL(state.sample.url);
     state = clone(initialState);
-    try { window.localStorage.removeItem('strudel-state-v2'); } catch (e) {}
+    try { window.localStorage.removeItem('strudel-state-v3'); } catch (e) {}
     renderAll();
     scheduleLiveApply();
   });
@@ -1247,17 +1460,13 @@ import Base from '../../layouts/Base.astro';
   document.getElementById('strudel-info')?.addEventListener('click', () => aboutDialog?.showModal());
   aboutDialog?.addEventListener('click', (e) => { if (e.target === aboutDialog) aboutDialog.close(); });
 
-  function renderAll() {
+  function syncAllInputs() {
     if (bpmEl && bpmOut) { bpmEl.value = String(state.bpm); bpmOut.textContent = String(state.bpm); }
     if (masterEl && masterOut) { masterEl.value = String(state.master); masterOut.textContent = state.master.toFixed(2); }
+    if (swingEl && swingOut) { swingEl.value = String(state.swing); swingOut.textContent = state.swing.toFixed(2); }
     if (keySel) keySel.value = state.key;
     if (scaleSel) scaleSel.value = state.scale;
-    renderDrumGrid();
-    renderChords();
-    renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply);
-    renderRoll(document.getElementById('strudel-lead-roll'), state.lead.cells, LEAD_STEPS, scheduleLiveApply);
     (['drums', 'chords', 'bass', 'arp', 'lead', 'sample'] as const).forEach((p) => {
-      bindPart(p);
       const section = document.querySelector<HTMLElement>(`.strudel-part[data-part="${p}"]`);
       const muteEl = section?.querySelector<HTMLInputElement>('input[data-mute]');
       const gainEl = section?.querySelector<HTMLInputElement>('input[data-gain]');
@@ -1265,25 +1474,77 @@ import Base from '../../layouts/Base.astro';
       if (muteEl) muteEl.checked = !!ps.enabled;
       if (gainEl) gainEl.value = String(ps.gain ?? 0.5);
       section?.classList.toggle('is-muted', !ps.enabled);
+      if (ps.fx) {
+        const lpfEl = section?.querySelector<HTMLInputElement>('input[data-fx-lpf]');
+        const dropEl = section?.querySelector<HTMLInputElement>('input[data-fx-drop]');
+        const varyEl = section?.querySelector<HTMLInputElement>('input[data-fx-vary]');
+        const everySel = section?.querySelector<HTMLSelectElement>('select[data-fx-every]');
+        if (lpfEl) {
+          lpfEl.value = String(ps.fx.lpf);
+          const out = lpfEl.parentElement?.querySelector('output');
+          if (out) out.textContent = ps.fx.lpf >= 8000 ? 'off' : `${ps.fx.lpf}`;
+        }
+        if (dropEl) {
+          dropEl.value = String(ps.fx.drop);
+          const out = dropEl.parentElement?.querySelector('output');
+          if (out) out.textContent = ps.fx.drop === 0 ? 'off' : ps.fx.drop.toFixed(2);
+        }
+        if (varyEl) varyEl.checked = !!ps.fx.vary;
+        if (everySel) everySel.value = ps.fx.every || '';
+      }
     });
-    bindDrums();
-    bindChordsExtras();
-    bindBass();
-    bindArpExtras();
-    bindLeadExtras();
+    const roomEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="chords"] input[data-fx-room]');
+    if (roomEl) {
+      roomEl.value = String(state.chords.room);
+      const out = roomEl.parentElement?.querySelector('output');
+      if (out) out.textContent = state.chords.room.toFixed(2);
+    }
+    document.querySelectorAll<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-effect]').forEach((input) => {
+      const key = input.dataset.effect as keyof State['lead']['effects'];
+      input.checked = !!state.lead.effects[key];
+    });
+    const bankSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="drums"] select[data-bank]');
+    if (bankSel) bankSel.value = state.drums.bank;
+    const chordSoundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="chords"] select[data-sound]');
+    if (chordSoundSel) chordSoundSel.value = state.chords.sound;
+    const bassSoundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="bass"] select[data-sound]');
+    if (bassSoundSel) bassSoundSel.value = state.bass.sound;
+    const bassRhythmSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="bass"] select[data-rhythm]');
+    if (bassRhythmSel) bassRhythmSel.value = state.bass.rhythm;
+    const bassFollowEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="bass"] input[data-follow]');
+    if (bassFollowEl) bassFollowEl.checked = state.bass.follow;
+    const arpSoundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="arp"] select[data-sound]');
+    if (arpSoundSel) arpSoundSel.value = state.arp.sound;
+    const arpSpeedSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="arp"] select[data-speed]');
+    if (arpSpeedSel) arpSpeedSel.value = String(state.arp.speed);
+    const arpFollowEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="arp"] input[data-follow]');
+    if (arpFollowEl) arpFollowEl.checked = state.arp.follow;
+    const leadSoundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="lead"] select[data-sound]');
+    if (leadSoundSel) leadSoundSel.value = state.lead.sound;
   }
 
-  // initial bindings
+  function renderAll() {
+    renderDrumGrid();
+    renderChords();
+    renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply);
+    renderRoll(document.getElementById('strudel-lead-roll'), state.lead.cells, LEAD_STEPS, scheduleLiveApply);
+    syncAllInputs();
+  }
+
+  // initial bindings — attach listeners once; preset/reset only update values via syncAllInputs
   (['drums', 'chords', 'bass', 'arp', 'lead', 'sample'] as const).forEach(bindPart);
   bindDrums();
   bindChordsExtras();
+  bindChordsRoom();
   bindBass();
   bindArpExtras();
   bindLeadExtras();
+  bindFx();
   renderDrumGrid();
   renderChords();
   renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply);
   renderRoll(document.getElementById('strudel-lead-roll'), state.lead.cells, LEAD_STEPS, scheduleLiveApply);
+  syncAllInputs();
 
   // Eagerly load the editor so the code panel reflects state immediately,
   // not only after the user clicks Run.
