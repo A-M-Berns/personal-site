@@ -1,5 +1,94 @@
 ---
 import Base from '../../layouts/Base.astro';
+
+// Sound palettes — strudel passes these through `.s("...")` (synths,
+// drum machines, soundfonts) or `.piano()` for the special-cased
+// piano. Soundfonts and drum-machine banks are loaded by
+// @strudel/repl's prebake, so the gm_* names work out of the box.
+const melodyPalette: { label: string; items: [string, string][] }[] = [
+  { label: 'synths', items: [
+    ['sine', 'sine'], ['triangle', 'triangle'], ['square', 'square'],
+    ['sawtooth', 'saw'], ['supersaw', 'supersaw'], ['pulse', 'pulse'],
+    ['z_sine', 'zzfx sine'], ['z_sawtooth', 'zzfx saw'],
+    ['white', 'noise'],
+  ] },
+  { label: 'piano + keys', items: [
+    ['piano', 'piano'],
+    ['gm_acoustic_grand_piano', 'grand piano'],
+    ['gm_electric_piano_1', 'rhodes'],
+    ['gm_electric_piano_2', 'wurli'],
+    ['gm_harpsichord', 'harpsichord'],
+    ['gm_celesta', 'celesta'],
+    ['gm_drawbar_organ', 'organ'],
+  ] },
+  { label: 'mallets', items: [
+    ['gm_vibraphone', 'vibraphone'],
+    ['gm_marimba', 'marimba'],
+    ['gm_xylophone', 'xylophone'],
+    ['gm_glockenspiel', 'glockenspiel'],
+    ['gm_music_box', 'music box'],
+    ['gm_kalimba', 'kalimba'],
+  ] },
+  { label: 'strings', items: [
+    ['gm_violin', 'violin'],
+    ['gm_cello', 'cello'],
+    ['gm_string_ensemble_1', 'string ensemble'],
+    ['gm_synth_strings_1', 'synth strings'],
+    ['gm_pizzicato_strings', 'pizzicato'],
+  ] },
+  { label: 'pads', items: [
+    ['gm_pad_1_new_age', 'pad: new age'],
+    ['gm_pad_2_warm', 'pad: warm'],
+    ['gm_pad_3_polysynth', 'pad: polysynth'],
+    ['gm_pad_4_choir', 'pad: choir'],
+    ['gm_pad_5_bowed', 'pad: bowed'],
+    ['gm_pad_8_sweep', 'pad: sweep'],
+  ] },
+  { label: 'leads', items: [
+    ['gm_lead_1_square', 'lead: square'],
+    ['gm_lead_2_sawtooth', 'lead: saw'],
+    ['gm_lead_3_calliope', 'lead: calliope'],
+    ['gm_lead_5_charang', 'lead: charang'],
+    ['gm_lead_8_bass_lead', 'lead: bass'],
+  ] },
+  { label: 'wind / brass', items: [
+    ['gm_flute', 'flute'],
+    ['gm_clarinet', 'clarinet'],
+    ['gm_oboe', 'oboe'],
+    ['gm_synth_brass_1', 'synth brass'],
+    ['gm_trumpet', 'trumpet'],
+  ] },
+  { label: 'guitar', items: [
+    ['gm_acoustic_guitar_nylon', 'guitar: nylon'],
+    ['gm_electric_guitar_clean', 'guitar: clean'],
+    ['gm_overdriven_guitar', 'guitar: overdrive'],
+    ['gm_distortion_guitar', 'guitar: dist'],
+  ] },
+  { label: 'fx', items: [
+    ['gm_fx_2_soundtrack', 'fx: soundtrack'],
+    ['gm_fx_3_crystal', 'fx: crystal'],
+    ['gm_fx_4_atmosphere', 'fx: atmosphere'],
+    ['gm_fx_5_brightness', 'fx: brightness'],
+    ['gm_fx_8_scifi', 'fx: sci-fi'],
+  ] },
+];
+
+const bassPalette: { label: string; items: [string, string][] }[] = [
+  { label: 'synth', items: [
+    ['sawtooth', 'saw'], ['square', 'square'], ['sine', 'sine'],
+    ['triangle', 'triangle'], ['pulse', 'pulse'], ['supersaw', 'supersaw'],
+  ] },
+  { label: 'soundfont', items: [
+    ['gm_acoustic_bass', 'acoustic bass'],
+    ['gm_electric_bass_finger', 'electric bass'],
+    ['gm_electric_bass_pick', 'pick bass'],
+    ['gm_fretless_bass', 'fretless'],
+    ['gm_slap_bass_1', 'slap'],
+    ['gm_synth_bass_1', 'synth bass'],
+    ['gm_synth_bass_2', 'rezzy bass'],
+    ['gm_lead_8_bass_lead', 'bass lead'],
+  ] },
+];
 ---
 <Base title="Strudel — A. M. Berns" description="A small Strudel live-coding workspace.">
   <div class="strudel-shell">
@@ -91,7 +180,7 @@ import Base from '../../layouts/Base.astro';
           <div id="strudel-drum-grid" class="strudel-step-grid" aria-label="Drum step grid"></div>
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
-            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
             <label class="fx-toggle"><input type="checkbox" data-fx-vary /><span>vary</span></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
           </div>
         </section>
@@ -102,11 +191,11 @@ import Base from '../../layouts/Base.astro';
             <div class="strudel-part-controls">
               <input type="range" min="0" max="1" step="0.01" data-gain />
               <select data-sound>
-                <option value="piano">piano</option>
-                <option value="triangle">triangle</option>
-                <option value="sine">sine</option>
-                <option value="sawtooth">saw</option>
-                <option value="square">square</option>
+                {melodyPalette.map((group) => (
+                  <optgroup label={group.label}>
+                    {group.items.map(([value, label]) => (<option value={value}>{label}</option>))}
+                  </optgroup>
+                ))}
               </select>
             </div>
           </header>
@@ -114,7 +203,8 @@ import Base from '../../layouts/Base.astro';
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
             <label class="fx-knob"><span>room</span><input type="range" min="0" max="1" step="0.05" data-fx-room /><output></output></label>
-            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label>
+            <label class="fx-knob"><span>attack</span><input type="range" min="0" max="2" step="0.05" data-attack /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
             <label class="fx-toggle"><input type="checkbox" data-fx-vary /><span>vary</span></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
           </div>
         </section>
@@ -125,10 +215,11 @@ import Base from '../../layouts/Base.astro';
             <div class="strudel-part-controls">
               <input type="range" min="0" max="1" step="0.01" data-gain />
               <select data-sound>
-                <option value="sawtooth">saw</option>
-                <option value="square">square</option>
-                <option value="triangle">triangle</option>
-                <option value="sine">sine</option>
+                {bassPalette.map((group) => (
+                  <optgroup label={group.label}>
+                    {group.items.map(([value, label]) => (<option value={value}>{label}</option>))}
+                  </optgroup>
+                ))}
               </select>
             </div>
           </header>
@@ -144,7 +235,7 @@ import Base from '../../layouts/Base.astro';
           </div>
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
-            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
             <label class="fx-toggle"><input type="checkbox" data-fx-vary /><span>vary</span></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
           </div>
         </section>
@@ -155,11 +246,11 @@ import Base from '../../layouts/Base.astro';
             <div class="strudel-part-controls">
               <input type="range" min="0" max="1" step="0.01" data-gain />
               <select data-sound>
-                <option value="sine">sine</option>
-                <option value="triangle">triangle</option>
-                <option value="sawtooth">saw</option>
-                <option value="square">square</option>
-                <option value="piano">piano</option>
+                {melodyPalette.map((group) => (
+                  <optgroup label={group.label}>
+                    {group.items.map(([value, label]) => (<option value={value}>{label}</option>))}
+                  </optgroup>
+                ))}
               </select>
             </div>
           </header>
@@ -174,7 +265,7 @@ import Base from '../../layouts/Base.astro';
           <div id="strudel-arp-roll" class="strudel-piano-roll" aria-label="Arp piano roll"></div>
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
-            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
             <label class="fx-toggle"><input type="checkbox" data-fx-vary /><span>vary</span></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
           </div>
         </section>
@@ -185,11 +276,11 @@ import Base from '../../layouts/Base.astro';
             <div class="strudel-part-controls">
               <input type="range" min="0" max="1" step="0.01" data-gain />
               <select data-sound>
-                <option value="square">square</option>
-                <option value="sawtooth">saw</option>
-                <option value="triangle">triangle</option>
-                <option value="sine">sine</option>
-                <option value="piano">piano</option>
+                {melodyPalette.map((group) => (
+                  <optgroup label={group.label}>
+                    {group.items.map(([value, label]) => (<option value={value}>{label}</option>))}
+                  </optgroup>
+                ))}
               </select>
             </div>
           </header>
@@ -199,11 +290,12 @@ import Base from '../../layouts/Base.astro';
             <label><input type="checkbox" data-effect="jux" /><span>jux</span></label>
             <label><input type="checkbox" data-effect="ghost" /><span>ghost</span></label>
             <label><input type="checkbox" data-effect="shape" /><span>shape</span></label>
+            <label class="fx-knob fx-knob--inline"><span>attack</span><input type="range" min="0" max="2" step="0.05" data-attack /><output></output></label>
           </div>
           <div id="strudel-lead-roll" class="strudel-piano-roll" aria-label="Lead piano roll"></div>
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
-            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
             <label class="fx-toggle"><input type="checkbox" data-fx-vary /><span>vary</span></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
           </div>
         </section>
@@ -568,8 +660,46 @@ import Base from '../../layouts/Base.astro';
     place-items: center;
     background: rgba(0, 0, 0, 0.4);
     color: var(--muted);
-    font: 0.6rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font: 0.62rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    letter-spacing: 0.02em;
     cursor: default;
+  }
+  .strudel-piano-roll :global(.strudel-midi-row) {
+    position: relative;
+    display: grid;
+    gap: 1px;
+    min-height: 1.2rem;
+  }
+  .strudel-piano-roll :global(.strudel-midi-cell) {
+    background: rgba(255, 255, 255, 0.025);
+    border: 0;
+    cursor: crosshair;
+    padding: 0;
+    min-height: 1.2rem;
+  }
+  .strudel-piano-roll :global(.strudel-midi-cell.is-beat) {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .strudel-piano-roll :global(.strudel-midi-cell:hover) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+  .strudel-piano-roll :global(.strudel-midi-note) {
+    position: absolute;
+    top: 1px;
+    bottom: 1px;
+    background: var(--accent);
+    border-radius: 2px;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 50%, #000);
+  }
+  .strudel-piano-roll :global(.strudel-midi-note:hover) {
+    filter: brightness(1.15);
+  }
+  .strudel-drum-icon {
+    font-size: 0.95rem;
+    line-height: 1;
+    color: var(--muted);
   }
   .strudel-chord-grid {
     display: grid;
@@ -659,8 +789,10 @@ import Base from '../../layouts/Base.astro';
 
   interface ChordSlot { root: string; quality: Quality; octave: number; }
 
-  interface PartFx { lpf: number; drop: number; vary: boolean; every: string; }
-  const defaultFx = (): PartFx => ({ lpf: 8000, drop: 0, vary: false, every: '' });
+  interface PartFx { lpf: number; hpf: number; drop: number; vary: boolean; every: string; pan: number; crush: number; }
+  const defaultFx = (): PartFx => ({ lpf: 8000, hpf: 0, drop: 0, vary: false, every: '', pan: 0.5, crush: 0 });
+
+  interface MidiNote { pitch: number; start: number; length: number; }
 
   interface State {
     bpm: number;
@@ -669,10 +801,16 @@ import Base from '../../layouts/Base.astro';
     key: string;
     scale: string;
     drums: { enabled: boolean; gain: number; bank: string; steps: Record<DrumRow, boolean[]>; fx: PartFx };
-    chords: { enabled: boolean; gain: number; sound: string; slots: ChordSlot[]; room: number; fx: PartFx };
+    chords: { enabled: boolean; gain: number; sound: string; slots: ChordSlot[]; room: number; attack: number; fx: PartFx };
     bass: { enabled: boolean; gain: number; sound: string; rhythm: string; follow: boolean; fx: PartFx };
     arp: { enabled: boolean; gain: number; sound: string; speed: number; follow: boolean; cells: boolean[][]; fx: PartFx };
-    lead: { enabled: boolean; gain: number; sound: string; cells: boolean[][]; effects: { delay: boolean; room: boolean; jux: boolean; ghost: boolean; shape: boolean }; fx: PartFx };
+    lead: {
+      enabled: boolean; gain: number; sound: string;
+      notes: MidiNote[];
+      attack: number;
+      effects: { delay: boolean; room: boolean; jux: boolean; ghost: boolean; shape: boolean };
+      fx: PartFx;
+    };
     sample: { enabled: boolean; gain: number; name: string; url: string | null };
   }
 
@@ -750,10 +888,13 @@ import Base from '../../layouts/Base.astro';
     });
     return c;
   }
-  function defaultLead(): boolean[][] {
-    const c = emptyCells(LEAD_STEPS);
-    [[0, 7], [4, 9], [8, 11], [12, 9]].forEach(([s, p]) => (c[ROLL_PITCHES - 1 - p][s] = true));
-    return c;
+  function defaultLeadNotes(): MidiNote[] {
+    return [
+      { pitch: 7, start: 0, length: 4 },
+      { pitch: 9, start: 4, length: 4 },
+      { pitch: 11, start: 8, length: 4 },
+      { pitch: 9, start: 12, length: 4 },
+    ];
   }
 
   const initialState: State = {
@@ -768,6 +909,7 @@ import Base from '../../layouts/Base.astro';
       gain: 0.4,
       sound: 'piano',
       room: 0.5,
+      attack: 0,
       slots: [
         { root: 'c', quality: 'min', octave: 3 },
         { root: 'ab', quality: 'maj', octave: 3 },
@@ -776,9 +918,9 @@ import Base from '../../layouts/Base.astro';
       ],
       fx: defaultFx(),
     },
-    bass: { enabled: true, gain: 0.55, sound: 'sawtooth', rhythm: 'syncopated', follow: true, fx: { lpf: 800, drop: 0, vary: false } },
+    bass: { enabled: true, gain: 0.55, sound: 'sawtooth', rhythm: 'syncopated', follow: true, fx: { ...defaultFx(), lpf: 800 } },
     arp: { enabled: false, gain: 0.42, sound: 'sine', speed: 2, follow: true, cells: defaultArp(), fx: defaultFx() },
-    lead: { enabled: false, gain: 0.42, sound: 'square', cells: defaultLead(), effects: { delay: false, room: false, jux: false, ghost: false, shape: false }, fx: defaultFx() },
+    lead: { enabled: false, gain: 0.42, sound: 'square', notes: defaultLeadNotes(), attack: 0, effects: { delay: false, room: false, jux: false, ghost: false, shape: false }, fx: defaultFx() },
     sample: { enabled: false, gain: 0.55, name: '', url: null },
   };
 
@@ -795,14 +937,14 @@ import Base from '../../layouts/Base.astro';
       swing: 0.18,
       key: 'eb',
       scale: 'minor',
-      drums: { ...initialState.drums, gain: 0.55, bank: 'RolandTR808', steps: (() => { const s = emptySteps(); [0, 8].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); [0, 2, 4, 6, 8, 10, 12, 14].forEach((i) => (s.hh[i] = true)); return s; })(), fx: { lpf: 3000, drop: 0.1, vary: false } },
+      drums: { ...initialState.drums, gain: 0.55, bank: 'RolandTR808', steps: (() => { const s = emptySteps(); [0, 8].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); [0, 2, 4, 6, 8, 10, 12, 14].forEach((i) => (s.hh[i] = true)); return s; })(), fx: { ...defaultFx(), lpf: 3000, drop: 0.1, vary: false } },
       chords: { ...initialState.chords, gain: 0.42, sound: 'piano', room: 0.7, slots: [
         { root: 'eb', quality: 'min7', octave: 3 },
         { root: 'ab', quality: 'maj7', octave: 3 },
         { root: 'gb', quality: 'maj7', octave: 3 },
         { root: 'bb', quality: 'min7', octave: 3 },
-      ], fx: { lpf: 4000, drop: 0, vary: false } },
-      bass: { ...initialState.bass, gain: 0.5, sound: 'sine', rhythm: 'root', follow: true, fx: { lpf: 600, drop: 0, vary: false } },
+      ], fx: { ...defaultFx(), lpf: 4000, drop: 0, vary: false } },
+      bass: { ...initialState.bass, gain: 0.5, sound: 'sine', rhythm: 'root', follow: true, fx: { ...defaultFx(), lpf: 600, drop: 0, vary: false } },
     },
     techno: {
       bpm: 128,
@@ -811,8 +953,8 @@ import Base from '../../layouts/Base.astro';
       scale: 'minor',
       drums: { ...initialState.drums, gain: 0.7, bank: 'RolandTR909', steps: (() => { const s = emptySteps(); [0, 4, 8, 12].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); for (let i = 0; i < 16; i += 2) s.hh[i] = true; [3, 11].forEach((i) => (s.cp[i] = true)); return s; })(), fx: defaultFx() },
       chords: { ...initialState.chords, enabled: false },
-      bass: { ...initialState.bass, gain: 0.6, sound: 'sawtooth', rhythm: 'octaves', follow: false, fx: { lpf: 1200, drop: 0, vary: false } },
-      arp: { ...initialState.arp, enabled: true, gain: 0.4, sound: 'square', speed: 4, follow: false, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 4, 8, 12].forEach((s, i) => (c[ROLL_PITCHES - 1 - [7, 5, 7, 4][i]][s] = true)); return c; })(), fx: { lpf: 2000, drop: 0.15, vary: true } },
+      bass: { ...initialState.bass, gain: 0.6, sound: 'sawtooth', rhythm: 'octaves', follow: false, fx: { ...defaultFx(), lpf: 1200, drop: 0, vary: false } },
+      arp: { ...initialState.arp, enabled: true, gain: 0.4, sound: 'square', speed: 4, follow: false, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 4, 8, 12].forEach((s, i) => (c[ROLL_PITCHES - 1 - [7, 5, 7, 4][i]][s] = true)); return c; })(), fx: { ...defaultFx(), lpf: 2000, drop: 0.15, vary: true } },
     },
     ambient: {
       bpm: 70,
@@ -825,21 +967,38 @@ import Base from '../../layouts/Base.astro';
         { root: 'g', quality: 'maj7', octave: 3 },
         { root: 'a', quality: 'min7', octave: 3 },
         { root: 'f', quality: 'maj7', octave: 3 },
-      ], fx: { lpf: 5000, drop: 0, vary: false } },
-      bass: { ...initialState.bass, gain: 0.42, sound: 'sine', rhythm: 'root', follow: true, fx: { lpf: 500, drop: 0, vary: false } },
-      arp: { ...initialState.arp, enabled: true, gain: 0.32, sound: 'sine', speed: 1, follow: true, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 3, 6, 9, 12, 15].forEach((s, i) => (c[ROLL_PITCHES - 1 - [0, 2, 4, 7, 4, 2][i]][s] = true)); return c; })(), fx: { lpf: 4000, drop: 0.2, vary: true } },
+      ], fx: { ...defaultFx(), lpf: 5000, drop: 0, vary: false } },
+      bass: { ...initialState.bass, gain: 0.42, sound: 'sine', rhythm: 'root', follow: true, fx: { ...defaultFx(), lpf: 500, drop: 0, vary: false } },
+      arp: { ...initialState.arp, enabled: true, gain: 0.32, sound: 'sine', speed: 1, follow: true, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 3, 6, 9, 12, 15].forEach((s, i) => (c[ROLL_PITCHES - 1 - [0, 2, 4, 7, 4, 2][i]][s] = true)); return c; })(), fx: { ...defaultFx(), lpf: 4000, drop: 0.2, vary: true } },
     },
   };
 
   function clone<T>(value: T): T { return JSON.parse(JSON.stringify(value)); }
+  function migrateLead(saved: any) {
+    if (!saved || saved.notes) return saved;
+    if (Array.isArray(saved.cells)) {
+      const notes: MidiNote[] = [];
+      for (let p = 0; p < saved.cells.length; p++) {
+        const row = saved.cells[p];
+        if (!Array.isArray(row)) continue;
+        for (let s = 0; s < row.length; s++) {
+          if (row[s]) notes.push({ pitch: ROLL_PITCHES - 1 - p, start: s, length: 1 });
+        }
+      }
+      return { ...saved, notes, cells: undefined };
+    }
+    return saved;
+  }
   function mergeState(saved: any): State {
     const base = clone(initialState) as any;
     if (!saved || typeof saved !== 'object') return base;
+    if (saved.lead) saved = { ...saved, lead: migrateLead(saved.lead) };
     for (const k of Object.keys(base)) {
       if (saved[k] === undefined) continue;
       if (typeof base[k] === 'object' && base[k] !== null && !Array.isArray(base[k])) {
         base[k] = { ...base[k], ...saved[k] };
         if (base[k].fx) base[k].fx = { ...defaultFx(), ...(saved[k].fx ?? {}) };
+        if (k === 'lead' && !Array.isArray(base[k].notes)) base[k].notes = clone(initialState.lead.notes);
       } else {
         base[k] = saved[k];
       }
@@ -860,7 +1019,7 @@ import Base from '../../layouts/Base.astro';
     state = fromHash;
   } else {
     try {
-      const saved = window.localStorage.getItem('strudel-state-v3');
+      const saved = window.localStorage.getItem('strudel-state-v4');
       if (saved) state = mergeState(JSON.parse(saved));
     } catch (e) {}
   }
@@ -873,7 +1032,10 @@ import Base from '../../layouts/Base.astro';
   function applyFx(code: string, fx: PartFx): string {
     let out = code;
     if (fx.lpf < 8000) out += `\n  .lpf(${fx.lpf})`;
+    if (fx.hpf > 0) out += `\n  .hpf(${fx.hpf})`;
     if (fx.drop > 0) out += `\n  .degradeBy(${fx.drop.toFixed(2)})`;
+    if (fx.crush > 0) out += `\n  .crush(${fx.crush})`;
+    if (Math.abs(fx.pan - 0.5) > 0.001) out += `\n  .pan(${fx.pan.toFixed(2)})`;
     if (fx.vary) out += `\n  .sometimes(rev)`;
     if (fx.every === '4fast') out += `\n  .every(4, x => x.fast(2))`;
     else if (fx.every === '8jux') out += `\n  .every(8, x => x.jux(rev))`;
@@ -881,8 +1043,22 @@ import Base from '../../layouts/Base.astro';
     else if (fx.every === '8slow') out += `\n  .every(8, x => x.slow(2))`;
     return out;
   }
+  // Slider value 0..1 → audible gain via a perceptual curve. Below the
+  // floor the part is dropped from the stack entirely so slider=0 is
+  // truly silent (strudel's per-part .gain(0) doesn't always silence
+  // soundfonts cleanly — masking via omission is more reliable).
+  const GAIN_FLOOR = 0.01;
+  function curveGain(v: number): number {
+    return Math.pow(Math.max(0, Math.min(1, v)), 1.7);
+  }
+  function isAudible(v: number): boolean {
+    return v >= GAIN_FLOOR;
+  }
+  function gainTail(v: number): string {
+    return `.gain(${curveGain(v).toFixed(3)})`;
+  }
   function drumCode(): string | null {
-    if (!state.drums.enabled) return null;
+    if (!state.drums.enabled || !isAudible(state.drums.gain)) return null;
     const tokens: string[] = [];
     for (let s = 0; s < STEPS; s++) {
       const hits = DRUMS.filter((d) => state.drums.steps[d][s]);
@@ -891,21 +1067,27 @@ import Base from '../../layouts/Base.astro';
     let code = `s("${tokens.join(' ')}")`;
     if (state.drums.bank) code += `\n  .bank("${state.drums.bank}")`;
     code = applyFx(code, state.drums.fx);
-    code += `\n  .gain(${state.drums.gain.toFixed(2)})`;
+    code += `\n  .gain(${(state.drums.gain ** 1.7).toFixed(3)})`;
     return code;
   }
+  function soundChain(sound: string): string {
+    if (sound === 'piano') return '.piano()';
+    return `.s("${sound}")`;
+  }
   function chordCode(): string | null {
-    if (!state.chords.enabled) return null;
+    if (!state.chords.enabled || !isAudible(state.chords.gain)) return null;
     const slotStrs = state.chords.slots.map((s) => `<${chordNotes(s).join(',')}>`);
     let code = `note("${slotStrs.join(' ')}")`;
-    code += `\n  .${state.chords.sound === 'piano' ? 'piano()' : `s("${state.chords.sound}").release(0.5)`}`;
+    code += `\n  ${soundChain(state.chords.sound)}`;
+    if (state.chords.sound !== 'piano') code += `\n  .release(0.5)`;
+    if (state.chords.attack > 0) code += `\n  .attack(${state.chords.attack.toFixed(2)})`;
     if (state.chords.room > 0) code += `\n  .room(${state.chords.room.toFixed(2)})`;
     code = applyFx(code, state.chords.fx);
-    code += `\n  .gain(${state.chords.gain.toFixed(2)})`;
+    code += `\n  .gain(${(state.chords.gain ** 1.7).toFixed(3)})`;
     return code;
   }
   function bassCode(): string | null {
-    if (!state.bass.enabled) return null;
+    if (!state.bass.enabled || !isAudible(state.bass.gain)) return null;
     const slots = state.chords.slots;
     const roots = state.bass.follow && slots.length
       ? slots.map((s) => `${s.root}2`)
@@ -928,9 +1110,9 @@ import Base from '../../layouts/Base.astro';
         return `[${r} ${r} ${next} ${r}]`;
       }).join(' ');
     }
-    let code = `note("${pattern}")\n  .s("${state.bass.sound}")`;
+    let code = `note("${pattern}")\n  ${soundChain(state.bass.sound)}`;
     code = applyFx(code, state.bass.fx);
-    code += `\n  .gain(${state.bass.gain.toFixed(2)})`;
+    code += `\n  .gain(${(state.bass.gain ** 1.7).toFixed(3)})`;
     return code;
   }
 
@@ -952,52 +1134,85 @@ import Base from '../../layouts/Base.astro';
   }
 
   function arpCode(): string | null {
-    if (!state.arp.enabled) return null;
+    if (!state.arp.enabled || !isAudible(state.arp.gain)) return null;
     const pattern = rollNotes(state.arp.cells, ARP_STEPS, state.scale, state.key, 4, state.chords.slots, state.arp.follow);
     let code = `note("${pattern}")`;
-    code += `\n  .${state.arp.sound === 'piano' ? 'piano()' : `s("${state.arp.sound}")`}`;
+    code += `\n  ${soundChain(state.arp.sound)}`;
     if (state.arp.speed !== 1) code += `\n  .fast(${state.arp.speed})`;
     code = applyFx(code, state.arp.fx);
-    code += `\n  .delay(0.25)\n  .gain(${state.arp.gain.toFixed(2)})`;
+    code += `\n  .delay(0.25)\n  .gain(${(state.arp.gain ** 1.7).toFixed(3)})`;
     return code;
   }
+  function midiNotesPattern(notes: MidiNote[], steps: number, scale: string, key: string, octaveBase: number, slots: ChordSlot[]) {
+    type Step = { starts: string[]; sustain: boolean };
+    const cells: Step[] = Array.from({ length: steps }, () => ({ starts: [], sustain: false }));
+    const slotsPerStep = slots.length ? steps / slots.length : steps;
+    notes.forEach((n) => {
+      if (n.start >= steps) return;
+      const slotIdx = Math.min(slots.length - 1, Math.floor(n.start / slotsPerStep));
+      const localKey = slots[slotIdx] ? slots[slotIdx].root : key;
+      const name = midiToName(scaleDegreeMidi(localKey, scale, n.pitch, octaveBase));
+      cells[n.start].starts.push(name);
+      for (let i = 1; i < n.length && n.start + i < steps; i++) {
+        cells[n.start + i].sustain = true;
+      }
+    });
+    return cells.map((c) => {
+      if (c.starts.length === 0) return c.sustain ? '_' : '~';
+      if (c.starts.length === 1) return c.starts[0];
+      return `[${c.starts.join(',')}]`;
+    }).join(' ');
+  }
   function leadCode(): string | null {
-    if (!state.lead.enabled) return null;
-    const pattern = rollNotes(state.lead.cells, LEAD_STEPS, state.scale, state.key, 5, state.chords.slots, false);
+    if (!state.lead.enabled || !isAudible(state.lead.gain)) return null;
+    const pattern = midiNotesPattern(state.lead.notes ?? [], LEAD_STEPS, state.scale, state.key, 5, state.chords.slots);
     let code = `note("${pattern}")`;
-    code += `\n  .${state.lead.sound === 'piano' ? 'piano()' : `s("${state.lead.sound}")`}`;
+    code += `\n  ${soundChain(state.lead.sound)}`;
+    if (state.lead.attack > 0) code += `\n  .attack(${state.lead.attack.toFixed(2)})`;
     if (state.lead.effects.delay) code += `\n  .delay(0.4)`;
     if (state.lead.effects.room) code += `\n  .room(0.6)`;
     if (state.lead.effects.jux) code += `\n  .jux(rev)`;
     if (state.lead.effects.ghost) code += `\n  .off(1/8, x => x.fast(2).gain(0.5))`;
     if (state.lead.effects.shape) code += `\n  .shape(0.4)`;
     code = applyFx(code, state.lead.fx);
-    code += `\n  .gain(${state.lead.gain.toFixed(2)})`;
+    code += `\n  .gain(${(state.lead.gain ** 1.7).toFixed(3)})`;
     return code;
   }
   function sampleCode(): string | null {
-    if (!state.sample.enabled || !state.sample.url || !state.sample.name) return null;
-    return `s("${state.sample.name}").loopAt(4).gain(${state.sample.gain.toFixed(2)})`;
+    if (!state.sample.enabled || !state.sample.url || !state.sample.name || !isAudible(state.sample.gain)) return null;
+    return `s("${state.sample.name}").loopAt(4).gain(${(state.sample.gain ** 1.7).toFixed(3)})`;
   }
 
   function buildCode(): string {
-    const parts = [drumCode(), chordCode(), bassCode(), arpCode(), leadCode(), sampleCode()].filter((p): p is string => !!p);
+    const generators: Array<[string, () => string | null]> = [
+      ['drums', drumCode],
+      ['chords', chordCode],
+      ['bass', bassCode],
+      ['arp', arpCode],
+      ['lead', leadCode],
+      ['sample', sampleCode],
+    ];
+    const parts = generators
+      .map(([name, gen]) => ({ name, code: gen() }))
+      .filter((p): p is { name: string; code: string } => !!p.code);
+
     const cps = (state.bpm / 60 / 4).toFixed(3);
     let header = `// ${state.key.toUpperCase()} ${state.scale}  •  ${state.bpm} bpm\nsetcps(${cps})`;
     if (state.sample.enabled && state.sample.url && state.sample.name) {
-      header = `samples({ ${state.sample.name}: '${state.sample.url}' })\n${header}`;
+      header = `// dropped sample\nsamples({ ${state.sample.name}: '${state.sample.url}' })\n\n${header}`;
     }
     const tail: string[] = [];
     if (state.swing > 0) tail.push(`.swingBy(${state.swing.toFixed(2)}, 4)`);
-    tail.push(`.gain(${state.master.toFixed(2)})`);
+    tail.push(`.gain(${curveGain(state.master).toFixed(3)})`);
     const tailStr = tail.map((t) => `  ${t}`).join('\n');
     if (parts.length === 0) {
       return `${header}\nsilence`;
     }
     if (parts.length === 1) {
-      return `${header}\n${parts[0]}\n${tailStr}`;
+      return `${header}\n// ${parts[0].name}\n${parts[0].code}\n${tailStr}`;
     }
-    return `${header}\nstack(\n${parts.map((p) => indent(p)).join(',\n\n')}\n)\n${tailStr}`;
+    const blocks = parts.map((p) => indent(`// ${p.name}\n${p.code}`));
+    return `${header}\nstack(\n${blocks.join(',\n\n')}\n)\n${tailStr}`;
   }
 
   // ===== Editor wiring =====
@@ -1065,7 +1280,7 @@ import Base from '../../layouts/Base.astro';
 
   async function pushCode() {
     const code = buildCode();
-    try { window.localStorage.setItem('strudel-state-v3', JSON.stringify(state)); } catch (e) {}
+    try { window.localStorage.setItem('strudel-state-v4', JSON.stringify(state)); } catch (e) {}
     try { await ensureEditor(); } catch (e) { setStatus('editor unavailable'); return; }
     if (!editorRef) return;
     editorRef.setCode(code);
@@ -1123,11 +1338,16 @@ import Base from '../../layouts/Base.astro';
   // --- Drums grid
   const drumGrid = document.getElementById('strudel-drum-grid');
   let painting: { value: boolean } | null = null;
+  // Compact glyphs for the drum row labels — visually distinct and
+  // readable at small sizes (clearer than 'bd'/'sd'/'hh'/'cp').
+  const DRUM_ICONS: Record<DrumRow, string> = { bd: '●', sd: '◐', hh: '✕', cp: '✦' };
+  const DRUM_TITLES: Record<DrumRow, string> = { bd: 'kick', sd: 'snare', hh: 'hi-hat', cp: 'clap' };
   function renderDrumGrid() {
     if (!drumGrid) return;
     drumGrid.replaceChildren();
     DRUMS.forEach((row) => {
-      drumGrid.appendChild(el('span', { class: 'strudel-step-label' }, row));
+      const label = el('span', { class: 'strudel-step-label strudel-drum-icon', title: DRUM_TITLES[row] }, DRUM_ICONS[row]);
+      drumGrid.appendChild(label);
       for (let s = 0; s < STEPS; s++) {
         const on = state.drums.steps[row][s];
         const btn = el('button', {
@@ -1159,15 +1379,29 @@ import Base from '../../layouts/Base.astro';
   }
   window.addEventListener('pointerup', () => { painting = null; });
 
-  // --- Piano roll
-  function renderRoll(container: HTMLElement | null, cells: boolean[][], steps: number, onChange: () => void) {
+  // Compact label for a scale degree, e.g. degree 0 in C minor → "C",
+  // degree 7 in C minor → "C" (octave up). Used to label rolls.
+  function degreeLabel(degree: number, key: string, scale: string): string {
+    const intervals = SCALES[scale] ?? SCALES.minor;
+    const interval = intervals[((degree % intervals.length) + intervals.length) % intervals.length];
+    const idx = (rootIndex(key) + interval) % 12;
+    return NOTE_NAMES[idx].replace('b', '♭').toUpperCase();
+  }
+
+  // --- Piano roll (cells)
+  function renderRoll(
+    container: HTMLElement | null,
+    cells: boolean[][],
+    steps: number,
+    onChange: () => void,
+    labelFor: (degree: number) => string = (d) => `${d + 1}`,
+  ) {
     if (!container) return;
     container.replaceChildren();
-    container.style.gridTemplateColumns = '2.25rem 1fr';
+    container.style.gridTemplateColumns = '2.6rem 1fr';
     for (let p = 0; p < ROLL_PITCHES; p++) {
       const degree = ROLL_PITCHES - 1 - p; // top row = highest
-      const labelText = `${degree + 1}`;
-      container.appendChild(el('span', { class: 'strudel-roll-label' }, labelText));
+      container.appendChild(el('span', { class: 'strudel-roll-label' }, labelFor(degree)));
       const rowEl = el('div', { class: 'strudel-piano-roll-row' });
       rowEl.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
       for (let s = 0; s < steps; s++) {
@@ -1189,6 +1423,76 @@ import Base from '../../layouts/Base.astro';
       }
       container.appendChild(rowEl);
     }
+  }
+
+  // --- MIDI piano roll (notes with length)
+  // Click empty cell + drag right to draw a note of variable length.
+  // Click on existing note (the orange bar) to remove it.
+  function renderMidiRoll(
+    container: HTMLElement | null,
+    notes: MidiNote[],
+    steps: number,
+    onChange: () => void,
+    labelFor: (degree: number) => string = (d) => `${d + 1}`,
+  ) {
+    if (!container) return;
+    let drawing: MidiNote | null = null;
+    const refresh = () => {
+      container.replaceChildren();
+      container.style.gridTemplateColumns = '2.6rem 1fr';
+      for (let p = 0; p < ROLL_PITCHES; p++) {
+        const degree = ROLL_PITCHES - 1 - p;
+        container.appendChild(el('span', { class: 'strudel-roll-label' }, labelFor(degree)));
+        const rowEl = el('div', { class: 'strudel-midi-row' });
+        rowEl.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
+        for (let s = 0; s < steps; s++) {
+          const isBeat = s % 4 === 0;
+          const cell = el('button', {
+            type: 'button',
+            class: `strudel-roll-cell strudel-midi-cell${isBeat ? ' is-beat' : ''}`,
+            dataset: { p: String(degree), s: String(s) },
+          });
+          cell.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            const note: MidiNote = { pitch: degree, start: s, length: 1 };
+            notes.push(note);
+            drawing = note;
+            refresh();
+            onChange();
+          });
+          cell.addEventListener('pointerenter', () => {
+            if (!drawing) return;
+            if (drawing.pitch !== degree) return;
+            const newLen = Math.max(1, s - drawing.start + 1);
+            if (newLen === drawing.length) return;
+            drawing.length = newLen;
+            refresh();
+            onChange();
+          });
+          rowEl.appendChild(cell);
+        }
+        // Note overlays for this pitch row.
+        notes.filter((n) => n.pitch === degree).forEach((n) => {
+          const note = el('div', { class: 'strudel-midi-note' });
+          note.style.left = `${(n.start / steps) * 100}%`;
+          note.style.width = `${(Math.min(n.length, steps - n.start) / steps) * 100}%`;
+          note.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const i = notes.indexOf(n);
+            if (i >= 0) notes.splice(i, 1);
+            refresh();
+            onChange();
+          });
+          rowEl.appendChild(note);
+        });
+        container.appendChild(rowEl);
+      }
+    };
+    const stopDraw = () => { drawing = null; };
+    window.addEventListener('pointerup', stopDraw);
+    window.addEventListener('pointercancel', stopDraw);
+    refresh();
   }
 
   // --- Chord cards
@@ -1291,9 +1595,30 @@ import Base from '../../layouts/Base.astro';
     const soundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="lead"] select[data-sound]');
     if (soundSel) { soundSel.value = state.lead.sound; soundSel.addEventListener('change', () => { state.lead.sound = soundSel.value; scheduleLiveApply(); }); }
     document.querySelectorAll<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-effect]').forEach((input) => {
-      const key = input.dataset.effect as keyof State['lead']['effects'];
-      input.checked = !!state.lead.effects[key];
-      input.addEventListener('change', () => { state.lead.effects[key] = input.checked; scheduleLiveApply(); });
+      input.addEventListener('change', () => {
+        const key = input.dataset.effect as keyof State['lead']['effects'];
+        state.lead.effects[key] = input.checked;
+        scheduleLiveApply();
+      });
+    });
+    const attackEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-attack]');
+    if (attackEl) {
+      attackEl.addEventListener('input', () => {
+        state.lead.attack = Number(attackEl.value);
+        const out = attackEl.parentElement?.querySelector('output');
+        if (out) out.textContent = state.lead.attack === 0 ? 'off' : state.lead.attack.toFixed(2);
+        scheduleLiveApply();
+      });
+    }
+  }
+  function bindChordsAttack() {
+    const attackEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="chords"] input[data-attack]');
+    if (!attackEl) return;
+    attackEl.addEventListener('input', () => {
+      state.chords.attack = Number(attackEl.value);
+      const out = attackEl.parentElement?.querySelector('output');
+      if (out) out.textContent = state.chords.attack === 0 ? 'off' : state.chords.attack.toFixed(2);
+      scheduleLiveApply();
     });
   }
   function bindChordsRoom() {
@@ -1317,6 +1642,8 @@ import Base from '../../layouts/Base.astro';
       const dropEl = section.querySelector<HTMLInputElement>('input[data-fx-drop]');
       const varyEl = section.querySelector<HTMLInputElement>('input[data-fx-vary]');
       const everySel = section.querySelector<HTMLSelectElement>('select[data-fx-every]');
+      const panEl = section.querySelector<HTMLInputElement>('input[data-fx-pan]');
+      const crushEl = section.querySelector<HTMLInputElement>('input[data-fx-crush]');
       const getFx = () => ((state[part] as any).fx as PartFx | undefined);
       if (lpfEl) {
         lpfEl.addEventListener('input', () => {
@@ -1346,6 +1673,27 @@ import Base from '../../layouts/Base.astro';
         everySel.addEventListener('change', () => {
           const fx = getFx(); if (!fx) return;
           fx.every = everySel.value; scheduleLiveApply();
+        });
+      }
+      if (panEl) {
+        panEl.addEventListener('input', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.pan = Number(panEl.value);
+          const out = panEl.parentElement?.querySelector('output');
+          if (out) {
+            const d = fx.pan - 0.5;
+            out.textContent = Math.abs(d) < 0.01 ? 'C' : (d < 0 ? `L${Math.round(-d * 200)}` : `R${Math.round(d * 200)}`);
+          }
+          scheduleLiveApply();
+        });
+      }
+      if (crushEl) {
+        crushEl.addEventListener('input', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.crush = Number(crushEl.value);
+          const out = crushEl.parentElement?.querySelector('output');
+          if (out) out.textContent = fx.crush === 0 ? 'off' : `${fx.crush}`;
+          scheduleLiveApply();
         });
       }
     });
@@ -1399,13 +1747,17 @@ import Base from '../../layouts/Base.astro';
     swingEl.value = String(state.swing); swingOut.textContent = state.swing.toFixed(2);
     swingEl.addEventListener('input', () => { state.swing = Number(swingEl.value); swingOut.textContent = state.swing.toFixed(2); scheduleLiveApply(); });
   }
+  function rerenderRolls() {
+    renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
+    renderMidiRoll(document.getElementById('strudel-lead-roll'), state.lead.notes, LEAD_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
+  }
   if (keySel) {
     keySel.value = state.key;
-    keySel.addEventListener('change', () => { state.key = keySel.value; renderChords(); scheduleLiveApply(); });
+    keySel.addEventListener('change', () => { state.key = keySel.value; renderChords(); rerenderRolls(); scheduleLiveApply(); });
   }
   if (scaleSel) {
     scaleSel.value = state.scale;
-    scaleSel.addEventListener('change', () => { state.scale = scaleSel.value; renderChords(); scheduleLiveApply(); });
+    scaleSel.addEventListener('change', () => { state.scale = scaleSel.value; renderChords(); rerenderRolls(); scheduleLiveApply(); });
   }
   shareBtn?.addEventListener('click', async () => {
     const shareable: any = clone(state);
@@ -1452,7 +1804,7 @@ import Base from '../../layouts/Base.astro';
   resetBtn?.addEventListener('click', () => {
     if (state.sample.url) URL.revokeObjectURL(state.sample.url);
     state = clone(initialState);
-    try { window.localStorage.removeItem('strudel-state-v3'); } catch (e) {}
+    try { window.localStorage.removeItem('strudel-state-v4'); } catch (e) {}
     renderAll();
     scheduleLiveApply();
   });
@@ -1475,20 +1827,41 @@ import Base from '../../layouts/Base.astro';
       if (gainEl) gainEl.value = String(ps.gain ?? 0.5);
       section?.classList.toggle('is-muted', !ps.enabled);
       if (ps.fx) {
-        const lpfEl = section?.querySelector<HTMLInputElement>('input[data-fx-lpf]');
-        const dropEl = section?.querySelector<HTMLInputElement>('input[data-fx-drop]');
+        const setSlider = (el: HTMLInputElement | null | undefined, value: number, formatOff: () => string, format: () => string) => {
+          if (!el) return;
+          el.value = String(value);
+          const out = el.parentElement?.querySelector('output');
+          if (out) out.textContent = format() === '' ? formatOff() : format();
+        };
+        setSlider(
+          section?.querySelector<HTMLInputElement>('input[data-fx-lpf]'),
+          ps.fx.lpf,
+          () => 'off',
+          () => ps.fx.lpf >= 8000 ? '' : `${ps.fx.lpf}`,
+        );
+        setSlider(
+          section?.querySelector<HTMLInputElement>('input[data-fx-drop]'),
+          ps.fx.drop,
+          () => 'off',
+          () => ps.fx.drop === 0 ? '' : ps.fx.drop.toFixed(2),
+        );
+        setSlider(
+          section?.querySelector<HTMLInputElement>('input[data-fx-pan]'),
+          ps.fx.pan,
+          () => 'C',
+          () => {
+            const d = ps.fx.pan - 0.5;
+            return Math.abs(d) < 0.01 ? '' : (d < 0 ? `L${Math.round(-d * 200)}` : `R${Math.round(d * 200)}`);
+          },
+        );
+        setSlider(
+          section?.querySelector<HTMLInputElement>('input[data-fx-crush]'),
+          ps.fx.crush,
+          () => 'off',
+          () => ps.fx.crush === 0 ? '' : `${ps.fx.crush}`,
+        );
         const varyEl = section?.querySelector<HTMLInputElement>('input[data-fx-vary]');
         const everySel = section?.querySelector<HTMLSelectElement>('select[data-fx-every]');
-        if (lpfEl) {
-          lpfEl.value = String(ps.fx.lpf);
-          const out = lpfEl.parentElement?.querySelector('output');
-          if (out) out.textContent = ps.fx.lpf >= 8000 ? 'off' : `${ps.fx.lpf}`;
-        }
-        if (dropEl) {
-          dropEl.value = String(ps.fx.drop);
-          const out = dropEl.parentElement?.querySelector('output');
-          if (out) out.textContent = ps.fx.drop === 0 ? 'off' : ps.fx.drop.toFixed(2);
-        }
         if (varyEl) varyEl.checked = !!ps.fx.vary;
         if (everySel) everySel.value = ps.fx.every || '';
       }
@@ -1498,6 +1871,18 @@ import Base from '../../layouts/Base.astro';
       roomEl.value = String(state.chords.room);
       const out = roomEl.parentElement?.querySelector('output');
       if (out) out.textContent = state.chords.room.toFixed(2);
+    }
+    const chordAttackEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="chords"] input[data-attack]');
+    if (chordAttackEl) {
+      chordAttackEl.value = String(state.chords.attack);
+      const out = chordAttackEl.parentElement?.querySelector('output');
+      if (out) out.textContent = state.chords.attack === 0 ? 'off' : state.chords.attack.toFixed(2);
+    }
+    const leadAttackEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-attack]');
+    if (leadAttackEl) {
+      leadAttackEl.value = String(state.lead.attack);
+      const out = leadAttackEl.parentElement?.querySelector('output');
+      if (out) out.textContent = state.lead.attack === 0 ? 'off' : state.lead.attack.toFixed(2);
     }
     document.querySelectorAll<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-effect]').forEach((input) => {
       const key = input.dataset.effect as keyof State['lead']['effects'];
@@ -1526,8 +1911,8 @@ import Base from '../../layouts/Base.astro';
   function renderAll() {
     renderDrumGrid();
     renderChords();
-    renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply);
-    renderRoll(document.getElementById('strudel-lead-roll'), state.lead.cells, LEAD_STEPS, scheduleLiveApply);
+    renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
+    renderMidiRoll(document.getElementById('strudel-lead-roll'), state.lead.notes, LEAD_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
     syncAllInputs();
   }
 
@@ -1536,14 +1921,15 @@ import Base from '../../layouts/Base.astro';
   bindDrums();
   bindChordsExtras();
   bindChordsRoom();
+  bindChordsAttack();
   bindBass();
   bindArpExtras();
   bindLeadExtras();
   bindFx();
   renderDrumGrid();
   renderChords();
-  renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply);
-  renderRoll(document.getElementById('strudel-lead-roll'), state.lead.cells, LEAD_STEPS, scheduleLiveApply);
+  renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
+  renderMidiRoll(document.getElementById('strudel-lead-roll'), state.lead.notes, LEAD_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
   syncAllInputs();
 
   // Eagerly load the editor so the code panel reflects state immediately,
