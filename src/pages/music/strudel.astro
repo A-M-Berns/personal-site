@@ -1,158 +1,302 @@
 ---
 import Base from '../../layouts/Base.astro';
-
-const defaultPattern = '';
 ---
 <Base title="Strudel — A. M. Berns" description="A small Strudel live-coding workspace.">
   <div class="strudel-shell">
+    <header class="strudel-transport" aria-label="Transport">
+      <div class="strudel-transport-actions">
+        <button id="strudel-run" type="button" data-state="idle">Run</button>
+        <button id="strudel-stop" type="button">Stop</button>
+      </div>
+      <label class="strudel-knob">
+        <span>bpm</span>
+        <input id="strudel-bpm" type="range" min="60" max="180" step="1" value="110" />
+        <output id="strudel-bpm-out">110</output>
+      </label>
+      <label class="strudel-knob">
+        <span>master</span>
+        <input id="strudel-master" type="range" min="0" max="1" step="0.01" value="0.85" />
+        <output id="strudel-master-out">0.85</output>
+      </label>
+      <label class="strudel-knob strudel-knob--key">
+        <span>key</span>
+        <select id="strudel-key">
+          <option value="c">C</option>
+          <option value="db">C♯ / D♭</option>
+          <option value="d">D</option>
+          <option value="eb">D♯ / E♭</option>
+          <option value="e">E</option>
+          <option value="f">F</option>
+          <option value="gb">F♯ / G♭</option>
+          <option value="g">G</option>
+          <option value="ab">G♯ / A♭</option>
+          <option value="a">A</option>
+          <option value="bb">A♯ / B♭</option>
+          <option value="b">B</option>
+        </select>
+      </label>
+      <label class="strudel-knob strudel-knob--key">
+        <span>scale</span>
+        <select id="strudel-scale">
+          <option value="minor">minor</option>
+          <option value="major">major</option>
+          <option value="dorian">dorian</option>
+          <option value="mixolydian">mixolydian</option>
+          <option value="harmonic minor">harmonic minor</option>
+        </select>
+      </label>
+      <div class="strudel-presets">
+        <button type="button" data-preset="lofi">lo-fi</button>
+        <button type="button" data-preset="techno">techno</button>
+        <button type="button" data-preset="ambient">ambient</button>
+        <button type="button" data-preset="empty">clear</button>
+      </div>
+    </header>
+
     <main class="strudel-workspace" aria-label="Strudel workspace">
       <section class="strudel-editor-pane">
         <div class="strudel-pane-head">
           <h2>Pattern</h2>
-          <div class="strudel-actions">
-            <button id="strudel-run" type="button">Run</button>
-            <button id="strudel-stop" type="button">Stop</button>
-          </div>
+          <span id="strudel-status" class="strudel-status" aria-live="polite"></span>
         </div>
-        <div id="strudel-editor" class="strudel-code-wrap">
-          <pre id="strudel-highlight" aria-hidden="true"></pre>
-          <textarea id="strudel-code" spellcheck="false" autocomplete="off">{defaultPattern}</textarea>
-        </div>
+        <div id="strudel-host" class="strudel-host"></div>
       </section>
 
       <aside class="strudel-side-pane">
-        <section>
-          <h2>Drums</h2>
+        <section class="strudel-part" data-part="drums">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>drums</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+              <select data-bank>
+                <option value="RolandTR909">909</option>
+                <option value="RolandTR808">808</option>
+                <option value="ViscoSpaceDrum">visco</option>
+                <option value="">default</option>
+              </select>
+            </div>
+          </header>
           <div id="strudel-drum-grid" class="strudel-step-grid" aria-label="Drum step grid"></div>
-          <div class="strudel-preset-list">
-            <button id="strudel-drum-apply" type="button">Add Drums</button>
-            <button id="strudel-drum-clear" type="button">Clear</button>
-          </div>
         </section>
 
-        <section>
-          <h2>Arp</h2>
-          <div id="strudel-arp-grid" class="strudel-arp-grid" aria-label="Arpeggio step grid"></div>
-          <div class="strudel-preset-list">
-            <button id="strudel-arp-apply" type="button">Add Arp</button>
-            <button id="strudel-arp-clear" type="button">Clear</button>
-          </div>
+        <section class="strudel-part" data-part="chords">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>chords</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+              <select data-sound>
+                <option value="piano">piano</option>
+                <option value="triangle">triangle</option>
+                <option value="sine">sine</option>
+                <option value="sawtooth">saw</option>
+                <option value="square">square</option>
+              </select>
+            </div>
+          </header>
+          <div id="strudel-chord-grid" class="strudel-chord-grid" aria-label="Chord progression"></div>
         </section>
 
-        <section>
-          <h2>Chords</h2>
-          <div id="strudel-chord-grid" class="strudel-chord-grid" aria-label="Chord progression builder"></div>
-          <div class="strudel-preset-list">
-            <button id="strudel-chord-apply" type="button">Add Chords</button>
-          </div>
-        </section>
-
-        <section>
-          <h2>Lead</h2>
-          <label class="strudel-field" for="strudel-lead-sound">
-            <span>sound</span>
-            <select id="strudel-lead-sound">
-              <option value="square">square</option>
-              <option value="sawtooth">saw</option>
-              <option value="triangle">triangle</option>
-              <option value="sine">sine</option>
+        <section class="strudel-part" data-part="bass">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>bass</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+              <select data-sound>
+                <option value="sawtooth">saw</option>
+                <option value="square">square</option>
+                <option value="triangle">triangle</option>
+                <option value="sine">sine</option>
+              </select>
+            </div>
+          </header>
+          <div class="strudel-bass-row">
+            <select data-rhythm>
+              <option value="root">root only</option>
+              <option value="steady">steady</option>
+              <option value="syncopated" selected>syncopated</option>
+              <option value="octaves">octaves</option>
+              <option value="walking">walking</option>
             </select>
-            <output></output>
-          </label>
+            <label><input type="checkbox" data-follow checked /><span>follow chords</span></label>
+          </div>
+        </section>
+
+        <section class="strudel-part" data-part="arp">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>arp</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+              <select data-sound>
+                <option value="sine">sine</option>
+                <option value="triangle">triangle</option>
+                <option value="sawtooth">saw</option>
+                <option value="square">square</option>
+                <option value="piano">piano</option>
+              </select>
+            </div>
+          </header>
+          <div class="strudel-roll-row">
+            <label><input type="checkbox" data-follow checked /><span>follow chords</span></label>
+            <select data-speed>
+              <option value="1">×1</option>
+              <option value="2" selected>×2</option>
+              <option value="4">×4</option>
+            </select>
+          </div>
+          <div id="strudel-arp-roll" class="strudel-piano-roll" aria-label="Arp piano roll"></div>
+        </section>
+
+        <section class="strudel-part" data-part="lead">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>lead</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+              <select data-sound>
+                <option value="square">square</option>
+                <option value="sawtooth">saw</option>
+                <option value="triangle">triangle</option>
+                <option value="sine">sine</option>
+                <option value="piano">piano</option>
+              </select>
+            </div>
+          </header>
+          <div class="strudel-roll-row strudel-roll-row--effects">
+            <label><input type="checkbox" data-fx="delay" /><span>delay</span></label>
+            <label><input type="checkbox" data-fx="room" /><span>room</span></label>
+            <label><input type="checkbox" data-fx="jux" /><span>jux</span></label>
+          </div>
+          <div id="strudel-lead-roll" class="strudel-piano-roll" aria-label="Lead piano roll"></div>
+        </section>
+
+        <section class="strudel-part" data-part="sample">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>drop sample</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+            </div>
+          </header>
           <label id="strudel-drop" class="strudel-drop" for="strudel-sample-file">
             <input id="strudel-sample-file" type="file" accept="audio/*" />
-            <span id="strudel-drop-label">Drop audio or choose file</span>
+            <span id="strudel-drop-label">drop audio or choose file</span>
           </label>
-          <div class="strudel-preset-list">
-            <button id="strudel-lead-apply" type="button">Add Lead</button>
-            <button type="button" data-lead-effect=".delay(0.25)">delay</button>
-            <button type="button" data-lead-effect=".jux(rev)">jux</button>
-          </div>
-        </section>
-
-        <section>
-          <h2>Bass</h2>
-          <div class="strudel-preset-list">
-            <button id="strudel-bass-apply" type="button">Add Bass</button>
-            <button type="button" data-bass-pattern="steady">steady</button>
-            <button type="button" data-bass-pattern="syncopated">sync</button>
-            <button type="button" data-bass-pattern="octaves">octaves</button>
-          </div>
         </section>
       </aside>
     </main>
 
     <div class="anim-controls">
       <button id="strudel-info" type="button" aria-label="About this Strudel page">About</button>
-      <button id="strudel-reset" type="button" aria-label="Reset Strudel editor">Reset</button>
+      <button id="strudel-reset" type="button" aria-label="Reset workspace">Reset</button>
     </div>
 
     <dialog id="strudel-about" class="anim-about" aria-labelledby="strudel-about-title">
       <h2 id="strudel-about-title">About</h2>
       <p>
-        This page loads the unmodified <a href="https://www.npmjs.com/package/@strudel/web">@strudel/web</a>
-        browser package, part of <a href="https://codeberg.org/uzu/strudel">Strudel</a>,
-        licensed under <a href="https://codeberg.org/uzu/strudel/src/branch/main/LICENSE">AGPL-3.0-or-later</a>.
-        Strudel is provided without warranty. Site source is available at
-        <a href="https://github.com/A-M-Berns/personal-site">GitHub</a>.
+        This page embeds <a href="https://www.npmjs.com/package/@strudel/repl">@strudel/repl</a>,
+        part of <a href="https://codeberg.org/uzu/strudel">Strudel</a>, licensed under
+        <a href="https://codeberg.org/uzu/strudel/src/branch/main/LICENSE">AGPL-3.0-or-later</a>.
+        The GUI on the right writes the code on the left — edit either, but GUI changes overwrite manual edits.
+        Site source at <a href="https://github.com/A-M-Berns/personal-site">GitHub</a>.
       </p>
     </dialog>
   </div>
 </Base>
+
+<style is:global>
+  /* Editor host: scope down strudel-editor's defaults to fit the page. */
+  .strudel-host {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.035);
+    overflow: hidden;
+    transition: border-color 140ms ease, box-shadow 180ms ease;
+  }
+  .strudel-host.is-running {
+    border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .strudel-host strudel-editor { display: none; }
+  .strudel-host > div:not(.cm-host) {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+  }
+  .strudel-host .cm-editor {
+    height: 100%;
+    background: transparent !important;
+    color: var(--ink);
+    font: 0.92rem/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  }
+  .strudel-host .cm-scroller {
+    background: transparent !important;
+    font-family: inherit !important;
+  }
+  .strudel-host .cm-gutters {
+    background: rgba(255, 255, 255, 0.02) !important;
+    border-right: 1px solid var(--rule) !important;
+    color: var(--muted) !important;
+  }
+  .strudel-host .cm-activeLine,
+  .strudel-host .cm-activeLineGutter {
+    background: rgba(255, 255, 255, 0.04) !important;
+  }
+  .strudel-host .cm-content {
+    caret-color: var(--accent) !important;
+  }
+  .strudel-host .cm-cursor {
+    border-left-color: var(--accent) !important;
+  }
+  .strudel-host .cm-selectionBackground,
+  .strudel-host .cm-content ::selection {
+    background: color-mix(in srgb, var(--accent) 30%, transparent) !important;
+  }
+</style>
 
 <style>
   .strudel-shell {
     position: relative;
     height: calc(100vh - 11.25rem);
     overflow: hidden;
-    --strudel-panel-height: 100%;
-  }
-  .strudel-workspace {
-    display: grid;
-    grid-template-columns: minmax(38rem, 1.9fr) minmax(17rem, 22rem);
-    gap: 1.25rem;
-    align-items: stretch;
-    max-width: 112rem;
-    height: 100%;
-  }
-  .strudel-editor-pane,
-  .strudel-side-pane {
-    background: #000;
-    padding: 0.95rem;
-  }
-  .strudel-editor-pane {
     display: flex;
     flex-direction: column;
-    min-height: var(--strudel-panel-height);
+    gap: 0.6rem;
   }
-  .strudel-pane-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-bottom: 0.75rem;
-  }
-  .strudel-pane-head h2,
-  .strudel-side-pane h2 {
-    font-family: var(--display);
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 0;
-  }
-  .strudel-actions,
-  .strudel-preset-list {
+  .strudel-transport {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.45rem;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.55rem 0.85rem;
+    background: #000;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
   }
-  .strudel-actions button,
-  .strudel-preset-list button,
-  .strudel-step-grid button,
-  .strudel-arp-grid button,
-  #strudel-chord-apply {
+  .strudel-transport-actions { display: flex; gap: 0.4rem; }
+  .strudel-knob {
+    display: grid;
+    grid-template-columns: auto 7rem auto;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--muted);
+    font: 0.7rem/1 var(--font-lexend), var(--sans);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .strudel-knob--key { grid-template-columns: auto 1fr; }
+  .strudel-knob output {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    text-align: right;
+    min-width: 2.4rem;
+  }
+  .strudel-knob input[type="range"] { accent-color: var(--accent); width: 100%; }
+  .strudel-presets { margin-left: auto; display: flex; gap: 0.4rem; }
+  .strudel-presets button,
+  .strudel-transport-actions button {
     font-family: var(--font-lexend), var(--sans);
     font-size: 0.72rem;
     font-weight: 650;
@@ -162,33 +306,131 @@ const defaultPattern = '';
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--rule);
     border-radius: 3px;
-    padding: 0.35rem 0.6rem;
+    padding: 0.35rem 0.65rem;
+    cursor: pointer;
   }
-  .strudel-actions button:hover,
-  .strudel-actions button:focus-visible,
-  .strudel-preset-list button:hover,
-  .strudel-preset-list button:focus-visible,
-  .strudel-step-grid button:hover,
-  .strudel-step-grid button:focus-visible,
-  .strudel-arp-grid button:hover,
-  .strudel-arp-grid button:focus-visible,
-  #strudel-chord-apply:hover,
-  #strudel-chord-apply:focus-visible {
+  .strudel-transport-actions button[data-state="running"] {
     color: var(--accent);
     border-color: var(--accent);
-    outline: none;
   }
+  .strudel-presets button:hover,
+  .strudel-transport-actions button:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .strudel-status {
+    color: var(--muted);
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+  .strudel-workspace {
+    display: grid;
+    grid-template-columns: minmax(34rem, 1.7fr) minmax(20rem, 24rem);
+    gap: 1rem;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+  }
+  .strudel-editor-pane,
+  .strudel-side-pane {
+    background: #000;
+    padding: 0.85rem;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+  }
+  .strudel-editor-pane { display: flex; flex-direction: column; min-height: 0; }
+  .strudel-pane-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.55rem;
+  }
+  .strudel-pane-head h2,
+  .strudel-part-head .strudel-mute span {
+    font-family: var(--display);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  .strudel-side-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule) transparent;
+  }
+  .strudel-part {
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 0.6rem 0.7rem;
+    background: rgba(255, 255, 255, 0.015);
+  }
+  .strudel-part.is-muted { opacity: 0.45; }
+  .strudel-part-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+  .strudel-mute {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .strudel-mute input { accent-color: var(--accent); }
+  .strudel-mute input:not(:checked) ~ span { text-decoration: line-through; color: color-mix(in srgb, var(--muted) 70%, transparent); }
+  .strudel-part-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .strudel-part-controls input[type="range"] { width: 5.5rem; accent-color: var(--accent); }
+  .strudel-part-controls select,
+  .strudel-bass-row select,
+  .strudel-roll-row select,
+  .strudel-knob select {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--ink);
+    padding: 0.2rem 0.3rem;
+    font-size: 0.72rem;
+  }
+  .strudel-bass-row,
+  .strudel-roll-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin-top: 0.55rem;
+    color: var(--muted);
+    font-size: 0.72rem;
+  }
+  .strudel-roll-row label,
+  .strudel-bass-row label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+  }
+  .strudel-roll-row label input,
+  .strudel-bass-row label input { accent-color: var(--accent); }
   .strudel-step-grid {
     display: grid;
     grid-template-columns: 2.25rem repeat(16, minmax(0, 1fr));
     gap: 0.22rem;
-    margin: 0.85rem 0;
+    margin-top: 0.55rem;
   }
-  .strudel-step-label,
-  .strudel-arp-label {
+  .strudel-step-label {
     display: grid;
     place-items: center;
-    min-height: 1.35rem;
     color: var(--muted);
     font: 0.62rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     text-transform: uppercase;
@@ -197,14 +439,15 @@ const defaultPattern = '';
     min-width: 0;
     min-height: 1.35rem;
     padding: 0;
-    border-color: color-mix(in srgb, var(--rule) 72%, transparent);
     color: transparent;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid color-mix(in srgb, var(--rule) 72%, transparent);
+    border-radius: 2px;
     touch-action: none;
     user-select: none;
+    cursor: pointer;
   }
-  .strudel-step-grid :global(button.is-on),
-  .strudel-arp-grid :global(button.is-on) {
-    color: #000;
+  .strudel-step-grid :global(button.is-on) {
     background: var(--accent);
     border-color: var(--accent);
   }
@@ -214,215 +457,110 @@ const defaultPattern = '';
   .strudel-step-grid :global(button:nth-child(17n + 14)) {
     border-color: color-mix(in srgb, var(--accent) 42%, var(--rule));
   }
-  .strudel-step-grid :global(button.is-on)::after {
-    content: "";
-    display: block;
-    width: 0.45rem;
-    height: 0.45rem;
-    margin: auto;
-    border-radius: 999px;
-    background: #000;
-  }
-  .strudel-arp-grid {
+  .strudel-piano-roll {
     display: grid;
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-    gap: 0.3rem;
-    margin: 0.85rem 0;
+    gap: 1px;
+    margin-top: 0.55rem;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    overflow: hidden;
   }
-  .strudel-arp-cell {
+  .strudel-piano-roll-row {
     display: grid;
-    gap: 0.2rem;
+    gap: 1px;
   }
-  .strudel-arp-grid :global(button) {
-    min-width: 0;
-    min-height: 1.55rem;
-    padding: 0.2rem 0;
-    font-size: 0.62rem;
+  .strudel-piano-roll :global(.strudel-roll-cell) {
+    min-height: 1.2rem;
+    background: rgba(255, 255, 255, 0.025);
+    border: 0;
+    cursor: pointer;
+    padding: 0;
+  }
+  .strudel-piano-roll :global(.strudel-roll-cell.is-on) {
+    background: var(--accent);
+  }
+  .strudel-piano-roll :global(.strudel-roll-cell.is-beat) {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .strudel-piano-roll :global(.strudel-roll-cell.is-beat.is-on) {
+    background: var(--accent);
+  }
+  .strudel-piano-roll :global(.strudel-roll-label) {
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.4);
+    color: var(--muted);
+    font: 0.6rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    cursor: default;
   }
   .strudel-chord-grid {
     display: grid;
-    gap: 0.35rem;
-    margin: 0.85rem 0;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.4rem;
+    margin-top: 0.55rem;
   }
-  .strudel-chord-row {
+  .strudel-chord-card {
     display: grid;
-    grid-template-columns: 1.4rem minmax(0, 1fr) minmax(0, 1.25fr);
-    gap: 0.35rem;
-    align-items: center;
+    gap: 0.25rem;
+    padding: 0.4rem;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.03);
   }
-  .strudel-chord-row span {
-    color: var(--muted);
-    font: 0.66rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  .strudel-chord-card .chord-name {
+    font: 600 0.78rem/1 var(--font-lexend), var(--sans);
+    color: var(--accent);
     text-align: center;
+    letter-spacing: 0.02em;
+    min-height: 1em;
   }
-  .strudel-chord-row select {
-    min-width: 0;
+  .strudel-chord-card .chord-degree {
+    font: 0.6rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: var(--muted);
+    text-align: center;
+    text-transform: uppercase;
+  }
+  .strudel-chord-card select {
     width: 100%;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--rule);
-    border-radius: 3px;
+    border-radius: 2px;
     color: var(--ink);
-    padding: 0.25rem 0.35rem;
+    padding: 0.2rem 0.25rem;
     font-size: 0.7rem;
   }
-  .strudel-code-wrap {
-    position: relative;
-    width: 100%;
-    flex: 1;
-    min-height: 0;
-    border: 1px solid var(--rule);
-    border-radius: 3px;
-    background: rgba(255, 255, 255, 0.035);
-    overflow: hidden;
-    transition: border-color 140ms ease, box-shadow 180ms ease;
+  .strudel-chord-card .chord-octave {
+    display: flex;
+    justify-content: center;
+    gap: 0.25rem;
   }
-  .strudel-code-wrap.is-running {
-    border-color: var(--accent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
-  }
-  .strudel-code-wrap.is-running::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    pointer-events: none;
-    border-radius: 2px;
-    border-left: 2px solid var(--accent);
-    opacity: 0.7;
-    animation: strudel-edge-pulse 1.8s ease-in-out infinite;
-  }
-  @keyframes strudel-edge-pulse {
-    0%, 100% { opacity: 0.32; }
-    50% { opacity: 0.82; }
-  }
-  #strudel-code,
-  #strudel-highlight {
-    box-sizing: border-box;
-    min-height: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0.85rem;
-    font: 0.94rem/1.55 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    tab-size: 2;
-  }
-  #strudel-highlight {
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    overflow: auto;
-    pointer-events: none;
-    color: var(--ink);
-  }
-  #strudel-highlight :global(.tok-fn) { color: var(--accent); }
-  #strudel-highlight :global(.tok-string) { color: color-mix(in srgb, var(--accent) 72%, #fff); }
-  #strudel-highlight :global(.tok-number) { color: #d6ff5a; }
-  #strudel-highlight :global(.tok-method) { color: #4ad6ff; }
-  #strudel-highlight :global(.tok-symbol) { color: var(--muted); }
-  #strudel-highlight :global(.tok-comment) { color: color-mix(in srgb, var(--muted) 78%, transparent); }
-  #strudel-highlight :global(.code-line) {
-    display: block;
-    min-height: 1.55em;
-    margin-inline: -0.25rem;
-    padding-inline: 0.25rem;
-    border-radius: 2px;
-  }
-  #strudel-highlight :global(.tok-play) {
-    background: color-mix(in srgb, var(--accent) 18%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
-    border-radius: 2px;
-  }
-  #strudel-code {
-    position: relative;
-    z-index: 1;
-    display: block;
-    width: 100%;
-    resize: none;
-    border: 0;
-    background: transparent;
-    color: transparent;
-    caret-color: var(--ink);
-    -webkit-text-fill-color: transparent;
-  }
-  #strudel-code:focus {
-    outline: none;
-  }
-  .strudel-side-pane {
-    display: grid;
-    gap: 1.25rem;
-    height: var(--strudel-panel-height);
-    overflow-y: auto;
-    padding-right: 0.25rem;
-    scrollbar-width: thin;
-    scrollbar-color: var(--rule) transparent;
-  }
-  .strudel-side-pane section {
+  .strudel-chord-card .chord-octave button {
+    width: 1.5rem;
+    height: 1.3rem;
     padding: 0;
-  }
-  .strudel-field {
-    display: grid;
-    grid-template-columns: 3.25rem minmax(0, 1fr) 3.2rem;
-    gap: 0.55rem;
-    align-items: center;
-    margin: 0.8rem 0;
     color: var(--muted);
-    font-size: 0.78rem;
-  }
-  .strudel-field input {
-    width: 100%;
-    margin: 0;
-    accent-color: var(--accent);
-  }
-  .strudel-field input[type="text"] {
-    min-width: 0;
-    box-sizing: border-box;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--rule);
-    border-radius: 3px;
-    color: var(--ink);
-    padding: 0.28rem 0.35rem;
-    font: 0.76rem/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  }
-  .strudel-field input[type="text"]:focus {
-    border-color: var(--accent);
-    outline: none;
-  }
-  .strudel-field--wide {
-    grid-template-columns: 3.25rem minmax(0, 1fr);
-  }
-  .strudel-field select {
-    width: 100%;
-    min-width: 0;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--rule);
-    border-radius: 3px;
-    color: var(--ink);
-    padding: 0.25rem 0.35rem;
-  }
-  .strudel-field output {
-    color: var(--ink);
-    font-variant-numeric: tabular-nums;
-    text-align: right;
+    border-radius: 2px;
+    cursor: pointer;
+    font: 0.7rem/1 ui-monospace, monospace;
   }
   .strudel-drop {
     display: grid;
     place-items: center;
-    min-height: 4.25rem;
-    margin: 0.75rem 0;
+    min-height: 3.2rem;
+    margin-top: 0.55rem;
     border: 1px dashed var(--rule);
     border-radius: 3px;
     color: var(--muted);
-    background: rgba(255, 255, 255, 0.025);
+    background: rgba(255, 255, 255, 0.02);
     font-size: 0.78rem;
     text-align: center;
+    cursor: pointer;
   }
   .strudel-drop.is-dragging,
-  .strudel-drop:hover,
-  .strudel-drop:focus-within {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
+  .strudel-drop:hover { color: var(--accent); border-color: var(--accent); }
   .strudel-drop input {
     position: absolute;
     inline-size: 1px;
@@ -430,556 +568,714 @@ const defaultPattern = '';
     opacity: 0;
     pointer-events: none;
   }
-  .strudel-legal a {
-    text-decoration: underline;
-    text-decoration-color: var(--muted);
-    text-decoration-thickness: 1px;
-    text-underline-offset: 2px;
-  }
   @media (max-width: 880px) {
-    .strudel-shell {
-      height: auto;
-      overflow: visible;
-    }
-    .strudel-workspace {
-      grid-template-columns: 1fr;
-      height: auto;
-    }
-    .strudel-side-pane {
-      height: auto;
-      overflow: visible;
-      padding-right: 0;
-    }
+    .strudel-shell { height: auto; overflow: visible; }
+    .strudel-workspace { grid-template-columns: 1fr; }
+    .strudel-side-pane { overflow: visible; }
   }
 </style>
 
 <script>
-  const codeEl = document.getElementById('strudel-code') as HTMLTextAreaElement | null;
-  const editorEl = document.getElementById('strudel-editor') as HTMLElement | null;
-  const highlightEl = document.getElementById('strudel-highlight');
-  const runButton = document.getElementById('strudel-run') as HTMLButtonElement | null;
-  const stopButton = document.getElementById('strudel-stop') as HTMLButtonElement | null;
-  const infoButton = document.getElementById('strudel-info') as HTMLButtonElement | null;
-  const resetButton = document.getElementById('strudel-reset') as HTMLButtonElement | null;
-  const aboutDialog = document.getElementById('strudel-about') as HTMLDialogElement | null;
-  const leadSound = document.getElementById('strudel-lead-sound') as HTMLSelectElement | null;
-  const chordGrid = document.getElementById('strudel-chord-grid');
-  const chordApply = document.getElementById('strudel-chord-apply') as HTMLButtonElement | null;
-  const sampleFileInput = document.getElementById('strudel-sample-file') as HTMLInputElement | null;
-  const sampleDrop = document.getElementById('strudel-drop') as HTMLElement | null;
-  const sampleDropLabel = document.getElementById('strudel-drop-label');
-  const drumGrid = document.getElementById('strudel-drum-grid');
-  const arpGrid = document.getElementById('strudel-arp-grid');
-  const drumApply = document.getElementById('strudel-drum-apply') as HTMLButtonElement | null;
-  const drumClear = document.getElementById('strudel-drum-clear') as HTMLButtonElement | null;
-  const arpApply = document.getElementById('strudel-arp-apply') as HTMLButtonElement | null;
-  const arpClear = document.getElementById('strudel-arp-clear') as HTMLButtonElement | null;
-  const leadApply = document.getElementById('strudel-lead-apply') as HTMLButtonElement | null;
-  const bassApply = document.getElementById('strudel-bass-apply') as HTMLButtonElement | null;
-  const defaultCode = codeEl?.defaultValue ?? '';
+  // ===== Types =====
+  type Quality = 'maj' | 'min' | '7' | 'maj7' | 'min7' | 'sus' | 'dim';
+  type DrumRow = 'bd' | 'sd' | 'hh' | 'cp';
 
-  const drumRows = [
-    { label: 'bd', hits: [0, 4, 8, 12] },
-    { label: 'sd', hits: [4, 12] },
-    { label: 'hh', hits: [2, 6, 10, 14] },
-    { label: 'cp', hits: [7, 15] },
-  ];
-  const arpNotes = ['~', 'c3', 'eb3', 'g3', 'bb3', 'c4'];
-  const arpDefault = ['c3', '~', 'eb3', 'g3', 'bb3', 'g3', 'c4', 'eb3'];
-  const chordRoots = ['c', 'd', 'eb', 'f', 'g', 'ab', 'bb'];
-  const chordQualities = ['minor', 'major', 'sus', 'wide'];
-  const chordDefault = [
-    { root: 'c', quality: 'minor' },
-    { root: 'bb', quality: 'major' },
-    { root: 'ab', quality: 'major' },
-    { root: 'g', quality: 'minor' },
-  ];
-  let bassPattern = 'syncopated';
-  let leadEffect = '.delay(0.25)';
+  interface ChordSlot { root: string; quality: Quality; octave: number; }
 
-  let strudelReady: Promise<void> | null = null;
-  let droppedSampleUrl: string | null = null;
-  let activeLineIndex = -1;
-  let playIndicatorTimer: number | null = null;
+  interface State {
+    bpm: number;
+    master: number;
+    key: string;
+    scale: string;
+    drums: { enabled: boolean; gain: number; bank: string; steps: Record<DrumRow, boolean[]> };
+    chords: { enabled: boolean; gain: number; sound: string; slots: ChordSlot[] };
+    bass: { enabled: boolean; gain: number; sound: string; rhythm: string; follow: boolean };
+    arp: { enabled: boolean; gain: number; sound: string; speed: number; follow: boolean; cells: boolean[][] };
+    lead: { enabled: boolean; gain: number; sound: string; cells: boolean[][]; fx: { delay: boolean; room: boolean; jux: boolean } };
+    sample: { enabled: boolean; gain: number; name: string; url: string | null };
+  }
+
+  // ===== Music helpers =====
+  const NOTE_NAMES = ['c', 'db', 'd', 'eb', 'e', 'f', 'gb', 'g', 'ab', 'a', 'bb', 'b'];
+  const SCALES: Record<string, number[]> = {
+    minor: [0, 2, 3, 5, 7, 8, 10],
+    major: [0, 2, 4, 5, 7, 9, 11],
+    dorian: [0, 2, 3, 5, 7, 9, 10],
+    mixolydian: [0, 2, 4, 5, 7, 9, 10],
+    'harmonic minor': [0, 2, 3, 5, 7, 8, 11],
+  };
+  const QUALITY_INTERVALS: Record<Quality, number[]> = {
+    maj: [0, 4, 7],
+    min: [0, 3, 7],
+    '7': [0, 4, 7, 10],
+    maj7: [0, 4, 7, 11],
+    min7: [0, 3, 7, 10],
+    sus: [0, 5, 7],
+    dim: [0, 3, 6],
+  };
+
+  function rootIndex(root: string) {
+    const idx = NOTE_NAMES.indexOf(root);
+    return idx < 0 ? 0 : idx;
+  }
+  function midiToName(midi: number) {
+    const n = ((midi % 12) + 12) % 12;
+    const oct = Math.floor(midi / 12);
+    return `${NOTE_NAMES[n]}${oct}`;
+  }
+  function chordNotes(slot: ChordSlot) {
+    const intervals = QUALITY_INTERVALS[slot.quality] ?? QUALITY_INTERVALS.min;
+    const baseMidi = (slot.octave + 1) * 12 + rootIndex(slot.root);
+    return intervals.map((i) => midiToName(baseMidi + i));
+  }
+  function chordLabel(slot: ChordSlot) {
+    const root = slot.root.replace('b', '♭').toUpperCase();
+    const q = slot.quality === 'maj' ? '' : slot.quality === 'min' ? 'm' : slot.quality;
+    return `${root}${q}`;
+  }
+  function scaleDegreeMidi(keyRoot: string, scaleName: string, degree: number, octave = 4) {
+    const intervals = SCALES[scaleName] ?? SCALES.minor;
+    const len = intervals.length;
+    const wrap = ((degree % len) + len) % len;
+    const oct = octave + Math.floor(degree / len);
+    return oct * 12 + rootIndex(keyRoot) + intervals[wrap];
+  }
+
+  // ===== State =====
+  const DRUMS: DrumRow[] = ['bd', 'sd', 'hh', 'cp'];
+  const STEPS = 16;
+  const ROLL_PITCHES = 12;
+  const ARP_STEPS = 16;
+  const LEAD_STEPS = 16;
+
+  function emptySteps(): Record<DrumRow, boolean[]> {
+    return Object.fromEntries(DRUMS.map((d) => [d, new Array(STEPS).fill(false)])) as Record<DrumRow, boolean[]>;
+  }
+  function emptyCells(steps: number): boolean[][] {
+    return Array.from({ length: ROLL_PITCHES }, () => new Array(steps).fill(false));
+  }
+  function defaultDrums() {
+    const s = emptySteps();
+    [0, 4, 8, 12].forEach((i) => (s.bd[i] = true));
+    [4, 12].forEach((i) => (s.sd[i] = true));
+    [2, 6, 10, 14].forEach((i) => (s.hh[i] = true));
+    return s;
+  }
+  function defaultArp(): boolean[][] {
+    const c = emptyCells(ARP_STEPS);
+    [0, 2, 4, 6, 8, 10, 12, 14].forEach((step, idx) => {
+      const pitch = [0, 2, 4, 7, 4, 2, 4, 0][idx]; // simple ascending/descending
+      c[ROLL_PITCHES - 1 - pitch][step] = true;
+    });
+    return c;
+  }
+  function defaultLead(): boolean[][] {
+    const c = emptyCells(LEAD_STEPS);
+    [[0, 7], [4, 9], [8, 11], [12, 9]].forEach(([s, p]) => (c[ROLL_PITCHES - 1 - p][s] = true));
+    return c;
+  }
+
+  const initialState: State = {
+    bpm: 110,
+    master: 0.85,
+    key: 'c',
+    scale: 'minor',
+    drums: { enabled: true, gain: 0.65, bank: 'RolandTR909', steps: defaultDrums() },
+    chords: {
+      enabled: true,
+      gain: 0.4,
+      sound: 'piano',
+      slots: [
+        { root: 'c', quality: 'min', octave: 3 },
+        { root: 'ab', quality: 'maj', octave: 3 },
+        { root: 'eb', quality: 'maj', octave: 3 },
+        { root: 'bb', quality: 'maj', octave: 3 },
+      ],
+    },
+    bass: { enabled: true, gain: 0.55, sound: 'sawtooth', rhythm: 'syncopated', follow: true },
+    arp: { enabled: false, gain: 0.42, sound: 'sine', speed: 2, follow: true, cells: defaultArp() },
+    lead: { enabled: false, gain: 0.42, sound: 'square', cells: defaultLead(), fx: { delay: false, room: false, jux: false } },
+    sample: { enabled: false, gain: 0.55, name: '', url: null },
+  };
+
+  const presets: Record<string, Partial<State>> = {
+    empty: {
+      drums: { enabled: false, gain: 0.65, bank: '', steps: emptySteps() },
+      chords: { ...initialState.chords, enabled: false },
+      bass: { ...initialState.bass, enabled: false },
+      arp: { ...initialState.arp, enabled: false },
+      lead: { ...initialState.lead, enabled: false },
+    },
+    lofi: {
+      bpm: 82,
+      key: 'eb',
+      scale: 'minor',
+      drums: { enabled: true, gain: 0.55, bank: 'RolandTR808', steps: (() => { const s = emptySteps(); [0, 8].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); [0, 2, 4, 6, 8, 10, 12, 14].forEach((i) => (s.hh[i] = true)); return s; })() },
+      chords: { enabled: true, gain: 0.42, sound: 'piano', slots: [
+        { root: 'eb', quality: 'min7', octave: 3 },
+        { root: 'ab', quality: 'maj7', octave: 3 },
+        { root: 'gb', quality: 'maj7', octave: 3 },
+        { root: 'bb', quality: 'min7', octave: 3 },
+      ] },
+      bass: { enabled: true, gain: 0.5, sound: 'sine', rhythm: 'root', follow: true },
+      arp: { enabled: false, gain: 0.3, sound: 'piano', speed: 1, follow: true, cells: emptyCells(ARP_STEPS) },
+      lead: { enabled: false, gain: 0.4, sound: 'sine', cells: emptyCells(LEAD_STEPS), fx: { delay: true, room: true, jux: false } },
+    },
+    techno: {
+      bpm: 128,
+      key: 'a',
+      scale: 'minor',
+      drums: { enabled: true, gain: 0.7, bank: 'RolandTR909', steps: (() => { const s = emptySteps(); [0, 4, 8, 12].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); for (let i = 0; i < 16; i += 2) s.hh[i] = true; [3, 11].forEach((i) => (s.cp[i] = true)); return s; })() },
+      chords: { enabled: false, gain: 0.3, sound: 'sawtooth', slots: initialState.chords.slots },
+      bass: { enabled: true, gain: 0.6, sound: 'sawtooth', rhythm: 'octaves', follow: false },
+      arp: { enabled: true, gain: 0.4, sound: 'square', speed: 4, follow: false, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 4, 8, 12].forEach((s, i) => (c[ROLL_PITCHES - 1 - [7, 5, 7, 4][i]][s] = true)); return c; })() },
+      lead: { ...initialState.lead, enabled: false },
+    },
+    ambient: {
+      bpm: 70,
+      key: 'd',
+      scale: 'dorian',
+      drums: { enabled: false, gain: 0.5, bank: 'RolandTR909', steps: emptySteps() },
+      chords: { enabled: true, gain: 0.32, sound: 'triangle', slots: [
+        { root: 'd', quality: 'min7', octave: 3 },
+        { root: 'g', quality: 'maj7', octave: 3 },
+        { root: 'a', quality: 'min7', octave: 3 },
+        { root: 'f', quality: 'maj7', octave: 3 },
+      ] },
+      bass: { enabled: true, gain: 0.42, sound: 'sine', rhythm: 'root', follow: true },
+      arp: { enabled: true, gain: 0.32, sound: 'sine', speed: 1, follow: true, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 3, 6, 9, 12, 15].forEach((s, i) => (c[ROLL_PITCHES - 1 - [0, 2, 4, 7, 4, 2][i]][s] = true)); return c; })() },
+      lead: { enabled: false, gain: 0.3, sound: 'piano', cells: emptyCells(LEAD_STEPS), fx: { delay: true, room: true, jux: false } },
+    },
+  };
+
+  function clone<T>(value: T): T { return JSON.parse(JSON.stringify(value)); }
+  let state: State = clone(initialState);
+  try {
+    const saved = window.localStorage.getItem('strudel-state-v2');
+    if (saved) state = { ...clone(initialState), ...JSON.parse(saved) };
+  } catch (e) {}
+
+  // ===== Code generation =====
+  function indent(code: string, n = 2) {
+    const pad = ' '.repeat(n);
+    return code.split('\n').map((l) => pad + l).join('\n');
+  }
+  function drumCode(): string | null {
+    if (!state.drums.enabled) return null;
+    const tokens: string[] = [];
+    for (let s = 0; s < STEPS; s++) {
+      const hits = DRUMS.filter((d) => state.drums.steps[d][s]);
+      tokens.push(hits.length === 0 ? '~' : hits.length === 1 ? hits[0] : `[${hits.join(',')}]`);
+    }
+    let code = `s("${tokens.join(' ')}")`;
+    if (state.drums.bank) code += `\n  .bank("${state.drums.bank}")`;
+    code += `\n  .gain(${state.drums.gain.toFixed(2)})`;
+    return code;
+  }
+  function chordCode(): string | null {
+    if (!state.chords.enabled) return null;
+    const slotStrs = state.chords.slots.map((s) => `<${chordNotes(s).join(',')}>`);
+    let code = `note("${slotStrs.join(' ')}")`;
+    code += `\n  .${state.chords.sound === 'piano' ? 'piano()' : `s("${state.chords.sound}").release(0.5)`}`;
+    code += `\n  .room(0.5)\n  .gain(${state.chords.gain.toFixed(2)})`;
+    return code;
+  }
+  function bassCode(): string | null {
+    if (!state.bass.enabled) return null;
+    const slots = state.chords.slots;
+    const roots = state.bass.follow && slots.length
+      ? slots.map((s) => `${s.root}2`)
+      : ['c2', 'c2', 'c2', 'c2'];
+    let pattern = '';
+    if (state.bass.rhythm === 'root') {
+      pattern = roots.join(' ');
+    } else if (state.bass.rhythm === 'steady') {
+      pattern = roots.flatMap((r) => [r, r, r, r]).join(' ');
+    } else if (state.bass.rhythm === 'syncopated') {
+      pattern = roots.map((r) => `[${r} ~ ${r} [~ ${r}]]`).join(' ');
+    } else if (state.bass.rhythm === 'octaves') {
+      pattern = roots.map((r) => {
+        const up = r.replace(/(\d)$/, (_m, d) => String(Number(d) + 1));
+        return `[${r} ${up} ${r} ${up}]`;
+      }).join(' ');
+    } else if (state.bass.rhythm === 'walking') {
+      pattern = roots.map((r, i) => {
+        const next = roots[(i + 1) % roots.length];
+        return `[${r} ${r} ${next} ${r}]`;
+      }).join(' ');
+    }
+    let code = `note("${pattern}")\n  .s("${state.bass.sound}")\n  .lpf(800)\n  .gain(${state.bass.gain.toFixed(2)})`;
+    return code;
+  }
+
+  function rollNotes(cells: boolean[][], steps: number, scale: string, key: string, octaveBase: number, slots: ChordSlot[], follow: boolean) {
+    const tokens: string[] = [];
+    const slotsPerStep = slots.length ? steps / slots.length : steps;
+    for (let s = 0; s < steps; s++) {
+      const onPitches: number[] = [];
+      for (let p = 0; p < ROLL_PITCHES; p++) {
+        if (cells[p][s]) onPitches.push(ROLL_PITCHES - 1 - p);
+      }
+      if (onPitches.length === 0) { tokens.push('~'); continue; }
+      const slotIdx = Math.min(slots.length - 1, Math.floor(s / slotsPerStep));
+      const localKey = follow && slots[slotIdx] ? slots[slotIdx].root : key;
+      const names = onPitches.map((deg) => midiToName(scaleDegreeMidi(localKey, scale, deg, octaveBase)));
+      tokens.push(names.length === 1 ? names[0] : `[${names.join(',')}]`);
+    }
+    return tokens.join(' ');
+  }
+
+  function arpCode(): string | null {
+    if (!state.arp.enabled) return null;
+    const pattern = rollNotes(state.arp.cells, ARP_STEPS, state.scale, state.key, 4, state.chords.slots, state.arp.follow);
+    let code = `note("${pattern}")`;
+    code += `\n  .${state.arp.sound === 'piano' ? 'piano()' : `s("${state.arp.sound}")`}`;
+    if (state.arp.speed !== 1) code += `\n  .fast(${state.arp.speed})`;
+    code += `\n  .delay(0.25)\n  .gain(${state.arp.gain.toFixed(2)})`;
+    return code;
+  }
+  function leadCode(): string | null {
+    if (!state.lead.enabled) return null;
+    const pattern = rollNotes(state.lead.cells, LEAD_STEPS, state.scale, state.key, 5, state.chords.slots, false);
+    let code = `note("${pattern}")`;
+    code += `\n  .${state.lead.sound === 'piano' ? 'piano()' : `s("${state.lead.sound}")`}`;
+    if (state.lead.fx.delay) code += `\n  .delay(0.4)`;
+    if (state.lead.fx.room) code += `\n  .room(0.6)`;
+    if (state.lead.fx.jux) code += `\n  .jux(rev)`;
+    code += `\n  .gain(${state.lead.gain.toFixed(2)})`;
+    return code;
+  }
+  function sampleCode(): string | null {
+    if (!state.sample.enabled || !state.sample.url || !state.sample.name) return null;
+    return `s("${state.sample.name}").loopAt(4).gain(${state.sample.gain.toFixed(2)})`;
+  }
+
+  function buildCode(): string {
+    const parts = [drumCode(), chordCode(), bassCode(), arpCode(), leadCode(), sampleCode()].filter((p): p is string => !!p);
+    const cps = (state.bpm / 60 / 4).toFixed(3);
+    let header = `// ${state.key.toUpperCase()} ${state.scale}  •  ${state.bpm} bpm\nsetcps(${cps})`;
+    if (state.sample.enabled && state.sample.url && state.sample.name) {
+      header = `samples({ ${state.sample.name}: '${state.sample.url}' })\n${header}`;
+    }
+    if (parts.length === 0) {
+      return `${header}\nsilence`;
+    }
+    if (parts.length === 1) {
+      return `${header}\n${parts[0]}\n  .gain(${state.master.toFixed(2)})`;
+    }
+    return `${header}\nstack(\n${parts.map((p) => indent(p)).join(',\n\n')}\n)\n  .gain(${state.master.toFixed(2)})`;
+  }
+
+  // ===== Editor wiring =====
+  let editorRef: any = null;
+  let editorReady: Promise<any> | null = null;
   let isRunning = false;
-  let liveApplyTimer: number | null = null;
-  let isPaintingSteps = false;
+  let liveTimer: number | null = null;
 
-  function setStatus(_message: string) {}
+  const hostEl = document.getElementById('strudel-host');
+  const statusEl = document.getElementById('strudel-status');
+  const runBtn = document.getElementById('strudel-run') as HTMLButtonElement | null;
+  const stopBtn = document.getElementById('strudel-stop') as HTMLButtonElement | null;
 
-  function escapeHtml(value: string) {
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
+  function setStatus(text: string) { if (statusEl) statusEl.textContent = text; }
 
-  function highlightStrudel(code: string) {
-    const escaped = escapeHtml(code);
-    return escaped.replace(
-      /(\/\/.*$)|("(?:\\.|[^"\\])*")|(\.[a-zA-Z_]\w*)|(\b(?:note|s|n|sound|samples|stack|cat|seq|slow|fast|gain|room|delay|lpf|hpf|rev|jux|sometimes|every|off|struct|bank|sine|saw|square|tri|rand|range)\b)|(\b\d+(?:\.\d+)?\b)|([()[\]{}<>*,])/gm,
-      (_match, commentToken, stringToken, methodToken, functionToken, numberToken, symbolToken) => {
-        if (commentToken) return `<span class="tok-comment">${commentToken}</span>`;
-        if (stringToken) return `<span class="tok-string">${stringToken}</span>`;
-        if (methodToken) return `<span class="tok-method">${methodToken}</span>`;
-        if (functionToken) return `<span class="tok-fn">${functionToken}</span>`;
-        if (numberToken) return `<span class="tok-number">${numberToken}</span>`;
-        if (symbolToken) return `<span class="tok-symbol">${symbolToken}</span>`;
-        return _match;
-      },
-    );
-  }
-
-  function syncHighlight() {
-    if (!codeEl || !highlightEl) return;
-    const lines = codeEl.value.split('\n');
-    highlightEl.innerHTML = lines
-      .map((line, index) => {
-        const highlighted = highlightStrudel(line);
-        const activeLine = index === activeLineIndex && line.trim().length > 0;
-        return `<span class="code-line">${activeLine ? markActiveToken(highlighted) : highlighted || ' '}</span>`;
-      })
-      .join('');
-    highlightEl.scrollTop = codeEl.scrollTop;
-    highlightEl.scrollLeft = codeEl.scrollLeft;
-  }
-
-  function markActiveToken(html: string) {
-    if (!html.trim()) return html;
-    const tokenPattern = /(<span class="tok-(?:fn|method|string|number)">.*?<\/span>|[A-Za-z_][\w]*|"(?:\\.|[^"\\])*")/;
-    return html.replace(tokenPattern, '<span class="tok-play">$1</span>');
-  }
-
-  function stopPlayIndicator() {
-    if (playIndicatorTimer !== null) window.clearInterval(playIndicatorTimer);
-    playIndicatorTimer = null;
-    activeLineIndex = -1;
-    editorEl?.classList.remove('is-running');
-    syncHighlight();
-  }
-
-  function startPlayIndicator() {
-    if (!codeEl) return;
-    if (playIndicatorTimer !== null) window.clearInterval(playIndicatorTimer);
-    editorEl?.classList.add('is-running');
-    const step = () => {
-      const lineCount = Math.max(1, codeEl.value.split('\n').length);
-      activeLineIndex = (activeLineIndex + 1) % lineCount;
-      syncHighlight();
-    };
-    activeLineIndex = -1;
-    step();
-    playIndicatorTimer = window.setInterval(step, 650);
-  }
-
-  function evaluateCurrentPattern(status = 'Updated.') {
-    if (!codeEl) return;
-    const evaluate = getStrudelFunction('evaluate');
-    if (typeof evaluate !== 'function') return;
-    const audioContext = getStrudelFunction('getAudioContext')?.();
-    if (typeof audioContext?.resume === 'function') audioContext.resume();
-    evaluate(codeEl.value);
-    setStatus(status);
-    try {
-      window.localStorage.setItem('strudel-code', codeEl.value);
-    } catch (e) {}
-  }
-
-  function scheduleLiveApply() {
-    if (!isRunning) return;
-    if (liveApplyTimer !== null) window.clearTimeout(liveApplyTimer);
-    liveApplyTimer = window.setTimeout(async () => {
-      await loadStrudel();
-      evaluateCurrentPattern();
-    }, 120);
-  }
-
-  function loadStrudel() {
-    if (strudelReady) return strudelReady;
-    setStatus('Loading Strudel...');
-    strudelReady = new Promise((resolve, reject) => {
-      const existing = document.querySelector<HTMLScriptElement>('script[data-strudel-web]');
+  function ensureEditor(): Promise<any> {
+    if (editorReady) return editorReady;
+    setStatus('loading…');
+    editorReady = new Promise<any>((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>('script[data-strudel-repl]');
+      const onLoaded = () => {
+        const el = document.createElement('strudel-editor');
+        el.setAttribute('code', buildCode());
+        hostEl?.appendChild(el);
+        // wait for connectedCallback to set up editor
+        const tryAttach = (tries = 0) => {
+          if ((el as any).editor) {
+            editorRef = (el as any).editor;
+            (el as any).addEventListener('update', (evt: CustomEvent) => {
+              const started = !!evt.detail?.started;
+              if (started !== isRunning) {
+                isRunning = started;
+                runBtn?.setAttribute('data-state', started ? 'running' : 'idle');
+                hostEl?.classList.toggle('is-running', started);
+              }
+            });
+            setStatus('ready');
+            resolve(editorRef);
+          } else if (tries < 50) {
+            setTimeout(() => tryAttach(tries + 1), 80);
+          } else {
+            reject(new Error('editor did not initialize'));
+          }
+        };
+        tryAttach();
+      };
       if (existing) {
-        existing.addEventListener('load', () => resolve(), { once: true });
-        existing.addEventListener('error', () => reject(new Error('Could not load Strudel.')), { once: true });
+        if ((existing as any).dataset.loaded === 'true') onLoaded();
+        else {
+          existing.addEventListener('load', onLoaded, { once: true });
+          existing.addEventListener('error', () => reject(new Error('repl load error')), { once: true });
+        }
         return;
       }
       const script = document.createElement('script');
-      script.src = 'https://unpkg.com/@strudel/web@1.3.0';
+      script.src = 'https://unpkg.com/@strudel/repl@1.3.0/dist/index.js';
       script.async = true;
-      script.dataset.strudelWeb = 'true';
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Could not load Strudel.'));
-      document.head.append(script);
-    }).then(async () => {
-      const initStrudel = getStrudelFunction('initStrudel');
-      if (typeof initStrudel !== 'function') throw new Error('Strudel did not initialize.');
-      await initStrudel();
-      setStatus('Ready.');
+      script.dataset.strudelRepl = 'true';
+      script.onload = () => { (script as any).dataset.loaded = 'true'; onLoaded(); };
+      script.onerror = () => reject(new Error('repl load error'));
+      document.head.appendChild(script);
     });
-    return strudelReady;
+    return editorReady;
   }
 
-  function getStrudelFunction(name: string) {
-    const win = window as any;
-    return typeof win[name] === 'function'
-      ? win[name]
-      : typeof win.strudel?.[name] === 'function'
-        ? win.strudel[name].bind(win.strudel)
-        : null;
+  async function pushCode() {
+    const code = buildCode();
+    try { window.localStorage.setItem('strudel-state-v2', JSON.stringify(state)); } catch (e) {}
+    if (!editorRef) return;
+    editorRef.setCode(code);
+    if (isRunning) {
+      try { await editorRef.evaluate(); } catch (e) { setStatus('eval error'); }
+    }
+  }
+  function scheduleLiveApply() {
+    if (liveTimer !== null) window.clearTimeout(liveTimer);
+    liveTimer = window.setTimeout(pushCode, 100);
   }
 
-  async function runPattern() {
-    if (!codeEl) return;
+  async function run() {
+    await ensureEditor();
+    if (!editorRef) return;
+    editorRef.setCode(buildCode());
     try {
-      await loadStrudel();
-      const evaluate = getStrudelFunction('evaluate');
-      if (typeof evaluate !== 'function') throw new Error('Strudel evaluator is unavailable.');
+      await editorRef.evaluate();
       isRunning = true;
-      evaluateCurrentPattern('Running.');
-      startPlayIndicator();
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Could not run pattern.');
+      runBtn?.setAttribute('data-state', 'running');
+      hostEl?.classList.add('is-running');
+      setStatus('running');
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : 'eval error');
     }
   }
-
-  async function stopPattern() {
+  async function stop() {
+    if (!editorRef) return;
     try {
-      await loadStrudel();
-      const hush = getStrudelFunction('hush');
-      const evaluate = getStrudelFunction('evaluate');
-      const audioContext = getStrudelFunction('getAudioContext')?.();
-      if (typeof hush === 'function') hush();
-      const silence = getStrudelFunction('silence');
-      if (typeof silence === 'function') silence();
-      if (typeof evaluate === 'function') {
-        try { evaluate('silence'); } catch (e) {}
-        try { evaluate('silence()'); } catch (e) {}
-      }
-      const scheduler = (window as any).strudelMirror?.repl?.scheduler;
-      if (typeof scheduler?.stop === 'function') scheduler.stop();
-      if (typeof audioContext?.suspend === 'function') audioContext.suspend();
+      await editorRef.stop();
       isRunning = false;
-      stopPlayIndicator();
-      setStatus('Stopped.');
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Could not stop pattern.');
+      runBtn?.setAttribute('data-state', 'idle');
+      hostEl?.classList.remove('is-running');
+      setStatus('stopped');
+    } catch (e) {}
+  }
+
+  runBtn?.addEventListener('click', run);
+  stopBtn?.addEventListener('click', stop);
+
+  // ===== UI rendering =====
+  function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, any> = {}, ...children: (Node | string)[]) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') node.className = v;
+      else if (k === 'dataset') Object.assign(node.dataset, v);
+      else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
+      else if (k === 'checked' || k === 'disabled' || k === 'selected') (node as any)[k] = v;
+      else node.setAttribute(k, String(v));
     }
+    for (const c of children) node.append(c);
+    return node;
   }
 
-  function appendCodeLayer(layerCode: string, sectionName = 'Part') {
-    if (!codeEl) return;
-    const current = codeEl.value.trimEnd();
-    const next = `// ${sectionName}\n${layerCode.trim()}`
-      .split('\n')
-      .map((line) => `  ${line}`)
-      .join('\n');
-    if (!current.trim()) {
-      codeEl.value = `stack(\n${next}\n)`;
-    } else if (current.trimStart().startsWith('stack(')) {
-      const closeIndex = current.lastIndexOf('\n)');
-      codeEl.value = closeIndex >= 0
-        ? `${current.slice(0, closeIndex).trimEnd()},\n\n${next}\n)`
-        : `${current},\n\n${next}`;
-    } else {
-      codeEl.value = `stack(\n  // Starting pattern\n  ${current.trim().replace(/\n/g, '\n  ')},\n\n${next}\n)`;
-    }
-    syncHighlight();
-    setStatus(`Appended ${sectionName.toLowerCase()}.`);
-    scheduleLiveApply();
-  }
-
-  function activeStepTokens(rowLabels: string[], stepCount: number, getIsOn: (row: string, step: number) => boolean) {
-    return Array.from({ length: stepCount }, (_unused, step) => {
-      const hits = rowLabels.filter((row) => getIsOn(row, step));
-      if (hits.length === 0) return '~';
-      return hits.length === 1 ? hits[0] : `[${hits.join(' ')}]`;
-    });
-  }
-
-  function drumCodeFromGrid() {
-    const tokens = activeStepTokens(
-      drumRows.map((row) => row.label),
-      16,
-      (row, step) => drumGrid?.querySelector<HTMLButtonElement>(`button[data-row="${row}"][data-step="${step}"]`)?.classList.contains('is-on') ?? false,
-    );
-    return `s("${tokens.join(' ')}")
-  .bank("RolandTR909")
-  .gain(0.65)`;
-  }
-
-  function arpCodeFromGrid() {
-    const notes = Array.from({ length: 8 }, (_unused, step) => (
-      arpGrid?.querySelector<HTMLButtonElement>(`button.is-on[data-step="${step}"]`)?.dataset.note || '~'
-    ));
-    const pattern = notes.join(' ');
-    return `note("${pattern}")
-  .sound("sine")
-  .fast(2)
-  .delay(0.2)
-  .gain(0.42)`;
-  }
-
-  function chordCodeFromPanel() {
-    const selected = Array.from({ length: 4 }, (_unused, index) => ({
-      root: chordGrid?.querySelector<HTMLSelectElement>(`select[data-chord-root="${index}"]`)?.value ?? chordDefault[index].root,
-      quality: chordGrid?.querySelector<HTMLSelectElement>(`select[data-chord-quality="${index}"]`)?.value ?? chordDefault[index].quality,
-    }));
-    const names = ['c', 'db', 'd', 'eb', 'e', 'f', 'gb', 'g', 'ab', 'a', 'bb', 'b'];
-    const noteAt = (root: string, semitones: number, octave = 3) => {
-      const rootIndex = Math.max(0, names.indexOf(root));
-      const index = rootIndex + semitones;
-      return `${names[((index % 12) + 12) % 12]}${octave + Math.floor(index / 12)}`;
-    };
-    const intervals: Record<string, number[]> = {
-      minor: [0, 3, 7],
-      major: [0, 4, 7],
-      sus: [0, 5, 7],
-      wide: [0, 7, 15],
-    };
-    const progression = selected.map(({ root, quality }) => {
-      const octave = quality === 'wide' ? 2 : 3;
-      return `<${(intervals[quality] ?? intervals.minor).map((interval) => noteAt(root, interval, octave)).join(' ')}>`;
-    }).join(' ');
-    return `note("${progression}")
-  .sound("triangle")
-  .slow(2)
-  .room(0.55)
-  .gain(0.38)`;
-  }
-
-  function leadCode() {
-    const sound = leadSound?.value ?? 'square';
-    return `note("c4 eb4 g4 <bb4 c5>")
-  .sound("${sound}")
-  .fast(2)
-  ${leadEffect}
-  .gain(0.42)`;
-  }
-
-  function bassCode() {
-    const patterns: Record<string, string> = {
-      steady: 'c1 c1 bb0 ab0',
-      syncopated: 'c1 [~ eb1] <bb0 bb1> [f1 ab1]',
-      octaves: '<c1 c2> [~ eb1] <bb0 bb1> [ab0 ab1]',
-    };
-    return `note("${patterns[bassPattern] ?? patterns.syncopated}")
-  .sound("sawtooth")
-  .struct("x [~ x] x [x ~]")
-  .lpf(800)
-  .gain(0.56)`;
-  }
-
-  function setStepState(button: HTMLButtonElement, force?: boolean) {
-    const next = force ?? !button.classList.contains('is-on');
-    button.classList.toggle('is-on', next);
-    button.setAttribute('aria-pressed', String(next));
-  }
-
+  // --- Drums grid
+  const drumGrid = document.getElementById('strudel-drum-grid');
+  let painting: { value: boolean } | null = null;
   function renderDrumGrid() {
     if (!drumGrid) return;
-    drumGrid.innerHTML = '';
-    drumRows.forEach((row) => {
-      const label = document.createElement('span');
-      label.className = 'strudel-step-label';
-      label.textContent = row.label;
-      drumGrid.append(label);
-      Array.from({ length: 16 }, (_unused, step) => {
-        const button = document.createElement('button');
-        const isOn = row.hits.includes(step);
-        button.type = 'button';
-        button.dataset.row = row.label;
-        button.dataset.step = String(step);
-        button.classList.toggle('is-on', isOn);
-        button.setAttribute('aria-label', `${row.label} step ${step + 1}`);
-        button.setAttribute('aria-pressed', String(isOn));
-        button.addEventListener('pointerdown', (event) => {
+    drumGrid.replaceChildren();
+    DRUMS.forEach((row) => {
+      drumGrid.appendChild(el('span', { class: 'strudel-step-label' }, row));
+      for (let s = 0; s < STEPS; s++) {
+        const on = state.drums.steps[row][s];
+        const btn = el('button', {
+          type: 'button',
+          'aria-pressed': String(on),
+          'aria-label': `${row} step ${s + 1}`,
+          class: on ? 'is-on' : '',
+          dataset: { row, step: String(s) },
+        });
+        btn.addEventListener('pointerdown', (event) => {
           event.preventDefault();
-          isPaintingSteps = true;
-          setStepState(button);
+          const next = !state.drums.steps[row][s];
+          painting = { value: next };
+          state.drums.steps[row][s] = next;
+          btn.classList.toggle('is-on', next);
+          btn.setAttribute('aria-pressed', String(next));
+          scheduleLiveApply();
         });
-        button.addEventListener('click', (event) => {
-          if (event.detail !== 0) return;
-          setStepState(button);
+        btn.addEventListener('pointerenter', () => {
+          if (!painting) return;
+          state.drums.steps[row][s] = painting.value;
+          btn.classList.toggle('is-on', painting.value);
+          btn.setAttribute('aria-pressed', String(painting.value));
+          scheduleLiveApply();
         });
-        button.addEventListener('pointerenter', () => {
-          if (isPaintingSteps) setStepState(button, true);
-        });
-        drumGrid.append(button);
-      });
+        drumGrid.appendChild(btn);
+      }
     });
   }
+  window.addEventListener('pointerup', () => { painting = null; });
 
-  function renderArpGrid() {
-    if (!arpGrid) return;
-    arpGrid.innerHTML = '';
-    arpDefault.forEach((activeNote, step) => {
-      const cell = document.createElement('div');
-      cell.className = 'strudel-arp-cell';
-      const label = document.createElement('span');
-      label.className = 'strudel-arp-label';
-      label.textContent = String(step + 1);
-      cell.append(label);
-      arpNotes.forEach((note) => {
-        const button = document.createElement('button');
-        const isOn = note === activeNote;
-        button.type = 'button';
-        button.textContent = note;
-        button.dataset.note = note;
-        button.dataset.step = String(step);
-        button.classList.toggle('is-on', isOn);
-        button.setAttribute('aria-pressed', String(isOn));
-        button.addEventListener('click', () => {
-          cell.querySelectorAll<HTMLButtonElement>('button').forEach((other) => setStepState(other, false));
-          setStepState(button, true);
+  // --- Piano roll
+  function renderRoll(container: HTMLElement | null, cells: boolean[][], steps: number, onChange: () => void) {
+    if (!container) return;
+    container.replaceChildren();
+    container.style.gridTemplateColumns = '2.25rem 1fr';
+    for (let p = 0; p < ROLL_PITCHES; p++) {
+      const degree = ROLL_PITCHES - 1 - p; // top row = highest
+      const labelText = `${degree + 1}`;
+      container.appendChild(el('span', { class: 'strudel-roll-label' }, labelText));
+      const rowEl = el('div', { class: 'strudel-piano-roll-row' });
+      rowEl.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
+      for (let s = 0; s < steps; s++) {
+        const isBeat = s % 4 === 0;
+        const on = cells[p][s];
+        const cell = el('button', {
+          type: 'button',
+          'aria-pressed': String(on),
+          class: `strudel-roll-cell${on ? ' is-on' : ''}${isBeat ? ' is-beat' : ''}`,
+          dataset: { p: String(p), s: String(s) },
         });
-        cell.append(button);
-      });
-      arpGrid.append(cell);
-    });
-  }
-
-  function renderChordGrid() {
-    if (!chordGrid) return;
-    chordGrid.innerHTML = '';
-    chordDefault.forEach((chord, index) => {
-      const row = document.createElement('div');
-      row.className = 'strudel-chord-row';
-      const label = document.createElement('span');
-      label.textContent = String(index + 1);
-      const rootSelect = document.createElement('select');
-      rootSelect.dataset.chordRoot = String(index);
-      chordRoots.forEach((root) => {
-        const option = document.createElement('option');
-        option.value = root;
-        option.textContent = root.toUpperCase();
-        option.selected = root === chord.root;
-        rootSelect.append(option);
-      });
-      const qualitySelect = document.createElement('select');
-      qualitySelect.dataset.chordQuality = String(index);
-      chordQualities.forEach((quality) => {
-        const option = document.createElement('option');
-        option.value = quality;
-        option.textContent = quality;
-        option.selected = quality === chord.quality;
-        qualitySelect.append(option);
-      });
-      row.append(label, rootSelect, qualitySelect);
-      chordGrid.append(row);
-    });
-  }
-
-  function resetEditor() {
-    if (codeEl) codeEl.value = defaultCode;
-    if (leadSound) leadSound.value = 'square';
-    if (sampleFileInput) sampleFileInput.value = '';
-    if (sampleDropLabel) sampleDropLabel.textContent = 'Drop audio or choose file';
-    if (droppedSampleUrl) URL.revokeObjectURL(droppedSampleUrl);
-    droppedSampleUrl = null;
-    isRunning = false;
-    stopPlayIndicator();
-    renderDrumGrid();
-    renderArpGrid();
-    renderChordGrid();
-    syncHighlight();
-    try {
-      window.localStorage.removeItem('strudel-code');
-    } catch (e) {}
-    setStatus('Reset.');
-  }
-
-  function sampleNameFromFile(file: File) {
-    const base = file.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18);
-    return base || 'drop';
-  }
-
-  function loadDroppedSample(file: File) {
-    if (!codeEl || !file.type.startsWith('audio/')) {
-      setStatus('Choose an audio file.');
-      return;
+        cell.addEventListener('click', () => {
+          cells[p][s] = !cells[p][s];
+          cell.classList.toggle('is-on', cells[p][s]);
+          cell.setAttribute('aria-pressed', String(cells[p][s]));
+          onChange();
+        });
+        rowEl.appendChild(cell);
+      }
+      container.appendChild(rowEl);
     }
-    if (droppedSampleUrl) URL.revokeObjectURL(droppedSampleUrl);
-    droppedSampleUrl = URL.createObjectURL(file);
-    const sampleName = sampleNameFromFile(file);
-    codeEl.value = `samples({
-  ${sampleName}: '${droppedSampleUrl}',
-})
-
-// Dropped sample
-s("${sampleName}")
-  .loopAt(4)
-  .slice(8, "0 1 2 3 4 5 6 7")
-  .gain(0.55)`;
-    if (sampleDropLabel) sampleDropLabel.textContent = file.name;
-    syncHighlight();
-    setStatus(`Loaded local sample: ${file.name}`);
   }
 
-  try {
-    const saved = window.localStorage.getItem('strudel-code');
-    if (saved && codeEl) codeEl.value = saved;
-  } catch (e) {}
+  // --- Chord cards
+  const chordGrid = document.getElementById('strudel-chord-grid');
+  const ROOT_OPTIONS = NOTE_NAMES;
+  const QUALITIES: Quality[] = ['min', 'maj', '7', 'maj7', 'min7', 'sus', 'dim'];
+  function romanize(slot: ChordSlot, key: string, scale: string) {
+    const intervals = SCALES[scale] ?? SCALES.minor;
+    const interval = ((rootIndex(slot.root) - rootIndex(key)) % 12 + 12) % 12;
+    const degree = intervals.indexOf(interval);
+    const numerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+    if (degree < 0) return '–';
+    const isMin = slot.quality === 'min' || slot.quality === 'min7' || slot.quality === 'dim';
+    return isMin ? numerals[degree].toLowerCase() : numerals[degree];
+  }
+  function renderChords() {
+    if (!chordGrid) return;
+    chordGrid.replaceChildren();
+    state.chords.slots.forEach((slot, idx) => {
+      const card = el('div', { class: 'strudel-chord-card' });
+      const name = el('div', { class: 'chord-name' }, chordLabel(slot));
+      const rootSel = el('select', {}) as HTMLSelectElement;
+      ROOT_OPTIONS.forEach((r) => {
+        const opt = el('option', { value: r, selected: r === slot.root }, r.toUpperCase());
+        rootSel.appendChild(opt);
+      });
+      rootSel.addEventListener('change', () => { state.chords.slots[idx].root = rootSel.value; renderChords(); scheduleLiveApply(); });
+      const qualSel = el('select', {}) as HTMLSelectElement;
+      QUALITIES.forEach((q) => {
+        const opt = el('option', { value: q, selected: q === slot.quality }, q);
+        qualSel.appendChild(opt);
+      });
+      qualSel.addEventListener('change', () => { state.chords.slots[idx].quality = qualSel.value as Quality; renderChords(); scheduleLiveApply(); });
+      const degree = el('div', { class: 'chord-degree' }, romanize(slot, state.key, state.scale));
+      const oct = el('div', { class: 'chord-octave' });
+      const minus = el('button', { type: 'button' }, '−');
+      const plus = el('button', { type: 'button' }, '+');
+      const octLabel = el('span', { class: 'chord-degree' }, `oct ${slot.octave}`);
+      minus.addEventListener('click', () => { state.chords.slots[idx].octave = Math.max(1, slot.octave - 1); renderChords(); scheduleLiveApply(); });
+      plus.addEventListener('click', () => { state.chords.slots[idx].octave = Math.min(6, slot.octave + 1); renderChords(); scheduleLiveApply(); });
+      oct.append(minus, octLabel, plus);
+      card.append(name, rootSel, qualSel, degree, oct);
+      chordGrid.appendChild(card);
+    });
+  }
 
+  // --- Generic part header binding
+  function bindPart(partName: keyof State) {
+    const section = document.querySelector<HTMLElement>(`.strudel-part[data-part="${partName}"]`);
+    if (!section) return;
+    const partState: any = state[partName];
+    const muteEl = section.querySelector<HTMLInputElement>('input[data-mute]');
+    const gainEl = section.querySelector<HTMLInputElement>('input[data-gain]');
+    if (muteEl) {
+      muteEl.checked = !!partState.enabled;
+      section.classList.toggle('is-muted', !partState.enabled);
+      muteEl.addEventListener('change', () => {
+        partState.enabled = muteEl.checked;
+        section.classList.toggle('is-muted', !muteEl.checked);
+        scheduleLiveApply();
+      });
+    }
+    if (gainEl) {
+      gainEl.value = String(partState.gain ?? 0.5);
+      gainEl.addEventListener('input', () => {
+        partState.gain = Number(gainEl.value);
+        scheduleLiveApply();
+      });
+    }
+  }
+
+  // --- Drums extras (bank)
+  function bindDrums() {
+    const bankSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="drums"] select[data-bank]');
+    if (bankSel) {
+      bankSel.value = state.drums.bank;
+      bankSel.addEventListener('change', () => { state.drums.bank = bankSel.value; scheduleLiveApply(); });
+    }
+  }
+  function bindChordsExtras() {
+    const soundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="chords"] select[data-sound]');
+    if (soundSel) {
+      soundSel.value = state.chords.sound;
+      soundSel.addEventListener('change', () => { state.chords.sound = soundSel.value; scheduleLiveApply(); });
+    }
+  }
+  function bindBass() {
+    const soundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="bass"] select[data-sound]');
+    const rhythmSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="bass"] select[data-rhythm]');
+    const followEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="bass"] input[data-follow]');
+    if (soundSel) { soundSel.value = state.bass.sound; soundSel.addEventListener('change', () => { state.bass.sound = soundSel.value; scheduleLiveApply(); }); }
+    if (rhythmSel) { rhythmSel.value = state.bass.rhythm; rhythmSel.addEventListener('change', () => { state.bass.rhythm = rhythmSel.value; scheduleLiveApply(); }); }
+    if (followEl) { followEl.checked = state.bass.follow; followEl.addEventListener('change', () => { state.bass.follow = followEl.checked; scheduleLiveApply(); }); }
+  }
+  function bindArpExtras() {
+    const soundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="arp"] select[data-sound]');
+    const speedSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="arp"] select[data-speed]');
+    const followEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="arp"] input[data-follow]');
+    if (soundSel) { soundSel.value = state.arp.sound; soundSel.addEventListener('change', () => { state.arp.sound = soundSel.value; scheduleLiveApply(); }); }
+    if (speedSel) { speedSel.value = String(state.arp.speed); speedSel.addEventListener('change', () => { state.arp.speed = Number(speedSel.value); scheduleLiveApply(); }); }
+    if (followEl) { followEl.checked = state.arp.follow; followEl.addEventListener('change', () => { state.arp.follow = followEl.checked; scheduleLiveApply(); }); }
+  }
+  function bindLeadExtras() {
+    const soundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="lead"] select[data-sound]');
+    if (soundSel) { soundSel.value = state.lead.sound; soundSel.addEventListener('change', () => { state.lead.sound = soundSel.value; scheduleLiveApply(); }); }
+    document.querySelectorAll<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-fx]').forEach((input) => {
+      const key = input.dataset.fx as keyof State['lead']['fx'];
+      input.checked = state.lead.fx[key];
+      input.addEventListener('change', () => { state.lead.fx[key] = input.checked; scheduleLiveApply(); });
+    });
+  }
+
+  // --- Sample drop
+  const sampleFileInput = document.getElementById('strudel-sample-file') as HTMLInputElement | null;
+  const sampleDrop = document.getElementById('strudel-drop') as HTMLElement | null;
+  const sampleDropLabel = document.getElementById('strudel-drop-label');
+  function loadDroppedSample(file: File) {
+    if (!file.type.startsWith('audio/')) { setStatus('audio file required'); return; }
+    if (state.sample.url) URL.revokeObjectURL(state.sample.url);
+    state.sample.url = URL.createObjectURL(file);
+    state.sample.name = (file.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18)) || 'drop';
+    state.sample.enabled = true;
+    if (sampleDropLabel) sampleDropLabel.textContent = file.name;
+    const muteEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="sample"] input[data-mute]');
+    if (muteEl) muteEl.checked = true;
+    document.querySelector<HTMLElement>('.strudel-part[data-part="sample"]')?.classList.remove('is-muted');
+    scheduleLiveApply();
+  }
+  sampleFileInput?.addEventListener('change', () => { const f = sampleFileInput.files?.[0]; if (f) loadDroppedSample(f); });
+  sampleDrop?.addEventListener('dragenter', (e) => { e.preventDefault(); sampleDrop.classList.add('is-dragging'); });
+  sampleDrop?.addEventListener('dragover', (e) => e.preventDefault());
+  sampleDrop?.addEventListener('dragleave', (e) => { if (!sampleDrop.contains(e.relatedTarget as Node | null)) sampleDrop.classList.remove('is-dragging'); });
+  sampleDrop?.addEventListener('drop', (e) => {
+    e.preventDefault(); sampleDrop.classList.remove('is-dragging');
+    const f = e.dataTransfer?.files?.[0]; if (f) loadDroppedSample(f);
+  });
+
+  // --- Transport bindings
+  const bpmEl = document.getElementById('strudel-bpm') as HTMLInputElement | null;
+  const bpmOut = document.getElementById('strudel-bpm-out');
+  const masterEl = document.getElementById('strudel-master') as HTMLInputElement | null;
+  const masterOut = document.getElementById('strudel-master-out');
+  const keySel = document.getElementById('strudel-key') as HTMLSelectElement | null;
+  const scaleSel = document.getElementById('strudel-scale') as HTMLSelectElement | null;
+
+  if (bpmEl && bpmOut) {
+    bpmEl.value = String(state.bpm); bpmOut.textContent = String(state.bpm);
+    bpmEl.addEventListener('input', () => { state.bpm = Number(bpmEl.value); bpmOut.textContent = bpmEl.value; scheduleLiveApply(); });
+  }
+  if (masterEl && masterOut) {
+    masterEl.value = String(state.master); masterOut.textContent = state.master.toFixed(2);
+    masterEl.addEventListener('input', () => { state.master = Number(masterEl.value); masterOut.textContent = state.master.toFixed(2); scheduleLiveApply(); });
+  }
+  if (keySel) {
+    keySel.value = state.key;
+    keySel.addEventListener('change', () => { state.key = keySel.value; renderChords(); scheduleLiveApply(); });
+  }
+  if (scaleSel) {
+    scaleSel.value = state.scale;
+    scaleSel.addEventListener('change', () => { state.scale = scaleSel.value; renderChords(); scheduleLiveApply(); });
+  }
+
+  // --- Presets
+  document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.preset as keyof typeof presets;
+      const preset = presets[key];
+      if (!preset) return;
+      state = { ...clone(initialState), ...clone(preset) } as State;
+      renderAll();
+      scheduleLiveApply();
+    });
+  });
+
+  // --- Reset
+  const resetBtn = document.getElementById('strudel-reset') as HTMLButtonElement | null;
+  resetBtn?.addEventListener('click', () => {
+    if (state.sample.url) URL.revokeObjectURL(state.sample.url);
+    state = clone(initialState);
+    try { window.localStorage.removeItem('strudel-state-v2'); } catch (e) {}
+    renderAll();
+    scheduleLiveApply();
+  });
+  const aboutDialog = document.getElementById('strudel-about') as HTMLDialogElement | null;
+  document.getElementById('strudel-info')?.addEventListener('click', () => aboutDialog?.showModal());
+  aboutDialog?.addEventListener('click', (e) => { if (e.target === aboutDialog) aboutDialog.close(); });
+
+  function renderAll() {
+    if (bpmEl && bpmOut) { bpmEl.value = String(state.bpm); bpmOut.textContent = String(state.bpm); }
+    if (masterEl && masterOut) { masterEl.value = String(state.master); masterOut.textContent = state.master.toFixed(2); }
+    if (keySel) keySel.value = state.key;
+    if (scaleSel) scaleSel.value = state.scale;
+    renderDrumGrid();
+    renderChords();
+    renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply);
+    renderRoll(document.getElementById('strudel-lead-roll'), state.lead.cells, LEAD_STEPS, scheduleLiveApply);
+    (['drums', 'chords', 'bass', 'arp', 'lead', 'sample'] as const).forEach((p) => {
+      bindPart(p);
+      const section = document.querySelector<HTMLElement>(`.strudel-part[data-part="${p}"]`);
+      const muteEl = section?.querySelector<HTMLInputElement>('input[data-mute]');
+      const gainEl = section?.querySelector<HTMLInputElement>('input[data-gain]');
+      const ps: any = state[p];
+      if (muteEl) muteEl.checked = !!ps.enabled;
+      if (gainEl) gainEl.value = String(ps.gain ?? 0.5);
+      section?.classList.toggle('is-muted', !ps.enabled);
+    });
+    bindDrums();
+    bindChordsExtras();
+    bindBass();
+    bindArpExtras();
+    bindLeadExtras();
+  }
+
+  // initial bindings
+  (['drums', 'chords', 'bass', 'arp', 'lead', 'sample'] as const).forEach(bindPart);
+  bindDrums();
+  bindChordsExtras();
+  bindBass();
+  bindArpExtras();
+  bindLeadExtras();
   renderDrumGrid();
-  renderArpGrid();
-  renderChordGrid();
-  syncHighlight();
-  codeEl?.addEventListener('input', syncHighlight);
-  codeEl?.addEventListener('scroll', syncHighlight);
-  window.addEventListener('pointerup', () => {
-    isPaintingSteps = false;
-  });
-  drumApply?.addEventListener('click', () => appendCodeLayer(drumCodeFromGrid(), 'Drums'));
-  drumClear?.addEventListener('click', () => {
-    drumGrid?.querySelectorAll<HTMLButtonElement>('button').forEach((button) => setStepState(button, false));
-    setStatus('Cleared drum grid.');
-  });
-  arpApply?.addEventListener('click', () => appendCodeLayer(arpCodeFromGrid(), 'Arp'));
-  arpClear?.addEventListener('click', () => {
-    arpGrid?.querySelectorAll<HTMLButtonElement>('button').forEach((button) => setStepState(button, false));
-    setStatus('Cleared arp grid.');
-  });
-  chordApply?.addEventListener('click', () => appendCodeLayer(chordCodeFromPanel(), 'Chords'));
-  leadApply?.addEventListener('click', () => appendCodeLayer(leadCode(), 'Lead'));
-  bassApply?.addEventListener('click', () => appendCodeLayer(bassCode(), 'Bass'));
-  resetButton?.addEventListener('click', resetEditor);
-  infoButton?.addEventListener('click', () => aboutDialog?.showModal());
-  aboutDialog?.addEventListener('click', (event) => {
-    if (event.target === aboutDialog) aboutDialog.close();
-  });
-  runButton?.addEventListener('click', runPattern);
-  stopButton?.addEventListener('click', stopPattern);
-  document.querySelectorAll<HTMLButtonElement>('[data-lead-effect]').forEach((button) => {
-    button.addEventListener('click', () => {
-      if (!button.dataset.leadEffect) return;
-      leadEffect = button.dataset.leadEffect;
-    });
-  });
-  document.querySelectorAll<HTMLButtonElement>('[data-bass-pattern]').forEach((button) => {
-    button.addEventListener('click', () => {
-      if (!button.dataset.bassPattern) return;
-      bassPattern = button.dataset.bassPattern;
-    });
-  });
-  sampleFileInput?.addEventListener('change', () => {
-    const file = sampleFileInput.files?.[0];
-    if (file) loadDroppedSample(file);
-  });
-  sampleDrop?.addEventListener('dragenter', (event) => {
-    event.preventDefault();
-    sampleDrop.classList.add('is-dragging');
-  });
-  sampleDrop?.addEventListener('dragover', (event) => {
-    event.preventDefault();
-  });
-  sampleDrop?.addEventListener('dragleave', (event) => {
-    if (!sampleDrop.contains(event.relatedTarget as Node | null)) sampleDrop.classList.remove('is-dragging');
-  });
-  sampleDrop?.addEventListener('drop', (event) => {
-    event.preventDefault();
-    sampleDrop.classList.remove('is-dragging');
-    const file = event.dataTransfer?.files?.[0];
-    if (file) loadDroppedSample(file);
-  });
+  renderChords();
+  renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply);
+  renderRoll(document.getElementById('strudel-lead-roll'), state.lead.cells, LEAD_STEPS, scheduleLiveApply);
 </script>
