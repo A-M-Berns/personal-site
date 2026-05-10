@@ -116,20 +116,10 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
             </button>
           </div>
           <div class="strudel-transport-grid">
-            <label class="strudel-knob">
+           <div class="strudel-transport-row strudel-transport-row--meta">
+            <label class="strudel-knob strudel-knob--num">
               <span>bpm</span>
-              <input id="strudel-bpm" type="range" min="60" max="180" step="1" value="110" />
-              <output id="strudel-bpm-out">110</output>
-            </label>
-            <label class="strudel-knob">
-              <span>vol</span>
-              <input id="strudel-master" type="range" min="0" max="1" step="0.01" value="0.85" />
-              <output id="strudel-master-out">0.85</output>
-            </label>
-            <label class="strudel-knob">
-              <span>swing</span>
-              <input id="strudel-swing" type="range" min="0" max="0.5" step="0.01" value="0" />
-              <output id="strudel-swing-out">0</output>
+              <input id="strudel-bpm" type="number" min="40" max="220" step="1" value="110" />
             </label>
             <label class="strudel-knob strudel-knob--key">
               <span>key</span>
@@ -151,13 +141,44 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
             <label class="strudel-knob strudel-knob--key">
               <span>scale</span>
               <select id="strudel-scale">
-                <option value="minor">minor</option>
-                <option value="major">major</option>
-                <option value="dorian">dorian</option>
-                <option value="mixolydian">mixolydian</option>
-                <option value="harmonic minor">harmonic minor</option>
+                <optgroup label="modes">
+                  <option value="major">major (ionian)</option>
+                  <option value="dorian">dorian</option>
+                  <option value="phrygian">phrygian</option>
+                  <option value="lydian">lydian</option>
+                  <option value="mixolydian">mixolydian</option>
+                  <option value="minor">minor (aeolian)</option>
+                  <option value="locrian">locrian</option>
+                </optgroup>
+                <optgroup label="minor variants">
+                  <option value="harmonic minor">harmonic minor</option>
+                  <option value="melodic minor">melodic minor</option>
+                </optgroup>
+                <optgroup label="pentatonic / blues">
+                  <option value="major pentatonic">major pentatonic</option>
+                  <option value="minor pentatonic">minor pentatonic</option>
+                  <option value="blues">blues</option>
+                </optgroup>
+                <optgroup label="exotic">
+                  <option value="phrygian dominant">phrygian dominant</option>
+                  <option value="hungarian minor">hungarian minor</option>
+                  <option value="whole tone">whole tone</option>
+                </optgroup>
               </select>
             </label>
+           </div>
+           <div class="strudel-transport-row strudel-transport-row--sliders">
+            <label class="strudel-knob">
+              <span>vol</span>
+              <input id="strudel-master" type="range" min="0" max="1" step="0.01" value="0.85" />
+              <output id="strudel-master-out">0.85</output>
+            </label>
+            <label class="strudel-knob">
+              <span>swing</span>
+              <input id="strudel-swing" type="range" min="0" max="0.5" step="0.01" value="0" />
+              <output id="strudel-swing-out">0</output>
+            </label>
+           </div>
           </div>
           <div class="strudel-presets">
             <button type="button" data-preset="lofi">lo-fi</button>
@@ -191,7 +212,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
             <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
-            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><label class="fx-knob fx-knob--small"><span>every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label><label class="fx-knob fx-knob--small"><span>do</span><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select></label><label class="fx-knob fx-knob--small fx-knob--struct"><span>struct</span><input type="text" data-fx-struct placeholder="x ~ x x" spellcheck="false" /></label><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><div class="fx-every-group"><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select><span class="fx-every-label">every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div><div class="fx-struct"><span class="fx-struct-label">struct</span><div class="fx-struct-grid" data-fx-struct-grid></div><button type="button" class="fx-struct-clear" data-fx-struct-clear title="Clear struct">×</button></div><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
           </div>
         </section>
 
@@ -226,7 +247,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
               <option value="<i u>">i↔u</option>
             </select></label>
             <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
-            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><label class="fx-knob fx-knob--small"><span>every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label><label class="fx-knob fx-knob--small"><span>do</span><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select></label><label class="fx-knob fx-knob--small fx-knob--struct"><span>struct</span><input type="text" data-fx-struct placeholder="x ~ x x" spellcheck="false" /></label><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><div class="fx-every-group"><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select><span class="fx-every-label">every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div><div class="fx-struct"><span class="fx-struct-label">struct</span><div class="fx-struct-grid" data-fx-struct-grid></div><button type="button" class="fx-struct-clear" data-fx-struct-clear title="Clear struct">×</button></div><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
           </div>
         </section>
 
@@ -257,7 +278,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
             <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
-            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><label class="fx-knob fx-knob--small"><span>every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label><label class="fx-knob fx-knob--small"><span>do</span><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select></label><label class="fx-knob fx-knob--small fx-knob--struct"><span>struct</span><input type="text" data-fx-struct placeholder="x ~ x x" spellcheck="false" /></label><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><div class="fx-every-group"><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select><span class="fx-every-label">every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div><div class="fx-struct"><span class="fx-struct-label">struct</span><div class="fx-struct-grid" data-fx-struct-grid></div><button type="button" class="fx-struct-clear" data-fx-struct-clear title="Clear struct">×</button></div><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
           </div>
         </section>
 
@@ -287,7 +308,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
             <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
-            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><label class="fx-knob fx-knob--small"><span>every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label><label class="fx-knob fx-knob--small"><span>do</span><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select></label><label class="fx-knob fx-knob--small fx-knob--struct"><span>struct</span><input type="text" data-fx-struct placeholder="x ~ x x" spellcheck="false" /></label><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><div class="fx-every-group"><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select><span class="fx-every-label">every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div><div class="fx-struct"><span class="fx-struct-label">struct</span><div class="fx-struct-grid" data-fx-struct-grid></div><button type="button" class="fx-struct-clear" data-fx-struct-clear title="Clear struct">×</button></div><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
           </div>
         </section>
 
@@ -317,13 +338,13 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
             <label class="fx-knob"><span>attack</span><input type="range" min="0" max="2" step="0.05" data-attack /><output></output></label>
             <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
-            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><label class="fx-knob fx-knob--small"><span>every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label><label class="fx-knob fx-knob--small"><span>do</span><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select></label><label class="fx-knob fx-knob--small fx-knob--struct"><span>struct</span><input type="text" data-fx-struct placeholder="x ~ x x" spellcheck="false" /></label><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><div class="fx-every-group"><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select><span class="fx-every-label">every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div><div class="fx-struct"><span class="fx-struct-label">struct</span><div class="fx-struct-grid" data-fx-struct-grid></div><button type="button" class="fx-struct-clear" data-fx-struct-clear title="Clear struct">×</button></div><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
           </div>
         </section>
 
         <section class="strudel-part" data-part="sample">
           <header class="strudel-part-head">
-            <label class="strudel-mute"><input type="checkbox" data-mute /><span>drop sample</span></label>
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>sample</span></label>
             <div class="strudel-part-controls">
               <input type="range" min="0" max="1" step="0.01" data-gain />
             </div>
@@ -418,28 +439,52 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     flex-direction: column;
     gap: 0.6rem;
   }
-  /* Transport is a sticky panel docked to the top of the side pane.
-     Lives next to the parts column on the right; stays put while
-     parts scroll. */
+  /* Transport panel sits at the top of the side pane and scrolls
+     with the rest of the parts. */
   .strudel-transport {
-    position: sticky;
-    top: 0;
-    z-index: 4;
     display: flex;
     flex-direction: column;
     gap: 0.55rem;
     padding: 0.55rem 0.7rem;
     background: rgba(0, 0, 0, 0.92);
-    backdrop-filter: blur(4px);
     border: 1px solid var(--rule);
     border-radius: 3px;
   }
   .strudel-transport-actions { display: flex; gap: 0.4rem; }
   .strudel-transport-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .strudel-transport-row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.4rem 0.6rem;
     align-items: center;
+    gap: 0.45rem;
+  }
+  /* Row 1: bpm | key | scale */
+  .strudel-transport-row--meta {
+    grid-template-columns: minmax(5rem, auto) 1fr 1fr;
+  }
+  /* Row 2: vol | swing — equal halves */
+  .strudel-transport-row--sliders {
+    grid-template-columns: 1fr 1fr;
+  }
+  .strudel-knob--num {
+    grid-template-columns: auto 1fr;
+  }
+  .strudel-knob--num input[type="number"] {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    color: var(--ink);
+    padding: 0.2rem 0.3rem;
+    font: 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .strudel-knob--num input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
   }
   .strudel-knob {
     display: grid;
@@ -677,23 +722,74 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     gap: 0.25rem;
   }
   .strudel-fx-row .fx-knob--small select { padding: 0.18rem 0.3rem; font-size: 0.7rem; }
-  .strudel-fx-row .fx-knob--struct {
-    grid-template-columns: auto minmax(6rem, 1fr);
+  /* "every" cluster — [fn] every [N] inline */
+  .strudel-fx-row .fx-every-group {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
   }
-  .strudel-fx-row .fx-knob--struct input[type="text"] {
+  .strudel-fx-row .fx-every-group select {
+    padding: 0.18rem 0.3rem;
+    font-size: 0.7rem;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--rule);
-    border-radius: 2px;
+    border-radius: 3px;
     color: var(--ink);
-    padding: 0.2rem 0.35rem;
-    font: 0.7rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    width: 100%;
-    box-sizing: border-box;
   }
-  .strudel-fx-row .fx-knob--struct input[type="text"]:focus {
+  .strudel-fx-row .fx-every-label {
+    color: var(--muted);
+    text-transform: lowercase;
+    letter-spacing: 0;
+    font: 0.7rem/1 var(--font-lexend), var(--sans);
+  }
+  /* Visual struct = compact 16-cell rhythm strip below the fx row */
+  .strudel-fx-row .fx-struct {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-basis: 100%;
+  }
+  .strudel-fx-row .fx-struct-label {
+    color: var(--muted);
+    font: 0.7rem/1 var(--font-lexend), var(--sans);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    min-width: 3rem;
+  }
+  .strudel-fx-row .fx-struct-grid {
+    display: grid;
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+    gap: 1px;
+    flex: 1;
+    min-width: 0;
+  }
+  .strudel-fx-row :global(.fx-struct-cell) {
+    min-height: 0.95rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid color-mix(in srgb, var(--rule) 72%, transparent);
+    border-radius: 2px;
+    padding: 0;
+    cursor: pointer;
+  }
+  .strudel-fx-row :global(.fx-struct-cell:nth-child(4n+1)) {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--rule));
+  }
+  .strudel-fx-row :global(.fx-struct-cell.is-on) {
+    background: var(--accent);
     border-color: var(--accent);
-    outline: none;
   }
+  .strudel-fx-row .fx-struct-clear {
+    width: 1.2rem;
+    height: 1.2rem;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--muted);
+    border-radius: 2px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .strudel-fx-row .fx-struct-clear:hover { color: var(--accent); border-color: var(--accent); }
   .strudel-fx-row .fx-knob output {
     color: var(--ink);
     font-variant-numeric: tabular-nums;
@@ -1040,12 +1136,25 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
 
   // ===== Music helpers =====
   const NOTE_NAMES = ['c', 'db', 'd', 'eb', 'e', 'f', 'gb', 'g', 'ab', 'a', 'bb', 'b'];
+  // Intervals (semitones from root) for each scale. Heptatonic modes
+  // first, then pentatonic/blues, then exotic. Used for arp/lead
+  // pitch-row labelling and degree-to-MIDI conversion.
   const SCALES: Record<string, number[]> = {
-    minor: [0, 2, 3, 5, 7, 8, 10],
-    major: [0, 2, 4, 5, 7, 9, 11],
-    dorian: [0, 2, 3, 5, 7, 9, 10],
-    mixolydian: [0, 2, 4, 5, 7, 9, 10],
-    'harmonic minor': [0, 2, 3, 5, 7, 8, 11],
+    major:              [0, 2, 4, 5, 7, 9, 11],
+    dorian:             [0, 2, 3, 5, 7, 9, 10],
+    phrygian:           [0, 1, 3, 5, 7, 8, 10],
+    lydian:             [0, 2, 4, 6, 7, 9, 11],
+    mixolydian:         [0, 2, 4, 5, 7, 9, 10],
+    minor:              [0, 2, 3, 5, 7, 8, 10],
+    locrian:            [0, 1, 3, 5, 6, 8, 10],
+    'harmonic minor':   [0, 2, 3, 5, 7, 8, 11],
+    'melodic minor':    [0, 2, 3, 5, 7, 9, 11],
+    'major pentatonic': [0, 2, 4, 7, 9],
+    'minor pentatonic': [0, 3, 5, 7, 10],
+    blues:              [0, 3, 5, 6, 7, 10],
+    'phrygian dominant':[0, 1, 4, 5, 7, 8, 10],
+    'hungarian minor':  [0, 2, 3, 6, 7, 8, 11],
+    'whole tone':       [0, 2, 4, 6, 8, 10],
   };
   const QUALITY_INTERVALS: Record<Quality, number[]> = {
     maj: [0, 4, 7],
@@ -1295,8 +1404,10 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     }
 
     // struct — overlay a rhythmic mask. Useful for chord pulses, lead
-    // syncopation, etc. We strip embedded quotes defensively.
-    if (fx.struct.trim()) out += `\n  .struct("${fx.struct.replace(/"/g, '')}")`;
+    // syncopation, etc. We strip embedded quotes defensively, and use
+    // optional chaining so an undefined struct (older state) doesn't
+    // throw and kill the whole code generation.
+    if (fx.struct?.trim()) out += `\n  .struct("${fx.struct.replace(/"/g, '')}")`;
 
     if (fx.everyN && fx.everyFn) {
       const n = fx.everyN;
@@ -2033,7 +2144,8 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
       const modSel = section.querySelector<HTMLSelectElement>('select[data-fx-mod]');
       const modTargetSel = section.querySelector<HTMLSelectElement>('select[data-fx-mod-target]');
       const plySel = section.querySelector<HTMLSelectElement>('select[data-fx-ply]');
-      const structEl = section.querySelector<HTMLInputElement>('input[data-fx-struct]');
+      const structGridEl = section.querySelector<HTMLElement>('[data-fx-struct-grid]');
+      const structClearEl = section.querySelector<HTMLButtonElement>('[data-fx-struct-clear]');
       const superSel = section.querySelector<HTMLSelectElement>('select[data-fx-superimpose]');
       const getFx = () => ((state[part] as any).fx as PartFx | undefined);
       if (lpfEl) {
@@ -2105,11 +2217,37 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
           fx.modTarget = modTargetSel.value as ModTarget; scheduleLiveApply();
         });
       }
-      if (structEl) {
-        structEl.addEventListener('input', () => {
-          const fx = getFx(); if (!fx) return;
-          fx.struct = structEl.value; scheduleLiveApply();
-        });
+      if (structGridEl) {
+        // 16-cell rhythm strip. Cells are 'x' (active) or '~' (rest).
+        // The fx.struct string is built from the cells; empty string
+        // when all rests so applyFx emits nothing.
+        const cells: boolean[] = new Array(16).fill(false);
+        const seed = (getFx()?.struct ?? '').split(/\s+/).filter(Boolean);
+        seed.slice(0, 16).forEach((t, i) => { cells[i] = t !== '~'; });
+        for (let i = 0; i < 16; i++) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'fx-struct-cell' + (cells[i] ? ' is-on' : '');
+          btn.dataset.cell = String(i);
+          btn.addEventListener('click', () => {
+            const fx = getFx(); if (!fx) return;
+            cells[i] = !cells[i];
+            btn.classList.toggle('is-on', cells[i]);
+            const anyOn = cells.some(Boolean);
+            fx.struct = anyOn ? cells.map((c) => (c ? 'x' : '~')).join(' ') : '';
+            scheduleLiveApply();
+          });
+          structGridEl.appendChild(btn);
+        }
+        if (structClearEl) {
+          structClearEl.addEventListener('click', () => {
+            const fx = getFx(); if (!fx) return;
+            cells.fill(false);
+            structGridEl.querySelectorAll<HTMLElement>('.fx-struct-cell').forEach((el) => el.classList.remove('is-on'));
+            fx.struct = '';
+            scheduleLiveApply();
+          });
+        }
       }
       if (superSel) {
         superSel.addEventListener('change', () => {
@@ -2147,7 +2285,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
 
   // --- Transport bindings
   const bpmEl = document.getElementById('strudel-bpm') as HTMLInputElement | null;
-  const bpmOut = document.getElementById('strudel-bpm-out');
   const masterEl = document.getElementById('strudel-master') as HTMLInputElement | null;
   const masterOut = document.getElementById('strudel-master-out');
   const keySel = document.getElementById('strudel-key') as HTMLSelectElement | null;
@@ -2156,9 +2293,15 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
   const swingOut = document.getElementById('strudel-swing-out');
   const shareBtn = document.getElementById('strudel-share') as HTMLButtonElement | null;
 
-  if (bpmEl && bpmOut) {
-    bpmEl.value = String(state.bpm); bpmOut.textContent = String(state.bpm);
-    bpmEl.addEventListener('input', () => { state.bpm = Number(bpmEl.value); bpmOut.textContent = bpmEl.value; scheduleLiveApply(); });
+  if (bpmEl) {
+    bpmEl.value = String(state.bpm);
+    bpmEl.addEventListener('input', () => {
+      const v = Number(bpmEl.value);
+      if (!Number.isNaN(v) && v > 0) {
+        state.bpm = v;
+        scheduleLiveApply();
+      }
+    });
   }
   if (masterEl && masterOut) {
     masterEl.value = String(state.master); masterOut.textContent = state.master.toFixed(2);
@@ -2283,7 +2426,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
   aboutDialog?.addEventListener('click', (e) => { if (e.target === aboutDialog) aboutDialog.close(); });
 
   function syncAllInputs() {
-    if (bpmEl && bpmOut) { bpmEl.value = String(state.bpm); bpmOut.textContent = String(state.bpm); }
+    if (bpmEl) bpmEl.value = String(state.bpm);
     if (masterEl && masterOut) { masterEl.value = String(state.master); masterOut.textContent = state.master.toFixed(2); }
     if (swingEl && swingOut) { swingEl.value = String(state.swing); swingOut.textContent = state.swing.toFixed(2); }
     if (keySel) keySel.value = state.key;
@@ -2340,8 +2483,14 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
         if (modTargetSel) modTargetSel.value = ps.fx.modTarget || 'lpf';
         const plySel = section?.querySelector<HTMLSelectElement>('select[data-fx-ply]');
         if (plySel) plySel.value = String(ps.fx.ply || 1);
-        const structEl = section?.querySelector<HTMLInputElement>('input[data-fx-struct]');
-        if (structEl) structEl.value = ps.fx.struct || '';
+        // Refresh the visual struct grid from current fx.struct.
+        const structGridEl = section?.querySelector<HTMLElement>('[data-fx-struct-grid]');
+        if (structGridEl) {
+          const tokens = (ps.fx.struct || '').split(/\s+/).filter(Boolean);
+          structGridEl.querySelectorAll<HTMLElement>('.fx-struct-cell').forEach((cell, i) => {
+            cell.classList.toggle('is-on', tokens[i] === 'x');
+          });
+        }
         const superSel = section?.querySelector<HTMLSelectElement>('select[data-fx-superimpose]');
         if (superSel) superSel.value = ps.fx.superimpose || '';
       }
