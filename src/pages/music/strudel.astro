@@ -92,62 +92,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
 ---
 <Base title="Strudel — A. M. Berns" description="A small Strudel live-coding workspace.">
   <div class="strudel-shell">
-    <header class="strudel-transport" aria-label="Transport">
-      <div class="strudel-transport-actions">
-        <button id="strudel-run" type="button" data-state="idle">Run</button>
-        <button id="strudel-stop" type="button">Stop</button>
-      </div>
-      <label class="strudel-knob">
-        <span>bpm</span>
-        <input id="strudel-bpm" type="range" min="60" max="180" step="1" value="110" />
-        <output id="strudel-bpm-out">110</output>
-      </label>
-      <label class="strudel-knob">
-        <span>master</span>
-        <input id="strudel-master" type="range" min="0" max="1" step="0.01" value="0.85" />
-        <output id="strudel-master-out">0.85</output>
-      </label>
-      <label class="strudel-knob strudel-knob--key">
-        <span>key</span>
-        <select id="strudel-key">
-          <option value="c">C</option>
-          <option value="db">C♯ / D♭</option>
-          <option value="d">D</option>
-          <option value="eb">D♯ / E♭</option>
-          <option value="e">E</option>
-          <option value="f">F</option>
-          <option value="gb">F♯ / G♭</option>
-          <option value="g">G</option>
-          <option value="ab">G♯ / A♭</option>
-          <option value="a">A</option>
-          <option value="bb">A♯ / B♭</option>
-          <option value="b">B</option>
-        </select>
-      </label>
-      <label class="strudel-knob strudel-knob--key">
-        <span>scale</span>
-        <select id="strudel-scale">
-          <option value="minor">minor</option>
-          <option value="major">major</option>
-          <option value="dorian">dorian</option>
-          <option value="mixolydian">mixolydian</option>
-          <option value="harmonic minor">harmonic minor</option>
-        </select>
-      </label>
-      <label class="strudel-knob">
-        <span>swing</span>
-        <input id="strudel-swing" type="range" min="0" max="0.5" step="0.01" value="0" />
-        <output id="strudel-swing-out">0</output>
-      </label>
-      <div class="strudel-presets">
-        <button type="button" data-preset="lofi">lo-fi</button>
-        <button type="button" data-preset="techno">techno</button>
-        <button type="button" data-preset="ambient">ambient</button>
-        <button type="button" data-preset="empty">clear</button>
-        <button id="strudel-share" type="button" title="Copy a link with this patch">share</button>
-      </div>
-    </header>
-
     <main class="strudel-workspace" aria-label="Strudel workspace">
       <section class="strudel-editor-pane">
         <div class="strudel-pane-head">
@@ -158,6 +102,69 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
       </section>
 
       <aside class="strudel-side-pane">
+        <aside class="strudel-transport" aria-label="Transport">
+          <div class="strudel-transport-actions">
+            <button id="strudel-run" type="button" data-state="idle" aria-label="Play / pause">
+              <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6,4 6,20 20,12"/></svg>
+              <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <button id="strudel-stop" type="button" aria-label="Stop">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14"/></svg>
+            </button>
+          </div>
+          <div class="strudel-transport-grid">
+            <label class="strudel-knob">
+              <span>bpm</span>
+              <input id="strudel-bpm" type="range" min="60" max="180" step="1" value="110" />
+              <output id="strudel-bpm-out">110</output>
+            </label>
+            <label class="strudel-knob">
+              <span>vol</span>
+              <input id="strudel-master" type="range" min="0" max="1" step="0.01" value="0.85" />
+              <output id="strudel-master-out">0.85</output>
+            </label>
+            <label class="strudel-knob">
+              <span>swing</span>
+              <input id="strudel-swing" type="range" min="0" max="0.5" step="0.01" value="0" />
+              <output id="strudel-swing-out">0</output>
+            </label>
+            <label class="strudel-knob strudel-knob--key">
+              <span>key</span>
+              <select id="strudel-key">
+                <option value="c">C</option>
+                <option value="db">C♯ / D♭</option>
+                <option value="d">D</option>
+                <option value="eb">D♯ / E♭</option>
+                <option value="e">E</option>
+                <option value="f">F</option>
+                <option value="gb">F♯ / G♭</option>
+                <option value="g">G</option>
+                <option value="ab">G♯ / A♭</option>
+                <option value="a">A</option>
+                <option value="bb">A♯ / B♭</option>
+                <option value="b">B</option>
+              </select>
+            </label>
+            <label class="strudel-knob strudel-knob--key">
+              <span>scale</span>
+              <select id="strudel-scale">
+                <option value="minor">minor</option>
+                <option value="major">major</option>
+                <option value="dorian">dorian</option>
+                <option value="mixolydian">mixolydian</option>
+                <option value="harmonic minor">harmonic minor</option>
+              </select>
+            </label>
+          </div>
+          <div class="strudel-presets">
+            <button type="button" data-preset="lofi">lo-fi</button>
+            <button type="button" data-preset="techno">techno</button>
+            <button type="button" data-preset="ambient">ambient</button>
+            <button type="button" data-preset="empty">clear</button>
+            <button id="strudel-share" type="button" title="Copy a link with this patch">share</button>
+          </div>
+        </aside>
+
         <section class="strudel-part" data-part="drums">
           <header class="strudel-part-head">
             <label class="strudel-mute"><input type="checkbox" data-mute /><span>drums</span></label>
@@ -181,7 +188,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
             <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
-            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><label class="fx-knob fx-knob--small"><span>every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label><label class="fx-knob fx-knob--small"><span>do</span><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select></label>
           </div>
         </section>
 
@@ -216,7 +223,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
               <option value="<i u>">i↔u</option>
             </select></label>
             <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
-            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><label class="fx-knob fx-knob--small"><span>every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label><label class="fx-knob fx-knob--small"><span>do</span><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select></label>
           </div>
         </section>
 
@@ -247,7 +254,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
             <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
-            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><label class="fx-knob fx-knob--small"><span>every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label><label class="fx-knob fx-knob--small"><span>do</span><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select></label>
           </div>
         </section>
 
@@ -277,7 +284,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
             <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
-            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><label class="fx-knob fx-knob--small"><span>every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label><label class="fx-knob fx-knob--small"><span>do</span><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select></label>
           </div>
         </section>
 
@@ -301,13 +308,13 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
             <label><input type="checkbox" data-effect="jux" /><span>jux</span></label>
             <label><input type="checkbox" data-effect="ghost" /><span>ghost</span></label>
             <label><input type="checkbox" data-effect="shape" /><span>shape</span></label>
-            <label class="fx-knob fx-knob--inline"><span>attack</span><input type="range" min="0" max="2" step="0.05" data-attack /><output></output></label>
           </div>
           <div id="strudel-lead-roll" class="strudel-piano-roll" aria-label="Lead piano roll"></div>
           <div class="strudel-fx-row">
             <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>attack</span><input type="range" min="0" max="2" step="0.05" data-attack /><output></output></label>
             <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
-            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><select data-fx-every><option value="">—</option><option value="4fast">×2 every 4</option><option value="8jux">jux every 8</option><option value="4rev">rev every 4</option><option value="8slow">½× every 8</option></select>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><label class="fx-knob fx-knob--small"><span>every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></label><label class="fx-knob fx-knob--small"><span>do</span><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select></label>
           </div>
         </section>
 
@@ -408,24 +415,36 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     flex-direction: column;
     gap: 0.6rem;
   }
+  /* Transport is a sticky panel docked to the top of the side pane.
+     Lives next to the parts column on the right; stays put while
+     parts scroll. */
   .strudel-transport {
+    position: sticky;
+    top: 0;
+    z-index: 4;
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.85rem;
-    padding: 0.55rem 0.85rem;
-    background: #000;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 0.55rem 0.7rem;
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(4px);
     border: 1px solid var(--rule);
     border-radius: 3px;
   }
   .strudel-transport-actions { display: flex; gap: 0.4rem; }
+  .strudel-transport-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem 0.6rem;
+    align-items: center;
+  }
   .strudel-knob {
     display: grid;
-    grid-template-columns: auto 7rem auto;
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    gap: 0.45rem;
+    gap: 0.35rem;
     color: var(--muted);
-    font: 0.7rem/1 var(--font-lexend), var(--sans);
+    font: 0.65rem/1 var(--font-lexend), var(--sans);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -434,14 +453,37 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     font-variant-numeric: tabular-nums;
     color: var(--ink);
     text-align: right;
-    min-width: 2.4rem;
+    min-width: 2rem;
+    cursor: text;
   }
   .strudel-knob input[type="range"] { accent-color: var(--accent); width: 100%; }
-  .strudel-presets { margin-left: auto; display: flex; gap: 0.4rem; }
-  .strudel-presets button,
-  .strudel-transport-actions button {
+  .strudel-knob output:hover {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+  /* Inline editor that appears when an output is clicked. */
+  :global(input.strudel-output-input) {
+    width: 3rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--accent);
+    border-radius: 2px;
+    color: var(--ink);
+    padding: 0 0.25rem;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  :global(input.strudel-output-input:focus) { outline: none; }
+  .strudel-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+  .strudel-presets button {
     font-family: var(--font-lexend), var(--sans);
-    font-size: 0.72rem;
+    font-size: 0.65rem;
     font-weight: 650;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -449,18 +491,41 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid var(--rule);
     border-radius: 3px;
-    padding: 0.35rem 0.65rem;
+    padding: 0.3rem 0.5rem;
     cursor: pointer;
   }
-  .strudel-transport-actions button[data-state="running"] {
+  .strudel-presets button:hover {
     color: var(--accent);
     border-color: var(--accent);
   }
-  .strudel-presets button:hover,
+  .strudel-transport-actions button {
+    width: 2.1rem;
+    height: 2.1rem;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    cursor: pointer;
+  }
   .strudel-transport-actions button:hover {
     color: var(--accent);
     border-color: var(--accent);
   }
+  .strudel-transport-actions button svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: currentColor;
+  }
+  .strudel-transport-actions #strudel-run .icon-pause { display: none; }
+  .strudel-transport-actions #strudel-run[data-state="running"] {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .strudel-transport-actions #strudel-run[data-state="running"] .icon-play { display: none; }
+  .strudel-transport-actions #strudel-run[data-state="running"] .icon-pause { display: block; }
   .strudel-status {
     color: var(--muted);
     font-size: 0.72rem;
@@ -591,6 +656,13 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     font-variant-numeric: tabular-nums;
     min-width: 2.4rem;
     text-align: right;
+    cursor: text;
+  }
+  .strudel-fx-row .fx-knob output:hover {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
   }
   .strudel-fx-row .fx-toggle {
     display: inline-flex;
@@ -872,17 +944,23 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
   // canonical filter-sweep idiom from the strudel workshop.
   type FilterMod = '' | 'sine-slow' | 'sine-fast' | 'saw' | 'tri' | 'square' | 'rand' | 'perlin';
 
+  // .every(n, fn) — apply transform every n cycles. Split into two
+  // selects so they read more like the strudel function.
+  type EveryN = '' | '2' | '4' | '8';
+  type EveryFn = '' | 'fast2' | 'slow2' | 'rev' | 'jux' | 'chop';
+
   interface PartFx {
     lpf: number;
     hpf: number;
     drop: number;
-    every: string;
+    everyN: EveryN;
+    everyFn: EveryFn;
     pan: number;
     crush: number;
     mod: FilterMod;   // signal-modulated filter cutoff
     ply: number;      // repeat each step n times (1 = off)
   }
-  const defaultFx = (): PartFx => ({ lpf: 8000, hpf: 0, drop: 0, every: '', pan: 0.5, crush: 0, mod: '', ply: 1 });
+  const defaultFx = (): PartFx => ({ lpf: 8000, hpf: 0, drop: 0, everyN: '', everyFn: '', pan: 0.5, crush: 0, mod: '', ply: 1 });
 
   interface MidiNote { pitch: number; start: number; length: number; }
 
@@ -1055,6 +1133,25 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     }
     return saved;
   }
+  // Convert the old single 'every' code (e.g. '4fast', '8jux') into
+  // the new pair (everyN, everyFn). Drops the old key.
+  function migrateFx(fx: any): any {
+    if (!fx || typeof fx !== 'object') return fx;
+    const out = { ...fx };
+    if (typeof out.every === 'string' && out.every) {
+      const m = out.every.match(/^(\d+)(\w+)$/);
+      if (m) {
+        const n = m[1] as EveryN;
+        const fnKey = m[2];
+        const map: Record<string, EveryFn> = { fast: 'fast2', slow: 'slow2', rev: 'rev', jux: 'jux', chop: 'chop' };
+        if (['2','4','8'].includes(n)) out.everyN = n;
+        if (map[fnKey]) out.everyFn = map[fnKey];
+      }
+      delete out.every;
+    }
+    delete out.vary;
+    return out;
+  }
   function mergeState(saved: any): State {
     const base = clone(initialState) as any;
     if (!saved || typeof saved !== 'object') return base;
@@ -1063,7 +1160,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
       if (saved[k] === undefined) continue;
       if (typeof base[k] === 'object' && base[k] !== null && !Array.isArray(base[k])) {
         base[k] = { ...base[k], ...saved[k] };
-        if (base[k].fx) base[k].fx = { ...defaultFx(), ...(saved[k].fx ?? {}) };
+        if (base[k].fx) base[k].fx = { ...defaultFx(), ...migrateFx(saved[k].fx ?? {}) };
         if (k === 'lead' && !Array.isArray(base[k].notes)) base[k].notes = clone(initialState.lead.notes);
       } else {
         base[k] = saved[k];
@@ -1127,10 +1224,19 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     if (fx.drop > 0) out += `\n  .degradeBy(${fx.drop.toFixed(2)})`;
     if (fx.crush > 0) out += `\n  .crush(${fx.crush})`;
     if (Math.abs(fx.pan - 0.5) > 0.001) out += `\n  .pan(${fx.pan.toFixed(2)})`;
-    if (fx.every === '4fast') out += `\n  .every(4, x => x.fast(2))`;
-    else if (fx.every === '8jux') out += `\n  .every(8, x => x.jux(rev))`;
-    else if (fx.every === '4rev') out += `\n  .every(4, rev)`;
-    else if (fx.every === '8slow') out += `\n  .every(8, x => x.slow(2))`;
+    if (fx.everyN && fx.everyFn) {
+      const n = fx.everyN;
+      const fn: Record<EveryFn, string> = {
+        '':       '',
+        fast2:    `x => x.fast(2)`,
+        slow2:    `x => x.slow(2)`,
+        rev:      `rev`,
+        jux:      `x => x.jux(rev)`,
+        chop:     `x => x.chop(2)`,
+      };
+      const expr = fn[fx.everyFn];
+      if (expr) out += `\n  .every(${n}, ${expr})`;
+    }
     return out;
   }
   // Slider value 0..1 → audible gain via a perceptual curve. Below the
@@ -1184,9 +1290,12 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
   function bassCode(): string | null {
     if (!state.bass.enabled || !isAudible(state.bass.gain)) return null;
     const slots = state.chords.slots;
+    // When follow is on, ride the chord roots; otherwise vamp on the
+    // current key root (used to be hard-coded to c2 — bug).
+    const fallback = `${state.key}2`;
     const roots = state.bass.follow && slots.length
       ? slots.map((s) => `${s.root}2`)
-      : ['c2', 'c2', 'c2', 'c2'];
+      : [fallback, fallback, fallback, fallback];
     let pattern = '';
     if (state.bass.rhythm === 'root') {
       pattern = roots.join(' ');
@@ -1416,7 +1525,9 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     } catch (e) {}
   }
 
-  runBtn?.addEventListener('click', run);
+  // Run button is a play/pause toggle (icon swaps via CSS based on
+  // data-state). Stop button always halts.
+  runBtn?.addEventListener('click', () => (isRunning ? stop() : run()));
   stopBtn?.addEventListener('click', stop);
 
   // ===== UI rendering =====
@@ -1769,7 +1880,8 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
       if (!section) return;
       const lpfEl = section.querySelector<HTMLInputElement>('input[data-fx-lpf]');
       const dropEl = section.querySelector<HTMLInputElement>('input[data-fx-drop]');
-      const everySel = section.querySelector<HTMLSelectElement>('select[data-fx-every]');
+      const everyNSel = section.querySelector<HTMLSelectElement>('select[data-fx-every-n]');
+      const everyFnSel = section.querySelector<HTMLSelectElement>('select[data-fx-every-fn]');
       const panEl = section.querySelector<HTMLInputElement>('input[data-fx-pan]');
       const crushEl = section.querySelector<HTMLInputElement>('input[data-fx-crush]');
       const modSel = section.querySelector<HTMLSelectElement>('select[data-fx-mod]');
@@ -1805,10 +1917,16 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
           fx.ply = Number(plySel.value); scheduleLiveApply();
         });
       }
-      if (everySel) {
-        everySel.addEventListener('change', () => {
+      if (everyNSel) {
+        everyNSel.addEventListener('change', () => {
           const fx = getFx(); if (!fx) return;
-          fx.every = everySel.value; scheduleLiveApply();
+          fx.everyN = everyNSel.value as EveryN; scheduleLiveApply();
+        });
+      }
+      if (everyFnSel) {
+        everyFnSel.addEventListener('change', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.everyFn = everyFnSel.value as EveryFn; scheduleLiveApply();
         });
       }
       if (panEl) {
@@ -1923,6 +2041,55 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     }
   });
 
+  // --- Click-to-enter for slider outputs.
+  // Anywhere we render <label><input type=range><output></output></label>,
+  // clicking the output swaps it for a text input so the user can type
+  // an exact value. Commit on Enter or blur, cancel on Escape.
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (!target || target.tagName !== 'OUTPUT') return;
+    if (target.dataset.editing === 'true') return;
+    const label = target.closest('label');
+    const slider = label?.querySelector<HTMLInputElement>('input[type="range"]');
+    if (!slider) return;
+
+    target.dataset.editing = 'true';
+    const original = target.textContent ?? '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.inputMode = 'decimal';
+    input.value = String(slider.value);
+    input.className = 'strudel-output-input';
+    const min = parseFloat(slider.min || '0');
+    const max = parseFloat(slider.max || '1');
+    const cleanup = () => {
+      target.dataset.editing = 'false';
+    };
+    const commit = () => {
+      const v = parseFloat(input.value);
+      if (!Number.isNaN(v)) {
+        const clamped = Math.max(min, Math.min(max, v));
+        slider.value = String(clamped);
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+      } else {
+        target.textContent = original;
+      }
+      cleanup();
+    };
+    const cancel = () => {
+      target.textContent = original;
+      cleanup();
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+      else if (ev.key === 'Escape') { ev.preventDefault(); input.removeEventListener('blur', commit); cancel(); input.blur(); }
+    });
+    target.replaceChildren(input);
+    input.focus();
+    input.select();
+  });
+
   // --- Presets
   document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -1996,8 +2163,10 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
           () => 'off',
           () => ps.fx.crush === 0 ? '' : `${ps.fx.crush}`,
         );
-        const everySel = section?.querySelector<HTMLSelectElement>('select[data-fx-every]');
-        if (everySel) everySel.value = ps.fx.every || '';
+        const everyNSel = section?.querySelector<HTMLSelectElement>('select[data-fx-every-n]');
+        const everyFnSel = section?.querySelector<HTMLSelectElement>('select[data-fx-every-fn]');
+        if (everyNSel) everyNSel.value = ps.fx.everyN || '';
+        if (everyFnSel) everyFnSel.value = ps.fx.everyFn || '';
         const modSel = section?.querySelector<HTMLSelectElement>('select[data-fx-mod]');
         if (modSel) modSel.value = ps.fx.mod || '';
         const plySel = section?.querySelector<HTMLSelectElement>('select[data-fx-ply]');
