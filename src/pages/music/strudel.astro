@@ -98,7 +98,10 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
           <h2>Pattern</h2>
           <div class="strudel-pane-head-right">
             <button id="strudel-regen" type="button" hidden title="Replace your edits with GUI-generated code">↻ regen from gui</button>
-            <span id="strudel-status" class="strudel-status" aria-live="polite"></span>
+            <button id="strudel-run" type="button" data-state="idle" aria-label="Play / stop">
+              <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6,4 6,20 20,12"/></svg>
+              <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14"/></svg>
+            </button>
           </div>
         </div>
         <div id="strudel-host" class="strudel-host"></div>
@@ -106,15 +109,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
 
       <aside class="strudel-side-pane">
         <aside class="strudel-transport" aria-label="Transport">
-          <div class="strudel-transport-actions">
-            <button id="strudel-run" type="button" data-state="idle" aria-label="Play / pause">
-              <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6,4 6,20 20,12"/></svg>
-              <svg class="icon-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-            </button>
-            <button id="strudel-stop" type="button" aria-label="Stop">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="5" width="14" height="14"/></svg>
-            </button>
-          </div>
           <div class="strudel-transport-grid">
            <div class="strudel-transport-row strudel-transport-row--meta">
             <label class="strudel-knob strudel-knob--num">
@@ -443,7 +437,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     border: 1px solid var(--rule);
     border-radius: 3px;
   }
-  .strudel-transport-actions { display: flex; gap: 0.4rem; }
   .strudel-transport-grid {
     display: flex;
     flex-direction: column;
@@ -526,9 +519,10 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     text-align: right;
   }
   :global(input.strudel-output-input:focus) { outline: none; }
-  .strudel-transport-actions button {
-    width: 2.1rem;
-    height: 2.1rem;
+  /* Play/stop transport button — lives in the pane head next to regen. */
+  #strudel-run {
+    width: 2rem;
+    height: 2rem;
     display: grid;
     place-items: center;
     padding: 0;
@@ -538,28 +532,22 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     border-radius: 3px;
     cursor: pointer;
   }
-  .strudel-transport-actions button:hover {
+  #strudel-run:hover {
     color: var(--accent);
     border-color: var(--accent);
   }
-  .strudel-transport-actions button svg {
-    width: 1.1rem;
-    height: 1.1rem;
+  #strudel-run svg {
+    width: 1rem;
+    height: 1rem;
     fill: currentColor;
   }
-  .strudel-transport-actions #strudel-run .icon-pause { display: none; }
-  .strudel-transport-actions #strudel-run[data-state="running"] {
+  #strudel-run .icon-stop { display: none; }
+  #strudel-run[data-state="running"] {
     color: var(--accent);
     border-color: var(--accent);
   }
-  .strudel-transport-actions #strudel-run[data-state="running"] .icon-play { display: none; }
-  .strudel-transport-actions #strudel-run[data-state="running"] .icon-pause { display: block; }
-  .strudel-status {
-    color: var(--muted);
-    font-size: 0.72rem;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-  }
+  #strudel-run[data-state="running"] .icon-play { display: none; }
+  #strudel-run[data-state="running"] .icon-stop { display: block; }
   .strudel-pane-head-right {
     display: flex;
     align-items: center;
@@ -1615,9 +1603,10 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
   let manualMode = false;
 
   const hostEl = document.getElementById('strudel-host');
-  const statusEl = document.getElementById('strudel-status');
+  // Status text was removed from the pane head; setStatus is a no-op
+  // sink so existing call sites don't have to be touched.
+  const statusEl: HTMLElement | null = null;
   const runBtn = document.getElementById('strudel-run') as HTMLButtonElement | null;
-  const stopBtn = document.getElementById('strudel-stop') as HTMLButtonElement | null;
   const regenBtn = document.getElementById('strudel-regen') as HTMLButtonElement | null;
 
   function setStatus(text: string) { if (statusEl) statusEl.textContent = text; }
@@ -1765,7 +1754,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
   // data-state). Stop button always halts.
   runBtn?.addEventListener('click', () => (isRunning ? stop() : run()));
   regenBtn?.addEventListener('click', regenFromGui);
-  stopBtn?.addEventListener('click', stop);
 
   // ===== UI rendering =====
   function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, any> = {}, ...children: (Node | string)[]) {
