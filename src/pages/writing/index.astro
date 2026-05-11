@@ -519,19 +519,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
       const idx = Math.min(palette.length - 1, Math.floor(t * (palette.length - 1) + 0.0001));
       return palette[idx];
     }
-    // Map a post-temperature probability to a palette stop. High
-    // probability (expected continuation) lands at the dim end; low
-    // probability (surprising pick) lands at the bright end. Uses
-    // -log(p) clamped to a useful range so the palette covers from
-    // "obvious" to "very surprising" rather than concentrating at one
-    // end.
-    const SURPRISAL_MAX = 6; // ~ p = 0.0025
-    function colorForSurprisal(prob) {
-      const s = Math.max(0, -Math.log(Math.max(1e-9, prob)));
-      const t = Math.min(1, s / SURPRISAL_MAX);
-      const idx = Math.min(palette.length - 1, Math.floor(t * (palette.length - 1) + 0.0001));
-      return palette[idx];
-    }
 
     // ---------- Backoff sampler ----------
     function backoffLookup(ctxArr) {
@@ -547,10 +534,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
       return null;
     }
 
-    // Returns { token, prob } where prob is the picked entry's
-    // post-temperature probability (i.e. the actual mass the sampler
-    // gave it after the temperature transform, not the raw corpus
-    // frequency). Used downstream for surprisal-based colouring.
     function sampleWeighted(entries) {
       let total = 0;
       for (let i = 0; i < entries.length; i++) total += entries[i][1];
@@ -565,10 +548,9 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
       let roll = rng() * weightSum;
       for (let i = 0; i < entries.length; i++) {
         roll -= weights[i];
-        if (roll <= 0) return { token: entries[i][0], prob: weights[i] / weightSum };
+        if (roll <= 0) return entries[i][0];
       }
-      const last = entries.length - 1;
-      return { token: entries[last][0], prob: weights[last] / weightSum };
+      return entries[entries.length - 1][0];
     }
 
     function violatesRepGuard(candidate) {
@@ -593,23 +575,23 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
         ctxTokens = [];
         for (let i = 0; i < MODEL_ORDER; i++) ctxTokens.push(START);
         look = backoffLookup(ctxTokens);
-        if (!look) return { token: END, order: 0, prob: 1 };
+        if (!look) return { token: END, order: 0 };
       }
-      let { token, prob } = sampleWeighted(look.entries);
+      let token = sampleWeighted(look.entries);
       // Repetition guard: try a couple of resamples, otherwise fall back
       // to a shorter context to escape a loop.
       if (violatesRepGuard(token)) {
         for (let tries = 0; tries < 3 && violatesRepGuard(token); tries++) {
-          ({ token, prob } = sampleWeighted(look.entries));
+          token = sampleWeighted(look.entries);
         }
         if (violatesRepGuard(token) && look.order > 1) {
           const shorter = backoffLookup(ctxTokens.slice(0, ctxTokens.length - 1));
-          if (shorter) { look = shorter; ({ token, prob } = sampleWeighted(shorter.entries)); }
+          if (shorter) { look = shorter; token = sampleWeighted(shorter.entries); }
         }
       }
       ctxTokens.push(token);
       if (ctxTokens.length > MODEL_ORDER) ctxTokens.shift();
-      return { token, order: look.order, prob };
+      return { token, order: look.order };
     }
 
     // ---------- Detokenization for display ----------
@@ -725,7 +707,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
           return;
         }
         const before = snapshotState();
-        const { token, order: orderUsed, prob } = nextToken();
+        const { token, order: orderUsed } = nextToken();
         const usedEl = document.getElementById('markov-used');
         if (usedEl) usedEl.textContent = String(orderUsed);
         totalTokens++;
@@ -750,7 +732,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
         // Open a breadcrumb so the click handler can rewind to the state
         // BEFORE this token was generated.
         activeCrumb = { before, rects: [], text: piece.text };
-        emitString(str, colorForSurprisal(prob));
+        emitString(str, colorForOrder(orderUsed));
         if (activeCrumb.rects.length) {
           crumbs.push(activeCrumb);
           if (crumbs.length > MAX_CRUMBS) crumbs.shift();
