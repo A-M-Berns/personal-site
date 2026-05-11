@@ -89,41 +89,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     ['gm_lead_8_bass_lead', 'bass lead'],
   ] },
 ];
-
-const drumBankOptions: [string, string][] = [
-  ['RolandTR909', '909'],
-  ['RolandTR808', '808'],
-  ['RolandTR707', '707'],
-  ['RolandTR606', '606'],
-  ['AlesisHR16', 'HR16'],
-  ['AkaiLinn', 'linn'],
-  ['ViscoSpaceDrum', 'visco'],
-  ['bossanova', 'bossa'],
-  ['casio', 'casio'],
-  ['', 'default'],
-];
-
-// Drum row palette — the full set of drum-machine sample names a user
-// might want in a row. Sample codes match strudel's tidal-drum-machines
-// naming. A drum part is rendered with a subset of these as rows; user
-// can add/remove rows from this palette.
-const drumRowPalette: { code: string; label: string; icon: string }[] = [
-  { code: 'bd',   label: 'kick',     icon: '●' },
-  { code: 'sd',   label: 'snare',    icon: '◐' },
-  { code: 'hh',   label: 'closed hat', icon: '✕' },
-  { code: 'oh',   label: 'open hat', icon: '○' },
-  { code: 'cp',   label: 'clap',     icon: '✦' },
-  { code: 'rim',  label: 'rim',      icon: '◇' },
-  { code: 'cy',   label: 'cymbal',   icon: '✻' },
-  { code: 'cr',   label: 'crash',    icon: '✺' },
-  { code: 'rd',   label: 'ride',     icon: '◑' },
-  { code: 'lt',   label: 'low tom',  icon: '◆' },
-  { code: 'mt',   label: 'mid tom',  icon: '◈' },
-  { code: 'ht',   label: 'high tom', icon: '◊' },
-  { code: 'sh',   label: 'shaker',   icon: '⋮' },
-  { code: 'perc', label: 'perc',     icon: '⌑' },
-  { code: 'cb',   label: 'cowbell',  icon: '▮' },
-];
 ---
 <Base title="Strudel — A. M. Berns" description="A small Strudel live-coding workspace.">
   <div class="strudel-shell">
@@ -151,87 +116,237 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
             </button>
           </div>
           <div class="strudel-transport-grid">
-            <div class="strudel-transport-row strudel-transport-row--meta">
-              <label class="strudel-knob strudel-knob--num">
-                <span>bpm</span>
-                <input id="strudel-bpm" type="number" min="40" max="220" step="1" value="110" />
-              </label>
-              <label class="strudel-knob strudel-knob--key">
-                <span>key</span>
-                <select id="strudel-key">
-                  <option value="c">C</option>
-                  <option value="db">C♯ / D♭</option>
-                  <option value="d">D</option>
-                  <option value="eb">D♯ / E♭</option>
-                  <option value="e">E</option>
-                  <option value="f">F</option>
-                  <option value="gb">F♯ / G♭</option>
-                  <option value="g">G</option>
-                  <option value="ab">G♯ / A♭</option>
-                  <option value="a">A</option>
-                  <option value="bb">A♯ / B♭</option>
-                  <option value="b">B</option>
-                </select>
-              </label>
-              <label class="strudel-knob strudel-knob--key">
-                <span>scale</span>
-                <select id="strudel-scale">
-                  <optgroup label="modes">
-                    <option value="major">major (ionian)</option>
-                    <option value="dorian">dorian</option>
-                    <option value="phrygian">phrygian</option>
-                    <option value="lydian">lydian</option>
-                    <option value="mixolydian">mixolydian</option>
-                    <option value="minor">minor (aeolian)</option>
-                    <option value="locrian">locrian</option>
-                  </optgroup>
-                  <optgroup label="minor variants">
-                    <option value="harmonic minor">harmonic minor</option>
-                    <option value="melodic minor">melodic minor</option>
-                  </optgroup>
-                  <optgroup label="pentatonic / blues">
-                    <option value="major pentatonic">major pentatonic</option>
-                    <option value="minor pentatonic">minor pentatonic</option>
-                    <option value="blues">blues</option>
-                  </optgroup>
-                  <optgroup label="exotic">
-                    <option value="phrygian dominant">phrygian dominant</option>
-                    <option value="hungarian minor">hungarian minor</option>
-                    <option value="whole tone">whole tone</option>
-                  </optgroup>
-                </select>
-              </label>
-            </div>
-            <div class="strudel-transport-row strudel-transport-row--sliders">
-              <label class="strudel-knob">
-                <span>vol</span>
-                <input id="strudel-master" type="range" min="0" max="1" step="0.01" value="0.85" />
-                <output id="strudel-master-out">0.85</output>
-              </label>
-              <label class="strudel-knob">
-                <span>swing</span>
-                <input id="strudel-swing" type="range" min="0" max="0.5" step="0.01" value="0" />
-                <output id="strudel-swing-out">0</output>
-              </label>
-            </div>
+           <div class="strudel-transport-row strudel-transport-row--meta">
+            <label class="strudel-knob strudel-knob--num">
+              <span>bpm</span>
+              <input id="strudel-bpm" type="number" min="40" max="220" step="1" value="110" />
+            </label>
+            <label class="strudel-knob strudel-knob--key">
+              <span>key</span>
+              <select id="strudel-key">
+                <option value="c">C</option>
+                <option value="db">C♯ / D♭</option>
+                <option value="d">D</option>
+                <option value="eb">D♯ / E♭</option>
+                <option value="e">E</option>
+                <option value="f">F</option>
+                <option value="gb">F♯ / G♭</option>
+                <option value="g">G</option>
+                <option value="ab">G♯ / A♭</option>
+                <option value="a">A</option>
+                <option value="bb">A♯ / B♭</option>
+                <option value="b">B</option>
+              </select>
+            </label>
+            <label class="strudel-knob strudel-knob--key">
+              <span>scale</span>
+              <select id="strudel-scale">
+                <optgroup label="modes">
+                  <option value="major">major (ionian)</option>
+                  <option value="dorian">dorian</option>
+                  <option value="phrygian">phrygian</option>
+                  <option value="lydian">lydian</option>
+                  <option value="mixolydian">mixolydian</option>
+                  <option value="minor">minor (aeolian)</option>
+                  <option value="locrian">locrian</option>
+                </optgroup>
+                <optgroup label="minor variants">
+                  <option value="harmonic minor">harmonic minor</option>
+                  <option value="melodic minor">melodic minor</option>
+                </optgroup>
+                <optgroup label="pentatonic / blues">
+                  <option value="major pentatonic">major pentatonic</option>
+                  <option value="minor pentatonic">minor pentatonic</option>
+                  <option value="blues">blues</option>
+                </optgroup>
+                <optgroup label="exotic">
+                  <option value="phrygian dominant">phrygian dominant</option>
+                  <option value="hungarian minor">hungarian minor</option>
+                  <option value="whole tone">whole tone</option>
+                </optgroup>
+              </select>
+            </label>
+           </div>
+           <div class="strudel-transport-row strudel-transport-row--sliders">
+            <label class="strudel-knob">
+              <span>vol</span>
+              <input id="strudel-master" type="range" min="0" max="1" step="0.01" value="0.85" />
+              <output id="strudel-master-out">0.85</output>
+            </label>
+            <label class="strudel-knob">
+              <span>swing</span>
+              <input id="strudel-swing" type="range" min="0" max="0.5" step="0.01" value="0" />
+              <output id="strudel-swing-out">0</output>
+            </label>
+           </div>
           </div>
         </aside>
 
-        <!-- Parts container — rendered dynamically from state.parts -->
-        <div id="strudel-parts" class="strudel-parts"></div>
+        <section class="strudel-part" data-part="drums">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>drums</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+              <select data-bank>
+                <option value="RolandTR909">909</option>
+                <option value="RolandTR808">808</option>
+                <option value="RolandTR707">707</option>
+                <option value="RolandTR606">606</option>
+                <option value="AlesisHR16">HR16</option>
+                <option value="AkaiLinn">linn</option>
+                <option value="ViscoSpaceDrum">visco</option>
+                <option value="bossanova">bossa</option>
+                <option value="casio">casio</option>
+                <option value="">default</option>
+              </select>
+            </div>
+          </header>
+          <div id="strudel-drum-grid" class="strudel-step-grid" aria-label="Drum step grid"></div>
+          <div class="strudel-fx-row">
+            <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><div class="fx-every-group"><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select><span class="fx-every-label">every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div><div class="fx-struct"><span class="fx-struct-label">struct</span><div class="fx-struct-grid" data-fx-struct-grid></div><button type="button" class="fx-struct-clear" data-fx-struct-clear title="Clear struct">×</button></div><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
+          </div>
+        </section>
 
-        <!-- Add-part menu — click a button to spawn a new part of that
-             type. Multiple parts of the same type are allowed (e.g.
-             two drum tracks). -->
-        <div class="strudel-add-part" aria-label="Add part">
-          <span class="strudel-add-label">add</span>
-          <button type="button" data-add-part="drums">drums</button>
-          <button type="button" data-add-part="chords">chords</button>
-          <button type="button" data-add-part="bass">bass</button>
-          <button type="button" data-add-part="arp">arp</button>
-          <button type="button" data-add-part="lead">lead</button>
-          <button type="button" data-add-part="sample">sample</button>
-        </div>
+        <section class="strudel-part" data-part="chords">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>chords</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+              <select data-sound>
+                {melodyPalette.map((group) => (
+                  <optgroup label={group.label}>
+                    {group.items.map(([value, label]) => (<option value={value}>{label}</option>))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+          </header>
+          <div id="strudel-chord-grid" class="strudel-chord-grid" aria-label="Chord progression"></div>
+          <div class="strudel-fx-row">
+            <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>room</span><input type="range" min="0" max="1" step="0.05" data-fx-room /><output></output></label>
+            <label class="fx-knob"><span>attack</span><input type="range" min="0" max="2" step="0.05" data-attack /><output></output></label>
+            <label class="fx-knob fx-knob--small"><span>vowel</span><select data-vowel>
+              <option value="">none</option>
+              <option value="a">a</option>
+              <option value="e">e</option>
+              <option value="i">i</option>
+              <option value="o">o</option>
+              <option value="u">u</option>
+              <option value="<a e i o>">a→e→i→o</option>
+              <option value="<a o>">a↔o</option>
+              <option value="<i u>">i↔u</option>
+            </select></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><div class="fx-every-group"><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select><span class="fx-every-label">every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div><div class="fx-struct"><span class="fx-struct-label">struct</span><div class="fx-struct-grid" data-fx-struct-grid></div><button type="button" class="fx-struct-clear" data-fx-struct-clear title="Clear struct">×</button></div><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
+          </div>
+        </section>
+
+        <section class="strudel-part" data-part="bass">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>bass</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+              <select data-sound>
+                {bassPalette.map((group) => (
+                  <optgroup label={group.label}>
+                    {group.items.map(([value, label]) => (<option value={value}>{label}</option>))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+          </header>
+          <div class="strudel-bass-row">
+            <select data-rhythm>
+              <option value="root">root only</option>
+              <option value="steady">steady</option>
+              <option value="syncopated" selected>syncopated</option>
+              <option value="octaves">octaves</option>
+              <option value="walking">walking</option>
+            </select>
+            <label><input type="checkbox" data-follow checked /><span>follow chords</span></label>
+          </div>
+          <div class="strudel-fx-row">
+            <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><div class="fx-every-group"><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select><span class="fx-every-label">every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div><div class="fx-struct"><span class="fx-struct-label">struct</span><div class="fx-struct-grid" data-fx-struct-grid></div><button type="button" class="fx-struct-clear" data-fx-struct-clear title="Clear struct">×</button></div><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
+          </div>
+        </section>
+
+        <section class="strudel-part" data-part="arp">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>arp</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+              <select data-sound>
+                {melodyPalette.map((group) => (
+                  <optgroup label={group.label}>
+                    {group.items.map(([value, label]) => (<option value={value}>{label}</option>))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+          </header>
+          <div class="strudel-roll-row">
+            <label><input type="checkbox" data-follow checked /><span>follow chords</span></label>
+            <select data-speed>
+              <option value="1">×1</option>
+              <option value="2" selected>×2</option>
+              <option value="4">×4</option>
+            </select>
+          </div>
+          <div id="strudel-arp-roll" class="strudel-piano-roll" aria-label="Arp piano roll"></div>
+          <div class="strudel-fx-row">
+            <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><div class="fx-every-group"><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select><span class="fx-every-label">every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div><div class="fx-struct"><span class="fx-struct-label">struct</span><div class="fx-struct-grid" data-fx-struct-grid></div><button type="button" class="fx-struct-clear" data-fx-struct-clear title="Clear struct">×</button></div><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
+          </div>
+        </section>
+
+        <section class="strudel-part" data-part="lead">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>lead</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+              <select data-sound>
+                {melodyPalette.map((group) => (
+                  <optgroup label={group.label}>
+                    {group.items.map(([value, label]) => (<option value={value}>{label}</option>))}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+          </header>
+          <div class="strudel-roll-row strudel-roll-row--effects">
+            <label><input type="checkbox" data-effect="delay" /><span>delay</span></label>
+            <label><input type="checkbox" data-effect="room" /><span>room</span></label>
+            <label><input type="checkbox" data-effect="jux" /><span>jux</span></label>
+            <label><input type="checkbox" data-effect="ghost" /><span>ghost</span></label>
+            <label><input type="checkbox" data-effect="shape" /><span>shape</span></label><label class="fx-knob fx-knob--small"><span>echo</span><select data-effect-echo><option value="">—</option><option value="short">short ×3</option><option value="long">long ×5</option><option value="tape">tape</option></select></label>
+          </div>
+          <div id="strudel-lead-roll" class="strudel-piano-roll" aria-label="Lead piano roll"></div>
+          <div class="strudel-fx-row">
+            <label class="fx-knob"><span>filter</span><input type="range" min="200" max="8000" step="50" data-fx-lpf /><output></output></label>
+            <label class="fx-knob"><span>attack</span><input type="range" min="0" max="2" step="0.05" data-attack /><output></output></label>
+            <label class="fx-knob"><span>drop</span><input type="range" min="0" max="0.5" step="0.05" data-fx-drop /><output></output></label><label class="fx-knob"><span>pan</span><input type="range" min="0" max="1" step="0.05" data-fx-pan /><output></output></label><label class="fx-knob"><span>crush</span><input type="range" min="0" max="16" step="1" data-fx-crush /><output></output></label>
+            <label class="fx-knob fx-knob--small"><span>mod</span><select data-fx-mod><option value="">none</option><option value="sine-slow">∿ sine slow</option><option value="sine-fast">∿ sine fast</option><option value="tri">△ tri</option><option value="saw">⩘ saw</option><option value="square">▢ square</option><option value="rand">? rand</option><option value="perlin">~ perlin</option></select></label><label class="fx-knob fx-knob--small"><span>→</span><select data-fx-mod-target><option value="lpf">filter</option><option value="pan">pan</option><option value="gain">gain</option></select></label><label class="fx-knob fx-knob--small"><span>ply</span><select data-fx-ply><option value="1">×1</option><option value="2">×2</option><option value="3">×3</option><option value="4">×4</option></select></label><div class="fx-every-group"><select data-fx-every-fn><option value="">—</option><option value="fast2">fast ×2</option><option value="slow2">slow ×½</option><option value="rev">rev</option><option value="jux">jux rev</option><option value="chop">chop</option></select><span class="fx-every-label">every</span><select data-fx-every-n><option value="">—</option><option value="2">2</option><option value="4">4</option><option value="8">8</option></select></div><div class="fx-struct"><span class="fx-struct-label">struct</span><div class="fx-struct-grid" data-fx-struct-grid></div><button type="button" class="fx-struct-clear" data-fx-struct-clear title="Clear struct">×</button></div><label class="fx-knob fx-knob--small"><span>double</span><select data-fx-superimpose><option value="">—</option><option value="+5">+5th</option><option value="+12">+oct</option><option value="-12">-oct</option></select></label>
+          </div>
+        </section>
+
+        <section class="strudel-part" data-part="sample">
+          <header class="strudel-part-head">
+            <label class="strudel-mute"><input type="checkbox" data-mute /><span>sample</span></label>
+            <div class="strudel-part-controls">
+              <input type="range" min="0" max="1" step="0.01" data-gain />
+            </div>
+          </header>
+          <label id="strudel-drop" class="strudel-drop" for="strudel-sample-file">
+            <input id="strudel-sample-file" type="file" accept="audio/*" />
+            <span id="strudel-drop-label">drop audio or choose file</span>
+          </label>
+        </section>
       </aside>
     </main>
 
@@ -246,7 +361,7 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
         This page embeds <a href="https://www.npmjs.com/package/@strudel/repl">@strudel/repl</a>,
         part of <a href="https://codeberg.org/uzu/strudel">Strudel</a>, licensed under
         <a href="https://codeberg.org/uzu/strudel/src/branch/main/LICENSE">AGPL-3.0-or-later</a>.
-        Build your patch on the right; the code on the left auto-updates. Hand-edit the code if you want — the GUI stops overwriting once you type, and the regen button puts the GUI back in charge.
+        The GUI on the right writes the code on the left — edit either, but GUI changes overwrite manual edits.
         Site source at <a href="https://github.com/A-M-Berns/personal-site">GitHub</a>.
       </p>
     </dialog>
@@ -317,6 +432,8 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     flex-direction: column;
     gap: 0.6rem;
   }
+  /* Transport panel sits at the top of the side pane and scrolls
+     with the rest of the parts. */
   .strudel-transport {
     display: flex;
     flex-direction: column;
@@ -337,6 +454,8 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     align-items: center;
     gap: 0.45rem;
   }
+  /* Row 1: bpm | key | scale — bpm and key shrink to content size so
+     the longer scale names (e.g. "phrygian dominant") have room. */
   .strudel-transport-row--meta {
     grid-template-columns: auto auto minmax(0, 1fr);
   }
@@ -344,9 +463,11 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     max-width: 3.4rem;
   }
   .strudel-transport-row--meta .strudel-knob--key:first-of-type select {
+    /* Key dropdown — single character options, keep tight */
     max-width: 5rem;
   }
   .strudel-transport-row--meta .strudel-knob select { min-width: 0; }
+  /* Row 2: vol | swing — equal halves */
   .strudel-transport-row--sliders {
     grid-template-columns: 1fr 1fr;
   }
@@ -392,6 +513,7 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
   }
+  /* Inline editor that appears when an output is clicked. */
   :global(input.strudel-output-input) {
     width: 3rem;
     background: rgba(255, 255, 255, 0.06);
@@ -484,7 +606,8 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     gap: 1rem;
     margin-bottom: 0.55rem;
   }
-  .strudel-pane-head h2 {
+  .strudel-pane-head h2,
+  .strudel-part-head .strudel-mute span {
     font-family: var(--display);
     font-size: 0.82rem;
     font-weight: 700;
@@ -501,86 +624,52 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     scrollbar-width: thin;
     scrollbar-color: var(--rule) transparent;
   }
-  .strudel-parts {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-  }
   .strudel-part {
     border: 1px solid var(--rule);
     border-radius: 3px;
-    padding: 0.55rem 0.7rem;
+    padding: 0.6rem 0.7rem;
     background: rgba(255, 255, 255, 0.015);
+  }
+  /* Collapsed (disabled) part shows just the header — mute toggle +
+     part name. Hide the body and the gain/sound controls so the
+     panel quiets down when many parts are off. */
+  .strudel-part.is-muted {
+    padding: 0.4rem 0.7rem;
+    background: transparent;
+  }
+  .strudel-part.is-muted > :not(.strudel-part-head),
+  .strudel-part.is-muted .strudel-part-controls {
+    display: none;
+  }
+  .strudel-part.is-muted .strudel-mute span {
+    color: var(--muted);
+    text-decoration: none;
+    opacity: 0.7;
   }
   .strudel-part-head {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    gap: 0.6rem;
   }
-  .strudel-part-head .strudel-part-title {
-    font-family: var(--display);
-    font-size: 0.78rem;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink);
-    margin: 0;
-    flex: 1;
-    min-width: 0;
-  }
-  .strudel-part.is-muted .strudel-part-title {
-    color: var(--muted);
-    opacity: 0.7;
-  }
-  /* Mute / Solo / Delete cluster */
-  .strudel-ms {
+  .strudel-mute {
     display: inline-flex;
-    gap: 2px;
-  }
-  .strudel-ms button {
-    width: 1.5rem;
-    height: 1.4rem;
-    padding: 0;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--rule);
-    color: var(--muted);
-    font: 700 0.66rem/1 var(--font-lexend), var(--sans);
-    border-radius: 2px;
+    align-items: center;
+    gap: 0.45rem;
     cursor: pointer;
+    user-select: none;
   }
-  .strudel-ms button:hover {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-  .strudel-ms button.is-active[data-kind="m"] {
-    background: color-mix(in srgb, #ff6b6b 22%, transparent);
-    border-color: #ff6b6b;
-    color: #ff8c8c;
-  }
-  .strudel-ms button.is-active[data-kind="s"] {
-    background: color-mix(in srgb, #ffd24a 22%, transparent);
-    border-color: #ffd24a;
-    color: #ffe07a;
-  }
-  .strudel-part-delete {
-    width: 1.5rem;
-    height: 1.4rem;
-    padding: 0;
-    background: transparent;
-    border: 1px solid color-mix(in srgb, var(--rule) 70%, transparent);
-    color: var(--muted);
-    border-radius: 2px;
-    cursor: pointer;
-    font: 0.95rem/1 ui-monospace, monospace;
-  }
-  .strudel-part-delete:hover { color: var(--accent); border-color: var(--accent); }
+  .strudel-mute input { accent-color: var(--accent); }
+  .strudel-mute input:not(:checked) ~ span { text-decoration: line-through; color: color-mix(in srgb, var(--muted) 70%, transparent); }
   .strudel-part-controls {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.5rem;
   }
-  .strudel-part-controls input[type="range"] { width: 4.5rem; accent-color: var(--accent); }
+  .strudel-part-controls input[type="range"] { width: 5.5rem; accent-color: var(--accent); }
   .strudel-part-controls select,
+  .strudel-bass-row select,
+  .strudel-roll-row select,
   .strudel-fx-row select,
   .strudel-knob select {
     background: rgba(255, 255, 255, 0.04);
@@ -590,44 +679,6 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     padding: 0.2rem 0.3rem;
     font-size: 0.72rem;
   }
-  .strudel-part.is-muted > :not(.strudel-part-head) { display: none; }
-  .strudel-part.is-muted .strudel-part-controls { display: none; }
-  .strudel-part.is-muted { padding: 0.4rem 0.7rem; background: transparent; }
-
-  /* Add-part menu */
-  .strudel-add-part {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 0.45rem 0.6rem;
-    border: 1px dashed var(--rule);
-    border-radius: 3px;
-    background: transparent;
-  }
-  .strudel-add-label {
-    color: var(--muted);
-    font: 0.65rem/1 var(--font-lexend), var(--sans);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-right: 0.2rem;
-  }
-  .strudel-add-part button {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--rule);
-    color: var(--muted);
-    font: 600 0.68rem/1 var(--font-lexend), var(--sans);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    padding: 0.3rem 0.55rem;
-    border-radius: 3px;
-    cursor: pointer;
-  }
-  .strudel-add-part button:hover {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-
   .strudel-fx-row {
     display: flex;
     flex-wrap: wrap;
@@ -651,6 +702,7 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     gap: 0.25rem;
   }
   .strudel-fx-row .fx-knob--small select { padding: 0.18rem 0.3rem; font-size: 0.7rem; }
+  /* "every" cluster — [fn] every [N] inline */
   .strudel-fx-row .fx-every-group {
     display: inline-flex;
     align-items: center;
@@ -670,6 +722,7 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     letter-spacing: 0;
     font: 0.7rem/1 var(--font-lexend), var(--sans);
   }
+  /* Visual struct = compact 16-cell rhythm strip below the fx row */
   .strudel-fx-row .fx-struct {
     display: flex;
     align-items: center;
@@ -730,6 +783,13 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     text-decoration-thickness: 1px;
     text-underline-offset: 2px;
   }
+  .strudel-fx-row .fx-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    cursor: pointer;
+  }
+  .strudel-fx-row .fx-toggle input { accent-color: var(--accent); }
   .strudel-bass-row,
   .strudel-roll-row {
     display: flex;
@@ -748,35 +808,20 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
   }
   .strudel-roll-row label input,
   .strudel-bass-row label input { accent-color: var(--accent); }
-
-  /* Drum step grid */
   .strudel-step-grid {
     display: grid;
-    grid-template-columns: 2.25rem repeat(16, minmax(0, 1fr)) auto;
+    grid-template-columns: 2.25rem repeat(16, minmax(0, 1fr));
     gap: 0.22rem;
     margin-top: 0.55rem;
-    align-items: center;
   }
   .strudel-step-label {
     display: grid;
-    grid-template-columns: 1.1rem 1.1rem;
     place-items: center;
     color: var(--muted);
-    font-size: 0.95rem;
-    line-height: 1;
+    font: 0.62rem/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    text-transform: uppercase;
   }
-  .strudel-step-label button {
-    width: 1rem;
-    height: 1rem;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    color: var(--muted);
-    font: 0.85rem/1 ui-monospace, monospace;
-    cursor: pointer;
-  }
-  .strudel-step-label button:hover { color: var(--accent); }
-  .strudel-step-grid :global(.drum-cell) {
+  .strudel-step-grid :global(button) {
     min-width: 0;
     min-height: 1.35rem;
     padding: 0;
@@ -788,43 +833,19 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     user-select: none;
     cursor: pointer;
   }
-  .strudel-step-grid :global(.drum-cell.is-on) {
+  .strudel-step-grid :global(button.is-on) {
     background: var(--accent);
     border-color: var(--accent);
   }
-  .strudel-step-grid :global(.drum-cell.is-beat) {
+  .strudel-step-grid :global(button:nth-child(17n + 2)),
+  .strudel-step-grid :global(button:nth-child(17n + 6)),
+  .strudel-step-grid :global(button:nth-child(17n + 10)),
+  .strudel-step-grid :global(button:nth-child(17n + 14)) {
     border-color: color-mix(in srgb, var(--accent) 42%, var(--rule));
   }
-  .strudel-step-grid :global(.drum-row-add) {
-    grid-column: 1 / -1;
-    margin-top: 0.3rem;
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    align-items: center;
-    font-size: 0.65rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .strudel-step-grid :global(.drum-row-add button) {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--rule);
-    color: var(--muted);
-    border-radius: 2px;
-    padding: 0.25rem 0.45rem;
-    font: 0.7rem/1 var(--font-lexend), var(--sans);
-    cursor: pointer;
-  }
-  .strudel-step-grid :global(.drum-row-add button:hover) {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-
-  /* Piano roll */
   .strudel-piano-roll {
     display: grid;
-    grid-template-columns: 2.6rem 1fr;
+    grid-template-columns: 2.25rem 1fr;
     gap: 1px;
     margin-top: 0.55rem;
     background: var(--rule);
@@ -847,11 +868,15 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
   .strudel-piano-roll :global(.strudel-roll-cell:hover) {
     background: rgba(255, 255, 255, 0.1);
   }
-  .strudel-piano-roll :global(.strudel-roll-cell.is-on) { background: var(--accent); }
+  .strudel-piano-roll :global(.strudel-roll-cell.is-on) {
+    background: var(--accent);
+  }
   .strudel-piano-roll :global(.strudel-roll-cell.is-beat) {
     background: rgba(255, 255, 255, 0.06);
   }
-  .strudel-piano-roll :global(.strudel-roll-cell.is-beat.is-on) { background: var(--accent); }
+  .strudel-piano-roll :global(.strudel-roll-cell.is-beat.is-on) {
+    background: var(--accent);
+  }
   .strudel-piano-roll :global(.strudel-roll-label) {
     display: grid;
     place-items: center;
@@ -893,8 +918,11 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
   .strudel-piano-roll :global(.strudel-midi-note:hover) {
     filter: brightness(1.15);
   }
-
-  /* Chord builder rows */
+  .strudel-drum-icon {
+    font-size: 0.95rem;
+    line-height: 1;
+    color: var(--muted);
+  }
   .strudel-chord-grid {
     display: flex;
     flex-direction: column;
@@ -993,7 +1021,6 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     font-size: 0.7rem;
     padding: 0.3rem 0;
   }
-
   .strudel-drop {
     display: grid;
     place-items: center;
@@ -1016,7 +1043,6 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     opacity: 0;
     pointer-events: none;
   }
-
   @media (max-width: 880px) {
     .strudel-shell { height: auto; overflow: visible; }
     .strudel-workspace { grid-template-columns: 1fr; }
@@ -1025,36 +1051,40 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
 </style>
 
 <script>
-  // =========================================================================
-  // Strudel workspace — parts list architecture.
-  //
-  // The side pane holds an ordered list of "parts" — each an instance of
-  // one type (drums, chords, bass, arp, lead, sample). Multiple instances
-  // of the same type are allowed (e.g. two drum tracks). Each part has
-  // its own mute and solo toggles, like a DAW track. Solo overrides mute:
-  // if any part is soloed, only soloed parts play; otherwise all enabled
-  // parts play.
-  // =========================================================================
-
   // ===== Types =====
   type Quality = 'maj' | 'min' | '7' | 'maj7' | 'min7' | 'sus' | 'dim';
-  type PartType = 'drums' | 'chords' | 'bass' | 'arp' | 'lead' | 'sample';
-  type FilterMod = '' | 'sine-slow' | 'sine-fast' | 'saw' | 'tri' | 'square' | 'rand' | 'perlin';
-  type ModTarget = 'lpf' | 'pan' | 'gain';
-  type EveryN = '' | '2' | '4' | '8';
-  type EveryFn = '' | 'fast2' | 'slow2' | 'rev' | 'jux' | 'chop';
-  type Superimpose = '' | '+5' | '+12' | '-12';
-  type EchoPreset = '' | 'short' | 'long' | 'tape';
+  type DrumRow = 'bd' | 'sd' | 'hh' | 'cp';
 
   interface ChordSlot { root: string; quality: Quality; octave: number; }
-  interface MidiNote { pitch: number; start: number; length: number; }
+
+  // Continuous-signal modulation. The waveform code maps to a strudel
+  // signal (sine/saw/tri/square/rand/perlin) wrapped in .range().slow().
+  // The target controls *which* parameter the signal modulates: filter
+  // cutoff (auto-wah), pan (auto-pan), or gain (tremolo).
+  type FilterMod = '' | 'sine-slow' | 'sine-fast' | 'saw' | 'tri' | 'square' | 'rand' | 'perlin';
+  type ModTarget = 'lpf' | 'pan' | 'gain';
+
+  // .every(n, fn) — apply transform every n cycles. Split into two
+  // selects so they read more like the strudel function.
+  type EveryN = '' | '2' | '4' | '8';
+  type EveryFn = '' | 'fast2' | 'slow2' | 'rev' | 'jux' | 'chop';
+
+  // .superimpose(x => x.add(N)) — layer a transposed copy of the part
+  // on top of itself. Empty string means no superimpose.
+  type Superimpose = '' | '+5' | '+12' | '-12';
 
   interface PartFx {
-    lpf: number; hpf: number; drop: number;
-    everyN: EveryN; everyFn: EveryFn;
-    pan: number; crush: number;
-    mod: FilterMod; modTarget: ModTarget;
-    ply: number; struct: string;
+    lpf: number;
+    hpf: number;
+    drop: number;
+    everyN: EveryN;
+    everyFn: EveryFn;
+    pan: number;
+    crush: number;
+    mod: FilterMod;
+    modTarget: ModTarget;
+    ply: number;
+    struct: string;     // strudel struct() pattern, e.g. "x ~ x x"
     superimpose: Superimpose;
   }
   const defaultFx = (): PartFx => ({
@@ -1062,54 +1092,7 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     mod: '', modTarget: 'lpf', ply: 1, struct: '', superimpose: '',
   });
 
-  interface PartBase {
-    id: string;
-    type: PartType;
-    enabled: boolean;
-    soloed: boolean;
-    gain: number;
-    fx: PartFx;
-  }
-  interface DrumsPart extends PartBase {
-    type: 'drums';
-    bank: string;
-    rows: string[];                                // ordered list of drum codes (bd, sd, hh, ...)
-    steps: Record<string, boolean[]>;              // step grid per row code
-  }
-  interface ChordsPart extends PartBase {
-    type: 'chords';
-    sound: string;
-    slots: ChordSlot[];
-    room: number;
-    attack: number;
-    vowel: string;
-  }
-  interface BassPart extends PartBase {
-    type: 'bass';
-    sound: string;
-    rhythm: string;
-    follow: boolean;
-  }
-  interface ArpPart extends PartBase {
-    type: 'arp';
-    sound: string;
-    speed: number;
-    follow: boolean;
-    cells: boolean[][];
-  }
-  interface LeadPart extends PartBase {
-    type: 'lead';
-    sound: string;
-    notes: MidiNote[];
-    attack: number;
-    effects: { delay: boolean; room: boolean; jux: boolean; ghost: boolean; shape: boolean; echo: EchoPreset };
-  }
-  interface SamplePart extends PartBase {
-    type: 'sample';
-    name: string;
-    url: string | null;
-  }
-  type Part = DrumsPart | ChordsPart | BassPart | ArpPart | LeadPart | SamplePart;
+  interface MidiNote { pitch: number; start: number; length: number; }
 
   interface State {
     bpm: number;
@@ -1117,11 +1100,25 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     swing: number;
     key: string;
     scale: string;
-    parts: Part[];
+    drums: { enabled: boolean; gain: number; bank: string; steps: Record<DrumRow, boolean[]>; fx: PartFx };
+    chords: { enabled: boolean; gain: number; sound: string; slots: ChordSlot[]; room: number; attack: number; vowel: string; fx: PartFx };
+    bass: { enabled: boolean; gain: number; sound: string; rhythm: string; follow: boolean; fx: PartFx };
+    arp: { enabled: boolean; gain: number; sound: string; speed: number; follow: boolean; cells: boolean[][]; fx: PartFx };
+    lead: {
+      enabled: boolean; gain: number; sound: string;
+      notes: MidiNote[];
+      attack: number;
+      effects: { delay: boolean; room: boolean; jux: boolean; ghost: boolean; shape: boolean; echo: '' | 'short' | 'long' | 'tape' };
+      fx: PartFx;
+    };
+    sample: { enabled: boolean; gain: number; name: string; url: string | null };
   }
 
   // ===== Music helpers =====
   const NOTE_NAMES = ['c', 'db', 'd', 'eb', 'e', 'f', 'gb', 'g', 'ab', 'a', 'bb', 'b'];
+  // Intervals (semitones from root) for each scale. Heptatonic modes
+  // first, then pentatonic/blues, then exotic. Used for arp/lead
+  // pitch-row labelling and degree-to-MIDI conversion.
   const SCALES: Record<string, number[]> = {
     major:              [0, 2, 4, 5, 7, 9, 11],
     dorian:             [0, 2, 3, 5, 7, 9, 10],
@@ -1148,6 +1145,7 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     sus: [0, 5, 7],
     dim: [0, 3, 6],
   };
+
   function rootIndex(root: string) {
     const idx = NOTE_NAMES.indexOf(root);
     return idx < 0 ? 0 : idx;
@@ -1157,7 +1155,7 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     const oct = Math.floor(midi / 12);
     return `${NOTE_NAMES[n]}${oct}`;
   }
-  function chordNotesOf(slot: ChordSlot) {
+  function chordNotes(slot: ChordSlot) {
     const intervals = QUALITY_INTERVALS[slot.quality] ?? QUALITY_INTERVALS.min;
     const baseMidi = (slot.octave + 1) * 12 + rootIndex(slot.root);
     return intervals.map((i) => midiToName(baseMidi + i));
@@ -1174,186 +1172,161 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     const oct = octave + Math.floor(degree / len);
     return oct * 12 + rootIndex(keyRoot) + intervals[wrap];
   }
-  function degreeLabel(degree: number, key: string, scale: string): string {
-    const intervals = SCALES[scale] ?? SCALES.minor;
-    const interval = intervals[((degree % intervals.length) + intervals.length) % intervals.length];
-    const idx = (rootIndex(key) + interval) % 12;
-    return NOTE_NAMES[idx].replace('b', '♭').toUpperCase();
-  }
 
-  // ===== Constants =====
+  // ===== State =====
+  const DRUMS: DrumRow[] = ['bd', 'sd', 'hh', 'cp'];
   const STEPS = 16;
   const ROLL_PITCHES = 12;
   const ARP_STEPS = 16;
   const LEAD_STEPS = 16;
-  const DEFAULT_DRUM_ROWS = ['bd', 'sd', 'hh', 'cp'];
-  const GAIN_FLOOR = 0.01;
 
-  // Drum palette from frontmatter — exposed to script via DOM data:
-  // we just inline it here to avoid a script island round-trip.
-  const DRUM_ROW_PALETTE: { code: string; label: string; icon: string }[] = [
-    { code: 'bd',   label: 'kick',     icon: '●' },
-    { code: 'sd',   label: 'snare',    icon: '◐' },
-    { code: 'hh',   label: 'closed hat', icon: '✕' },
-    { code: 'oh',   label: 'open hat', icon: '○' },
-    { code: 'cp',   label: 'clap',     icon: '✦' },
-    { code: 'rim',  label: 'rim',      icon: '◇' },
-    { code: 'cy',   label: 'cymbal',   icon: '✻' },
-    { code: 'cr',   label: 'crash',    icon: '✺' },
-    { code: 'rd',   label: 'ride',     icon: '◑' },
-    { code: 'lt',   label: 'low tom',  icon: '◆' },
-    { code: 'mt',   label: 'mid tom',  icon: '◈' },
-    { code: 'ht',   label: 'high tom', icon: '◊' },
-    { code: 'sh',   label: 'shaker',   icon: '⋮' },
-    { code: 'perc', label: 'perc',     icon: '⌑' },
-    { code: 'cb',   label: 'cowbell',  icon: '▮' },
-  ];
-  function drumRowInfo(code: string) {
-    return DRUM_ROW_PALETTE.find((r) => r.code === code) ?? { code, label: code, icon: code };
-  }
-
-  // ===== Defaults =====
-  function emptyDrumSteps(rows: string[]): Record<string, boolean[]> {
-    const obj: Record<string, boolean[]> = {};
-    rows.forEach((r) => { obj[r] = new Array(STEPS).fill(false); });
-    return obj;
+  function emptySteps(): Record<DrumRow, boolean[]> {
+    return Object.fromEntries(DRUMS.map((d) => [d, new Array(STEPS).fill(false)])) as Record<DrumRow, boolean[]>;
   }
   function emptyCells(steps: number): boolean[][] {
     return Array.from({ length: ROLL_PITCHES }, () => new Array(steps).fill(false));
   }
-  let nextPartIdNum = 1;
-  function makePartId(type: PartType) { return `${type}-${nextPartIdNum++}`; }
-
-  function makePart(type: PartType): Part {
-    const base = { id: makePartId(type), type, enabled: true, soloed: false } as const;
-    switch (type) {
-      case 'drums': {
-        const rows = [...DEFAULT_DRUM_ROWS];
-        return { ...base, type, gain: 0.65, fx: defaultFx(), bank: 'RolandTR909', rows, steps: emptyDrumSteps(rows) };
-      }
-      case 'chords':
-        return { ...base, type, gain: 0.4, fx: defaultFx(), sound: 'piano', slots: [], room: 0.5, attack: 0, vowel: '' };
-      case 'bass':
-        return { ...base, type, gain: 0.55, fx: { ...defaultFx(), lpf: 800 }, sound: 'sawtooth', rhythm: 'syncopated', follow: true };
-      case 'arp':
-        return { ...base, type, gain: 0.42, fx: defaultFx(), sound: 'sine', speed: 2, follow: true, cells: emptyCells(ARP_STEPS) };
-      case 'lead':
-        return { ...base, type, gain: 0.42, fx: defaultFx(), sound: 'square', notes: [], attack: 0, effects: { delay: false, room: false, jux: false, ghost: false, shape: false, echo: '' } };
-      case 'sample':
-        return { ...base, type, gain: 0.55, fx: defaultFx(), name: '', url: null };
-    }
-  }
-
+  // Defaults are intentionally empty — page loads silent. Each part
+  // starts disabled with empty pattern data; presets fill them in.
   const initialState: State = {
-    bpm: 110, master: 0.85, swing: 0, key: 'c', scale: 'minor', parts: [],
+    bpm: 110,
+    master: 0.85,
+    swing: 0,
+    key: 'c',
+    scale: 'minor',
+    drums: { enabled: false, gain: 0.65, bank: 'RolandTR909', steps: emptySteps(), fx: defaultFx() },
+    chords: {
+      enabled: false,
+      gain: 0.4,
+      sound: 'piano',
+      room: 0.5,
+      attack: 0,
+      vowel: '',
+      slots: [],
+      fx: defaultFx(),
+    },
+    bass: { enabled: false, gain: 0.55, sound: 'sawtooth', rhythm: 'syncopated', follow: true, fx: { ...defaultFx(), lpf: 800 } },
+    arp: { enabled: false, gain: 0.42, sound: 'sine', speed: 2, follow: true, cells: emptyCells(ARP_STEPS), fx: defaultFx() },
+    lead: { enabled: false, gain: 0.42, sound: 'square', notes: [], attack: 0, effects: { delay: false, room: false, jux: false, ghost: false, shape: false, echo: '' }, fx: defaultFx() },
+    sample: { enabled: false, gain: 0.55, name: '', url: null },
   };
 
-  // ===== Migration: old fixed-shape state -> new parts list =====
-  function migrateOldStateToParts(saved: any): Part[] {
-    const parts: Part[] = [];
-    const types: PartType[] = ['drums', 'chords', 'bass', 'arp', 'lead', 'sample'];
-    for (const t of types) {
-      const old = saved?.[t];
-      if (!old || !old.enabled) continue;          // only carry enabled parts forward
-      const part = makePart(t);
-      part.gain = old.gain ?? part.gain;
-      part.fx = { ...part.fx, ...(old.fx ?? {}) };
-      delete (part.fx as any).vary;
-      if (t === 'drums') {
-        const p = part as DrumsPart;
-        p.bank = old.bank ?? p.bank;
-        if (old.steps && typeof old.steps === 'object') {
-          p.rows = Object.keys(old.steps);
-          p.steps = old.steps;
-        }
-      } else if (t === 'chords') {
-        const p = part as ChordsPart;
-        p.sound = old.sound ?? p.sound;
-        p.slots = Array.isArray(old.slots) ? old.slots : [];
-        p.room = old.room ?? p.room;
-        p.attack = old.attack ?? 0;
-        p.vowel = old.vowel ?? '';
-      } else if (t === 'bass') {
-        const p = part as BassPart;
-        p.sound = old.sound ?? p.sound;
-        p.rhythm = old.rhythm ?? p.rhythm;
-        p.follow = old.follow ?? true;
-      } else if (t === 'arp') {
-        const p = part as ArpPart;
-        p.sound = old.sound ?? p.sound;
-        p.speed = old.speed ?? p.speed;
-        p.follow = old.follow ?? true;
-        if (Array.isArray(old.cells)) p.cells = old.cells;
-      } else if (t === 'lead') {
-        const p = part as LeadPart;
-        p.sound = old.sound ?? p.sound;
-        p.notes = Array.isArray(old.notes) ? old.notes : [];
-        p.attack = old.attack ?? 0;
-        p.effects = { ...p.effects, ...(old.effects ?? {}) };
-      } else if (t === 'sample') {
-        const p = part as SamplePart;
-        p.name = old.name ?? '';
-        p.url = null;                                // can't carry blob URLs across reloads
-      }
-      parts.push(part);
-    }
-    return parts;
-  }
+  const presets: Record<string, Partial<State>> = {
+    empty: {
+      drums: { ...initialState.drums, enabled: false, steps: emptySteps() },
+      chords: { ...initialState.chords, enabled: false },
+      bass: { ...initialState.bass, enabled: false },
+      arp: { ...initialState.arp, enabled: false },
+      lead: { ...initialState.lead, enabled: false },
+    },
+    lofi: {
+      bpm: 82,
+      swing: 0.18,
+      key: 'eb',
+      scale: 'minor',
+      drums: { ...initialState.drums, gain: 0.55, bank: 'RolandTR808', steps: (() => { const s = emptySteps(); [0, 8].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); [0, 2, 4, 6, 8, 10, 12, 14].forEach((i) => (s.hh[i] = true)); return s; })(), fx: { ...defaultFx(), lpf: 3000, drop: 0.1, vary: false } },
+      chords: { ...initialState.chords, gain: 0.42, sound: 'piano', room: 0.7, slots: [
+        { root: 'eb', quality: 'min7', octave: 3 },
+        { root: 'ab', quality: 'maj7', octave: 3 },
+        { root: 'gb', quality: 'maj7', octave: 3 },
+        { root: 'bb', quality: 'min7', octave: 3 },
+      ], fx: { ...defaultFx(), lpf: 4000, drop: 0, vary: false } },
+      bass: { ...initialState.bass, gain: 0.5, sound: 'sine', rhythm: 'root', follow: true, fx: { ...defaultFx(), lpf: 600, drop: 0, vary: false } },
+    },
+    techno: {
+      bpm: 128,
+      swing: 0,
+      key: 'a',
+      scale: 'minor',
+      drums: { ...initialState.drums, gain: 0.7, bank: 'RolandTR909', steps: (() => { const s = emptySteps(); [0, 4, 8, 12].forEach((i) => (s.bd[i] = true)); [4, 12].forEach((i) => (s.sd[i] = true)); for (let i = 0; i < 16; i += 2) s.hh[i] = true; [3, 11].forEach((i) => (s.cp[i] = true)); return s; })(), fx: defaultFx() },
+      chords: { ...initialState.chords, enabled: false },
+      bass: { ...initialState.bass, gain: 0.6, sound: 'sawtooth', rhythm: 'octaves', follow: false, fx: { ...defaultFx(), lpf: 1200, drop: 0, vary: false } },
+      arp: { ...initialState.arp, enabled: true, gain: 0.4, sound: 'square', speed: 4, follow: false, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 4, 8, 12].forEach((s, i) => (c[ROLL_PITCHES - 1 - [7, 5, 7, 4][i]][s] = true)); return c; })(), fx: { ...defaultFx(), lpf: 2000, drop: 0.15, vary: true } },
+    },
+    ambient: {
+      bpm: 70,
+      swing: 0,
+      key: 'd',
+      scale: 'dorian',
+      drums: { ...initialState.drums, enabled: false },
+      chords: { ...initialState.chords, gain: 0.32, sound: 'triangle', room: 0.85, slots: [
+        { root: 'd', quality: 'min7', octave: 3 },
+        { root: 'g', quality: 'maj7', octave: 3 },
+        { root: 'a', quality: 'min7', octave: 3 },
+        { root: 'f', quality: 'maj7', octave: 3 },
+      ], fx: { ...defaultFx(), lpf: 5000, drop: 0, vary: false } },
+      bass: { ...initialState.bass, gain: 0.42, sound: 'sine', rhythm: 'root', follow: true, fx: { ...defaultFx(), lpf: 500, drop: 0, vary: false } },
+      arp: { ...initialState.arp, enabled: true, gain: 0.32, sound: 'sine', speed: 1, follow: true, cells: (() => { const c = emptyCells(ARP_STEPS); [0, 3, 6, 9, 12, 15].forEach((s, i) => (c[ROLL_PITCHES - 1 - [0, 2, 4, 7, 4, 2][i]][s] = true)); return c; })(), fx: { ...defaultFx(), lpf: 4000, drop: 0.2, vary: true } },
+    },
+  };
 
   function clone<T>(value: T): T { return JSON.parse(JSON.stringify(value)); }
-  function loadState(): State {
-    try {
-      const raw = window.localStorage.getItem('strudel-state-v6');
-      if (raw) {
-        const saved = JSON.parse(raw);
-        if (Array.isArray(saved.parts)) {
-          // Already in new shape.
-          // Reset volatile blob URLs on sample parts.
-          (saved.parts as Part[]).forEach((p) => {
-            if (p.type === 'sample') (p as SamplePart).url = null;
-          });
-          // Ensure each part has all required fields (fx defaults etc.)
-          (saved.parts as Part[]).forEach((p) => {
-            p.fx = { ...defaultFx(), ...(p.fx ?? {}) };
-            delete (p.fx as any).vary;
-          });
-          // Track max id seen to seed nextPartIdNum
-          const maxN = saved.parts.reduce((m: number, p: Part) => {
-            const match = p.id?.match(/-(\d+)$/);
-            return match ? Math.max(m, parseInt(match[1], 10)) : m;
-          }, 0);
-          nextPartIdNum = maxN + 1;
-          return { ...initialState, ...saved };
+  function migrateLead(saved: any) {
+    if (!saved || saved.notes) return saved;
+    if (Array.isArray(saved.cells)) {
+      const notes: MidiNote[] = [];
+      for (let p = 0; p < saved.cells.length; p++) {
+        const row = saved.cells[p];
+        if (!Array.isArray(row)) continue;
+        for (let s = 0; s < row.length; s++) {
+          if (row[s]) notes.push({ pitch: ROLL_PITCHES - 1 - p, start: s, length: 1 });
         }
       }
-      // Try v5 state and migrate.
-      const oldRaw = window.localStorage.getItem('strudel-state-v5');
-      if (oldRaw) {
-        const saved = JSON.parse(oldRaw);
-        const parts = migrateOldStateToParts(saved);
-        return {
-          bpm: saved.bpm ?? 110,
-          master: saved.master ?? 0.85,
-          swing: saved.swing ?? 0,
-          key: saved.key ?? 'c',
-          scale: saved.scale ?? 'minor',
-          parts,
-        };
-      }
-    } catch (e) {}
-    return clone(initialState);
+      return { ...saved, notes, cells: undefined };
+    }
+    return saved;
   }
-
-  let state: State = loadState();
-
-  function saveState() {
+  // Convert the old single 'every' code (e.g. '4fast', '8jux') into
+  // the new pair (everyN, everyFn). Drops the old key.
+  function migrateFx(fx: any): any {
+    if (!fx || typeof fx !== 'object') return fx;
+    const out = { ...fx };
+    if (typeof out.every === 'string' && out.every) {
+      const m = out.every.match(/^(\d+)(\w+)$/);
+      if (m) {
+        const n = m[1] as EveryN;
+        const fnKey = m[2];
+        const map: Record<string, EveryFn> = { fast: 'fast2', slow: 'slow2', rev: 'rev', jux: 'jux', chop: 'chop' };
+        if (['2','4','8'].includes(n)) out.everyN = n;
+        if (map[fnKey]) out.everyFn = map[fnKey];
+      }
+      delete out.every;
+    }
+    delete out.vary;
+    return out;
+  }
+  function mergeState(saved: any): State {
+    const base = clone(initialState) as any;
+    if (!saved || typeof saved !== 'object') return base;
+    if (saved.lead) saved = { ...saved, lead: migrateLead(saved.lead) };
+    for (const k of Object.keys(base)) {
+      if (saved[k] === undefined) continue;
+      if (typeof base[k] === 'object' && base[k] !== null && !Array.isArray(base[k])) {
+        base[k] = { ...base[k], ...saved[k] };
+        if (base[k].fx) base[k].fx = { ...defaultFx(), ...migrateFx(saved[k].fx ?? {}) };
+        if (k === 'lead' && !Array.isArray(base[k].notes)) base[k].notes = clone(initialState.lead.notes);
+      } else {
+        base[k] = saved[k];
+      }
+    }
+    return base as State;
+  }
+  let state: State = clone(initialState);
+  function loadFromHash(): State | null {
+    if (!window.location.hash || window.location.hash.length < 2) return null;
     try {
-      const dehydrated = clone(state);
-      // strip blob URLs
-      dehydrated.parts.forEach((p) => {
-        if (p.type === 'sample') (p as SamplePart).url = null;
-      });
-      window.localStorage.setItem('strudel-state-v6', JSON.stringify(dehydrated));
+      const raw = decodeURIComponent(window.location.hash.slice(1));
+      const decoded = atob(raw);
+      return mergeState(JSON.parse(decoded));
+    } catch (e) { return null; }
+  }
+  const fromHash = loadFromHash();
+  if (fromHash) {
+    state = fromHash;
+  } else {
+    try {
+      const saved = window.localStorage.getItem('strudel-state-v5');
+      if (saved) state = mergeState(JSON.parse(saved));
     } catch (e) {}
   }
 
@@ -1362,10 +1335,8 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     const pad = ' '.repeat(n);
     return code.split('\n').map((l) => pad + l).join('\n');
   }
-  function soundChain(sound: string): string {
-    if (sound === 'piano') return '.piano()';
-    return `.s("${sound}")`;
-  }
+  // Build a strudel signal expression: <wave>.range(min, max).slow(n).
+  // Used by all mod targets (lpf, pan, gain).
   function modSignal(mod: FilterMod, min: number, max: number): string {
     if (!mod) return '';
     const slowMap: Record<FilterMod, number> = {
@@ -1374,152 +1345,194 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     const wave = mod === 'sine-slow' || mod === 'sine-fast' ? 'sine' : mod;
     return `${wave}.range(${min}, ${max}).slow(${slowMap[mod]})`;
   }
+  // Sensible ranges for each mod target.
   function modRangeFor(target: ModTarget, fx: PartFx): [number, number] {
     if (target === 'lpf')  return [200, fx.lpf];
     if (target === 'pan')  return [0, 1];
-    return [0.2, 1];
+    return [0.2, 1]; // gain — dip down, never silent
   }
   function applyFx(code: string, fx: PartFx): string {
     let out = code;
     const modOn = !!fx.mod;
+
+    // lpf — modulated, static, or off.
     if (modOn && fx.modTarget === 'lpf') {
       const [lo, hi] = modRangeFor('lpf', fx);
       out += `\n  .lpf(${modSignal(fx.mod, lo, hi)})`;
     } else if (fx.lpf < 8000) {
       out += `\n  .lpf(${fx.lpf})`;
     }
+
     if (fx.hpf > 0) out += `\n  .hpf(${fx.hpf})`;
     if (fx.ply > 1) out += `\n  .ply(${fx.ply})`;
     if (fx.drop > 0) out += `\n  .degradeBy(${fx.drop.toFixed(2)})`;
     if (fx.crush > 0) out += `\n  .crush(${fx.crush})`;
+
+    // pan — modulated, static, or off.
     if (modOn && fx.modTarget === 'pan') {
       const [lo, hi] = modRangeFor('pan', fx);
       out += `\n  .pan(${modSignal(fx.mod, lo, hi)})`;
     } else if (Math.abs(fx.pan - 0.5) > 0.001) {
       out += `\n  .pan(${fx.pan.toFixed(2)})`;
     }
+
+    // gain modulation — multiplies with the part's static gain at the
+    // end of the chain. Acts as a tremolo.
     if (modOn && fx.modTarget === 'gain') {
       const [lo, hi] = modRangeFor('gain', fx);
       out += `\n  .gain(${modSignal(fx.mod, lo, hi)})`;
     }
+
+    // struct — overlay a rhythmic mask. Useful for chord pulses, lead
+    // syncopation, etc. We strip embedded quotes defensively, and use
+    // optional chaining so an undefined struct (older state) doesn't
+    // throw and kill the whole code generation.
     if (fx.struct?.trim()) out += `\n  .struct("${fx.struct.replace(/"/g, '')}")`;
+
     if (fx.everyN && fx.everyFn) {
-      const fnMap: Record<EveryFn, string> = {
-        '': '', fast2: 'x => x.fast(2)', slow2: 'x => x.slow(2)',
-        rev: 'rev', jux: 'x => x.jux(rev)', chop: 'x => x.chop(2)',
+      const n = fx.everyN;
+      const fn: Record<EveryFn, string> = {
+        '':       '',
+        fast2:    `x => x.fast(2)`,
+        slow2:    `x => x.slow(2)`,
+        rev:      `rev`,
+        jux:      `x => x.jux(rev)`,
+        chop:     `x => x.chop(2)`,
       };
-      const expr = fnMap[fx.everyFn];
-      if (expr) out += `\n  .every(${fx.everyN}, ${expr})`;
+      const expr = fn[fx.everyFn];
+      if (expr) out += `\n  .every(${n}, ${expr})`;
     }
+
+    // superimpose — layer the part with itself transposed.
     const semis: Record<Superimpose, number> = { '': 0, '+5': 7, '+12': 12, '-12': -12 };
     if (fx.superimpose && semis[fx.superimpose]) {
       out += `\n  .superimpose(x => x.add(${semis[fx.superimpose]}))`;
     }
     return out;
   }
-  const isAudible = (v: number) => v >= GAIN_FLOOR;
-  const curvedGain = (v: number) => `${(v ** 1.7).toFixed(3)}`;
-
-  // Helpers shared by arp/lead/bass — find the first enabled chords
-  // part to follow harmonically. Returns its slots or an empty list.
-  function chordSlotsForFollow(): ChordSlot[] {
-    const c = state.parts.find((p): p is ChordsPart => p.type === 'chords' && p.enabled);
-    return c?.slots ?? [];
+  // Slider value 0..1 → audible gain via a perceptual curve. Below the
+  // floor the part is dropped from the stack entirely so slider=0 is
+  // truly silent (strudel's per-part .gain(0) doesn't always silence
+  // soundfonts cleanly — masking via omission is more reliable).
+  const GAIN_FLOOR = 0.01;
+  function curveGain(v: number): number {
+    return Math.pow(Math.max(0, Math.min(1, v)), 1.7);
   }
-
-  function drumCode(p: DrumsPart): string | null {
-    if (!isAudible(p.gain)) return null;
+  function isAudible(v: number): boolean {
+    return v >= GAIN_FLOOR;
+  }
+  function gainTail(v: number): string {
+    return `.gain(${curveGain(v).toFixed(3)})`;
+  }
+  function drumCode(): string | null {
+    if (!state.drums.enabled || !isAudible(state.drums.gain)) return null;
     const tokens: string[] = [];
     let any = false;
     for (let s = 0; s < STEPS; s++) {
-      const hits = p.rows.filter((r) => p.steps[r]?.[s]);
+      const hits = DRUMS.filter((d) => state.drums.steps[d][s]);
       if (hits.length > 0) any = true;
       tokens.push(hits.length === 0 ? '~' : hits.length === 1 ? hits[0] : `[${hits.join(',')}]`);
     }
     if (!any) return null;
     let code = `s("${tokens.join(' ')}")`;
-    if (p.bank) code += `\n  .bank("${p.bank}")`;
-    code = applyFx(code, p.fx);
-    code += `\n  .gain(${curvedGain(p.gain)})`;
+    if (state.drums.bank) code += `\n  .bank("${state.drums.bank}")`;
+    code = applyFx(code, state.drums.fx);
+    code += `\n  .gain(${(state.drums.gain ** 1.7).toFixed(3)})`;
     return code;
   }
-  function chordCode(p: ChordsPart): string | null {
-    if (!isAudible(p.gain) || p.slots.length === 0) return null;
-    const slotStrs = p.slots.map((s) => `<${chordNotesOf(s).join(',')}>`);
+  function soundChain(sound: string): string {
+    if (sound === 'piano') return '.piano()';
+    return `.s("${sound}")`;
+  }
+  function chordCode(): string | null {
+    if (!state.chords.enabled || !isAudible(state.chords.gain)) return null;
+    if (state.chords.slots.length === 0) return null;
+    const slotStrs = state.chords.slots.map((s) => `<${chordNotes(s).join(',')}>`);
     let code = `note("${slotStrs.join(' ')}")`;
-    code += `\n  ${soundChain(p.sound)}`;
-    if (p.sound !== 'piano') code += `\n  .release(0.5)`;
-    if (p.attack > 0) code += `\n  .attack(${p.attack.toFixed(2)})`;
-    if (p.vowel) code += `\n  .vowel("${p.vowel}")`;
-    if (p.room > 0) code += `\n  .room(${p.room.toFixed(2)})`;
-    code = applyFx(code, p.fx);
-    code += `\n  .gain(${curvedGain(p.gain)})`;
+    code += `\n  ${soundChain(state.chords.sound)}`;
+    if (state.chords.sound !== 'piano') code += `\n  .release(0.5)`;
+    if (state.chords.attack > 0) code += `\n  .attack(${state.chords.attack.toFixed(2)})`;
+    if (state.chords.vowel) code += `\n  .vowel("${state.chords.vowel}")`;
+    if (state.chords.room > 0) code += `\n  .room(${state.chords.room.toFixed(2)})`;
+    code = applyFx(code, state.chords.fx);
+    code += `\n  .gain(${(state.chords.gain ** 1.7).toFixed(3)})`;
     return code;
   }
-  function bassCode(p: BassPart): string | null {
-    if (!isAudible(p.gain)) return null;
-    const slots = chordSlotsForFollow();
+  function bassCode(): string | null {
+    if (!state.bass.enabled || !isAudible(state.bass.gain)) return null;
+    const slots = state.chords.slots;
+    // When follow is on, ride the chord roots; otherwise vamp on the
+    // current key root (used to be hard-coded to c2 — bug).
     const fallback = `${state.key}2`;
-    const roots = p.follow && slots.length
+    const roots = state.bass.follow && slots.length
       ? slots.map((s) => `${s.root}2`)
       : [fallback, fallback, fallback, fallback];
     let pattern = '';
-    if (p.rhythm === 'root')       pattern = roots.join(' ');
-    else if (p.rhythm === 'steady') pattern = roots.flatMap((r) => [r, r, r, r]).join(' ');
-    else if (p.rhythm === 'syncopated') pattern = roots.map((r) => `[${r} ~ ${r} [~ ${r}]]`).join(' ');
-    else if (p.rhythm === 'octaves')   pattern = roots.map((r) => {
-      const up = r.replace(/(\d)$/, (_m, d) => String(Number(d) + 1));
-      return `[${r} ${up} ${r} ${up}]`;
-    }).join(' ');
-    else if (p.rhythm === 'walking')   pattern = roots.map((r, i) => {
-      const next = roots[(i + 1) % roots.length];
-      return `[${r} ${r} ${next} ${r}]`;
-    }).join(' ');
-    let code = `note("${pattern}")\n  ${soundChain(p.sound)}`;
-    code = applyFx(code, p.fx);
-    code += `\n  .gain(${curvedGain(p.gain)})`;
+    if (state.bass.rhythm === 'root') {
+      pattern = roots.join(' ');
+    } else if (state.bass.rhythm === 'steady') {
+      pattern = roots.flatMap((r) => [r, r, r, r]).join(' ');
+    } else if (state.bass.rhythm === 'syncopated') {
+      pattern = roots.map((r) => `[${r} ~ ${r} [~ ${r}]]`).join(' ');
+    } else if (state.bass.rhythm === 'octaves') {
+      pattern = roots.map((r) => {
+        const up = r.replace(/(\d)$/, (_m, d) => String(Number(d) + 1));
+        return `[${r} ${up} ${r} ${up}]`;
+      }).join(' ');
+    } else if (state.bass.rhythm === 'walking') {
+      pattern = roots.map((r, i) => {
+        const next = roots[(i + 1) % roots.length];
+        return `[${r} ${r} ${next} ${r}]`;
+      }).join(' ');
+    }
+    let code = `note("${pattern}")\n  ${soundChain(state.bass.sound)}`;
+    code = applyFx(code, state.bass.fx);
+    code += `\n  .gain(${(state.bass.gain ** 1.7).toFixed(3)})`;
     return code;
   }
-  function rollPattern(cells: boolean[][], steps: number, follow: boolean, octaveBase: number): string {
-    const slots = follow ? chordSlotsForFollow() : [];
-    const slotsPerStep = slots.length ? steps / slots.length : steps;
+
+  function rollNotes(cells: boolean[][], steps: number, scale: string, key: string, octaveBase: number, slots: ChordSlot[], follow: boolean) {
     const tokens: string[] = [];
+    const slotsPerStep = slots.length ? steps / slots.length : steps;
     for (let s = 0; s < steps; s++) {
       const onPitches: number[] = [];
-      for (let pp = 0; pp < ROLL_PITCHES; pp++) {
-        if (cells[pp]?.[s]) onPitches.push(ROLL_PITCHES - 1 - pp);
+      for (let p = 0; p < ROLL_PITCHES; p++) {
+        if (cells[p][s]) onPitches.push(ROLL_PITCHES - 1 - p);
       }
       if (onPitches.length === 0) { tokens.push('~'); continue; }
       const slotIdx = Math.min(slots.length - 1, Math.floor(s / slotsPerStep));
-      const localKey = follow && slots[slotIdx] ? slots[slotIdx].root : state.key;
-      const names = onPitches.map((deg) => midiToName(scaleDegreeMidi(localKey, state.scale, deg, octaveBase)));
+      const localKey = follow && slots[slotIdx] ? slots[slotIdx].root : key;
+      const names = onPitches.map((deg) => midiToName(scaleDegreeMidi(localKey, scale, deg, octaveBase)));
       tokens.push(names.length === 1 ? names[0] : `[${names.join(',')}]`);
     }
     return tokens.join(' ');
   }
-  function arpCode(p: ArpPart): string | null {
-    if (!isAudible(p.gain)) return null;
-    const hasAny = p.cells.some((row) => row.some(Boolean));
+
+  function arpCode(): string | null {
+    if (!state.arp.enabled || !isAudible(state.arp.gain)) return null;
+    const hasAny = state.arp.cells.some((row) => row.some(Boolean));
     if (!hasAny) return null;
-    let code = `note("${rollPattern(p.cells, ARP_STEPS, p.follow, 4)}")`;
-    code += `\n  ${soundChain(p.sound)}`;
-    if (p.speed !== 1) code += `\n  .fast(${p.speed})`;
-    code = applyFx(code, p.fx);
-    code += `\n  .delay(0.25)\n  .gain(${curvedGain(p.gain)})`;
+    const pattern = rollNotes(state.arp.cells, ARP_STEPS, state.scale, state.key, 4, state.chords.slots, state.arp.follow);
+    let code = `note("${pattern}")`;
+    code += `\n  ${soundChain(state.arp.sound)}`;
+    if (state.arp.speed !== 1) code += `\n  .fast(${state.arp.speed})`;
+    code = applyFx(code, state.arp.fx);
+    code += `\n  .delay(0.25)\n  .gain(${(state.arp.gain ** 1.7).toFixed(3)})`;
     return code;
   }
-  function midiNotesPattern(notes: MidiNote[], steps: number, octaveBase: number): string {
+  function midiNotesPattern(notes: MidiNote[], steps: number, scale: string, key: string, octaveBase: number, slots: ChordSlot[]) {
     type Step = { starts: string[]; sustain: boolean };
     const cells: Step[] = Array.from({ length: steps }, () => ({ starts: [], sustain: false }));
-    const slots = chordSlotsForFollow();
     const slotsPerStep = slots.length ? steps / slots.length : steps;
     notes.forEach((n) => {
       if (n.start >= steps) return;
       const slotIdx = Math.min(slots.length - 1, Math.floor(n.start / slotsPerStep));
-      const localKey = slots[slotIdx] ? slots[slotIdx].root : state.key;
-      const name = midiToName(scaleDegreeMidi(localKey, state.scale, n.pitch, octaveBase));
+      const localKey = slots[slotIdx] ? slots[slotIdx].root : key;
+      const name = midiToName(scaleDegreeMidi(localKey, scale, n.pitch, octaveBase));
       cells[n.start].starts.push(name);
-      for (let i = 1; i < n.length && n.start + i < steps; i++) cells[n.start + i].sustain = true;
+      for (let i = 1; i < n.length && n.start + i < steps; i++) {
+        cells[n.start + i].sustain = true;
+      }
     });
     return cells.map((c) => {
       if (c.starts.length === 0) return c.sustain ? '_' : '~';
@@ -1527,76 +1540,78 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
       return `[${c.starts.join(',')}]`;
     }).join(' ');
   }
-  function leadCode(p: LeadPart): string | null {
-    if (!isAudible(p.gain) || !p.notes || p.notes.length === 0) return null;
-    let code = `note("${midiNotesPattern(p.notes, LEAD_STEPS, 5)}")`;
-    code += `\n  ${soundChain(p.sound)}`;
-    if (p.attack > 0) code += `\n  .attack(${p.attack.toFixed(2)})`;
-    if (p.effects.delay) code += `\n  .delay(0.4)`;
-    const echoMap: Record<EchoPreset, string> = {
-      '': '', short: '.echo(3, 1/8, 0.7)', long: '.echo(5, 1/4, 0.6)', tape: '.echo(4, 3/16, 0.75)',
+  function leadCode(): string | null {
+    if (!state.lead.enabled || !isAudible(state.lead.gain)) return null;
+    if (!state.lead.notes || state.lead.notes.length === 0) return null;
+    const pattern = midiNotesPattern(state.lead.notes, LEAD_STEPS, state.scale, state.key, 5, state.chords.slots);
+    let code = `note("${pattern}")`;
+    code += `\n  ${soundChain(state.lead.sound)}`;
+    if (state.lead.attack > 0) code += `\n  .attack(${state.lead.attack.toFixed(2)})`;
+    if (state.lead.effects.delay) code += `\n  .delay(0.4)`;
+    // Tempo-synced echo: N repeats with decay. More musical than .delay
+    // for rhythmic figures.
+    const echoMap: Record<string, string> = {
+      short: '.echo(3, 1/8, 0.7)',
+      long:  '.echo(5, 1/4, 0.6)',
+      tape:  '.echo(4, 3/16, 0.75)',
     };
-    if (p.effects.echo && echoMap[p.effects.echo]) code += `\n  ${echoMap[p.effects.echo]}`;
-    if (p.effects.room) code += `\n  .room(0.6)`;
-    if (p.effects.jux) code += `\n  .jux(rev)`;
-    if (p.effects.ghost) code += `\n  .off(1/8, x => x.fast(2).gain(0.5))`;
-    if (p.effects.shape) code += `\n  .shape(0.4)`;
-    code = applyFx(code, p.fx);
-    code += `\n  .gain(${curvedGain(p.gain)})`;
+    if (state.lead.effects.echo && echoMap[state.lead.effects.echo]) {
+      code += `\n  ${echoMap[state.lead.effects.echo]}`;
+    }
+    if (state.lead.effects.room) code += `\n  .room(0.6)`;
+    if (state.lead.effects.jux) code += `\n  .jux(rev)`;
+    if (state.lead.effects.ghost) code += `\n  .off(1/8, x => x.fast(2).gain(0.5))`;
+    if (state.lead.effects.shape) code += `\n  .shape(0.4)`;
+    code = applyFx(code, state.lead.fx);
+    code += `\n  .gain(${(state.lead.gain ** 1.7).toFixed(3)})`;
     return code;
   }
-  function sampleCode(p: SamplePart): string | null {
-    if (!isAudible(p.gain) || !p.url || !p.name) return null;
-    return `s("${p.name}").loopAt(4).gain(${curvedGain(p.gain)})`;
-  }
-
-  function genForPart(p: Part): string | null {
-    switch (p.type) {
-      case 'drums':  return drumCode(p);
-      case 'chords': return chordCode(p);
-      case 'bass':   return bassCode(p);
-      case 'arp':    return arpCode(p);
-      case 'lead':   return leadCode(p);
-      case 'sample': return sampleCode(p);
-    }
+  function sampleCode(): string | null {
+    if (!state.sample.enabled || !state.sample.url || !state.sample.name || !isAudible(state.sample.gain)) return null;
+    return `s("${state.sample.name}").loopAt(4).gain(${(state.sample.gain ** 1.7).toFixed(3)})`;
   }
 
   function buildCode(): string {
-    const anySolo = state.parts.some((p) => p.soloed);
-    const active = state.parts.filter((p) => anySolo ? p.soloed : p.enabled);
+    const generators: Array<[string, () => string | null]> = [
+      ['drums', drumCode],
+      ['chords', chordCode],
+      ['bass', bassCode],
+      ['arp', arpCode],
+      ['lead', leadCode],
+      ['sample', sampleCode],
+    ];
+    const parts = generators
+      .map(([name, gen]) => ({ name, code: gen() }))
+      .filter((p): p is { name: string; code: string } => !!p.code);
 
     const cps = (state.bpm / 60 / 4).toFixed(3);
     let header = `// ${state.key.toUpperCase()} ${state.scale}  •  ${state.bpm} bpm\nsetcps(${cps})`;
-    // samples({}) prelude for any sample parts with loaded blob URLs
-    const sampleDefs = active
-      .filter((p): p is SamplePart => p.type === 'sample' && !!p.url && !!p.name)
-      .map((p) => `  ${p.name}: '${p.url}'`);
-    if (sampleDefs.length > 0) {
-      header = `// dropped samples\nsamples({\n${sampleDefs.join(',\n')},\n})\n\n${header}`;
+    if (state.sample.enabled && state.sample.url && state.sample.name) {
+      header = `// dropped sample\nsamples({ ${state.sample.name}: '${state.sample.url}' })\n\n${header}`;
     }
     const tail: string[] = [];
     if (state.swing > 0) tail.push(`.swingBy(${state.swing.toFixed(2)}, 4)`);
-    tail.push(`.gain(${curvedGain(state.master)})`);
+    tail.push(`.gain(${curveGain(state.master).toFixed(3)})`);
     const tailStr = tail.map((t) => `  ${t}`).join('\n');
-
-    const blocks = active.map((p) => {
-      const c = genForPart(p);
-      return c ? { code: c, name: `${p.type} (${p.id})` } : null;
-    }).filter((x): x is { code: string; name: string } => !!x);
-    if (blocks.length === 0) return `${header}\nsilence`;
-    if (blocks.length === 1) return `${header}\n// ${blocks[0].name}\n${blocks[0].code}\n${tailStr}`;
-    const indented = blocks.map((b) => indent(`// ${b.name}\n${b.code}`));
-    return `${header}\nstack(\n${indented.join(',\n\n')}\n)\n${tailStr}`;
+    if (parts.length === 0) {
+      return `${header}\nsilence`;
+    }
+    if (parts.length === 1) {
+      return `${header}\n// ${parts[0].name}\n${parts[0].code}\n${tailStr}`;
+    }
+    const blocks = parts.map((p) => indent(`// ${p.name}\n${p.code}`));
+    return `${header}\nstack(\n${blocks.join(',\n\n')}\n)\n${tailStr}`;
   }
 
-  // =========================================================================
-  // Editor wiring + manual-mode tracking via real input events.
-  // =========================================================================
+  // ===== Editor wiring =====
   let editorRef: any = null;
   let editorReady: Promise<any> | null = null;
   let isRunning = false;
   let liveTimer: number | null = null;
-  let userTouchedEditor = false;
+  // The exact code we last wrote into the editor. If the editor's
+  // current contents differ, the user has edited by hand — at which
+  // point GUI changes should NOT overwrite their work.
+  let lastGenerated = '';
   let manualMode = false;
 
   const hostEl = document.getElementById('strudel-host');
@@ -1606,13 +1621,6 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
   const regenBtn = document.getElementById('strudel-regen') as HTMLButtonElement | null;
 
   function setStatus(text: string) { if (statusEl) statusEl.textContent = text; }
-  function setManual(v: boolean) {
-    if (manualMode === v) return;
-    manualMode = v;
-    hostEl?.classList.toggle('is-manual', v);
-    if (regenBtn) regenBtn.hidden = !v;
-    if (v) setStatus('manual edits — gui paused');
-  }
 
   function ensureEditor(): Promise<any> {
     if (editorReady) return editorReady;
@@ -1621,13 +1629,14 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
       const existing = document.querySelector<HTMLScriptElement>('script[data-strudel-repl]');
       const onLoaded = () => {
         const el = document.createElement('strudel-editor');
-        el.setAttribute('code', buildCode());
+        const initial = buildCode();
+        el.setAttribute('code', initial);
+        lastGenerated = initial;
         hostEl?.appendChild(el);
+        // wait for connectedCallback to set up editor
         const tryAttach = (tries = 0) => {
           if ((el as any).editor) {
             editorRef = (el as any).editor;
-            // Subscribe to scheduler-state updates dispatched by the
-            // strudel-editor component, to track play/pause.
             (el as any).addEventListener('update', (evt: CustomEvent) => {
               const started = !!evt.detail?.started;
               if (started !== isRunning) {
@@ -1636,15 +1645,6 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
                 hostEl?.classList.toggle('is-running', started);
               }
             });
-            // Manual-mode detection — listen for actual input events on
-            // CodeMirror's content. Bubbles up to hostEl.
-            const onInput = () => {
-              if (!userTouchedEditor) {
-                userTouchedEditor = true;
-                setManual(true);
-              }
-            };
-            hostEl?.addEventListener('input', onInput);
             setStatus('ready');
             resolve(editorRef);
           } else if (tries < 50) {
@@ -1674,16 +1674,42 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     return editorReady;
   }
 
+  // True if the editor's current code differs meaningfully from what
+  // the GUI last wrote. Compare whitespace-normalized so the strudel
+  // editor's internal line-ending or trailing-newline normalization
+  // doesn't falsely trigger manual mode (which was blocking GUI
+  // updates for chord adds, etc.).
+  function normalizeCode(s: string): string {
+    return s.replace(/\s+/g, ' ').trim();
+  }
+  function editorIsManual(): boolean {
+    if (!editorRef) return false;
+    const cur = normalizeCode(editorRef.code ?? '');
+    const last = normalizeCode(lastGenerated);
+    return cur !== '' && cur !== last;
+  }
+  function setManual(v: boolean) {
+    if (manualMode === v) return;
+    manualMode = v;
+    hostEl?.classList.toggle('is-manual', v);
+    if (regenBtn) regenBtn.hidden = !v;
+    if (v) setStatus('manual edits — gui paused');
+  }
+
   async function pushCode() {
-    saveState();
+    const code = buildCode();
+    try { window.localStorage.setItem('strudel-state-v5', JSON.stringify(state)); } catch (e) {}
     try { await ensureEditor(); } catch (e) { setStatus('editor unavailable'); return; }
     if (!editorRef) return;
-    if (userTouchedEditor) {
+    if (editorIsManual()) {
+      // The user has typed in the editor; don't overwrite their work.
+      // State still updates and persists to localStorage; clicking
+      // "regen" forces the GUI version to win.
       setManual(true);
       return;
     }
-    const code = buildCode();
     editorRef.setCode(code);
+    lastGenerated = code;
     if (isRunning) {
       try { await editorRef.evaluate(); } catch (e) { setStatus('eval error'); }
     }
@@ -1692,11 +1718,18 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     if (liveTimer !== null) window.clearTimeout(liveTimer);
     liveTimer = window.setTimeout(pushCode, 100);
   }
+
   async function run() {
     await ensureEditor();
     if (!editorRef) return;
-    if (!userTouchedEditor) {
-      editorRef.setCode(buildCode());
+    // If the user has hand-edited, evaluate THEIR code as-is. Don't
+    // silently revert their work to the GUI's version on play.
+    if (!editorIsManual()) {
+      const code = buildCode();
+      editorRef.setCode(code);
+      lastGenerated = code;
+    } else {
+      setManual(true);
     }
     try {
       await editorRef.evaluate();
@@ -1708,6 +1741,15 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
       setStatus(e instanceof Error ? e.message : 'eval error');
     }
   }
+  function regenFromGui() {
+    if (!editorRef) return;
+    const code = buildCode();
+    editorRef.setCode(code);
+    lastGenerated = code;
+    setManual(false);
+    setStatus('regenerated');
+    if (isRunning) editorRef.evaluate().catch(() => setStatus('eval error'));
+  }
   async function stop() {
     if (!editorRef) return;
     try {
@@ -1718,536 +1760,109 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
       setStatus('stopped');
     } catch (e) {}
   }
-  function regenFromGui() {
-    if (!editorRef) return;
-    userTouchedEditor = false;
-    setManual(false);
-    const code = buildCode();
-    editorRef.setCode(code);
-    setStatus('regenerated');
-    if (isRunning) editorRef.evaluate().catch(() => setStatus('eval error'));
-  }
 
+  // Run button is a play/pause toggle (icon swaps via CSS based on
+  // data-state). Stop button always halts.
   runBtn?.addEventListener('click', () => (isRunning ? stop() : run()));
-  stopBtn?.addEventListener('click', stop);
   regenBtn?.addEventListener('click', regenFromGui);
+  stopBtn?.addEventListener('click', stop);
 
-  // =========================================================================
-  // Click-to-enter for slider outputs.
-  // =========================================================================
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    if (!target || target.tagName !== 'OUTPUT') return;
-    if (target.dataset.editing === 'true') return;
-    const label = target.closest('label');
-    const slider = label?.querySelector<HTMLInputElement>('input[type="range"]');
-    if (!slider) return;
-    target.dataset.editing = 'true';
-    const original = target.textContent ?? '';
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.inputMode = 'decimal';
-    input.value = String(slider.value);
-    input.className = 'strudel-output-input';
-    const min = parseFloat(slider.min || '0');
-    const max = parseFloat(slider.max || '1');
-    const cleanup = () => { target.dataset.editing = 'false'; };
-    const commit = () => {
-      const v = parseFloat(input.value);
-      if (!Number.isNaN(v)) {
-        const clamped = Math.max(min, Math.min(max, v));
-        slider.value = String(clamped);
-        slider.dispatchEvent(new Event('input', { bubbles: true }));
-      } else {
-        target.textContent = original;
-      }
-      cleanup();
-    };
-    const cancel = () => { target.textContent = original; cleanup(); };
-    input.addEventListener('blur', commit);
-    input.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
-      else if (ev.key === 'Escape') {
-        ev.preventDefault();
-        input.removeEventListener('blur', commit);
-        cancel();
-        input.blur();
-      }
-    });
-    target.replaceChildren(input);
-    input.focus();
-    input.select();
-  });
-
-  // =========================================================================
-  // Keyboard shortcuts: space (play/pause), ⌘/Ctrl-Enter (re-eval), esc (stop).
-  // =========================================================================
-  window.addEventListener('keydown', (e) => {
-    const target = e.target as HTMLElement | null;
-    const inField = target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
-    if (e.key === ' ' && !inField) {
-      e.preventDefault();
-      isRunning ? stop() : run();
-    } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-      e.preventDefault();
-      run();
-    } else if (e.key === 'Escape') {
-      stop();
-    }
-  });
-
-  // =========================================================================
-  // DOM helpers.
-  // =========================================================================
+  // ===== UI rendering =====
   function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, any> = {}, ...children: (Node | string)[]) {
     const node = document.createElement(tag);
     for (const [k, v] of Object.entries(attrs)) {
       if (k === 'class') node.className = v;
       else if (k === 'dataset') Object.assign(node.dataset, v);
       else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2), v);
-      else if (k === 'checked' || k === 'disabled' || k === 'selected' || k === 'hidden') (node as any)[k] = v;
+      else if (k === 'checked' || k === 'disabled' || k === 'selected') (node as any)[k] = v;
       else node.setAttribute(k, String(v));
     }
     for (const c of children) node.append(c);
     return node;
   }
 
-  // Build the melody/bass select markup. Mirrors the Astro frontmatter.
-  const MELODY_PALETTE: { label: string; items: [string, string][] }[] = [
-    { label: 'synths', items: [['sine', 'sine'], ['triangle', 'triangle'], ['square', 'square'], ['sawtooth', 'saw'], ['supersaw', 'supersaw'], ['pulse', 'pulse'], ['z_sine', 'zzfx sine'], ['z_sawtooth', 'zzfx saw'], ['white', 'noise']] },
-    { label: 'piano + keys', items: [['piano', 'piano'], ['gm_acoustic_grand_piano', 'grand piano'], ['gm_electric_piano_1', 'rhodes'], ['gm_electric_piano_2', 'wurli'], ['gm_harpsichord', 'harpsichord'], ['gm_celesta', 'celesta'], ['gm_drawbar_organ', 'organ']] },
-    { label: 'mallets', items: [['gm_vibraphone', 'vibraphone'], ['gm_marimba', 'marimba'], ['gm_xylophone', 'xylophone'], ['gm_glockenspiel', 'glockenspiel'], ['gm_music_box', 'music box'], ['gm_kalimba', 'kalimba']] },
-    { label: 'strings', items: [['gm_violin', 'violin'], ['gm_cello', 'cello'], ['gm_string_ensemble_1', 'string ensemble'], ['gm_synth_strings_1', 'synth strings'], ['gm_pizzicato_strings', 'pizzicato']] },
-    { label: 'pads', items: [['gm_pad_1_new_age', 'pad: new age'], ['gm_pad_2_warm', 'pad: warm'], ['gm_pad_3_polysynth', 'pad: polysynth'], ['gm_pad_4_choir', 'pad: choir'], ['gm_pad_5_bowed', 'pad: bowed'], ['gm_pad_8_sweep', 'pad: sweep']] },
-    { label: 'leads', items: [['gm_lead_1_square', 'lead: square'], ['gm_lead_2_sawtooth', 'lead: saw'], ['gm_lead_3_calliope', 'lead: calliope'], ['gm_lead_5_charang', 'lead: charang'], ['gm_lead_8_bass_lead', 'lead: bass']] },
-    { label: 'wind / brass', items: [['gm_flute', 'flute'], ['gm_clarinet', 'clarinet'], ['gm_oboe', 'oboe'], ['gm_synth_brass_1', 'synth brass'], ['gm_trumpet', 'trumpet']] },
-    { label: 'guitar', items: [['gm_acoustic_guitar_nylon', 'guitar: nylon'], ['gm_electric_guitar_clean', 'guitar: clean'], ['gm_overdriven_guitar', 'guitar: overdrive'], ['gm_distortion_guitar', 'guitar: dist']] },
-    { label: 'fx', items: [['gm_fx_2_soundtrack', 'fx: soundtrack'], ['gm_fx_3_crystal', 'fx: crystal'], ['gm_fx_4_atmosphere', 'fx: atmosphere'], ['gm_fx_5_brightness', 'fx: brightness'], ['gm_fx_8_scifi', 'fx: sci-fi']] },
-  ];
-  const BASS_PALETTE: { label: string; items: [string, string][] }[] = [
-    { label: 'synth', items: [['sawtooth', 'saw'], ['square', 'square'], ['sine', 'sine'], ['triangle', 'triangle'], ['pulse', 'pulse'], ['supersaw', 'supersaw']] },
-    { label: 'soundfont', items: [['gm_acoustic_bass', 'acoustic bass'], ['gm_electric_bass_finger', 'electric bass'], ['gm_electric_bass_pick', 'pick bass'], ['gm_fretless_bass', 'fretless'], ['gm_slap_bass_1', 'slap'], ['gm_synth_bass_1', 'synth bass'], ['gm_synth_bass_2', 'rezzy bass'], ['gm_lead_8_bass_lead', 'bass lead']] },
-  ];
-  function makeSoundSelect(palette: typeof MELODY_PALETTE, value: string): HTMLSelectElement {
-    const sel = document.createElement('select');
-    palette.forEach((group) => {
-      const og = document.createElement('optgroup');
-      og.label = group.label;
-      group.items.forEach(([v, label]) => {
-        const opt = document.createElement('option');
-        opt.value = v;
-        opt.textContent = label;
-        if (v === value) opt.selected = true;
-        og.appendChild(opt);
-      });
-      sel.appendChild(og);
-    });
-    sel.value = value;
-    return sel;
-  }
-  const DRUM_BANKS: [string, string][] = [
-    ['RolandTR909', '909'], ['RolandTR808', '808'], ['RolandTR707', '707'], ['RolandTR606', '606'],
-    ['AlesisHR16', 'HR16'], ['AkaiLinn', 'linn'], ['ViscoSpaceDrum', 'visco'],
-    ['bossanova', 'bossa'], ['casio', 'casio'], ['', 'default'],
-  ];
-
-  function makePartHead(p: Part, sec: HTMLElement, onChange: () => void): HTMLElement {
-    const head = el('header', { class: 'strudel-part-head' });
-    // Mute / Solo
-    const ms = el('div', { class: 'strudel-ms' });
-    const mBtn = el('button', {
-      type: 'button',
-      'aria-label': 'mute',
-      dataset: { kind: 'm' },
-      class: p.enabled ? '' : 'is-active',
-    }, 'M') as HTMLButtonElement;
-    mBtn.addEventListener('click', () => {
-      p.enabled = !p.enabled;
-      mBtn.classList.toggle('is-active', !p.enabled);
-      sec.classList.toggle('is-muted', !p.enabled);
-      onChange();
-    });
-    const sBtn = el('button', {
-      type: 'button',
-      'aria-label': 'solo',
-      dataset: { kind: 's' },
-      class: p.soloed ? 'is-active' : '',
-    }, 'S') as HTMLButtonElement;
-    sBtn.addEventListener('click', () => {
-      p.soloed = !p.soloed;
-      sBtn.classList.toggle('is-active', p.soloed);
-      onChange();
-    });
-    ms.append(mBtn, sBtn);
-
-    // Title
-    const title = el('span', { class: 'strudel-part-title' }, p.type);
-
-    // Gain
-    const controls = el('div', { class: 'strudel-part-controls' });
-    const gainEl = el('input', {
-      type: 'range', min: '0', max: '1', step: '0.01', value: String(p.gain),
-    }) as HTMLInputElement;
-    gainEl.addEventListener('input', () => {
-      p.gain = Number(gainEl.value);
-      onChange();
-    });
-    controls.append(gainEl);
-
-    // Sound select for parts that use one
-    if (p.type === 'chords' || p.type === 'arp' || p.type === 'lead') {
-      const sel = makeSoundSelect(MELODY_PALETTE, (p as any).sound);
-      sel.addEventListener('change', () => { (p as any).sound = sel.value; onChange(); });
-      controls.append(sel);
-    } else if (p.type === 'bass') {
-      const sel = makeSoundSelect(BASS_PALETTE, (p as BassPart).sound);
-      sel.addEventListener('change', () => { (p as BassPart).sound = sel.value; onChange(); });
-      controls.append(sel);
-    } else if (p.type === 'drums') {
-      const sel = document.createElement('select');
-      DRUM_BANKS.forEach(([v, l]) => {
-        const opt = document.createElement('option');
-        opt.value = v; opt.textContent = l;
-        if (v === (p as DrumsPart).bank) opt.selected = true;
-        sel.appendChild(opt);
-      });
-      sel.addEventListener('change', () => { (p as DrumsPart).bank = sel.value; onChange(); });
-      controls.append(sel);
-    }
-
-    // Delete
-    const del = el('button', { type: 'button', class: 'strudel-part-delete', 'aria-label': 'remove part', title: 'remove part' }, '×');
-    del.addEventListener('click', () => {
-      const idx = state.parts.indexOf(p);
-      if (idx >= 0) {
-        state.parts.splice(idx, 1);
-        sec.remove();
-        onChange();
+  // --- Drums grid
+  const drumGrid = document.getElementById('strudel-drum-grid');
+  let painting: { value: boolean } | null = null;
+  // Compact glyphs for the drum row labels — visually distinct and
+  // readable at small sizes (clearer than 'bd'/'sd'/'hh'/'cp').
+  const DRUM_ICONS: Record<DrumRow, string> = { bd: '●', sd: '◐', hh: '✕', cp: '✦' };
+  const DRUM_TITLES: Record<DrumRow, string> = { bd: 'kick', sd: 'snare', hh: 'hi-hat', cp: 'clap' };
+  function renderDrumGrid() {
+    if (!drumGrid) return;
+    drumGrid.replaceChildren();
+    DRUMS.forEach((row) => {
+      const label = el('span', { class: 'strudel-step-label strudel-drum-icon', title: DRUM_TITLES[row] }, DRUM_ICONS[row]);
+      drumGrid.appendChild(label);
+      for (let s = 0; s < STEPS; s++) {
+        const on = state.drums.steps[row][s];
+        const btn = el('button', {
+          type: 'button',
+          'aria-pressed': String(on),
+          'aria-label': `${row} step ${s + 1}`,
+          class: on ? 'is-on' : '',
+          dataset: { row, step: String(s) },
+        });
+        btn.addEventListener('pointerdown', (event) => {
+          event.preventDefault();
+          const next = !state.drums.steps[row][s];
+          painting = { value: next };
+          state.drums.steps[row][s] = next;
+          btn.classList.toggle('is-on', next);
+          btn.setAttribute('aria-pressed', String(next));
+          scheduleLiveApply();
+        });
+        btn.addEventListener('pointerenter', () => {
+          if (!painting) return;
+          state.drums.steps[row][s] = painting.value;
+          btn.classList.toggle('is-on', painting.value);
+          btn.setAttribute('aria-pressed', String(painting.value));
+          scheduleLiveApply();
+        });
+        drumGrid.appendChild(btn);
       }
     });
+  }
+  window.addEventListener('pointerup', () => { painting = null; });
 
-    head.append(ms, title, controls, del);
-    return head;
+  // Compact label for a scale degree, e.g. degree 0 in C minor → "C",
+  // degree 7 in C minor → "C" (octave up). Used to label rolls.
+  function degreeLabel(degree: number, key: string, scale: string): string {
+    const intervals = SCALES[scale] ?? SCALES.minor;
+    const interval = intervals[((degree % intervals.length) + intervals.length) % intervals.length];
+    const idx = (rootIndex(key) + interval) % 12;
+    return NOTE_NAMES[idx].replace('b', '♭').toUpperCase();
   }
 
-  // Generic fx-row builder shared by all part types.
-  function makeFxRow(p: Part, onChange: () => void): HTMLElement {
-    const row = el('div', { class: 'strudel-fx-row' });
-
-    const sliderKnob = (label: string, min: string, max: string, step: string, get: () => number, set: (v: number) => void, fmt: (v: number) => string) => {
-      const lbl = el('label', { class: 'fx-knob' });
-      const span = el('span', {}, label);
-      const input = el('input', { type: 'range', min, max, step, value: String(get()) }) as HTMLInputElement;
-      const out = el('output', {}, fmt(get()));
-      input.addEventListener('input', () => {
-        const v = Number(input.value); set(v); out.textContent = fmt(v); onChange();
-      });
-      lbl.append(span, input, out);
-      return lbl;
-    };
-    const smallSelectKnob = (label: string, options: [string, string][], get: () => string, set: (v: string) => void) => {
-      const lbl = el('label', { class: 'fx-knob fx-knob--small' });
-      lbl.appendChild(el('span', {}, label));
-      const sel = document.createElement('select');
-      options.forEach(([v, l]) => {
-        const opt = document.createElement('option');
-        opt.value = v; opt.textContent = l;
-        if (v === get()) opt.selected = true;
-        sel.appendChild(opt);
-      });
-      sel.addEventListener('change', () => { set(sel.value); onChange(); });
-      lbl.appendChild(sel);
-      return lbl;
-    };
-
-    row.append(
-      sliderKnob('filter', '200', '8000', '50', () => p.fx.lpf, (v) => { p.fx.lpf = v; }, (v) => v >= 8000 ? 'off' : `${Math.round(v)}`),
-      sliderKnob('drop', '0', '0.5', '0.05', () => p.fx.drop, (v) => { p.fx.drop = v; }, (v) => v === 0 ? 'off' : v.toFixed(2)),
-      sliderKnob('pan', '0', '1', '0.05', () => p.fx.pan, (v) => { p.fx.pan = v; }, (v) => {
-        const d = v - 0.5;
-        return Math.abs(d) < 0.01 ? 'C' : (d < 0 ? `L${Math.round(-d * 200)}` : `R${Math.round(d * 200)}`);
-      }),
-      sliderKnob('crush', '0', '16', '1', () => p.fx.crush, (v) => { p.fx.crush = v; }, (v) => v === 0 ? 'off' : `${v}`),
-      smallSelectKnob('mod', [
-        ['', 'none'], ['sine-slow', '∿ sine slow'], ['sine-fast', '∿ sine fast'],
-        ['tri', '△ tri'], ['saw', '⩘ saw'], ['square', '▢ square'],
-        ['rand', '? rand'], ['perlin', '~ perlin'],
-      ], () => p.fx.mod, (v) => { p.fx.mod = v as FilterMod; }),
-      smallSelectKnob('→', [['lpf', 'filter'], ['pan', 'pan'], ['gain', 'gain']], () => p.fx.modTarget, (v) => { p.fx.modTarget = v as ModTarget; }),
-      smallSelectKnob('ply', [['1', '×1'], ['2', '×2'], ['3', '×3'], ['4', '×4']], () => String(p.fx.ply), (v) => { p.fx.ply = Number(v); }),
-    );
-
-    // every group [fn] every [N]
-    const everyGroup = el('div', { class: 'fx-every-group' });
-    const fnSel = document.createElement('select');
-    [['', '—'], ['fast2', 'fast ×2'], ['slow2', 'slow ×½'], ['rev', 'rev'], ['jux', 'jux rev'], ['chop', 'chop']].forEach(([v, l]) => {
-      const opt = document.createElement('option'); opt.value = v; opt.textContent = l;
-      if (v === p.fx.everyFn) opt.selected = true; fnSel.appendChild(opt);
-    });
-    fnSel.addEventListener('change', () => { p.fx.everyFn = fnSel.value as EveryFn; onChange(); });
-    everyGroup.appendChild(fnSel);
-    everyGroup.appendChild(el('span', { class: 'fx-every-label' }, 'every'));
-    const nSel = document.createElement('select');
-    [['', '—'], ['2', '2'], ['4', '4'], ['8', '8']].forEach(([v, l]) => {
-      const opt = document.createElement('option'); opt.value = v; opt.textContent = l;
-      if (v === p.fx.everyN) opt.selected = true; nSel.appendChild(opt);
-    });
-    nSel.addEventListener('change', () => { p.fx.everyN = nSel.value as EveryN; onChange(); });
-    everyGroup.appendChild(nSel);
-    row.appendChild(everyGroup);
-
-    row.appendChild(smallSelectKnob('double', [
-      ['', '—'], ['+5', '+5th'], ['+12', '+oct'], ['-12', '-oct'],
-    ], () => p.fx.superimpose, (v) => { p.fx.superimpose = v as Superimpose; }));
-
-    // Struct grid (16 cells)
-    const structBox = el('div', { class: 'fx-struct' });
-    structBox.appendChild(el('span', { class: 'fx-struct-label' }, 'struct'));
-    const structGrid = el('div', { class: 'fx-struct-grid' });
-    const cells: boolean[] = new Array(16).fill(false);
-    (p.fx.struct || '').split(/\s+/).filter(Boolean).slice(0, 16).forEach((t, i) => { cells[i] = t === 'x'; });
-    for (let i = 0; i < 16; i++) {
-      const c = el('button', {
-        type: 'button',
-        class: `fx-struct-cell${cells[i] ? ' is-on' : ''}`,
-      }) as HTMLButtonElement;
-      c.addEventListener('click', () => {
-        cells[i] = !cells[i];
-        c.classList.toggle('is-on', cells[i]);
-        p.fx.struct = cells.some(Boolean) ? cells.map((on) => (on ? 'x' : '~')).join(' ') : '';
-        onChange();
-      });
-      structGrid.appendChild(c);
-    }
-    structBox.appendChild(structGrid);
-    const clearBtn = el('button', { type: 'button', class: 'fx-struct-clear', title: 'Clear struct' }, '×');
-    clearBtn.addEventListener('click', () => {
-      cells.fill(false);
-      structGrid.querySelectorAll('.fx-struct-cell').forEach((c) => c.classList.remove('is-on'));
-      p.fx.struct = '';
-      onChange();
-    });
-    structBox.appendChild(clearBtn);
-    row.appendChild(structBox);
-
-    return row;
-  }
-
-  // ===== Part body renderers =====
-
-  function renderDrums(p: DrumsPart, sec: HTMLElement, onChange: () => void) {
-    const grid = el('div', { class: 'strudel-step-grid' });
-    function refreshGrid() {
-      grid.replaceChildren();
-      grid.style.gridTemplateColumns = `2.4rem repeat(16, minmax(0, 1fr)) 1.4rem`;
-      p.rows.forEach((row) => {
-        const info = drumRowInfo(row);
-        const label = el('span', { class: 'strudel-step-label', title: info.label });
-        label.appendChild(el('span', {}, info.icon));
-        const remove = el('button', { type: 'button', title: `remove ${info.label}` }, '×');
-        remove.addEventListener('click', () => {
-          p.rows = p.rows.filter((r) => r !== row);
-          delete p.steps[row];
-          refreshGrid();
-          onChange();
-        });
-        label.appendChild(remove);
-        grid.appendChild(label);
-        if (!p.steps[row]) p.steps[row] = new Array(STEPS).fill(false);
-        for (let s = 0; s < STEPS; s++) {
-          const isBeat = s % 4 === 0;
-          const on = !!p.steps[row][s];
-          const btn = el('button', {
-            type: 'button',
-            class: `drum-cell${on ? ' is-on' : ''}${isBeat ? ' is-beat' : ''}`,
-            'aria-pressed': String(on),
-          }) as HTMLButtonElement;
-          let painting = false;
-          let paintValue = false;
-          btn.addEventListener('pointerdown', (event) => {
-            event.preventDefault();
-            const next = !p.steps[row][s];
-            p.steps[row][s] = next;
-            btn.classList.toggle('is-on', next);
-            paintingPattern.value = next;
-            paintingActive = true;
-            onChange();
-          });
-          btn.addEventListener('pointerenter', () => {
-            if (!paintingActive) return;
-            p.steps[row][s] = paintingPattern.value;
-            btn.classList.toggle('is-on', paintingPattern.value);
-            onChange();
-          });
-          grid.appendChild(btn);
-        }
-        // empty slot at end of row (column for remove button)
-        const spacer = el('span', {});
-        grid.appendChild(spacer);
-      });
-      // Add-row picker as a final full-width strip
-      const addStrip = el('div', { class: 'drum-row-add' });
-      addStrip.appendChild(el('span', {}, 'add:'));
-      DRUM_ROW_PALETTE
-        .filter((r) => !p.rows.includes(r.code))
-        .forEach((r) => {
-          const b = el('button', { type: 'button', title: r.label }, `${r.icon} ${r.label}`);
-          b.addEventListener('click', () => {
-            p.rows.push(r.code);
-            p.steps[r.code] = new Array(STEPS).fill(false);
-            refreshGrid();
-            onChange();
-          });
-          addStrip.appendChild(b);
-        });
-      if (DRUM_ROW_PALETTE.every((r) => p.rows.includes(r.code))) {
-        addStrip.appendChild(el('span', {}, '(all drums added)'));
-      }
-      grid.appendChild(addStrip);
-    }
-    refreshGrid();
-    sec.appendChild(grid);
-    sec.appendChild(makeFxRow(p, onChange));
-  }
-
-  function renderChords(p: ChordsPart, sec: HTMLElement, onChange: () => void) {
-    const grid = el('div', { class: 'strudel-chord-grid' });
-    function refreshGrid() {
-      grid.replaceChildren();
-      if (p.slots.length === 0) {
-        grid.appendChild(el('div', { class: 'chord-empty-hint' }, 'no chords yet — click + to add one'));
-      }
-      const ROOT_OPTIONS = NOTE_NAMES;
-      const QUALITIES: Quality[] = ['min', 'maj', '7', 'maj7', 'min7', 'sus', 'dim'];
-      p.slots.forEach((slot, idx) => {
-        const row = el('div', { class: 'strudel-chord-row' });
-        const idxLabel = el('span', { class: 'chord-idx' }, String(idx + 1));
-        const name = el('span', { class: 'chord-name' }, chordLabel(slot));
-        const rootSel = document.createElement('select');
-        ROOT_OPTIONS.forEach((r) => {
-          const opt = document.createElement('option');
-          opt.value = r;
-          opt.textContent = r.replace('b', '♭').toUpperCase();
-          if (r === slot.root) opt.selected = true;
-          rootSel.appendChild(opt);
-        });
-        rootSel.addEventListener('change', () => { p.slots[idx].root = rootSel.value; refreshGrid(); onChange(); });
-        const qualSel = document.createElement('select');
-        QUALITIES.forEach((q) => {
-          const opt = document.createElement('option');
-          opt.value = q; opt.textContent = q;
-          if (q === slot.quality) opt.selected = true;
-          qualSel.appendChild(opt);
-        });
-        qualSel.addEventListener('change', () => { p.slots[idx].quality = qualSel.value as Quality; refreshGrid(); onChange(); });
-        const oct = el('div', { class: 'chord-oct' });
-        const minus = el('button', { type: 'button', title: 'lower octave' }, '−');
-        const octLabel = el('span', { class: 'chord-oct-label' }, String(slot.octave));
-        const plus = el('button', { type: 'button', title: 'raise octave' }, '+');
-        minus.addEventListener('click', () => { p.slots[idx].octave = Math.max(1, slot.octave - 1); refreshGrid(); onChange(); });
-        plus.addEventListener('click', () => { p.slots[idx].octave = Math.min(6, slot.octave + 1); refreshGrid(); onChange(); });
-        oct.append(minus, octLabel, plus);
-        const intervals = SCALES[state.scale] ?? SCALES.minor;
-        const numerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-        const interval = ((rootIndex(slot.root) - rootIndex(state.key)) % 12 + 12) % 12;
-        const deg = intervals.indexOf(interval);
-        const isMin = slot.quality === 'min' || slot.quality === 'min7' || slot.quality === 'dim';
-        const romanText = deg < 0 ? '–' : (isMin ? numerals[deg]?.toLowerCase() : numerals[deg]);
-        const degEl = el('span', { class: 'chord-degree' }, romanText ?? '–');
-        const remove = el('button', { type: 'button', class: 'chord-remove', title: 'remove chord' }, '×');
-        remove.addEventListener('click', () => { p.slots.splice(idx, 1); refreshGrid(); onChange(); });
-        row.append(idxLabel, name, rootSel, qualSel, oct, degEl, remove);
-        grid.appendChild(row);
-      });
-      const add = el('button', { type: 'button', class: 'chord-add' }, '+ add chord');
-      add.addEventListener('click', () => {
-        const last = p.slots[p.slots.length - 1];
-        p.slots.push({
-          root: last?.root ?? state.key,
-          quality: last?.quality ?? 'min',
-          octave: last?.octave ?? 3,
-        });
-        refreshGrid();
-        onChange();
-      });
-      grid.appendChild(add);
-    }
-    refreshGrid();
-    sec.appendChild(grid);
-
-    // Room slider + vowel + attack
-    const extras = el('div', { class: 'strudel-fx-row' });
-    const roomLbl = el('label', { class: 'fx-knob' });
-    roomLbl.append(el('span', {}, 'room'));
-    const roomEl = el('input', { type: 'range', min: '0', max: '1', step: '0.05', value: String(p.room) }) as HTMLInputElement;
-    const roomOut = el('output', {}, p.room.toFixed(2));
-    roomEl.addEventListener('input', () => { p.room = Number(roomEl.value); roomOut.textContent = p.room.toFixed(2); onChange(); });
-    roomLbl.append(roomEl, roomOut);
-    extras.appendChild(roomLbl);
-
-    const attackLbl = el('label', { class: 'fx-knob' });
-    attackLbl.append(el('span', {}, 'attack'));
-    const attackEl = el('input', { type: 'range', min: '0', max: '2', step: '0.05', value: String(p.attack) }) as HTMLInputElement;
-    const attackOut = el('output', {}, p.attack === 0 ? 'off' : p.attack.toFixed(2));
-    attackEl.addEventListener('input', () => {
-      p.attack = Number(attackEl.value);
-      attackOut.textContent = p.attack === 0 ? 'off' : p.attack.toFixed(2);
-      onChange();
-    });
-    attackLbl.append(attackEl, attackOut);
-    extras.appendChild(attackLbl);
-
-    const vowelLbl = el('label', { class: 'fx-knob fx-knob--small' });
-    vowelLbl.append(el('span', {}, 'vowel'));
-    const vowelSel = document.createElement('select');
-    [['', 'none'], ['a', 'a'], ['e', 'e'], ['i', 'i'], ['o', 'o'], ['u', 'u'], ['<a e i o>', 'a→e→i→o'], ['<a o>', 'a↔o'], ['<i u>', 'i↔u']].forEach(([v, l]) => {
-      const opt = document.createElement('option'); opt.value = v; opt.textContent = l;
-      if (v === p.vowel) opt.selected = true; vowelSel.appendChild(opt);
-    });
-    vowelSel.addEventListener('change', () => { p.vowel = vowelSel.value; onChange(); });
-    vowelLbl.appendChild(vowelSel);
-    extras.appendChild(vowelLbl);
-
-    sec.appendChild(extras);
-    sec.appendChild(makeFxRow(p, onChange));
-  }
-
-  function renderBass(p: BassPart, sec: HTMLElement, onChange: () => void) {
-    const row = el('div', { class: 'strudel-bass-row' });
-    const rhythmSel = document.createElement('select');
-    [['root', 'root only'], ['steady', 'steady'], ['syncopated', 'syncopated'], ['octaves', 'octaves'], ['walking', 'walking']].forEach(([v, l]) => {
-      const opt = document.createElement('option'); opt.value = v; opt.textContent = l;
-      if (v === p.rhythm) opt.selected = true; rhythmSel.appendChild(opt);
-    });
-    rhythmSel.addEventListener('change', () => { p.rhythm = rhythmSel.value; onChange(); });
-    const followLbl = el('label', {});
-    const followEl = el('input', { type: 'checkbox' }) as HTMLInputElement;
-    followEl.checked = p.follow;
-    followEl.addEventListener('change', () => { p.follow = followEl.checked; onChange(); });
-    followLbl.append(followEl, el('span', {}, 'follow chords'));
-    row.append(rhythmSel, followLbl);
-    sec.appendChild(row);
-    sec.appendChild(makeFxRow(p, onChange));
-  }
-
-  function renderRoll(container: HTMLElement, cells: boolean[][], steps: number, labelFor: (d: number) => string, onChange: () => void) {
+  // --- Piano roll (cells)
+  function renderRoll(
+    container: HTMLElement | null,
+    cells: boolean[][],
+    steps: number,
+    onChange: () => void,
+    labelFor: (degree: number) => string = (d) => `${d + 1}`,
+  ) {
+    if (!container) return;
     container.replaceChildren();
     container.style.gridTemplateColumns = '2.6rem 1fr';
-    for (let pp = 0; pp < ROLL_PITCHES; pp++) {
-      const degree = ROLL_PITCHES - 1 - pp;
+    for (let p = 0; p < ROLL_PITCHES; p++) {
+      const degree = ROLL_PITCHES - 1 - p; // top row = highest
       container.appendChild(el('span', { class: 'strudel-roll-label' }, labelFor(degree)));
       const rowEl = el('div', { class: 'strudel-piano-roll-row' });
       rowEl.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
       for (let s = 0; s < steps; s++) {
         const isBeat = s % 4 === 0;
-        const on = !!cells[pp][s];
+        const on = cells[p][s];
         const cell = el('button', {
           type: 'button',
+          'aria-pressed': String(on),
           class: `strudel-roll-cell${on ? ' is-on' : ''}${isBeat ? ' is-beat' : ''}`,
-        }) as HTMLButtonElement;
+          dataset: { p: String(p), s: String(s) },
+        });
         cell.addEventListener('click', () => {
-          cells[pp][s] = !cells[pp][s];
-          cell.classList.toggle('is-on', cells[pp][s]);
+          cells[p][s] = !cells[p][s];
+          cell.classList.toggle('is-on', cells[p][s]);
+          cell.setAttribute('aria-pressed', String(cells[p][s]));
           onChange();
         });
         rowEl.appendChild(cell);
@@ -2255,34 +1870,24 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
       container.appendChild(rowEl);
     }
   }
-  function renderArp(p: ArpPart, sec: HTMLElement, onChange: () => void) {
-    const row = el('div', { class: 'strudel-roll-row' });
-    const followLbl = el('label', {});
-    const followEl = el('input', { type: 'checkbox' }) as HTMLInputElement;
-    followEl.checked = p.follow;
-    followEl.addEventListener('change', () => { p.follow = followEl.checked; onChange(); });
-    followLbl.append(followEl, el('span', {}, 'follow chords'));
-    const speedSel = document.createElement('select');
-    [['1', '×1'], ['2', '×2'], ['4', '×4']].forEach(([v, l]) => {
-      const opt = document.createElement('option'); opt.value = v; opt.textContent = l;
-      if (Number(v) === p.speed) opt.selected = true; speedSel.appendChild(opt);
-    });
-    speedSel.addEventListener('change', () => { p.speed = Number(speedSel.value); onChange(); });
-    row.append(followLbl, speedSel);
-    sec.appendChild(row);
-    const roll = el('div', { class: 'strudel-piano-roll' });
-    renderRoll(roll, p.cells, ARP_STEPS, (d) => degreeLabel(d, state.key, state.scale), onChange);
-    sec.appendChild(roll);
-    sec.appendChild(makeFxRow(p, onChange));
-  }
 
-  function renderMidiRoll(container: HTMLElement, notes: MidiNote[], steps: number, labelFor: (d: number) => string, onChange: () => void) {
+  // --- MIDI piano roll (notes with length)
+  // Click empty cell + drag right to draw a note of variable length.
+  // Click on existing note (the orange bar) to remove it.
+  function renderMidiRoll(
+    container: HTMLElement | null,
+    notes: MidiNote[],
+    steps: number,
+    onChange: () => void,
+    labelFor: (degree: number) => string = (d) => `${d + 1}`,
+  ) {
+    if (!container) return;
     let drawing: MidiNote | null = null;
-    function refresh() {
+    const refresh = () => {
       container.replaceChildren();
       container.style.gridTemplateColumns = '2.6rem 1fr';
-      for (let pp = 0; pp < ROLL_PITCHES; pp++) {
-        const degree = ROLL_PITCHES - 1 - pp;
+      for (let p = 0; p < ROLL_PITCHES; p++) {
+        const degree = ROLL_PITCHES - 1 - p;
         container.appendChild(el('span', { class: 'strudel-roll-label' }, labelFor(degree)));
         const rowEl = el('div', { class: 'strudel-midi-row' });
         rowEl.style.gridTemplateColumns = `repeat(${steps}, 1fr)`;
@@ -2291,7 +1896,8 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
           const cell = el('button', {
             type: 'button',
             class: `strudel-roll-cell strudel-midi-cell${isBeat ? ' is-beat' : ''}`,
-          }) as HTMLButtonElement;
+            dataset: { p: String(degree), s: String(s) },
+          });
           cell.addEventListener('pointerdown', (event) => {
             event.preventDefault();
             const note: MidiNote = { pitch: degree, start: s, length: 1 };
@@ -2311,6 +1917,7 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
           });
           rowEl.appendChild(cell);
         }
+        // Note overlays for this pitch row.
         notes.filter((n) => n.pitch === degree).forEach((n) => {
           const note = el('div', { class: 'strudel-midi-note' });
           note.style.left = `${(n.start / steps) * 100}%`;
@@ -2327,112 +1934,343 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
         });
         container.appendChild(rowEl);
       }
-    }
+    };
     const stopDraw = () => { drawing = null; };
     window.addEventListener('pointerup', stopDraw);
     window.addEventListener('pointercancel', stopDraw);
     refresh();
   }
-  function renderLead(p: LeadPart, sec: HTMLElement, onChange: () => void) {
-    const fx = el('div', { class: 'strudel-roll-row' });
-    (['delay', 'room', 'jux', 'ghost', 'shape'] as const).forEach((key) => {
-      const lbl = el('label', {});
-      const cb = el('input', { type: 'checkbox' }) as HTMLInputElement;
-      cb.checked = !!p.effects[key];
-      cb.addEventListener('change', () => { (p.effects as any)[key] = cb.checked; onChange(); });
-      lbl.append(cb, el('span', {}, key));
-      fx.appendChild(lbl);
-    });
-    const echoLbl = el('label', { class: 'fx-knob fx-knob--small' });
-    echoLbl.append(el('span', {}, 'echo'));
-    const echoSel = document.createElement('select');
-    [['', '—'], ['short', 'short ×3'], ['long', 'long ×5'], ['tape', 'tape']].forEach(([v, l]) => {
-      const opt = document.createElement('option'); opt.value = v; opt.textContent = l;
-      if (v === p.effects.echo) opt.selected = true; echoSel.appendChild(opt);
-    });
-    echoSel.addEventListener('change', () => { p.effects.echo = echoSel.value as EchoPreset; onChange(); });
-    echoLbl.appendChild(echoSel);
-    fx.appendChild(echoLbl);
 
-    const attackLbl = el('label', { class: 'fx-knob' });
-    attackLbl.append(el('span', {}, 'attack'));
-    const attackEl = el('input', { type: 'range', min: '0', max: '2', step: '0.05', value: String(p.attack) }) as HTMLInputElement;
-    const attackOut = el('output', {}, p.attack === 0 ? 'off' : p.attack.toFixed(2));
+  // --- Chord cards
+  const chordGrid = document.getElementById('strudel-chord-grid');
+  const ROOT_OPTIONS = NOTE_NAMES;
+  const QUALITIES: Quality[] = ['min', 'maj', '7', 'maj7', 'min7', 'sus', 'dim'];
+  function romanize(slot: ChordSlot, key: string, scale: string) {
+    const intervals = SCALES[scale] ?? SCALES.minor;
+    const interval = ((rootIndex(slot.root) - rootIndex(key)) % 12 + 12) % 12;
+    const degree = intervals.indexOf(interval);
+    const numerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+    if (degree < 0) return '–';
+    const isMin = slot.quality === 'min' || slot.quality === 'min7' || slot.quality === 'dim';
+    return isMin ? numerals[degree].toLowerCase() : numerals[degree];
+  }
+  // Render chord progression as a vertical list of compact rows. Slot
+  // count is dynamic — "+ add chord" appends; "×" on a row removes.
+  function renderChords() {
+    if (!chordGrid) return;
+    chordGrid.replaceChildren();
+    if (state.chords.slots.length === 0) {
+      chordGrid.appendChild(el('div', { class: 'chord-empty-hint' }, 'no chords yet — click + to add one'));
+    }
+    state.chords.slots.forEach((slot, idx) => {
+      const row = el('div', { class: 'strudel-chord-row' });
+      const idxLabel = el('span', { class: 'chord-idx' }, String(idx + 1));
+      const name = el('span', { class: 'chord-name' }, chordLabel(slot));
+      const rootSel = el('select', {}) as HTMLSelectElement;
+      ROOT_OPTIONS.forEach((r) => {
+        const opt = el('option', { value: r, selected: r === slot.root }, r.replace('b', '♭').toUpperCase());
+        rootSel.appendChild(opt);
+      });
+      rootSel.addEventListener('change', () => { state.chords.slots[idx].root = rootSel.value; renderChords(); scheduleLiveApply(); });
+      const qualSel = el('select', {}) as HTMLSelectElement;
+      QUALITIES.forEach((q) => {
+        const opt = el('option', { value: q, selected: q === slot.quality }, q);
+        qualSel.appendChild(opt);
+      });
+      qualSel.addEventListener('change', () => { state.chords.slots[idx].quality = qualSel.value as Quality; renderChords(); scheduleLiveApply(); });
+      const oct = el('div', { class: 'chord-oct' });
+      const minus = el('button', { type: 'button', title: 'lower octave' }, '−');
+      const octLabel = el('span', { class: 'chord-oct-label' }, String(slot.octave));
+      const plus = el('button', { type: 'button', title: 'raise octave' }, '+');
+      minus.addEventListener('click', () => { state.chords.slots[idx].octave = Math.max(1, slot.octave - 1); renderChords(); scheduleLiveApply(); });
+      plus.addEventListener('click', () => { state.chords.slots[idx].octave = Math.min(6, slot.octave + 1); renderChords(); scheduleLiveApply(); });
+      oct.append(minus, octLabel, plus);
+      const degree = el('span', { class: 'chord-degree' }, romanize(slot, state.key, state.scale));
+      const remove = el('button', { type: 'button', class: 'chord-remove', title: 'remove chord' }, '×');
+      remove.addEventListener('click', () => { state.chords.slots.splice(idx, 1); renderChords(); scheduleLiveApply(); });
+      row.append(idxLabel, name, rootSel, qualSel, oct, degree, remove);
+      chordGrid.appendChild(row);
+    });
+    const add = el('button', { type: 'button', class: 'chord-add' }, '+ add chord');
+    add.addEventListener('click', () => {
+      const last = state.chords.slots[state.chords.slots.length - 1];
+      state.chords.slots.push({
+        root: last?.root ?? state.key,
+        quality: last?.quality ?? 'min',
+        octave: last?.octave ?? 3,
+      });
+      // Auto-enable the chord part on first add — saves a click for new users.
+      if (state.chords.slots.length === 1) state.chords.enabled = true;
+      renderChords();
+      scheduleLiveApply();
+      const muteEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="chords"] input[data-mute]');
+      if (muteEl) muteEl.checked = state.chords.enabled;
+      const section = document.querySelector<HTMLElement>('.strudel-part[data-part="chords"]');
+      section?.classList.toggle('is-muted', !state.chords.enabled);
+    });
+    chordGrid.appendChild(add);
+  }
+
+  // --- Generic part header binding
+  function bindPart(partName: keyof State) {
+    const section = document.querySelector<HTMLElement>(`.strudel-part[data-part="${partName}"]`);
+    if (!section) return;
+    const muteEl = section.querySelector<HTMLInputElement>('input[data-mute]');
+    const gainEl = section.querySelector<HTMLInputElement>('input[data-gain]');
+    if (muteEl) {
+      muteEl.addEventListener('change', () => {
+        (state[partName] as any).enabled = muteEl.checked;
+        section.classList.toggle('is-muted', !muteEl.checked);
+        scheduleLiveApply();
+      });
+    }
+    if (gainEl) {
+      gainEl.addEventListener('input', () => {
+        (state[partName] as any).gain = Number(gainEl.value);
+        scheduleLiveApply();
+      });
+    }
+  }
+
+  // --- Drums extras (bank)
+  function bindDrums() {
+    const bankSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="drums"] select[data-bank]');
+    if (bankSel) {
+      bankSel.value = state.drums.bank;
+      bankSel.addEventListener('change', () => { state.drums.bank = bankSel.value; scheduleLiveApply(); });
+    }
+  }
+  function bindChordsExtras() {
+    const soundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="chords"] select[data-sound]');
+    if (soundSel) {
+      soundSel.value = state.chords.sound;
+      soundSel.addEventListener('change', () => { state.chords.sound = soundSel.value; scheduleLiveApply(); });
+    }
+  }
+  function bindBass() {
+    const soundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="bass"] select[data-sound]');
+    const rhythmSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="bass"] select[data-rhythm]');
+    const followEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="bass"] input[data-follow]');
+    if (soundSel) { soundSel.value = state.bass.sound; soundSel.addEventListener('change', () => { state.bass.sound = soundSel.value; scheduleLiveApply(); }); }
+    if (rhythmSel) { rhythmSel.value = state.bass.rhythm; rhythmSel.addEventListener('change', () => { state.bass.rhythm = rhythmSel.value; scheduleLiveApply(); }); }
+    if (followEl) { followEl.checked = state.bass.follow; followEl.addEventListener('change', () => { state.bass.follow = followEl.checked; scheduleLiveApply(); }); }
+  }
+  function bindArpExtras() {
+    const soundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="arp"] select[data-sound]');
+    const speedSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="arp"] select[data-speed]');
+    const followEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="arp"] input[data-follow]');
+    if (soundSel) { soundSel.value = state.arp.sound; soundSel.addEventListener('change', () => { state.arp.sound = soundSel.value; scheduleLiveApply(); }); }
+    if (speedSel) { speedSel.value = String(state.arp.speed); speedSel.addEventListener('change', () => { state.arp.speed = Number(speedSel.value); scheduleLiveApply(); }); }
+    if (followEl) { followEl.checked = state.arp.follow; followEl.addEventListener('change', () => { state.arp.follow = followEl.checked; scheduleLiveApply(); }); }
+  }
+  function bindLeadExtras() {
+    const soundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="lead"] select[data-sound]');
+    if (soundSel) { soundSel.value = state.lead.sound; soundSel.addEventListener('change', () => { state.lead.sound = soundSel.value; scheduleLiveApply(); }); }
+    document.querySelectorAll<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-effect]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const key = input.dataset.effect as keyof State['lead']['effects'];
+        (state.lead.effects as any)[key] = input.checked;
+        scheduleLiveApply();
+      });
+    });
+    const echoSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="lead"] select[data-effect-echo]');
+    if (echoSel) {
+      echoSel.addEventListener('change', () => {
+        state.lead.effects.echo = echoSel.value as State['lead']['effects']['echo'];
+        scheduleLiveApply();
+      });
+    }
+    const attackEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-attack]');
+    if (attackEl) {
+      attackEl.addEventListener('input', () => {
+        state.lead.attack = Number(attackEl.value);
+        const out = attackEl.parentElement?.querySelector('output');
+        if (out) out.textContent = state.lead.attack === 0 ? 'off' : state.lead.attack.toFixed(2);
+        scheduleLiveApply();
+      });
+    }
+  }
+  function bindChordsVowel() {
+    const sel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="chords"] select[data-vowel]');
+    if (!sel) return;
+    sel.addEventListener('change', () => { state.chords.vowel = sel.value; scheduleLiveApply(); });
+  }
+  function bindChordsAttack() {
+    const attackEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="chords"] input[data-attack]');
+    if (!attackEl) return;
     attackEl.addEventListener('input', () => {
-      p.attack = Number(attackEl.value);
-      attackOut.textContent = p.attack === 0 ? 'off' : p.attack.toFixed(2);
-      onChange();
+      state.chords.attack = Number(attackEl.value);
+      const out = attackEl.parentElement?.querySelector('output');
+      if (out) out.textContent = state.chords.attack === 0 ? 'off' : state.chords.attack.toFixed(2);
+      scheduleLiveApply();
     });
-    attackLbl.append(attackEl, attackOut);
-    fx.appendChild(attackLbl);
-
-    sec.appendChild(fx);
-    const roll = el('div', { class: 'strudel-piano-roll' });
-    renderMidiRoll(roll, p.notes, LEAD_STEPS, (d) => degreeLabel(d, state.key, state.scale), onChange);
-    sec.appendChild(roll);
-    sec.appendChild(makeFxRow(p, onChange));
+  }
+  function bindChordsRoom() {
+    const roomEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="chords"] input[data-fx-room]');
+    if (!roomEl) return;
+    const out = roomEl.parentElement?.querySelector('output');
+    roomEl.value = String(state.chords.room);
+    if (out) out.textContent = state.chords.room.toFixed(2);
+    roomEl.addEventListener('input', () => {
+      state.chords.room = Number(roomEl.value);
+      if (out) out.textContent = state.chords.room.toFixed(2);
+      scheduleLiveApply();
+    });
+  }
+  const FX_PARTS: (keyof State)[] = ['drums', 'chords', 'bass', 'arp', 'lead'];
+  function bindFx() {
+    FX_PARTS.forEach((part) => {
+      const section = document.querySelector<HTMLElement>(`.strudel-part[data-part="${part}"]`);
+      if (!section) return;
+      const lpfEl = section.querySelector<HTMLInputElement>('input[data-fx-lpf]');
+      const dropEl = section.querySelector<HTMLInputElement>('input[data-fx-drop]');
+      const everyNSel = section.querySelector<HTMLSelectElement>('select[data-fx-every-n]');
+      const everyFnSel = section.querySelector<HTMLSelectElement>('select[data-fx-every-fn]');
+      const panEl = section.querySelector<HTMLInputElement>('input[data-fx-pan]');
+      const crushEl = section.querySelector<HTMLInputElement>('input[data-fx-crush]');
+      const modSel = section.querySelector<HTMLSelectElement>('select[data-fx-mod]');
+      const modTargetSel = section.querySelector<HTMLSelectElement>('select[data-fx-mod-target]');
+      const plySel = section.querySelector<HTMLSelectElement>('select[data-fx-ply]');
+      const structGridEl = section.querySelector<HTMLElement>('[data-fx-struct-grid]');
+      const structClearEl = section.querySelector<HTMLButtonElement>('[data-fx-struct-clear]');
+      const superSel = section.querySelector<HTMLSelectElement>('select[data-fx-superimpose]');
+      const getFx = () => ((state[part] as any).fx as PartFx | undefined);
+      if (lpfEl) {
+        lpfEl.addEventListener('input', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.lpf = Number(lpfEl.value);
+          const out = lpfEl.parentElement?.querySelector('output');
+          if (out) out.textContent = fx.lpf >= 8000 ? 'off' : `${fx.lpf}`;
+          scheduleLiveApply();
+        });
+      }
+      if (dropEl) {
+        dropEl.addEventListener('input', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.drop = Number(dropEl.value);
+          const out = dropEl.parentElement?.querySelector('output');
+          if (out) out.textContent = fx.drop === 0 ? 'off' : fx.drop.toFixed(2);
+          scheduleLiveApply();
+        });
+      }
+      if (modSel) {
+        modSel.addEventListener('change', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.mod = modSel.value as FilterMod; scheduleLiveApply();
+        });
+      }
+      if (plySel) {
+        plySel.addEventListener('change', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.ply = Number(plySel.value); scheduleLiveApply();
+        });
+      }
+      if (everyNSel) {
+        everyNSel.addEventListener('change', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.everyN = everyNSel.value as EveryN; scheduleLiveApply();
+        });
+      }
+      if (everyFnSel) {
+        everyFnSel.addEventListener('change', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.everyFn = everyFnSel.value as EveryFn; scheduleLiveApply();
+        });
+      }
+      if (panEl) {
+        panEl.addEventListener('input', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.pan = Number(panEl.value);
+          const out = panEl.parentElement?.querySelector('output');
+          if (out) {
+            const d = fx.pan - 0.5;
+            out.textContent = Math.abs(d) < 0.01 ? 'C' : (d < 0 ? `L${Math.round(-d * 200)}` : `R${Math.round(d * 200)}`);
+          }
+          scheduleLiveApply();
+        });
+      }
+      if (crushEl) {
+        crushEl.addEventListener('input', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.crush = Number(crushEl.value);
+          const out = crushEl.parentElement?.querySelector('output');
+          if (out) out.textContent = fx.crush === 0 ? 'off' : `${fx.crush}`;
+          scheduleLiveApply();
+        });
+      }
+      if (modTargetSel) {
+        modTargetSel.addEventListener('change', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.modTarget = modTargetSel.value as ModTarget; scheduleLiveApply();
+        });
+      }
+      if (structGridEl) {
+        // 16-cell rhythm strip. Cells are 'x' (active) or '~' (rest).
+        // The fx.struct string is built from the cells; empty string
+        // when all rests so applyFx emits nothing.
+        const cells: boolean[] = new Array(16).fill(false);
+        const seed = (getFx()?.struct ?? '').split(/\s+/).filter(Boolean);
+        seed.slice(0, 16).forEach((t, i) => { cells[i] = t !== '~'; });
+        for (let i = 0; i < 16; i++) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'fx-struct-cell' + (cells[i] ? ' is-on' : '');
+          btn.dataset.cell = String(i);
+          btn.addEventListener('click', () => {
+            const fx = getFx(); if (!fx) return;
+            cells[i] = !cells[i];
+            btn.classList.toggle('is-on', cells[i]);
+            const anyOn = cells.some(Boolean);
+            fx.struct = anyOn ? cells.map((c) => (c ? 'x' : '~')).join(' ') : '';
+            scheduleLiveApply();
+          });
+          structGridEl.appendChild(btn);
+        }
+        if (structClearEl) {
+          structClearEl.addEventListener('click', () => {
+            const fx = getFx(); if (!fx) return;
+            cells.fill(false);
+            structGridEl.querySelectorAll<HTMLElement>('.fx-struct-cell').forEach((el) => el.classList.remove('is-on'));
+            fx.struct = '';
+            scheduleLiveApply();
+          });
+        }
+      }
+      if (superSel) {
+        superSel.addEventListener('change', () => {
+          const fx = getFx(); if (!fx) return;
+          fx.superimpose = superSel.value as Superimpose; scheduleLiveApply();
+        });
+      }
+    });
   }
 
-  function renderSample(p: SamplePart, sec: HTMLElement, onChange: () => void) {
-    const drop = el('label', { class: 'strudel-drop' });
-    const input = el('input', { type: 'file', accept: 'audio/*' }) as HTMLInputElement;
-    const dropLabel = el('span', {}, p.name ? p.name : 'drop audio or choose file');
-    drop.append(input, dropLabel);
-    function handleFile(file: File) {
-      if (!file.type.startsWith('audio/')) { setStatus('audio file required'); return; }
-      if (p.url) URL.revokeObjectURL(p.url);
-      p.url = URL.createObjectURL(file);
-      p.name = (file.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18)) || 'drop';
-      dropLabel.textContent = file.name;
-      onChange();
-    }
-    input.addEventListener('change', () => {
-      const f = input.files?.[0]; if (f) handleFile(f);
-    });
-    drop.addEventListener('dragenter', (e) => { e.preventDefault(); drop.classList.add('is-dragging'); });
-    drop.addEventListener('dragover', (e) => e.preventDefault());
-    drop.addEventListener('dragleave', (e) => {
-      if (!drop.contains(e.relatedTarget as Node | null)) drop.classList.remove('is-dragging');
-    });
-    drop.addEventListener('drop', (e) => {
-      e.preventDefault();
-      drop.classList.remove('is-dragging');
-      const f = (e as DragEvent).dataTransfer?.files?.[0];
-      if (f) handleFile(f);
-    });
-    sec.appendChild(drop);
-    sec.appendChild(makeFxRow(p, onChange));
+  // --- Sample drop
+  const sampleFileInput = document.getElementById('strudel-sample-file') as HTMLInputElement | null;
+  const sampleDrop = document.getElementById('strudel-drop') as HTMLElement | null;
+  const sampleDropLabel = document.getElementById('strudel-drop-label');
+  function loadDroppedSample(file: File) {
+    if (!file.type.startsWith('audio/')) { setStatus('audio file required'); return; }
+    if (state.sample.url) URL.revokeObjectURL(state.sample.url);
+    state.sample.url = URL.createObjectURL(file);
+    state.sample.name = (file.name.replace(/\.[^.]+$/, '').toLowerCase().replace(/[^a-z0-9]+/g, '').slice(0, 18)) || 'drop';
+    state.sample.enabled = true;
+    if (sampleDropLabel) sampleDropLabel.textContent = file.name;
+    const muteEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="sample"] input[data-mute]');
+    if (muteEl) muteEl.checked = true;
+    document.querySelector<HTMLElement>('.strudel-part[data-part="sample"]')?.classList.remove('is-muted');
+    scheduleLiveApply();
   }
+  sampleFileInput?.addEventListener('change', () => { const f = sampleFileInput.files?.[0]; if (f) loadDroppedSample(f); });
+  sampleDrop?.addEventListener('dragenter', (e) => { e.preventDefault(); sampleDrop.classList.add('is-dragging'); });
+  sampleDrop?.addEventListener('dragover', (e) => e.preventDefault());
+  sampleDrop?.addEventListener('dragleave', (e) => { if (!sampleDrop.contains(e.relatedTarget as Node | null)) sampleDrop.classList.remove('is-dragging'); });
+  sampleDrop?.addEventListener('drop', (e) => {
+    e.preventDefault(); sampleDrop.classList.remove('is-dragging');
+    const f = e.dataTransfer?.files?.[0]; if (f) loadDroppedSample(f);
+  });
 
-  // Module-level paint state for drum grid drag-painting.
-  const paintingPattern = { value: false };
-  let paintingActive = false;
-  window.addEventListener('pointerup', () => { paintingActive = false; });
-
-  function renderPart(p: Part): HTMLElement {
-    const sec = el('section', { class: `strudel-part${p.enabled ? '' : ' is-muted'}`, dataset: { partId: p.id, partType: p.type } });
-    sec.appendChild(makePartHead(p, sec, scheduleLiveApply));
-    switch (p.type) {
-      case 'drums':  renderDrums(p, sec, scheduleLiveApply); break;
-      case 'chords': renderChords(p, sec, scheduleLiveApply); break;
-      case 'bass':   renderBass(p, sec, scheduleLiveApply); break;
-      case 'arp':    renderArp(p, sec, scheduleLiveApply); break;
-      case 'lead':   renderLead(p, sec, scheduleLiveApply); break;
-      case 'sample': renderSample(p, sec, scheduleLiveApply); break;
-    }
-    return sec;
-  }
-
-  function renderAllParts() {
-    const container = document.getElementById('strudel-parts');
-    if (!container) return;
-    container.replaceChildren();
-    state.parts.forEach((p) => container.appendChild(renderPart(p)));
-  }
-
-  // =========================================================================
-  // Transport bindings.
-  // =========================================================================
+  // --- Transport bindings
   const bpmEl = document.getElementById('strudel-bpm') as HTMLInputElement | null;
   const masterEl = document.getElementById('strudel-master') as HTMLInputElement | null;
   const masterOut = document.getElementById('strudel-master-out');
@@ -2445,95 +2283,252 @@ const drumRowPalette: { code: string; label: string; icon: string }[] = [
     bpmEl.value = String(state.bpm);
     bpmEl.addEventListener('input', () => {
       const v = Number(bpmEl.value);
-      if (!Number.isNaN(v) && v > 0) { state.bpm = v; scheduleLiveApply(); }
+      if (!Number.isNaN(v) && v > 0) {
+        state.bpm = v;
+        scheduleLiveApply();
+      }
     });
   }
   if (masterEl && masterOut) {
-    masterEl.value = String(state.master);
-    masterOut.textContent = state.master.toFixed(2);
-    masterEl.addEventListener('input', () => {
-      state.master = Number(masterEl.value);
-      masterOut.textContent = state.master.toFixed(2);
-      scheduleLiveApply();
-    });
+    masterEl.value = String(state.master); masterOut.textContent = state.master.toFixed(2);
+    masterEl.addEventListener('input', () => { state.master = Number(masterEl.value); masterOut.textContent = state.master.toFixed(2); scheduleLiveApply(); });
   }
   if (swingEl && swingOut) {
-    swingEl.value = String(state.swing);
-    swingOut.textContent = state.swing.toFixed(2);
-    swingEl.addEventListener('input', () => {
-      state.swing = Number(swingEl.value);
-      swingOut.textContent = state.swing.toFixed(2);
-      scheduleLiveApply();
-    });
+    swingEl.value = String(state.swing); swingOut.textContent = state.swing.toFixed(2);
+    swingEl.addEventListener('input', () => { state.swing = Number(swingEl.value); swingOut.textContent = state.swing.toFixed(2); scheduleLiveApply(); });
+  }
+  function rerenderRolls() {
+    renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
+    renderMidiRoll(document.getElementById('strudel-lead-roll'), state.lead.notes, LEAD_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
   }
   if (keySel) {
     keySel.value = state.key;
-    keySel.addEventListener('change', () => {
-      state.key = keySel.value;
-      // Re-render any arp/lead rolls since labels depend on key.
-      state.parts.forEach((p) => {
-        if (p.type === 'arp' || p.type === 'lead') {
-          // Re-render the part to refresh labels.
-          const oldSec = document.querySelector<HTMLElement>(`.strudel-part[data-part-id="${p.id}"]`);
-          if (oldSec) oldSec.replaceWith(renderPart(p));
-        }
-      });
-      scheduleLiveApply();
-    });
+    keySel.addEventListener('change', () => { state.key = keySel.value; renderChords(); rerenderRolls(); scheduleLiveApply(); });
   }
   if (scaleSel) {
     scaleSel.value = state.scale;
-    scaleSel.addEventListener('change', () => {
-      state.scale = scaleSel.value;
-      state.parts.forEach((p) => {
-        if (p.type === 'arp' || p.type === 'lead' || p.type === 'chords') {
-          const oldSec = document.querySelector<HTMLElement>(`.strudel-part[data-part-id="${p.id}"]`);
-          if (oldSec) oldSec.replaceWith(renderPart(p));
-        }
-      });
-      scheduleLiveApply();
-    });
+    scaleSel.addEventListener('change', () => { state.scale = scaleSel.value; renderChords(); rerenderRolls(); scheduleLiveApply(); });
   }
 
-  // =========================================================================
-  // Add-part menu + reset + about
-  // =========================================================================
-  document.querySelectorAll<HTMLButtonElement>('[data-add-part]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const t = btn.dataset.addPart as PartType;
-      const newPart = makePart(t);
-      state.parts.push(newPart);
-      const container = document.getElementById('strudel-parts');
-      container?.appendChild(renderPart(newPart));
-      scheduleLiveApply();
-    });
+  // --- Keyboard shortcuts
+  window.addEventListener('keydown', (e) => {
+    const target = e.target as HTMLElement | null;
+    const inField = target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+    if (e.key === ' ' && !inField) {
+      e.preventDefault();
+      isRunning ? stop() : run();
+    } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      run();
+    } else if (e.key === 'Escape') {
+      stop();
+    }
   });
 
+  // --- Click-to-enter for slider outputs.
+  // Anywhere we render <label><input type=range><output></output></label>,
+  // clicking the output swaps it for a text input so the user can type
+  // an exact value. Commit on Enter or blur, cancel on Escape.
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (!target || target.tagName !== 'OUTPUT') return;
+    if (target.dataset.editing === 'true') return;
+    const label = target.closest('label');
+    const slider = label?.querySelector<HTMLInputElement>('input[type="range"]');
+    if (!slider) return;
+
+    target.dataset.editing = 'true';
+    const original = target.textContent ?? '';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.inputMode = 'decimal';
+    input.value = String(slider.value);
+    input.className = 'strudel-output-input';
+    const min = parseFloat(slider.min || '0');
+    const max = parseFloat(slider.max || '1');
+    const cleanup = () => {
+      target.dataset.editing = 'false';
+    };
+    const commit = () => {
+      const v = parseFloat(input.value);
+      if (!Number.isNaN(v)) {
+        const clamped = Math.max(min, Math.min(max, v));
+        slider.value = String(clamped);
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+      } else {
+        target.textContent = original;
+      }
+      cleanup();
+    };
+    const cancel = () => {
+      target.textContent = original;
+      cleanup();
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+      else if (ev.key === 'Escape') { ev.preventDefault(); input.removeEventListener('blur', commit); cancel(); input.blur(); }
+    });
+    target.replaceChildren(input);
+    input.focus();
+    input.select();
+  });
+
+  // --- Reset
   const resetBtn = document.getElementById('strudel-reset') as HTMLButtonElement | null;
   resetBtn?.addEventListener('click', () => {
-    state.parts.forEach((p) => {
-      if (p.type === 'sample' && p.url) URL.revokeObjectURL(p.url);
-    });
+    if (state.sample.url) URL.revokeObjectURL(state.sample.url);
     state = clone(initialState);
-    nextPartIdNum = 1;
-    try { window.localStorage.removeItem('strudel-state-v6'); } catch (e) {}
-    userTouchedEditor = false;
-    setManual(false);
-    if (bpmEl) bpmEl.value = String(state.bpm);
-    if (masterEl && masterOut) { masterEl.value = String(state.master); masterOut.textContent = state.master.toFixed(2); }
-    if (swingEl && swingOut) { swingEl.value = String(state.swing); swingOut.textContent = state.swing.toFixed(2); }
-    if (keySel) keySel.value = state.key;
-    if (scaleSel) scaleSel.value = state.scale;
-    renderAllParts();
+    try { window.localStorage.removeItem('strudel-state-v5'); } catch (e) {}
+    renderAll();
     scheduleLiveApply();
   });
   const aboutDialog = document.getElementById('strudel-about') as HTMLDialogElement | null;
   document.getElementById('strudel-info')?.addEventListener('click', () => aboutDialog?.showModal());
   aboutDialog?.addEventListener('click', (e) => { if (e.target === aboutDialog) aboutDialog.close(); });
 
-  // =========================================================================
-  // Initial render + editor mount.
-  // =========================================================================
-  renderAllParts();
+  function syncAllInputs() {
+    if (bpmEl) bpmEl.value = String(state.bpm);
+    if (masterEl && masterOut) { masterEl.value = String(state.master); masterOut.textContent = state.master.toFixed(2); }
+    if (swingEl && swingOut) { swingEl.value = String(state.swing); swingOut.textContent = state.swing.toFixed(2); }
+    if (keySel) keySel.value = state.key;
+    if (scaleSel) scaleSel.value = state.scale;
+    (['drums', 'chords', 'bass', 'arp', 'lead', 'sample'] as const).forEach((p) => {
+      const section = document.querySelector<HTMLElement>(`.strudel-part[data-part="${p}"]`);
+      const muteEl = section?.querySelector<HTMLInputElement>('input[data-mute]');
+      const gainEl = section?.querySelector<HTMLInputElement>('input[data-gain]');
+      const ps: any = state[p];
+      if (muteEl) muteEl.checked = !!ps.enabled;
+      if (gainEl) gainEl.value = String(ps.gain ?? 0.5);
+      section?.classList.toggle('is-muted', !ps.enabled);
+      if (ps.fx) {
+        const setSlider = (el: HTMLInputElement | null | undefined, value: number, formatOff: () => string, format: () => string) => {
+          if (!el) return;
+          el.value = String(value);
+          const out = el.parentElement?.querySelector('output');
+          if (out) out.textContent = format() === '' ? formatOff() : format();
+        };
+        setSlider(
+          section?.querySelector<HTMLInputElement>('input[data-fx-lpf]'),
+          ps.fx.lpf,
+          () => 'off',
+          () => ps.fx.lpf >= 8000 ? '' : `${ps.fx.lpf}`,
+        );
+        setSlider(
+          section?.querySelector<HTMLInputElement>('input[data-fx-drop]'),
+          ps.fx.drop,
+          () => 'off',
+          () => ps.fx.drop === 0 ? '' : ps.fx.drop.toFixed(2),
+        );
+        setSlider(
+          section?.querySelector<HTMLInputElement>('input[data-fx-pan]'),
+          ps.fx.pan,
+          () => 'C',
+          () => {
+            const d = ps.fx.pan - 0.5;
+            return Math.abs(d) < 0.01 ? '' : (d < 0 ? `L${Math.round(-d * 200)}` : `R${Math.round(d * 200)}`);
+          },
+        );
+        setSlider(
+          section?.querySelector<HTMLInputElement>('input[data-fx-crush]'),
+          ps.fx.crush,
+          () => 'off',
+          () => ps.fx.crush === 0 ? '' : `${ps.fx.crush}`,
+        );
+        const everyNSel = section?.querySelector<HTMLSelectElement>('select[data-fx-every-n]');
+        const everyFnSel = section?.querySelector<HTMLSelectElement>('select[data-fx-every-fn]');
+        if (everyNSel) everyNSel.value = ps.fx.everyN || '';
+        if (everyFnSel) everyFnSel.value = ps.fx.everyFn || '';
+        const modSel = section?.querySelector<HTMLSelectElement>('select[data-fx-mod]');
+        if (modSel) modSel.value = ps.fx.mod || '';
+        const modTargetSel = section?.querySelector<HTMLSelectElement>('select[data-fx-mod-target]');
+        if (modTargetSel) modTargetSel.value = ps.fx.modTarget || 'lpf';
+        const plySel = section?.querySelector<HTMLSelectElement>('select[data-fx-ply]');
+        if (plySel) plySel.value = String(ps.fx.ply || 1);
+        // Refresh the visual struct grid from current fx.struct.
+        const structGridEl = section?.querySelector<HTMLElement>('[data-fx-struct-grid]');
+        if (structGridEl) {
+          const tokens = (ps.fx.struct || '').split(/\s+/).filter(Boolean);
+          structGridEl.querySelectorAll<HTMLElement>('.fx-struct-cell').forEach((cell, i) => {
+            cell.classList.toggle('is-on', tokens[i] === 'x');
+          });
+        }
+        const superSel = section?.querySelector<HTMLSelectElement>('select[data-fx-superimpose]');
+        if (superSel) superSel.value = ps.fx.superimpose || '';
+      }
+    });
+    const leadEchoSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="lead"] select[data-effect-echo]');
+    if (leadEchoSel) leadEchoSel.value = state.lead.effects.echo || '';
+    const roomEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="chords"] input[data-fx-room]');
+    if (roomEl) {
+      roomEl.value = String(state.chords.room);
+      const out = roomEl.parentElement?.querySelector('output');
+      if (out) out.textContent = state.chords.room.toFixed(2);
+    }
+    const chordVowelSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="chords"] select[data-vowel]');
+    if (chordVowelSel) chordVowelSel.value = state.chords.vowel || '';
+    const chordAttackEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="chords"] input[data-attack]');
+    if (chordAttackEl) {
+      chordAttackEl.value = String(state.chords.attack);
+      const out = chordAttackEl.parentElement?.querySelector('output');
+      if (out) out.textContent = state.chords.attack === 0 ? 'off' : state.chords.attack.toFixed(2);
+    }
+    const leadAttackEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-attack]');
+    if (leadAttackEl) {
+      leadAttackEl.value = String(state.lead.attack);
+      const out = leadAttackEl.parentElement?.querySelector('output');
+      if (out) out.textContent = state.lead.attack === 0 ? 'off' : state.lead.attack.toFixed(2);
+    }
+    document.querySelectorAll<HTMLInputElement>('.strudel-part[data-part="lead"] input[data-effect]').forEach((input) => {
+      const key = input.dataset.effect as keyof State['lead']['effects'];
+      input.checked = !!state.lead.effects[key];
+    });
+    const bankSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="drums"] select[data-bank]');
+    if (bankSel) bankSel.value = state.drums.bank;
+    const chordSoundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="chords"] select[data-sound]');
+    if (chordSoundSel) chordSoundSel.value = state.chords.sound;
+    const bassSoundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="bass"] select[data-sound]');
+    if (bassSoundSel) bassSoundSel.value = state.bass.sound;
+    const bassRhythmSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="bass"] select[data-rhythm]');
+    if (bassRhythmSel) bassRhythmSel.value = state.bass.rhythm;
+    const bassFollowEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="bass"] input[data-follow]');
+    if (bassFollowEl) bassFollowEl.checked = state.bass.follow;
+    const arpSoundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="arp"] select[data-sound]');
+    if (arpSoundSel) arpSoundSel.value = state.arp.sound;
+    const arpSpeedSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="arp"] select[data-speed]');
+    if (arpSpeedSel) arpSpeedSel.value = String(state.arp.speed);
+    const arpFollowEl = document.querySelector<HTMLInputElement>('.strudel-part[data-part="arp"] input[data-follow]');
+    if (arpFollowEl) arpFollowEl.checked = state.arp.follow;
+    const leadSoundSel = document.querySelector<HTMLSelectElement>('.strudel-part[data-part="lead"] select[data-sound]');
+    if (leadSoundSel) leadSoundSel.value = state.lead.sound;
+  }
+
+  function renderAll() {
+    renderDrumGrid();
+    renderChords();
+    renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
+    renderMidiRoll(document.getElementById('strudel-lead-roll'), state.lead.notes, LEAD_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
+    syncAllInputs();
+  }
+
+  // initial bindings — attach listeners once; preset/reset only update values via syncAllInputs
+  (['drums', 'chords', 'bass', 'arp', 'lead', 'sample'] as const).forEach(bindPart);
+  bindDrums();
+  bindChordsExtras();
+  bindChordsRoom();
+  bindChordsVowel();
+  bindChordsAttack();
+  bindBass();
+  bindArpExtras();
+  bindLeadExtras();
+  bindFx();
+  renderDrumGrid();
+  renderChords();
+  renderRoll(document.getElementById('strudel-arp-roll'), state.arp.cells, ARP_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
+  renderMidiRoll(document.getElementById('strudel-lead-roll'), state.lead.notes, LEAD_STEPS, scheduleLiveApply, (d) => degreeLabel(d, state.key, state.scale));
+  syncAllInputs();
+
+  // Eagerly load the editor so the code panel reflects state immediately,
+  // not only after the user clicks Run.
   ensureEditor().catch(() => setStatus('editor unavailable'));
 </script>
