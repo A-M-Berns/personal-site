@@ -180,13 +180,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
             </label>
            </div>
           </div>
-          <div class="strudel-presets">
-            <button type="button" data-preset="lofi">lo-fi</button>
-            <button type="button" data-preset="techno">techno</button>
-            <button type="button" data-preset="ambient">ambient</button>
-            <button type="button" data-preset="empty">clear</button>
-            <button id="strudel-share" type="button" title="Copy a link with this patch">share</button>
-          </div>
         </aside>
 
         <section class="strudel-part" data-part="drums">
@@ -461,10 +454,19 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     align-items: center;
     gap: 0.45rem;
   }
-  /* Row 1: bpm | key | scale */
+  /* Row 1: bpm | key | scale — bpm and key shrink to content size so
+     the longer scale names (e.g. "phrygian dominant") have room. */
   .strudel-transport-row--meta {
-    grid-template-columns: minmax(5rem, auto) 1fr 1fr;
+    grid-template-columns: auto auto minmax(0, 1fr);
   }
+  .strudel-transport-row--meta .strudel-knob--num input[type="number"] {
+    max-width: 3.4rem;
+  }
+  .strudel-transport-row--meta .strudel-knob--key:first-of-type select {
+    /* Key dropdown — single character options, keep tight */
+    max-width: 5rem;
+  }
+  .strudel-transport-row--meta .strudel-knob select { min-width: 0; }
   /* Row 2: vol | swing — equal halves */
   .strudel-transport-row--sliders {
     grid-template-columns: 1fr 1fr;
@@ -524,28 +526,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     text-align: right;
   }
   :global(input.strudel-output-input:focus) { outline: none; }
-  .strudel-presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3rem;
-  }
-  .strudel-presets button {
-    font-family: var(--font-lexend), var(--sans);
-    font-size: 0.65rem;
-    font-weight: 650;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--muted);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid var(--rule);
-    border-radius: 3px;
-    padding: 0.3rem 0.5rem;
-    cursor: pointer;
-  }
-  .strudel-presets button:hover {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
   .strudel-transport-actions button {
     width: 2.1rem;
     height: 2.1rem;
@@ -1694,12 +1674,19 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     return editorReady;
   }
 
-  // True if the editor's current code differs from what the GUI last
-  // wrote — i.e. the user hand-edited.
+  // True if the editor's current code differs meaningfully from what
+  // the GUI last wrote. Compare whitespace-normalized so the strudel
+  // editor's internal line-ending or trailing-newline normalization
+  // doesn't falsely trigger manual mode (which was blocking GUI
+  // updates for chord adds, etc.).
+  function normalizeCode(s: string): string {
+    return s.replace(/\s+/g, ' ').trim();
+  }
   function editorIsManual(): boolean {
     if (!editorRef) return false;
-    const cur = editorRef.code ?? '';
-    return cur.trim() !== '' && cur !== lastGenerated;
+    const cur = normalizeCode(editorRef.code ?? '');
+    const last = normalizeCode(lastGenerated);
+    return cur !== '' && cur !== last;
   }
   function setManual(v: boolean) {
     if (manualMode === v) return;
@@ -2291,7 +2278,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
   const scaleSel = document.getElementById('strudel-scale') as HTMLSelectElement | null;
   const swingEl = document.getElementById('strudel-swing') as HTMLInputElement | null;
   const swingOut = document.getElementById('strudel-swing-out');
-  const shareBtn = document.getElementById('strudel-share') as HTMLButtonElement | null;
 
   if (bpmEl) {
     bpmEl.value = String(state.bpm);
@@ -2323,18 +2309,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     scaleSel.value = state.scale;
     scaleSel.addEventListener('change', () => { state.scale = scaleSel.value; renderChords(); rerenderRolls(); scheduleLiveApply(); });
   }
-  shareBtn?.addEventListener('click', async () => {
-    const shareable: any = clone(state);
-    if (shareable.sample) shareable.sample = { ...shareable.sample, url: null, name: '', enabled: false };
-    const hash = btoa(JSON.stringify(shareable));
-    const url = `${window.location.origin}${window.location.pathname}#${hash}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setStatus('link copied');
-    } catch (e) {
-      window.prompt('share link', url);
-    }
-  });
 
   // --- Keyboard shortcuts
   window.addEventListener('keydown', (e) => {
@@ -2398,18 +2372,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     target.replaceChildren(input);
     input.focus();
     input.select();
-  });
-
-  // --- Presets
-  document.querySelectorAll<HTMLButtonElement>('[data-preset]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.preset as keyof typeof presets;
-      const preset = presets[key];
-      if (!preset) return;
-      state = { ...clone(initialState), ...clone(preset) } as State;
-      renderAll();
-      scheduleLiveApply();
-    });
   });
 
   // --- Reset
