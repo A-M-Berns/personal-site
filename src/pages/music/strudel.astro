@@ -1596,10 +1596,12 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
   let editorReady: Promise<any> | null = null;
   let isRunning = false;
   let liveTimer: number | null = null;
-  // The exact code we last wrote into the editor. If the editor's
-  // current contents differ, the user has edited by hand — at which
-  // point GUI changes should NOT overwrite their work.
-  let lastGenerated = '';
+  // Manual mode is driven by a real input event on the editor host:
+  // until the user actually types a key in the editor, GUI changes
+  // flow into the code freely. Once they type, userTouchedEditor
+  // latches true and we stop pushing — the regen button is the way
+  // back. No more whitespace/string-comparison guessing.
+  let userTouchedEditor = false;
   let manualMode = false;
 
   const hostEl = document.getElementById('strudel-host');
@@ -1618,9 +1620,7 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
       const existing = document.querySelector<HTMLScriptElement>('script[data-strudel-repl]');
       const onLoaded = () => {
         const el = document.createElement('strudel-editor');
-        const initial = buildCode();
-        el.setAttribute('code', initial);
-        lastGenerated = initial;
+        el.setAttribute('code', buildCode());
         hostEl?.appendChild(el);
         // wait for connectedCallback to set up editor
         const tryAttach = (tries = 0) => {
@@ -1632,6 +1632,16 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
                 isRunning = started;
                 runBtn?.setAttribute('data-state', started ? 'running' : 'idle');
                 hostEl?.classList.toggle('is-running', started);
+              }
+            });
+            // Real signal that the user has hand-edited the code:
+            // any input event from inside the editor's contenteditable
+            // bubbles up to hostEl. Once that fires, we latch into
+            // manual mode and stop pushing GUI changes.
+            hostEl?.addEventListener('input', () => {
+              if (!userTouchedEditor) {
+                userTouchedEditor = true;
+                setManual(true);
               }
             });
             setStatus('ready');
@@ -1663,20 +1673,6 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     return editorReady;
   }
 
-  // True if the editor's current code differs meaningfully from what
-  // the GUI last wrote. Compare whitespace-normalized so the strudel
-  // editor's internal line-ending or trailing-newline normalization
-  // doesn't falsely trigger manual mode (which was blocking GUI
-  // updates for chord adds, etc.).
-  function normalizeCode(s: string): string {
-    return s.replace(/\s+/g, ' ').trim();
-  }
-  function editorIsManual(): boolean {
-    if (!editorRef) return false;
-    const cur = normalizeCode(editorRef.code ?? '');
-    const last = normalizeCode(lastGenerated);
-    return cur !== '' && cur !== last;
-  }
   function setManual(v: boolean) {
     if (manualMode === v) return;
     manualMode = v;
@@ -1686,19 +1682,15 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
   }
 
   async function pushCode() {
-    const code = buildCode();
     try { window.localStorage.setItem('strudel-state-v5', JSON.stringify(state)); } catch (e) {}
     try { await ensureEditor(); } catch (e) { setStatus('editor unavailable'); return; }
     if (!editorRef) return;
-    if (editorIsManual()) {
-      // The user has typed in the editor; don't overwrite their work.
-      // State still updates and persists to localStorage; clicking
-      // "regen" forces the GUI version to win.
+    if (userTouchedEditor) {
+      // Latched into manual after a real keystroke. Don't overwrite.
       setManual(true);
       return;
     }
-    editorRef.setCode(code);
-    lastGenerated = code;
+    editorRef.setCode(buildCode());
     if (isRunning) {
       try { await editorRef.evaluate(); } catch (e) { setStatus('eval error'); }
     }
@@ -1713,12 +1705,8 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     if (!editorRef) return;
     // If the user has hand-edited, evaluate THEIR code as-is. Don't
     // silently revert their work to the GUI's version on play.
-    if (!editorIsManual()) {
-      const code = buildCode();
-      editorRef.setCode(code);
-      lastGenerated = code;
-    } else {
-      setManual(true);
+    if (!userTouchedEditor) {
+      editorRef.setCode(buildCode());
     }
     try {
       await editorRef.evaluate();
@@ -1732,10 +1720,9 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
   }
   function regenFromGui() {
     if (!editorRef) return;
-    const code = buildCode();
-    editorRef.setCode(code);
-    lastGenerated = code;
+    userTouchedEditor = false;
     setManual(false);
+    editorRef.setCode(buildCode());
     setStatus('regenerated');
     if (isRunning) editorRef.evaluate().catch(() => setStatus('eval error'));
   }
@@ -2368,6 +2355,8 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     if (state.sample.url) URL.revokeObjectURL(state.sample.url);
     state = clone(initialState);
     try { window.localStorage.removeItem('strudel-state-v5'); } catch (e) {}
+    userTouchedEditor = false;
+    setManual(false);
     renderAll();
     scheduleLiveApply();
   });
