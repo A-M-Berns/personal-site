@@ -1,0 +1,34 @@
+---
+import Base from '../../layouts/Base.astro';
+import sources from '../../data/markov_sources.json';
+---
+<Base title="Markov Sources — A. M. Berns" description="Source texts for the Markov text animation.">
+  <div class="other-shell markov-sources-shell">
+    <header class="section-head">
+      <h1><span class="hl">Markov Sources</span></h1>
+    </header>
+    <section class="writing-pane markov-sources-pane">
+      <table class="source-table">
+        <thead>
+          <tr>
+            <th scope="col">Title</th>
+            <th scope="col">Author</th>
+            <th scope="col">Year</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sources.map((source) => (
+            <tr>
+              <td>
+                <a href={source.url}>{source.title}</a>
+                {'note' in source && source.note && <span class="source-note"> {source.note}</span>}
+              </td>
+              <td>{source.author}</td>
+              <td>{source.year}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  </div>
+</Base>

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Word-level higher-order Markov model with backoff (orders 6 → 1).
 // Trained on a curated set of public-domain philosophical / literary texts
-// from Project Gutenberg.  See the `SOURCES` list below for additions.
+// from Project Gutenberg. See src/data/markov_sources.json for additions.
 //
 // Output: src/data/markov_model.json
 //   {
@@ -52,39 +52,29 @@ const ORDER_PRUNING = {
 // ===== Sources ======================================================
 // To add a corpus:
 //   1. Find a public-domain Project Gutenberg .txt.utf-8 URL.
-//   2. Append it here with a short `label` for log output.
+//   2. Append it to src/data/markov_sources.json.
 //   3. Re-run `npm run build:markov`.
-const SOURCES = [
-  { label: 'Sartor Resartus (Carlyle)',                 url: 'https://www.gutenberg.org/ebooks/1051.txt.utf-8'  },
-  { label: 'Ethics (Spinoza)',                          url: 'https://www.gutenberg.org/ebooks/3800.txt.utf-8'  },
-  { label: 'The Marriage of Heaven and Hell (Blake)',   url: 'https://www.gutenberg.org/ebooks/45315.txt.utf-8' },
-  { label: 'Enneads vol. 1 (Plotinus)',                 url: 'https://www.gutenberg.org/ebooks/42930.txt.utf-8' },
-  { label: 'Enneads vol. 2 (Plotinus)',                 url: 'https://www.gutenberg.org/ebooks/42931.txt.utf-8' },
-  { label: 'Enneads vol. 3 (Plotinus)',                 url: 'https://www.gutenberg.org/ebooks/42932.txt.utf-8' },
-  { label: 'Enneads vol. 4 (Plotinus)',                 url: 'https://www.gutenberg.org/ebooks/42933.txt.utf-8' },
-  { label: 'World as Will & Idea v.1 (Schopenhauer)',   url: 'https://www.gutenberg.org/ebooks/38427.txt.utf-8' },
-  { label: 'World as Will & Idea v.2 (Schopenhauer)',   url: 'https://www.gutenberg.org/ebooks/40097.txt.utf-8' },
-  { label: 'World as Will & Idea v.3 (Schopenhauer)',   url: 'https://www.gutenberg.org/ebooks/40868.txt.utf-8' },
-  { label: 'A Voyage to Arcturus (Lindsay)',            url: 'https://www.gutenberg.org/ebooks/1329.txt.utf-8'  },
-  { label: 'Heaven and Hell (Swedenborg)',              url: 'https://www.gutenberg.org/ebooks/17368.txt.utf-8' },
-  { label: 'The Last Man (Shelley)',                    url: 'https://www.gutenberg.org/ebooks/18247.txt.utf-8' },
-  { label: 'Pierre, or the Ambiguities (Melville)',     url: 'https://www.gutenberg.org/ebooks/34970.txt.utf-8' },
-  { label: 'Erewhon (Butler)',                          url: 'https://www.gutenberg.org/ebooks/1906.txt.utf-8'  },
-  { label: 'Micromegas (Voltaire)',                     url: 'https://www.gutenberg.org/ebooks/30123.txt.utf-8' },
-  { label: 'In Praise of Folly (Erasmus)',              url: 'https://www.gutenberg.org/ebooks/30201.txt.utf-8' },
-  { label: 'Sylvie and Bruno (Carroll)',                url: 'https://www.gutenberg.org/ebooks/620.txt.utf-8'   },
-  { label: 'The Purple Cloud (Shiel)',                  url: 'https://www.gutenberg.org/ebooks/11229.txt.utf-8' },
-  { label: 'Revelations of Divine Love (Julian)',       url: 'https://www.gutenberg.org/files/52958/52958-h/52958-h.htm' },
-  { label: "Le Morte d'Arthur vol. 1 (Malory)",         url: 'https://www.gutenberg.org/files/1251/1251-h/1251-h.htm'    },
-  { label: 'Kwaidan (Hearn)',                           url: 'https://www.gutenberg.org/cache/epub/1210/pg1210.txt'      },
-  { label: 'Eureka (Poe)',                              url: 'https://www.gutenberg.org/cache/epub/32037/pg32037.txt'    },
-];
+const SOURCES_FILE = new URL('../src/data/markov_sources.json', import.meta.url);
 
 const START = '<S>';
 const END   = '<E>';
 
 const OUT       = new URL('../src/data/markov_model.json', import.meta.url);
 const CACHE_DIR = new URL('../.cache/markov-corpus/', import.meta.url);
+
+function sourceLabel(src) {
+  return src.label ?? `${src.title} (${src.author})`;
+}
+
+async function loadSources() {
+  const sources = JSON.parse(await readFile(SOURCES_FILE, 'utf8'));
+  for (const src of sources) {
+    if (!src.title || !src.author || !src.year || !src.url) {
+      throw new Error(`Invalid Markov source entry: ${JSON.stringify(src)}`);
+    }
+  }
+  return sources;
+}
 
 // ===== Network ======================================================
 function fetchText(url, redirects = 0) {
@@ -439,13 +429,15 @@ function generatePassage(model, rng, { temperature = TEMPERATURE, maxTokens = PR
 
 // ===== Driver =======================================================
 async function main() {
+  const sources = await loadSources();
   const counts = makeCountStore();
   let totalSentences = 0;
   let totalTokens = 0;
   const skipped = [];
 
-  console.log(`Loading ${SOURCES.length} sources...`);
-  for (const src of SOURCES) {
+  console.log(`Loading ${sources.length} sources...`);
+  for (const src of sources) {
+    const label = sourceLabel(src);
     try {
       const raw = await getCached(src.url);
       const decoded = looksLikeHtml(raw) ? htmlToText(raw) : raw;
@@ -465,10 +457,10 @@ async function main() {
       }
       totalSentences += sentencesFromSource;
       totalTokens    += tokensFromSource;
-      console.log(`  ✓ ${src.label.padEnd(40)} sentences=${sentencesFromSource}  tokens=${tokensFromSource}`);
+      console.log(`  ✓ ${label.padEnd(40)} sentences=${sentencesFromSource}  tokens=${tokensFromSource}`);
     } catch (err) {
       skipped.push({ ...src, reason: err.message });
-      console.log(`  ✗ ${src.label.padEnd(40)} ${err.message}`);
+      console.log(`  ✗ ${label.padEnd(40)} ${err.message}`);
     }
   }
 
@@ -491,7 +483,7 @@ async function main() {
 
   await mkdir(new URL('../src/data/', import.meta.url), { recursive: true });
   model.meta = {
-    sources: SOURCES.length - skipped.length,
+    sources: sources.length - skipped.length,
     sentences: totalSentences,
     tokens: totalTokens,
     bytes,
@@ -502,7 +494,7 @@ async function main() {
   console.log('');
   console.log(`Wrote ${OUT.pathname}`);
   console.log(`  order               = ${ORDER}`);
-  console.log(`  sources loaded      = ${SOURCES.length - skipped.length} / ${SOURCES.length}`);
+  console.log(`  sources loaded      = ${sources.length - skipped.length} / ${sources.length}`);
   console.log(`  sentences kept      ≈ ${totalSentences.toLocaleString()}`);
   console.log(`  tokens kept         ≈ ${totalTokens.toLocaleString()}`);
   console.log(`  output size         = ${(bytes / 1_000_000).toFixed(2)} MB`);
@@ -512,7 +504,7 @@ async function main() {
   }
   if (skipped.length) {
     console.log('  skipped:');
-    for (const s of skipped) console.log(`    - ${s.label} :: ${s.reason}`);
+    for (const s of skipped) console.log(`    - ${sourceLabel(s)} :: ${s.reason}`);
   }
 
   // ----- preview -----
