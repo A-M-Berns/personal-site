@@ -629,7 +629,7 @@ body.page-taste:has(.cover-wall-page) .page {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2rem 2.5rem;
   align-items: stretch;
-  max-width: 100ch;
+  max-width: 108ch;
 }
 .about-panes .writing-pane {
   display: grid;
@@ -648,7 +648,7 @@ body.page-taste:has(.cover-wall-page) .page {
   grid-template-columns: repeat(2, minmax(18rem, 1fr));
   gap: 1.25rem;
   align-items: start;
-  max-width: 92ch;
+  max-width: 108ch;
 }
 .taste-column {
   display: grid;
@@ -873,7 +873,7 @@ body.page-taste:has(.cover-wall-page) .page {
   grid-template-columns: repeat(2, minmax(18rem, 1fr));
   gap: 1.25rem;
   align-items: start;
-  max-width: 92ch;
+  max-width: 108ch;
 }
 .other-note a {
   text-decoration: underline;
@@ -909,13 +909,13 @@ body.page-taste:has(.cover-wall-page) .page {
 }
 .formalization-panes {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.25rem 2rem;
-  max-width: 70ch;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2.5rem 3rem;
+  max-width: 120ch;
   align-items: start;
 }
-@media (max-width: 760px) {
-  .formalization-panes { grid-template-columns: 1fr; gap: 1.25rem; }
+@media (max-width: 900px) {
+  .formalization-panes { grid-template-columns: 1fr; gap: 2.5rem; }
 }
 .wang-tiles {
   position: fixed;
@@ -1189,7 +1189,7 @@ body.page-taste:has(.cover-wall-page) .page {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2.5rem 3rem;
   align-items: start;
-  max-width: 108ch;
+  max-width: 120ch;
 }
 .writing-pane {
   background: #000;
@@ -1297,7 +1297,7 @@ body.page-taste:has(.cover-wall-page) .page {
   font-family: var(--font-lexend), var(--sans);
   font-size: 1.125rem;
   line-height: 1.45;
-  font-weight: 600;
+  font-weight: 400;
   margin: 0 0 1.75rem 0.6rem;
   max-width: 60ch;
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.85);
@@ -1306,7 +1306,7 @@ body.page-taste:has(.cover-wall-page) .page {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2.5rem 3rem;
-  max-width: 108ch;
+  max-width: 120ch;
   align-items: start;
 }
 @media (max-width: 900px) {
