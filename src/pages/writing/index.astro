@@ -41,10 +41,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     <aside class="markov-panel" aria-label="Markov controls">
       <div class="markov-panel-head">
         <h2>Markov</h2>
-        <div class="markov-panel-buttons">
-          <button id="markov-reroll" type="button" title="Re-roll palette only">Reroll</button>
-          <button id="markov-restart" type="button">Restart</button>
-        </div>
       </div>
       <div class="markov-panel-body">
         <div class="markov-panel-row">
@@ -242,10 +238,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     cursor: pointer;
   }
   .markov-panel-toggle:hover { color: var(--ink); }
-  .markov-panel-buttons {
-    display: flex;
-    gap: 0.35rem;
-  }
   .markov-panel-section {
     margin: 0.55rem 0 0.25rem;
     font-size: 0.62rem;
@@ -895,8 +887,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     bindRange('markov-bgmix', 'markov-bgmix-value', (v) => { BG_MIX = v; repalette(); }, (v) => v.toFixed(2));
     const repEl = document.getElementById('markov-repguard');
     repEl?.addEventListener('change', () => { useRepGuard = !!repEl.checked; });
-    document.getElementById('markov-restart')?.addEventListener('click', startCycle);
-    document.getElementById('markov-reroll')?.addEventListener('click', repalette);
 
     resize();
     resetButton?.addEventListener('click', startCycle);
