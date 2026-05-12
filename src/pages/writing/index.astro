@@ -11,6 +11,10 @@ const blogEssays = essays
   .filter((n) => n.id !== 'verification-for-cooperation' && n.data.sequence === 'cooperation')
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 
+const collegeEssays = essays
+  .filter((n) => n.data.sequence === 'college')
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+
 const publishedSorted = [...published].sort((a, b) => b.sortDate.valueOf() - a.sortDate.valueOf());
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -138,7 +142,18 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
       <section class="writing-pane">
         <h2>College</h2>
         <p class="pane-tagline">Essays originally written for college philosophy classes.</p>
-        <p class="empty">More to come.</p>
+        {collegeEssays.length > 0 ? (
+          <ul class="note-list">
+            {collegeEssays.map((n) => (
+              <li>
+                <a href={`/essays/${n.id}/`}>{n.data.title}</a>
+                <time datetime={n.data.date.toISOString()}>{dateFormatter.format(n.data.date)}</time>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="empty">More to come.</p>
+        )}
       </section>
     </div>
   </div>
