@@ -467,6 +467,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     let seed = 0;
     let rng = mulberry32(1);
     let typeAccum = 0;          // fractional speed accumulator
+    let accentCss = '';
 
     // Per-token breadcrumbs for click-to-rewind.  Each entry is the state
     // *before* drawing that token, plus the cell rects it ended up
@@ -523,8 +524,15 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
         const hi = Math.floor(((i + 1) * transformed.length) / n);
         stops.push(transformed[lo + Math.floor(rng() * Math.max(1, hi - lo))]);
       }
-      document.documentElement.style.setProperty('--accent', rgb(stops[Math.floor(stops.length * 0.6)]));
+      syncAccent(stops[Math.min(stops.length - 1, Math.floor(stops.length * 0.6))]);
       return stops;
+    }
+
+    function syncAccent(color) {
+      const css = rgb(color);
+      if (css === accentCss) return;
+      accentCss = css;
+      document.documentElement.style.setProperty('--accent', css);
     }
 
     function colorForOrder(orderUsed) {
@@ -655,6 +663,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 
     // ---------- Rendering ----------
     function drawChar(ch, col, row, color) {
+      syncAccent(color);
       const glyph = FONT[ch] ?? FONT[ch.toUpperCase()] ?? FONT['?'];
       const ox = col * cellW;
       const oy = row * cellH;

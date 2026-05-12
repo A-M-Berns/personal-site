@@ -340,7 +340,8 @@ import Base from '../../layouts/Base.astro';
       const indices = new Set<number>();
       while (indices.size < 4) indices.add(Math.floor(rng() * colorPool.length));
       palette = Array.from(indices).map((i) => colorPool[i]);
-      document.documentElement.style.setProperty('--accent', `rgb(${palette[palette.length - 1].join(', ')})`);
+      const c = paletteCycle(0);
+      document.documentElement.style.setProperty('--accent', `rgb(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])})`);
     }
 
     function applyRenderClass() {
@@ -406,6 +407,7 @@ import Base from '../../layouts/Base.astro';
       const g = Math.round(c[1]);
       const b = Math.round(c[2]);
       const css = `rgb(${r},${g},${b})`;
+      document.documentElement.style.setProperty('--accent', css);
       if (renderMode === 'pixel' || renderMode === 'both' || parent < 0) {
         ctx.fillStyle = css;
         ctx.fillRect(x, y, 1, 1);

@@ -820,13 +820,14 @@ import Base from '../layouts/Base.astro';
       return `rgb(${r}, ${g}, ${b})`;
     }
     function syncAccent() {
-      // Expose the actual rendered palette, rather than the source gradient
-      // stops, so link accents always match colors present in the animation.
+      // Expose each picked stop as --c1..--cN so the homepage can colorize
+      // dots, tagline, and per-link nav hovers with distinct palette entries.
+      // --accent tracks the brightest stop for the rest of the site.
       const root = document.documentElement.style;
-      for (let i = 0; i < palette.length; i++) {
-        root.setProperty(`--c${i + 1}`, blendOnPaper(palette[i]));
+      for (let i = 0; i < currentStops.length; i++) {
+        root.setProperty(`--c${i + 1}`, blendOnPaper(currentStops[i]));
       }
-      root.setProperty('--accent', blendOnPaper(palette[palette.length - 1]));
+      root.setProperty('--accent', blendOnPaper(currentStops[currentStops.length - 1]));
     }
     syncAccent();
 

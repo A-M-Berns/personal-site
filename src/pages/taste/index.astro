@@ -231,7 +231,9 @@ import Base from '../../layouts/Base.astro';
         stops.push(usable[idx]);
       }
       palette = stops;
-      document.documentElement.style.setProperty('--accent', `rgb(${stops[stops.length - 1].join(', ')})`);
+      // The renderer clamps stable piles to palette[3], so palette[4] is a
+      // transition stop rather than a visible sand state.
+      document.documentElement.style.setProperty('--accent', `rgb(${stops[3].join(', ')})`);
     }
 
     function seedCycle() {
