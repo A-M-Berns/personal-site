@@ -195,6 +195,15 @@ import Base from '../../layouts/Base.astro';
       ];
     }
 
+    const canvasOpacity = parseFloat(getComputedStyle(canvas).opacity) || 1;
+    function visibleCanvasColor(c: number[]) {
+      return mix(paper, c, canvasOpacity);
+    }
+
+    function cssColor(c: number[]) {
+      return `rgb(${c.join(', ')})`;
+    }
+
     function hashString(s: string) {
       let h = 2166136261;
       for (let i = 0; i < s.length; i++) {
@@ -232,8 +241,9 @@ import Base from '../../layouts/Base.astro';
       }
       palette = stops;
       // The renderer clamps stable piles to palette[3], so palette[4] is a
-      // transition stop rather than a visible sand state.
-      document.documentElement.style.setProperty('--accent', `rgb(${stops[3].join(', ')})`);
+      // transition stop rather than a visible sand state. The canvas itself is
+      // drawn at opacity 0.8, so expose the composited on-screen color.
+      document.documentElement.style.setProperty('--accent', cssColor(visibleCanvasColor(stops[3])));
     }
 
     function seedCycle() {
