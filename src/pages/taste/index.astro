@@ -240,9 +240,10 @@ import Base from '../../layouts/Base.astro';
         stops.push(usable[idx]);
       }
       palette = stops;
-      // Match the semantic background state: sand = 0. The canvas itself is
-      // translucent, so expose the composited on-screen color.
-      document.documentElement.style.setProperty('--accent', cssColor(visibleCanvasColor(stops[0])));
+      // The canvas starts as a solid field of palette[3] (seedCycle fills
+      // grains with 3), so use that pre-pulse color as the page accent.
+      // The canvas is translucent, so expose the composited on-screen color.
+      document.documentElement.style.setProperty('--accent', cssColor(visibleCanvasColor(stops[3])));
     }
 
     function seedCycle() {
