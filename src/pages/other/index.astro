@@ -265,6 +265,9 @@ import Base from '../../layouts/Base.astro';
     const presetSelect = document.getElementById('dla-preset') as HTMLSelectElement | null;
     const seedReadout = document.getElementById('dla-seed-readout');
     const countReadout = document.getElementById('dla-count');
+    const styles = getComputedStyle(document.documentElement);
+    const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
+    const canvasOpacity = parseFloat(getComputedStyle(canvas).opacity) || 1;
 
     const CELL_PX = 1;
     const MAX_WALK_STEPS = 4000;
@@ -340,8 +343,7 @@ import Base from '../../layouts/Base.astro';
       const indices = new Set<number>();
       while (indices.size < 4) indices.add(Math.floor(rng() * colorPool.length));
       palette = Array.from(indices).map((i) => colorPool[i]);
-      const c = paletteCycle(0);
-      document.documentElement.style.setProperty('--accent', `rgb(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])})`);
+      document.documentElement.style.setProperty('--accent', cssColor(visibleCanvasColor(paletteCycle(0))));
     }
 
     function applyRenderClass() {
@@ -388,6 +390,14 @@ import Base from '../../layouts/Base.astro';
       ];
     }
 
+    function visibleCanvasColor(c: number[]) {
+      return lerpRGB(paper, c, canvasOpacity);
+    }
+
+    function cssColor(c: number[]) {
+      return `rgb(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])})`;
+    }
+
     function paletteCycle(t: number): number[] {
       const n = palette.length;
       const u = ((t % 1) + 1) % 1;
@@ -407,7 +417,7 @@ import Base from '../../layouts/Base.astro';
       const g = Math.round(c[1]);
       const b = Math.round(c[2]);
       const css = `rgb(${r},${g},${b})`;
-      document.documentElement.style.setProperty('--accent', css);
+      document.documentElement.style.setProperty('--accent', cssColor(visibleCanvasColor(c)));
       if (renderMode === 'pixel' || renderMode === 'both' || parent < 0) {
         ctx.fillStyle = css;
         ctx.fillRect(x, y, 1, 1);

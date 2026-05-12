@@ -128,6 +128,7 @@ import Base from '../layouts/Base.astro';
 
     const styles = getComputedStyle(document.documentElement);
     const paperHex = styles.getPropertyValue('--paper').trim() || '#0e0e10';
+    const canvasOpacity = parseFloat(getComputedStyle(canvas).opacity) || 1;
 
     function parseHex(h: string): RGB {
       const s = h.trim().replace('#', '');
@@ -152,6 +153,10 @@ import Base from '../layouts/Base.astro';
       return `rgb(${c[0]} ${c[1]} ${c[2]})`;
     }
 
+    function visibleCanvasColor(c: RGB): RGB {
+      return mix(paper, c, canvasOpacity);
+    }
+
     function syncAccentFromCycle(cycle: Cycle) {
       const root = document.documentElement;
       const counts = new Uint32Array(cycle.palette.length);
@@ -166,9 +171,9 @@ import Base from '../layouts/Base.astro';
         if (counts[i] > counts[best]) best = i;
       }
       for (let i = 0; i < Math.min(8, cycle.palette.length); i++) {
-        root.style.setProperty(`--c${i + 1}`, rgb(cycle.palette[i]));
+        root.style.setProperty(`--c${i + 1}`, rgb(visibleCanvasColor(cycle.palette[i])));
       }
-      root.style.setProperty('--accent', rgb(cycle.palette[best]));
+      root.style.setProperty('--accent', rgb(visibleCanvasColor(cycle.palette[best])));
     }
 
     function rgba(c: RGB, a: number): string {

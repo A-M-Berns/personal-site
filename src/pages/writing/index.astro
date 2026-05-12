@@ -86,6 +86,11 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
           <span id="markov-stops-value">6</span>
         </div>
         <div class="markov-panel-row">
+          <label for="markov-accent-order">accent</label>
+          <input id="markov-accent-order" type="range" min="1" max="8" step="1" value="8" />
+          <span id="markov-accent-order-value">8</span>
+        </div>
+        <div class="markov-panel-row">
           <label for="markov-bgmix">bg</label>
           <input id="markov-bgmix" type="range" min="0" max="0.6" step="0.02" value="0.06" />
           <span id="markov-bgmix-value">0.06</span>
@@ -310,6 +315,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     let HUE_SHIFT = 0;          // degrees to rotate the palette
     let STOPS     = 6;          // number of palette stops
     let BG_MIX    = 0.0;        // mix paint colors toward paper (dimmer overall)
+    let ACCENT_ORDER = MODEL_ORDER;
     let useRepGuard = true;
     let paused = false;
 
@@ -397,6 +403,12 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     const styles = getComputedStyle(document.documentElement);
     const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
     const ink   = parseHex(styles.getPropertyValue('--ink').trim()   || '#ececec');
+    const canvasOpacity = parseFloat(getComputedStyle(canvas).opacity) || 1;
+
+    function visibleCanvasColor(c) {
+      return mix(paper, c, canvasOpacity);
+    }
+
     // A wider, more saturated palette than before.  Ordered light→dark; we
     // re-sort by luma after bright-lifting so the gradient stays monotone.
     const colorPool = [
@@ -524,23 +536,32 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
         const hi = Math.floor(((i + 1) * transformed.length) / n);
         stops.push(transformed[lo + Math.floor(rng() * Math.max(1, hi - lo))]);
       }
-      syncAccent(stops[Math.min(stops.length - 1, Math.floor(stops.length * 0.6))]);
+      syncAccent(colorForOrderInPalette(stops, ACCENT_ORDER));
       return stops;
     }
 
     function syncAccent(color) {
-      const css = rgb(color);
+      const css = rgb(visibleCanvasColor(color));
       if (css === accentCss) return;
       accentCss = css;
       document.documentElement.style.setProperty('--accent', css);
     }
 
-    function colorForOrder(orderUsed) {
+    function syncAccentForOrder() {
+      if (!palette.length) return;
+      syncAccent(colorForOrder(ACCENT_ORDER));
+    }
+
+    function colorForOrderInPalette(colors, orderUsed) {
       // Higher matched order = brighter, more confident colour; backoff to
       // order 1 lands at the dim end of the palette.
       const t = Math.max(0, Math.min(1, (orderUsed - 1) / Math.max(1, MODEL_ORDER - 1)));
-      const idx = Math.min(palette.length - 1, Math.floor(t * (palette.length - 1) + 0.0001));
-      return palette[idx];
+      const idx = Math.min(colors.length - 1, Math.floor(t * (colors.length - 1) + 0.0001));
+      return colors[idx];
+    }
+
+    function colorForOrder(orderUsed) {
+      return colorForOrderInPalette(palette, orderUsed);
     }
 
     // ---------- Backoff sampler ----------
@@ -663,7 +684,6 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 
     // ---------- Rendering ----------
     function drawChar(ch, col, row, color) {
-      syncAccent(color);
       const glyph = FONT[ch] ?? FONT[ch.toUpperCase()] ?? FONT['?'];
       const ox = col * cellW;
       const oy = row * cellH;
@@ -859,7 +879,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
       el.addEventListener('input', sync);
       sync();
     }
-    function repalette() { palette = pickPalette(STOPS); }
+    function repalette() { palette = pickPalette(STOPS); syncAccentForOrder(); }
     bindRange('markov-order', 'markov-order-value', (v) => { maxEffectiveOrder = Math.max(1, Math.min(MODEL_ORDER, v)); });
     bindRange('markov-temp',  'markov-temp-value',  (v) => { TEMPERATURE = v; }, (v) => v.toFixed(2));
     bindRange('markov-speed', 'markov-speed-value', (v) => { TYPING_RATE = v; }, (v) => v.toFixed(1));
@@ -868,6 +888,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
     bindRange('markov-sat',   'markov-sat-value',   (v) => { SAT_SCALE = v; repalette(); }, (v) => v.toFixed(2));
     bindRange('markov-hue',   'markov-hue-value',   (v) => { HUE_SHIFT = v; repalette(); }, (v) => `${v}°`);
     bindRange('markov-stops', 'markov-stops-value', (v) => { STOPS = v; repalette(); });
+    bindRange('markov-accent-order', 'markov-accent-order-value', (v) => { ACCENT_ORDER = Math.max(1, Math.min(MODEL_ORDER, v)); syncAccentForOrder(); });
     bindRange('markov-bgmix', 'markov-bgmix-value', (v) => { BG_MIX = v; repalette(); }, (v) => v.toFixed(2));
     const repEl = document.getElementById('markov-repguard');
     repEl?.addEventListener('change', () => { useRepGuard = !!repEl.checked; });

@@ -240,10 +240,9 @@ import Base from '../../layouts/Base.astro';
         stops.push(usable[idx]);
       }
       palette = stops;
-      // The renderer clamps stable piles to palette[3], so palette[4] is a
-      // transition stop rather than a visible sand state. The canvas itself is
-      // drawn at opacity 0.8, so expose the composited on-screen color.
-      document.documentElement.style.setProperty('--accent', cssColor(visibleCanvasColor(stops[3])));
+      // Match the semantic background state: sand = 0. The canvas itself is
+      // translucent, so expose the composited on-screen color.
+      document.documentElement.style.setProperty('--accent', cssColor(visibleCanvasColor(stops[0])));
     }
 
     function seedCycle() {

@@ -333,6 +333,15 @@ import Base from '../../layouts/Base.astro';
 
     const styles = getComputedStyle(document.documentElement);
     const paper = parseHex((styles.getPropertyValue('--paper').trim() || '#0e0e10'));
+    const canvasOpacity = parseFloat(getComputedStyle(canvas).opacity) || 1;
+
+    function mix(a: RGB, b: RGB, t: number): RGB {
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * t),
+        Math.round(a[1] + (b[1] - a[1]) * t),
+        Math.round(a[2] + (b[2] - a[2]) * t),
+      ];
+    }
 
     // Same jewel-tone pool as the home page so the formalization animation
     // shares the site's color identity. Sorted by luma so we can sample
@@ -450,7 +459,6 @@ import Base from '../../layouts/Base.astro';
     let ruleStr = 'LLRR';
     let nStates = 4;
     let palette: RGB[] = [];
-    let stateCounts = new Uint32Array(0);
     let seed = 0;
     let totalSteps = 0;
 
@@ -485,16 +493,16 @@ import Base from '../../layouts/Base.astro';
         out.push(colorPool[lo + Math.floor(rng() * span)]);
       }
       palette = out;
-      syncAccentFromStateCounts();
+      syncAccentFromPalette();
     }
 
-    function syncAccentFromStateCounts() {
+    function visibleCanvasColor(c: RGB): RGB {
+      return mix(paper, c, canvasOpacity);
+    }
+
+    function syncAccentFromPalette() {
       if (palette.length < 2) return;
-      let best = Math.min(1, palette.length - 1);
-      for (let s = 2; s < Math.min(stateCounts.length, palette.length); s++) {
-        if (stateCounts[s] > stateCounts[best]) best = s;
-      }
-      document.documentElement.style.setProperty('--accent', rgb(palette[best]));
+      document.documentElement.style.setProperty('--accent', rgb(visibleCanvasColor(palette[1])));
     }
 
     // Weighted pick from RULE_POOL — high-interest rules show up more
@@ -581,9 +589,6 @@ import Base from '../../layouts/Base.astro';
       }
       pickPalette();
       grid.fill(0);
-      stateCounts = new Uint32Array(nStates);
-      stateCounts[0] = grid.length;
-      syncAccentFromStateCounts();
       // The ants slider is authoritative.
       const activeCount = antCount;
       placeAnts(activeCount);
@@ -607,12 +612,7 @@ import Base from '../../layouts/Base.astro';
           if (turn === 0) ant.d = (ant.d + dirCount - 1) % dirCount;
           else if (turn === 1) ant.d = (ant.d + 1) % dirCount;
           // turn === 2 (F): no turn — keep direction.
-          const nextCell = (cell + 1) % ns;
-          grid[i] = nextCell;
-          if (stateCounts.length === ns) {
-            stateCounts[cell]--;
-            stateCounts[nextCell]++;
-          }
+          grid[i] = (cell + 1) % ns;
           let nx, ny;
           if (isHex) {
             const odd = ant.y & 1;
@@ -629,7 +629,6 @@ import Base from '../../layouts/Base.astro';
         }
       }
       totalSteps += n * ants.length;
-      syncAccentFromStateCounts();
     }
 
     function rgb(c: RGB) { return `rgb(${c[0]}, ${c[1]}, ${c[2]})`; }
@@ -1224,13 +1223,7 @@ import Base from '../../layouts/Base.astro';
     function paintAt(mx: number, my: number) {
       const i = pixelToCellIndex(mx, my);
       if (i < 0 || nStates < 1) return;
-      const old = grid[i];
       grid[i] = nStates - 1;
-      if (stateCounts.length === nStates && old !== nStates - 1) {
-        stateCounts[old]--;
-        stateCounts[nStates - 1]++;
-        syncAccentFromStateCounts();
-      }
     }
     window.addEventListener('pointerdown', (e) => {
       const target = e.target as Element | null;

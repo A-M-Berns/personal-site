@@ -81,6 +81,7 @@ import Base from '../../layouts/Base.astro';
 
     const styles = getComputedStyle(document.documentElement);
     const paper = parseHex(styles.getPropertyValue('--paper').trim() || '#0e0e10');
+    const canvasOpacity = parseFloat(getComputedStyle(canvas).opacity) || 1;
     const colorPool = [
       '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
       '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
@@ -170,6 +171,10 @@ import Base from '../../layouts/Base.astro';
 
     function chooseSignalColor(palette, index) {
       return liftColor(mix(paper, palette[index], 0.96), 172);
+    }
+
+    function visibleCanvasColor(c) {
+      return mix(paper, c, canvasOpacity);
     }
 
     function idx(x, y) {
@@ -301,7 +306,7 @@ import Base from '../../layouts/Base.astro';
       strongColor = chooseSignalColor(palette, 4);
       weakColor = chooseSignalColor(palette, 2);
       tailColor = liftColor(mix(paper, palette[3], 0.78), 142);
-      document.documentElement.style.setProperty('--accent', rgb(strongColor));
+      document.documentElement.style.setProperty('--accent', rgb(visibleCanvasColor(strongColor)));
       strongConductorColor = mix(paper, strongColor, 0.32);
       weakConductorColor = mix(paper, weakColor, 0.32);
       stepCount = 0;

@@ -74,7 +74,6 @@ const SOURCES = [
   { label: 'In Praise of Folly (Erasmus)',              url: 'https://www.gutenberg.org/ebooks/30201.txt.utf-8' },
   { label: 'Sylvie and Bruno (Carroll)',                url: 'https://www.gutenberg.org/ebooks/620.txt.utf-8'   },
   { label: 'The Purple Cloud (Shiel)',                  url: 'https://www.gutenberg.org/ebooks/11229.txt.utf-8' },
-  { label: 'Miss Lonelyhearts (West)',                  url: 'https://gutenberg.net.au/ebooks06/0608851h.html'  },
   { label: 'Revelations of Divine Love (Julian)',       url: 'https://www.gutenberg.org/files/52958/52958-h/52958-h.htm' },
   { label: "Le Morte d'Arthur vol. 1 (Malory)",         url: 'https://www.gutenberg.org/files/1251/1251-h/1251-h.htm'    },
   { label: 'Kwaidan (Hearn)',                           url: 'https://www.gutenberg.org/cache/epub/1210/pg1210.txt'      },
@@ -250,10 +249,11 @@ function splitSentences(paragraph) {
 
 // ===== Tokenization =================================================
 // Words can include internal apostrophes (don't, ne'er) and hyphens
-// (well-being).  Punctuation tokens stand alone.  We also keep paired
-// quote/paren tokens.
+// (well-being). Punctuation tokens stand alone, but paired punctuation
+// like quotes and parentheses is deliberately dropped so generated text
+// cannot display visually unbalanced marks.
 const WORD_RE = /[A-Za-z][A-Za-z'\-]*[A-Za-z]|[A-Za-z]/;
-const TOKEN_RE = /[A-Za-z][A-Za-z'\-]*[A-Za-z]|[A-Za-z]|[0-9]+|[.,;:!?]|--|["()]/g;
+const TOKEN_RE = /[A-Za-z][A-Za-z'\-]*[A-Za-z]|[A-Za-z]|[0-9]+|[.,;:!?]|--/g;
 
 function tokenizeSentence(sentence) {
   const raw = sentence.match(TOKEN_RE) ?? [];

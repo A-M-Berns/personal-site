@@ -359,6 +359,20 @@ import Base from '../../layouts/Base.astro';
     }
 
     const paper = parseHex(paperHex);
+    const canvasOpacity = parseFloat(getComputedStyle(canvas).opacity) || 1;
+
+    function mixRGB(a: RGB, b: RGB, t: number): RGB {
+      return [
+        Math.round(a[0] + (b[0] - a[0]) * t),
+        Math.round(a[1] + (b[1] - a[1]) * t),
+        Math.round(a[2] + (b[2] - a[2]) * t),
+      ];
+    }
+
+    function visibleCanvasColor(c: RGB): RGB {
+      return mixRGB(paper, c, canvasOpacity);
+    }
+
     const colorPool = [
       '#3a0a1a', '#6e1428', '#a82838', '#d63a2a', '#e54a4a',
       '#ff6648', '#ff8a3a', '#ffc14a', '#ffe05a', '#ffec8a',
@@ -1257,7 +1271,7 @@ import Base from '../../layouts/Base.astro';
       seeders[lastSeeder].fn();
       const stops = pickStops();
       palette = buildPalette(stops);
-      document.documentElement.style.setProperty('--accent', rgb(stops[stops.length - 1]));
+      document.documentElement.style.setProperty('--accent', rgb(visibleCanvasColor(palette[palette.length - 1])));
       stepCount = 0;
       velocities.fill(0);
       prevField.fill(0);
