@@ -1271,7 +1271,7 @@ import Base from '../../layouts/Base.astro';
       seeders[lastSeeder].fn();
       const stops = pickStops();
       palette = buildPalette(stops);
-      document.documentElement.style.setProperty('--accent', rgb(visibleCanvasColor(palette[1])));
+      document.documentElement.style.setProperty('--accent', rgb(visibleCanvasColor(palette[4])));
       stepCount = 0;
       velocities.fill(0);
       prevField.fill(0);
