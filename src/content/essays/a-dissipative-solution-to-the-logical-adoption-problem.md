@@ -556,31 +556,22 @@ dissipative justification for our core practice, we then can come to
 understand the broader epistemic and normative status of logic by means
 of continuity with this core.
 
-Works Cited
+## Works Cited
 
-Boghossian, Paul (2003). Blind Reasoning. Proceedings of the
-Aristotelian Society, Supplementary Volume 77 (1): 225-248.
+Boghossian, Paul (2003). “Blind Reasoning.” *Proceedings of the Aristotelian Society, Supplementary Volume* 77(1): 225–248.
 
-Cohnitz, Daniel & Nicolai, Carlo (forthcoming). How to Adopt a Logic.
-*Dialectica*.
+Cohnitz, Daniel, and Carlo Nicolai (forthcoming). “How to Adopt a Logic.” *Dialectica*.
 
-Finn, Suki (2019). The Adoption Problem and Anti-Exceptionalism about
-Logic. *Australasian Journal of Logic* 16 (7):231.
+Finn, Suki (2019). “The Adoption Problem and Anti-Exceptionalism about Logic.” *Australasian Journal of Logic* 16(7): 231.
 
-Harman, Gilbert (1986). Change in View: Principles of Reasoning.
-Cambridge, MA, USA: MIT Press.
+Harman, Gilbert (1986). *Change in View: Principles of Reasoning*. Cambridge, MA: MIT Press.
 
-Johnsen, B. C. (1972). Black and the Inductive Justification of
-Induction. *Analysis*, *32*(3), 110–112.
+Johnsen, B. C. (1972). “Black and the Inductive Justification of Induction.” *Analysis* 32(3): 110–112.
 
-> MacFarlane, John (2004). In What Sense (If Any) Is Logic Normative for
-> Thought? Unpublished.
+MacFarlane, John (2004). “In What Sense (If Any) Is Logic Normative for Thought?” Unpublished.
 
-Padro, Romina. (2015). What the Tortoise Said to Kripke: the Adoption
-Problem and the Epistemology of Logic. PhD thesis, CUNY.
+Padro, Romina (2015). “What the Tortoise Said to Kripke: The Adoption Problem and the Epistemology of Logic.” PhD thesis, CUNY.
 
-Williamson, Timothy (2017). Semantic Paradoxes and Abductive
-Methodology, in *Reflections on the Liar*, ed. Bradley Armour-Garb
+Williamson, Timothy (2017). “Semantic Paradoxes and Abductive Methodology.” In *Reflections on the Liar*, ed. Bradley Armour-Garb.
 
-Wright, Crispin (2004). Intuition, Entitlement and the Epistemology of
-Logical Laws. *Dialectica*, 58(1), 155–175.
+Wright, Crispin (2004). “Intuition, Entitlement and the Epistemology of Logical Laws.” *Dialectica* 58(1): 155–175.

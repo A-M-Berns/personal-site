@@ -198,11 +198,10 @@ reasons once all ethical beliefs are suspended and through our idea of a
 performative counterargument in which second-order skepticism is
 transferred to an untenable first-order skepticism.
 
-References:
+## Works Cited
 
-Moore, G. E. “Proof of an External World” (1939)
+Moore, G. E. (1939). “Proof of an External World.”
 
-Street, Sharon “A Darwinian Dilemma for Realist Theories of Value”
-(2006)
+Street, Sharon (2006). “A Darwinian Dilemma for Realist Theories of Value.”
 
-Vavova, Katia “Debunking Evolutionary Debunking” (2013)
+Vavova, Katia (2013). “Debunking Evolutionary Debunking.”

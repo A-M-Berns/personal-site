@@ -317,19 +317,14 @@ handles such examples much better, but there are also other theoretical
 pressure points that leave it unsatisfactory as the end of the story for
 reference-fixing.
 
-References
+## Works Cited
 
-> Bonevac, Daniel (2017). “Gareth Evans on the Causal Theory”
-> [https://www.youtube.com/watch?v=fOK-pPxW7rg](https://www.youtube.com/watch?v=fOK-pPxW7rg)
->
-> Burgess, J. P. (2014). Madagascar revisited. Analysis 74 (2):195-201.
->
-> Evans, Gareth (1973). The Causal Theory of Names. Aristotelian Society
-> Supplementary Volume 47 (1):187–208.
->
-> Evans, Gareth (1982). The Varieties of Reference. Oxford: Oxford
-> University Press.
->
-> Kripke, Saul A. (1980). Naming and Necessity: Lectures Given to the
-> Princeton University Philosophy Colloquium. Cambridge, MA: Harvard
-> University Press.
+Bonevac, Daniel (2017). “Gareth Evans on the Causal Theory.” https://www.youtube.com/watch?v=fOK-pPxW7rg
+
+Burgess, J. P. (2014). “Madagascar Revisited.” *Analysis* 74(2): 195–201.
+
+Evans, Gareth (1973). “The Causal Theory of Names.” *Aristotelian Society Supplementary Volume* 47(1): 187–208.
+
+Evans, Gareth (1982). *The Varieties of Reference*. Oxford: Oxford University Press.
+
+Kripke, Saul A. (1980). *Naming and Necessity: Lectures Given to the Princeton University Philosophy Colloquium*. Cambridge, MA: Harvard University Press.

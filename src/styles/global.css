@@ -1198,6 +1198,19 @@ body.page-taste:has(.cover-wall-page) .page {
 .writing-pane--right {
   grid-column: 2;
 }
+.writing-pane--scroll .note-list {
+  max-height: clamp(18rem, 55vh, 38rem);
+  overflow-y: auto;
+  padding-right: 0.4rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+.writing-pane--scroll .note-list::-webkit-scrollbar { width: 6px; }
+.writing-pane--scroll .note-list::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 3px;
+}
+.writing-pane--scroll .note-list::-webkit-scrollbar-track { background: transparent; }
 .writing-pane h2 {
   font-family: var(--display);
   font-size: 1rem;

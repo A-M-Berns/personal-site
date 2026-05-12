@@ -348,31 +348,18 @@ think almost all of the classic characterizations of logic other than
 those capture in (V) do have normativity as their base, but such a
 challenge is possible.
 
-Works Cited
+## Works Cited
 
-Beall, JC & Greg Restall (2000) “Logical pluralism”, Australasian
-Journal of Philosophy, 78:4, 475-493, DOI:
-[10.1080/0004840001234975](https://doi-org.revproxy.brown.edu/10.1080/00048400012349751)1
+Beall, JC, and Greg Restall (2000). “Logical Pluralism.” *Australasian Journal of Philosophy* 78(4): 475–493. https://doi.org/10.1080/00048400012349751
 
-Beall, JC & Greg Restall (2006). Logical Pluralism. Oxford, England:
-Oxford University Press.
+Beall, JC, and Greg Restall (2006). *Logical Pluralism*. Oxford: Oxford University Press.
 
-Griffiths, Owen, and A.C. Paseau, One True Logic: A Monist Manifesto
-(Oxford, 2022; online edn, Oxford Academic, 18 Aug. 2022),
-[https://doi.org/10.1093/oso/9780198829713.001.0001](https://doi.org/10.1093/oso/9780198829713.001.0001),
-accessed 16 Mar. 2023.
+Griffiths, Owen, and A. C. Paseau (2022). *One True Logic: A Monist Manifesto*. Oxford: Oxford University Press. https://doi.org/10.1093/oso/9780198829713.001.0001
 
-Harman, Gilbert (1986). Change in View: Principles of Reasoning.
-Cambridge, MA, USA: MIT Press.
+Harman, Gilbert (1986). *Change in View: Principles of Reasoning*. Cambridge, MA: MIT Press.
 
-MacFarlane, John. “In What Sense (If Any) Is Logic Normative for
-Thought.” (2004).
+MacFarlane, John (2004). “In What Sense (If Any) Is Logic Normative for Thought?”
 
-Shapiro, Stewart, *Varieties of Logic* (Oxford, 2014; online edn, Oxford
-Academic, 18 Sept. 2014),
-[https://doi.org/10.1093/acprof:oso/9780199696529.001.0001](https://doi.org/10.1093/acprof:oso/9780199696529.001.0001),
-accessed 17 Mar. 2023.
+Shapiro, Stewart (2014). *Varieties of Logic*. Oxford: Oxford University Press. https://doi.org/10.1093/acprof:oso/9780199696529.001.0001
 
-Sher, G. Y. “Did Tarski Commit ‘Tarski’s Fallacy’?” *The Journal of
-Symbolic Logic*, vol. 61, no. 2, 1996, pp. 653–86. *JSTOR*,
-https://doi.org/10.2307/2275681. Accessed 18 Mar. 2023.
+Sher, G. Y. (1996). “Did Tarski Commit ‘Tarski’s Fallacy’?” *The Journal of Symbolic Logic* 61(2): 653–686. https://doi.org/10.2307/2275681

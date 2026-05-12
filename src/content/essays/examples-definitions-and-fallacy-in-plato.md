@@ -295,19 +295,14 @@ fallacious, and that the account of knowledge it rests on is on somewhat
 shaky foundations and requires some equivocation on the part of its
 defenders.
 
-Works Cited
+## Works Cited
 
-Benson, Hugh G. (1990). The Priority of Definition and the Socratic
-Elenchus. Oxford Studies in Ancient Philosophy 8:19.
+Benson, Hugh G. (1990). “The Priority of Definition and the Socratic Elenchus.” *Oxford Studies in Ancient Philosophy* 8: 19.
 
-Geach, P. T. (1966). Plato’s Euthyphro: An Analysis and Commentary. The
-Monist 50 (3):369-382.
+Geach, P. T. (1966). “Plato’s Euthyphro: An Analysis and Commentary.” *The Monist* 50(3): 369–382.
 
-Plato, Grube, G. M. A., & Cooper, J. M. (2002). Five dialogues (Second
-edition.). Hackett Publishing Company, Inc.. Plato, G. M. A.
+Plato (2002). *Five Dialogues*. Trans. G. M. A. Grube, ed. J. M. Cooper. 2nd ed. Indianapolis: Hackett.
 
-Prior, William (1998). Plato and the "Socratic Fallacy". Phronesis 43
-(2):97 - 113.
+Prior, William (1998). “Plato and the ‘Socratic Fallacy.’” *Phronesis* 43(2): 97–113.
 
-Santas, Gerasimos Xenophon (1972). The socratic fallacy. Journal of the
-History of Philosophy 10 (2):127-141.
+Santas, Gerasimos Xenophon (1972). “The Socratic Fallacy.” *Journal of the History of Philosophy* 10(2): 127–141.

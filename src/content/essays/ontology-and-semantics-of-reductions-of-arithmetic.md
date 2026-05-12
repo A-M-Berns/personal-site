@@ -246,10 +246,8 @@ particular reduction and play the game of pretending that it is the
 right one, but we still have no reason to believe its ontological
 underpinnings.
 
-Works Cited
+## Works Cited
 
-Benacerraf, P.(1965). What numbers could not be, Philosophical Review 74
-(1): pp. 47-73.
+Benacerraf, P. (1965). “What Numbers Could Not Be.” *Philosophical Review* 74(1): 47–73.
 
-Paseau, A. (2009): ‘Reducing arithmetic to set theory’, O. Bueno and Ø.
-Linnebo, eds, New Waves in Philosophy of Mathematics: pp. 35–55.
+Paseau, A. (2009). “Reducing Arithmetic to Set Theory.” In *New Waves in Philosophy of Mathematics*, ed. O. Bueno and Ø. Linnebo, pp. 35–55.

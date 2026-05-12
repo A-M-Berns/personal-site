@@ -407,24 +407,16 @@ with these principles and good reason to disbelieve theoretical
 challenges to them, and so the problem of the elenchus is thereby also
 solved.
 
-Works Cited
+## Works Cited
 
-> Benson, Hugh H. (1987). The Problem of the Elenchus Reconsidered.
-> Ancient Philosophy 7:67-85.
+Benson, Hugh H. (1987). “The Problem of the Elenchus Reconsidered.” *Ancient Philosophy* 7: 67–85.
 
-Benson, Hugh H. (1995). The dissolution of the problem of the elenchus'.
-Oxford Studies in Ancient Philosophy 13:45-112.
+Benson, Hugh H. (1995). “The Dissolution of the Problem of the Elenchus.” *Oxford Studies in Ancient Philosophy* 13: 45–112.
 
-Brickhouse, T. & Smith, N. (2002). 8 The Socratic Elenchos?. In G. Scott
-(Ed.), Does Socrates Have a Method?: Rethinking the Elenchus in Plato's
-Dialogues and Beyond (pp. 145-158). University Park, USA: Penn State
-University Press. <https://doi.org/10.1515/9780271032214-012>
+Brickhouse, T., and N. Smith (2002). “The Socratic Elenchos?” In *Does Socrates Have a Method? Rethinking the Elenchus in Plato’s Dialogues and Beyond*, ed. G. Scott, pp. 145–158. University Park, PA: Penn State University Press. https://doi.org/10.1515/9780271032214-012
 
-Kraut, Richard (1983). Comments on Gregory Vlastos,'The Socratic
-elenchus,'. Oxford Studies in Ancient Philosophy 1:59-70.
+Kraut, Richard (1983). “Comments on Gregory Vlastos, ‘The Socratic Elenchus.’” *Oxford Studies in Ancient Philosophy* 1: 59–70.
 
-Plato & Zeyl, Donald J. (1987.) Gorgias. Indianapolis: Hackett Pub. Co
+Plato (1987). *Gorgias*. Trans. Donald J. Zeyl. Indianapolis: Hackett.
 
-Vlastos, Gregory. (1993). The Socratic elenchus: Method is all. In M.
-Burnyeat (Ed.), Socratic Studies (pp. 1-38). Cambridge: Cambridge
-University Press. doi:10.1017/CBO9780511518515.002
+Vlastos, Gregory (1993). “The Socratic Elenchus: Method Is All.” In *Socratic Studies*, ed. M. Burnyeat, pp. 1–38. Cambridge: Cambridge University Press. https://doi.org/10.1017/CBO9780511518515.002

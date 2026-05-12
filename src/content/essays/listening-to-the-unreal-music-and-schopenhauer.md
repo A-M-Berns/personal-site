@@ -376,23 +376,14 @@ When we have strong feelings about what we hear, we might surrender to
 them, knowing they reflect things we have embodied that we could not
 otherwise understand.
 
-Works Cited
+## Works Cited
 
-> Jäncke L. (2008). Music, memory and emotion. *Journal of biology*,
-> 7(6), 21. https://doi.org/10.1186/jbiol82
->
-> Särkämö, T., Tervaniemi, M., Laitinen, S., Forsblom, A., Soinila, S.,
-> Mikkonen, M., ... & Hietanen, M. (2008). Music listening enhances
-> cognitive recovery and mood after middle cerebral artery stroke.
-> *Brain*, 131(3), 866-876.
->
-> Schopenhauer, A. (1969). *The world as will and representation*. New
-> York: Dover Pub.
+Jäncke, L. (2008). “Music, memory and emotion.” *Journal of Biology* 7(6): 21. https://doi.org/10.1186/jbiol82
 
-Tallal, P., & Gaab, N. (2006). Dynamic auditory processing, musical
-experience and language development. In *Trends in Neurosciences* (Vol.
-29, Issue 7, pp. 382–390). Elsevier BV.
-https://doi.org/10.1016/j.tins.2006.06.003
+Särkämö, T., M. Tervaniemi, S. Laitinen, A. Forsblom, S. Soinila, M. Mikkonen, et al. (2008). “Music listening enhances cognitive recovery and mood after middle cerebral artery stroke.” *Brain* 131(3): 866–876.
 
-> Zatorre R. J. (2018). Why Do We Love Music?. *Cerebrum : the Dana
-> forum on brain science*, 2018, cer-16-18.
+Schopenhauer, A. (1969). *The World as Will and Representation*. New York: Dover.
+
+Tallal, P., and N. Gaab (2006). “Dynamic auditory processing, musical experience and language development.” *Trends in Neurosciences* 29(7): 382–390. https://doi.org/10.1016/j.tins.2006.06.003
+
+Zatorre, R. J. (2018). “Why Do We Love Music?” *Cerebrum: The Dana Forum on Brain Science* 2018: cer-16-18.
