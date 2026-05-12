@@ -417,7 +417,6 @@ import Base from '../../layouts/Base.astro';
       const g = Math.round(c[1]);
       const b = Math.round(c[2]);
       const css = `rgb(${r},${g},${b})`;
-      document.documentElement.style.setProperty('--accent', cssColor(visibleCanvasColor(c)));
       if (renderMode === 'pixel' || renderMode === 'both' || parent < 0) {
         ctx.fillStyle = css;
         ctx.fillRect(x, y, 1, 1);
