@@ -502,7 +502,7 @@ import Base from '../../layouts/Base.astro';
 
     function syncAccentFromPalette() {
       if (palette.length < 2) return;
-      document.documentElement.style.setProperty('--accent', rgb(visibleCanvasColor(palette[1])));
+      document.documentElement.style.setProperty('--accent', rgb(visibleCanvasColor(palette[palette.length - 1])));
     }
 
     // Weighted pick from RULE_POOL — high-interest rules show up more
