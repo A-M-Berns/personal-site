@@ -160,21 +160,14 @@ import Base from '../layouts/Base.astro';
 
     function syncAccentFromCycle(cycle: Cycle) {
       const root = document.documentElement;
-      const counts = new Uint32Array(cycle.palette.length);
-      for (let i = 0; i < cycle.grid.length; i++) {
-        const tileIdx = cycle.grid[i];
-        if (tileIdx < 0) continue;
-        const tile = cycle.tileset.tiles[tileIdx];
-        for (const edge of tile.edges) counts[edge % cycle.palette.length]++;
-      }
-      let best = 0;
-      for (let i = 1; i < counts.length; i++) {
-        if (counts[i] > counts[best]) best = i;
+      let brightest = 0;
+      for (let i = 1; i < cycle.palette.length; i++) {
+        if (luma(cycle.palette[i]) > luma(cycle.palette[brightest])) brightest = i;
       }
       for (let i = 0; i < Math.min(8, cycle.palette.length); i++) {
         root.style.setProperty(`--c${i + 1}`, rgb(visibleCanvasColor(cycle.palette[i])));
       }
-      root.style.setProperty('--accent', rgb(visibleCanvasColor(cycle.palette[best])));
+      root.style.setProperty('--accent', rgb(visibleCanvasColor(cycle.palette[brightest])));
     }
 
     function rgba(c: RGB, a: number): string {
