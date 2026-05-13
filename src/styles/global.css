@@ -1171,6 +1171,7 @@ body.page-taste:has(.cover-wall-page) .page {
   z-index: 0;
   width: 100vw;
   height: 100vh;
+  transform: translateY(0.5rem);
   /* Enabled so the click-to-rewind interaction works.  Foreground content
      (writing-panes, section-head) sits at z-index 1 above and still
      receives clicks for its own area. */
