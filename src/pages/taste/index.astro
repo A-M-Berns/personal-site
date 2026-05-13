@@ -8,38 +8,42 @@ import Base from '../../layouts/Base.astro';
       <h1><span class="hl">Taste</span></h1>
     </header>
     <div class="taste-panes">
-      <section class="writing-pane">
-        <h2>Music</h2>
-        <p>
-          A lot of my music taste can be seen on my
-          <a href="https://rateyourmusic.com/~hautboy">Rate Your Music profile</a>, although I
-          don't necessarily stand by every rating. In particular, you can see a list of my
-          favorite albums of all time <a href="https://rateyourmusic.com/collection/hautboy/r5.0">here</a>.
-        </p>
-      </section>
-      <section class="writing-pane">
-        <h2>Art</h2>
-        <p>
-          <a href="https://www.are.na/anson-berns/art-n3r49vapnpc">This list</a> shows
-          some paintings I enjoy, and <a href="/taste/covers">this page</a> displays
-          albums with covers that I like.
-        </p>
-      </section>
-      <section class="writing-pane">
-        <h2>Fiction</h2>
-        <p>
-          <a href="/taste/fiction">This page</a> catalogs some films, novels, and short stories
-          that I like.
-        </p>
-      </section>
-      <section class="writing-pane">
-        <h2>Philosophy</h2>
-        <p>
-          <a href="/taste/philosophy">This page</a> documents some works of philosophy and theory
-          that were particularly formative for me. I also briefly sketch some of my most deeply
-          held philosophical views there.
-        </p>
-      </section>
+      <div class="taste-column">
+        <section class="writing-pane">
+          <h2>Music</h2>
+          <p>
+            A lot of my music taste can be seen on my
+            <a href="https://rateyourmusic.com/~hautboy">Rate Your Music profile</a>, although I
+            don't necessarily stand by every rating. In particular, you can see a list of my
+            favorite albums of all time <a href="https://rateyourmusic.com/collection/hautboy/r5.0">here</a>.
+          </p>
+        </section>
+        <section class="writing-pane">
+          <h2>Fiction</h2>
+          <p>
+            <a href="/taste/fiction">This page</a> catalogs some films, novels, and short stories
+            that I like.
+          </p>
+        </section>
+      </div>
+      <div class="taste-column">
+        <section class="writing-pane">
+          <h2>Art</h2>
+          <p>
+            <a href="https://www.are.na/anson-berns/art-n3r49vapnpc">This list</a> shows
+            some paintings I enjoy, and <a href="/taste/covers">this page</a> displays
+            albums with covers that I like.
+          </p>
+        </section>
+        <section class="writing-pane">
+          <h2>Philosophy</h2>
+          <p>
+            <a href="/taste/philosophy">This page</a> documents some works of philosophy and theory
+            that were particularly formative for me. I also briefly sketch some of my most deeply
+            held philosophical views there.
+          </p>
+        </section>
+      </div>
     </div>
     <div class="anim-controls">
       <button id="sandpile-info" type="button" aria-label="About">About</button>

@@ -653,7 +653,14 @@ body.page-taste:has(.cover-wall-page) .page {
   display: grid;
   grid-template-columns: repeat(2, minmax(18rem, 1fr));
   gap: 1.25rem;
+  align-items: stretch;
   max-width: 108ch;
+}
+.taste-column {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.25rem;
 }
 .taste-detail-panes {
   position: relative;
