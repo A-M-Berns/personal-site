@@ -659,8 +659,13 @@ body.page-taste:has(.cover-wall-page) .page {
 .taste-column {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   gap: 1.25rem;
+}
+.taste-column:first-of-type > .writing-pane:first-of-type {
+  flex-grow: 7;
+}
+.taste-column:first-of-type > .writing-pane:last-of-type {
+  flex-grow: 3;
 }
 .taste-detail-panes {
   position: relative;
