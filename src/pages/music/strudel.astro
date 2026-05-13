@@ -108,7 +108,8 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
       </section>
 
       <aside class="strudel-side-pane">
-        <aside class="strudel-transport" aria-label="Transport">
+        <aside class="strudel-transport" aria-label="Master transport">
+          <header class="strudel-transport-head"><span>master</span></header>
           <div class="strudel-transport-grid">
            <div class="strudel-transport-row strudel-transport-row--meta">
             <label class="strudel-knob strudel-knob--num">
@@ -436,6 +437,14 @@ const bassPalette: { label: string; items: [string, string][] }[] = [
     background: rgba(0, 0, 0, 0.92);
     border: 1px solid var(--rule);
     border-radius: 3px;
+  }
+  .strudel-transport-head {
+    font-family: var(--display);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
   }
   .strudel-transport-grid {
     display: flex;
