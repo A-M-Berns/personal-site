@@ -18,30 +18,6 @@
     "url": "https://www.gutenberg.org/ebooks/45315.txt.utf-8"
   },
   {
-    "title": "The Enneads, Vol. 1",
-    "author": "Plotinus",
-    "year": "c. 270",
-    "url": "https://www.gutenberg.org/ebooks/42930.txt.utf-8"
-  },
-  {
-    "title": "The Enneads, Vol. 2",
-    "author": "Plotinus",
-    "year": "c. 270",
-    "url": "https://www.gutenberg.org/ebooks/42931.txt.utf-8"
-  },
-  {
-    "title": "The Enneads, Vol. 3",
-    "author": "Plotinus",
-    "year": "c. 270",
-    "url": "https://www.gutenberg.org/ebooks/42932.txt.utf-8"
-  },
-  {
-    "title": "The Enneads, Vol. 4",
-    "author": "Plotinus",
-    "year": "c. 270",
-    "url": "https://www.gutenberg.org/ebooks/42933.txt.utf-8"
-  },
-  {
     "title": "The World as Will and Idea, Vol. 1",
     "author": "Arthur Schopenhauer",
     "year": "1818/1844",
@@ -183,8 +159,7 @@
     "title": "Diary of a Madman",
     "author": "Nikolai Gogol",
     "year": "1835",
-    "url": "https://www.gutenberg.org/ebooks/36238.txt.utf-8",
-    "note": "Published in Project Gutenberg as \"Memoirs of a Madman\" in The Mantle, and Other Stories."
+    "url": "https://www.gutenberg.org/ebooks/36238.txt.utf-8"
   },
   {
     "title": "Phantastes",
