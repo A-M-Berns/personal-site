@@ -22,6 +22,7 @@ const navItems = [
   { href: '/other', label: 'Other' },
 ];
 const pageClass = `page-${path === '/' ? 'home' : path.split('/')[1]}`;
+const isLanding = path === '/' || path.split('/').length === 2;
 ---
 <!doctype html>
 <html lang="en">
@@ -83,7 +84,7 @@ const pageClass = `page-${path === '/' ? 'home' : path.split('/')[1]}`;
       })();
     </script>
   </head>
-  <body class={pageClass}>
+  <body class:list={[pageClass, { landing: isLanding }]}>
     {showNav && (
       <header class="site-header">
         <nav class="site-nav">

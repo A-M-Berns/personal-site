@@ -201,6 +201,10 @@ textarea:disabled {
 }
 .anim-about p:last-child { margin-bottom: 0; }
 
+body.landing {
+  overflow: hidden;
+  height: 100vh;
+}
 body.page-taste:has(.cover-wall-page) {
   overflow: hidden;
 }
@@ -649,13 +653,14 @@ body.page-taste:has(.cover-wall-page) .page {
   display: grid;
   grid-template-columns: repeat(2, minmax(18rem, 1fr));
   gap: 1.25rem;
-  align-items: start;
+  align-items: stretch;
   max-width: 108ch;
 }
 .taste-column {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   gap: 1.25rem;
-  align-items: start;
 }
 .taste-detail-panes {
   position: relative;
