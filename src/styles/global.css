@@ -66,11 +66,13 @@ textarea:disabled {
   padding: 1.75rem 5vw 0;
   position: relative;
   z-index: 10;
+  pointer-events: none;
 }
 
 
 .site-nav {
   display: inline-flex;
+  pointer-events: auto;
   gap: 0;
   font-family: var(--display);
   font-size: 0.9375rem;
