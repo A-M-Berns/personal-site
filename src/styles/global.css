@@ -634,15 +634,8 @@ body.page-taste:has(.cover-wall-page) .page {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 2rem 2.5rem;
-  align-items: stretch;
+  align-items: start;
   max-width: 108ch;
-}
-.about-panes .writing-pane {
-  display: grid;
-  grid-template-rows: auto 1fr;
-}
-.about-panes .writing-pane p {
-  align-self: center;
 }
 .about-panes .anson {
   color: var(--accent);
