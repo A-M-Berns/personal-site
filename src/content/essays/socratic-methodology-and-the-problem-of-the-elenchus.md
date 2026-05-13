@@ -4,7 +4,7 @@ date: 2023-05-14
 sequence: college
 ---
 
-*Originally written for PHIL 1110B Plato, Spring 2023, Prof. Justin Broackes.*
+*Originally written for PHIL 1110B Plato with Prof. Justin Broackes.*
 
 The principal form of Socrates’ philosophical method is that of the
 *elenchus*, where a thesis put forward by an interlocutor of Socrates is

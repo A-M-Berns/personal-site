@@ -4,7 +4,7 @@ date: 2023-02-15
 sequence: college
 ---
 
-*Originally written for PHIL 1110B Plato, Spring 2023, Prof. Justin Broackes.*
+*Originally written for PHIL 1110B Plato with Prof. Justin Broackes.*
 
 In “The Sovereignty of the Good Over Other Concepts”, Iris Murdoch
 employs the “extremely rich metaphor” (376)[^1] of the Good as the Sun

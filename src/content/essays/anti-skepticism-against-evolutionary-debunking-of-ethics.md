@@ -4,7 +4,7 @@ date: 2020-12-15
 sequence: college
 ---
 
-*Originally written for PHIL 1640 The Nature of Morality, Fall 2020, Prof. Jamie Dreier.*
+*Originally written for PHIL 1640 The Nature of Morality with Prof. Jamie Dreier.*
 
 Sharon Street’s paper “A Darwinian Dilemma for Realist Theories of
 Value” presents a case against moral realism based on the fact that our

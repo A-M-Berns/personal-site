@@ -4,7 +4,7 @@ date: 2022-12-15
 sequence: college
 ---
 
-*Originally written for PHIL 1860 Sense and Reference, Fall 2022, Prof. Richard Kimberly Heck.*
+*Originally written for PHIL 1860 Sense and Reference with Prof. Richard Kimberly Heck.*
 
 In *Naming and Necessity*, Saul Kripke presents the following picture of
 the use of names: first, there is an “initial baptism” (or dubbing) in

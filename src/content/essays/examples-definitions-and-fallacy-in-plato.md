@@ -4,7 +4,7 @@ date: 2023-04-01
 sequence: college
 ---
 
-*Originally written for PHIL 1110B Plato, Spring 2023, Prof. Justin Broackes.*
+*Originally written for PHIL 1110B Plato with Prof. Justin Broackes.*
 
 In a commentary on the *Euthyphro*, Peter Geach ascribed the following
 two claims to Socrates in the dialogue, which he dubbed the “Socratic

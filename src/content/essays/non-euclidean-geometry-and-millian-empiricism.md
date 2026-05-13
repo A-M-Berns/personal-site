@@ -4,7 +4,7 @@ date: 2020-10-20
 sequence: college
 ---
 
-*Originally written for PHIL 1300 Philosophy of Mathematics, Fall 2020, Prof. Joshua Schechter.*
+*Originally written for PHIL 1300 Philosophy of Mathematics with Prof. Joshua Schechter.*
 
 As a through-and-through empiricist, J. S. Mill believes that the
 foundations of mathematics are conclusions we arrive at by inductive

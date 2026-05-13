@@ -4,7 +4,7 @@ date: 2023-03-15
 sequence: college
 ---
 
-*Originally written for PHIL 2710 Recent Debates in the Philosophy of Logic, Spring 2023, Prof. Joshua Schechter.*
+*Originally written for PHIL 2710 Recent Debates in the Philosophy of Logic with Prof. Joshua Schechter.*
 
 Logical pluralism is the view that there is more than one “correct”
 logic. On this view, there is no single content of logical concepts like

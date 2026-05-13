@@ -4,7 +4,7 @@ date: 2023-05-14
 sequence: college
 ---
 
-*Originally written for PHIL 1675 Set Theory, Spring 2023, Prof. Eric Guindon.*
+*Originally written for PHIL 1675 Set Theory, Spring 2023 with Prof. Eric Guindon.*
 
 If axiomatic set theory is supposed to be a foundation for all of
 mathematics, as it is often treated in mathematical practice, then there

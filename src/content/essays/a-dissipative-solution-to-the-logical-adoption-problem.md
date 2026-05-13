@@ -4,7 +4,7 @@ date: 2023-05-13
 sequence: college
 ---
 
-*Originally written for PHIL 2710 Recent Debates in the Philosophy of Logic, Spring 2023, Prof. Joshua Schechter.*
+*Originally written for PHIL 2710 Recent Debates in the Philosophy of Logic with Prof. Joshua Schechter.*
 
 Certain basic logical laws turn out to suffer from the “adoption
 problem” in which they cannot successfully be acquired by someone who

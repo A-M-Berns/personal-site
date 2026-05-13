@@ -4,7 +4,7 @@ date: 2021-12-15
 sequence: college
 ---
 
-*Originally written for COLT 1440U The Listener, Fall 2021, Prof. Peter Szendy.*
+*Originally written for COLT 1440U The Listener with Prof. Peter Szendy.*
 
 Many of us have a strong feeling that music is somehow apart from the
 other arts. Music is singular among the arts in its power of
