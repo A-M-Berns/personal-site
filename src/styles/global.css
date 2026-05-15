@@ -201,9 +201,11 @@ textarea:disabled {
 }
 .anim-about p:last-child { margin-bottom: 0; }
 
-body.landing {
-  overflow: hidden;
-  height: 100vh;
+@media (min-width: 761px) {
+  body.landing {
+    overflow: hidden;
+    height: 100vh;
+  }
 }
 body.page-taste:has(.cover-wall-page) {
   overflow: hidden;
