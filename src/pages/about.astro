@@ -648,7 +648,15 @@ import Base from '../layouts/Base.astro';
     }
 
     function inRewindZone(clientX: number): boolean {
-      const textLeft = document.querySelector('.about-shell > .section-head')?.getBoundingClientRect().left ?? window.innerWidth * 0.18;
+      // Mirror .page geometry (max-width: 1200px; margin: 0 auto;
+      // padding-inline: 5vw) rather than measuring .section-head, which
+      // animation-only mode hides (display: none -> left collapses to 0).
+      // Computing from the viewport keeps the boundary identical in both
+      // modes.
+      const vw = window.innerWidth;
+      const contentWidth = Math.min(vw, 1200);
+      const sideMargin = (vw - contentWidth) / 2;
+      const textLeft = sideMargin + vw * 0.05;
       return clientX < Math.max(56, textLeft - 12);
     }
 
