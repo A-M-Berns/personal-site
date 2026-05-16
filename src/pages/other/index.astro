@@ -15,7 +15,7 @@ import { otherWriting } from '../../data/published';
           <ul class="note-list">
             {otherWriting.map((p) => (
               <li>
-                <a href={p.url}>{p.title}</a>
+                <a href={p.url}>{p.titleHtml ? <Fragment set:html={p.titleHtml} /> : p.title}</a>
                 {p.venue && <span class="venue">{p.venue}</span>}
               </li>
             ))}
