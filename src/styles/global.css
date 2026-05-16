@@ -1399,7 +1399,7 @@ body.page-taste:has(.cover-wall-page) .page {
 .audio-track {
   position: relative;
   flex: 1 1 auto;
-  height: 2px;
+  height: 3px;
   background: var(--rule);
   border-radius: 1px;
   cursor: pointer;
@@ -1415,6 +1415,22 @@ body.page-taste:has(.cover-wall-page) .page {
   background: var(--accent);
   border-radius: 1px;
   pointer-events: none;
+}
+.audio-progress::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translateY(-50%);
+  transition: transform 120ms ease;
+}
+.audio-track:hover .audio-progress::after,
+.audio-track:focus-visible .audio-progress::after {
+  transform: translateY(-50%) scale(1.25);
 }
 
 .audio-time {
