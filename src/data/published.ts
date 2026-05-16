@@ -26,7 +26,7 @@ export const published: PublishedWork[] = [
 export const otherWriting: PublishedWork[] = [
   {
     title: 'Model-independent prediction of R(ηc)',
-    url: 'https://drive.google.com/file/d/1fLaVYf3kCNwAPGLaVU4MM8wta4o4cYO-/preview',
+    url: 'https://link.springer.com/article/10.1007/JHEP12(2018)114',
     venue: 'Journal of High Energy Physics',
     displayDate: 'December 18, 2018',
     sortDate: new Date('2018-12-18'),

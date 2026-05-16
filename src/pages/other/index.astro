@@ -1,5 +1,6 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { otherWriting } from '../../data/published';
 ---
 <Base title="Other — A. M. Berns" description="Side projects and miscellaneous experiments.">
   <div class="other-shell">
@@ -10,7 +11,18 @@ import Base from '../../layouts/Base.astro';
     <div class="other-panes">
       <section class="writing-pane">
         <h2>Physics</h2>
-        <p class="empty">More to come.</p>
+        {otherWriting.length > 0 ? (
+          <ul class="note-list">
+            {otherWriting.map((p) => (
+              <li>
+                <a href={p.url}>{p.title}</a>
+                {p.venue && <span class="venue">{p.venue}</span>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="empty">More to come.</p>
+        )}
       </section>
       <section class="writing-pane">
         <h2>Quizbowl</h2>
