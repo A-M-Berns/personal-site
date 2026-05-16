@@ -610,7 +610,6 @@ body.page-taste:has(.cover-wall-page) .page {
 .note-list .venue {
   font-size: 0.8125rem;
   color: var(--muted);
-  font-style: italic;
 }
 .note-list--ordered {
   list-style: decimal inside;
