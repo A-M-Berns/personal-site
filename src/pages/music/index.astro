@@ -1684,20 +1684,34 @@ import Base from '../../layouts/Base.astro';
       track.setAttribute('aria-valuenow', pct.toFixed(0));
     }
     let pendingSeek: number | null = null;
+    let forcedLoad = false;
+    function applyPendingSeek() {
+      if (pendingSeek === null) return;
+      if (!isFinite(audio.duration) || audio.duration <= 0) return;
+      audio.currentTime = pendingSeek * audio.duration;
+      pendingSeek = null;
+      syncProgress();
+      syncTime();
+    }
     function seekTo(clientX: number) {
       if (!track) return;
       const rect = track.getBoundingClientRect();
       const t = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      if (!isFinite(audio.duration) || audio.duration <= 0) {
-        // Metadata not loaded yet — remember the fraction and apply it
-        // once the duration is known.
-        pendingSeek = t;
-        audio.load();
+      if (isFinite(audio.duration) && audio.duration > 0) {
+        audio.currentTime = t * audio.duration;
+        syncProgress();
+        syncTime();
         return;
       }
-      audio.currentTime = t * audio.duration;
-      syncProgress();
-      syncTime();
+      // Duration not known yet (lazy preload="metadata"). Remember the
+      // fraction and force a one-time metadata load; applied once the
+      // duration arrives. Do NOT call load() on every click — that
+      // resets the element back to 0:00.
+      pendingSeek = t;
+      if (!forcedLoad) {
+        forcedLoad = true;
+        audio.load();
+      }
     }
 
     playBtn?.addEventListener('click', () => {
@@ -1717,13 +1731,12 @@ import Base from '../../layouts/Base.astro';
       syncTime();
     });
     audio.addEventListener('loadedmetadata', () => {
-      if (pendingSeek !== null && isFinite(audio.duration)) {
-        audio.currentTime = pendingSeek * audio.duration;
-        pendingSeek = null;
-      }
+      applyPendingSeek();
       syncProgress();
       syncTime();
     });
+    audio.addEventListener('durationchange', applyPendingSeek);
+    audio.addEventListener('canplay', applyPendingSeek);
     audio.addEventListener('ended', () => {
       audio.currentTime = 0;
       syncProgress();
