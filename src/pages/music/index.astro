@@ -1683,10 +1683,18 @@ import Base from '../../layouts/Base.astro';
       progress.style.width = `${pct}%`;
       track.setAttribute('aria-valuenow', pct.toFixed(0));
     }
+    let pendingSeek: number | null = null;
     function seekTo(clientX: number) {
-      if (!track || !audio.duration) return;
+      if (!track) return;
       const rect = track.getBoundingClientRect();
       const t = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      if (!isFinite(audio.duration) || audio.duration <= 0) {
+        // Metadata not loaded yet — remember the fraction and apply it
+        // once the duration is known.
+        pendingSeek = t;
+        audio.load();
+        return;
+      }
       audio.currentTime = t * audio.duration;
       syncProgress();
       syncTime();
@@ -1709,6 +1717,10 @@ import Base from '../../layouts/Base.astro';
       syncTime();
     });
     audio.addEventListener('loadedmetadata', () => {
+      if (pendingSeek !== null && isFinite(audio.duration)) {
+        audio.currentTime = pendingSeek * audio.duration;
+        pendingSeek = null;
+      }
       syncProgress();
       syncTime();
     });

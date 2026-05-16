@@ -1399,10 +1399,21 @@ body.page-taste:has(.cover-wall-page) .page {
 .audio-track {
   position: relative;
   flex: 1 1 auto;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
+}
+.audio-track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
   height: 3px;
+  transform: translateY(-50%);
   background: var(--rule);
   border-radius: 1px;
-  cursor: pointer;
+  pointer-events: none;
 }
 .audio-track:focus-visible {
   outline: 1px solid var(--accent);
@@ -1410,7 +1421,10 @@ body.page-taste:has(.cover-wall-page) .page {
 }
 .audio-progress {
   position: absolute;
-  inset: 0 auto 0 0;
+  left: 0;
+  top: 50%;
+  height: 3px;
+  transform: translateY(-50%);
   width: 0%;
   background: var(--accent);
   border-radius: 1px;
