@@ -912,7 +912,7 @@ body.page-taste:has(.cover-wall-page) .page {
   line-height: 1.45;
   font-weight: 400;
   margin: 0 0 1.75rem 0.6rem;
-  max-width: 60ch;
+  max-width: 120ch;
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.85);
 }
 .formalization-panes {
@@ -1346,7 +1346,7 @@ body.page-taste:has(.cover-wall-page) .page {
   line-height: 1.45;
   font-weight: 400;
   margin: 0 0 1.75rem 0.6rem;
-  max-width: 60ch;
+  max-width: 120ch;
   text-shadow: 0 0 8px rgba(0, 0, 0, 0.65), 0 0 2px rgba(0, 0, 0, 0.85);
 }
 .music-panes {
