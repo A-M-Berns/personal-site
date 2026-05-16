@@ -1,6 +1,5 @@
 export type PublishedWork = {
   title: string;
-  titleHtml?: string;
   url: string;
   venue?: string;
   displayDate: string;
@@ -21,16 +20,5 @@ export const published: PublishedWork[] = [
     venue: 'Sapere Aude',
     displayDate: 'July 1, 2022',
     sortDate: new Date('2022-07-01'),
-  },
-];
-
-export const otherWriting: PublishedWork[] = [
-  {
-    title: 'Model-independent prediction of R(ηc)',
-    titleHtml: 'Model-independent prediction of R(<i>η</i><sub><i>c</i></sub>)',
-    url: 'https://link.springer.com/article/10.1007/JHEP12(2018)114',
-    venue: 'Journal of High Energy Physics',
-    displayDate: 'December 18, 2018',
-    sortDate: new Date('2018-12-18'),
   },
 ];

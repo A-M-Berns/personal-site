@@ -1,6 +1,5 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { otherWriting } from '../../data/published';
 ---
 <Base title="Other — A. M. Berns" description="Side projects and miscellaneous experiments.">
   <div class="other-shell">
@@ -11,18 +10,13 @@ import { otherWriting } from '../../data/published';
     <div class="other-panes">
       <section class="writing-pane">
         <h2>Physics</h2>
-        {otherWriting.length > 0 ? (
-          <ul class="note-list">
-            {otherWriting.map((p) => (
-              <li>
-                <a href={p.url}>{p.titleHtml ? <Fragment set:html={p.titleHtml} /> : p.title}</a>
-                {p.venue && <span class="venue">{p.venue}</span>}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p class="empty">More to come.</p>
-        )}
+        <p>
+          I was a primary author on the paper
+          <a href="https://arxiv.org/abs/1808.07360">Model-independent prediction of R(<i>η</i><sub><i>c</i></sub>)</a>,
+          which was published in the
+          <a href="https://link.springer.com/article/10.1007/JHEP12(2018)114">Journal of High Energy Physics</a>
+          in 2018. This research was conducted at the University of Maryland with Dr. Hank Lamm.
+        </p>
       </section>
       <section class="writing-pane">
         <h2>Quizbowl</h2>
